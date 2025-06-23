@@ -170,7 +170,7 @@
                         <a href="/login" class="btn btn-custom me-2">Login</a>
                     </li>
                     <li class="nav-item">
-                        <a href="/signup" class="btn btn-custom">Signup</a>
+                        <a href="/enroll" class="btn btn-custom">Enroll</a>
                     </li>
                 </ul>
             </div>
