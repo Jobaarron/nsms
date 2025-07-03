@@ -1,6 +1,6 @@
         :root {
             --primary-color: #014421;
-            --secondary-color: #D0D8C3;
+            --secondary-color: #d0d8c3;
             --accent-color: #2d6a3e;
             --light-green: #e8f5e8;
             --dark-green: #012d17;
@@ -58,7 +58,8 @@
 
         .btn-custom.active {
             transform: translateY(0);
-            box-shadow: 0 4px 15px rgba(1,68,33,0.2);
+            box-shadow: 0 4px 15px rgb(208, 216, 195);
+            color: rgb(25, 168, 56);
             background: linear-gradient(135deg, var(--accent-color), var(--primary-color));
             opacity: 0.9;
           }
@@ -67,8 +68,8 @@
         
         .btn-custom:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(1, 68, 33, 0.3);
-            color: white;
+            box-shadow: 0 8px 25px rgb(208, 216, 195);
+            color: rgb(25, 168, 56);
             background: linear-gradient(135deg, var(--accent-color), var(--primary-color));
         }
         

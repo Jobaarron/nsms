@@ -34,19 +34,32 @@ class EnrollmentController extends Controller
             'first_name'         => 'required|string|max:50',
             'middle_name'        => 'nullable|string|max:50',
             'last_name'          => 'required|string|max:50',
-            'dob'                => 'required|date',
+            'dob'                => 'required|date|before_or_equal:today',
             'religion'           => 'nullable|string|max:100',
             'email'              => 'required|email|unique:students,email',
-            'address'            => 'required|string',
-            'grade_applied'      => 'required|string',
-            'strand'             => 'nullable|string',
-            'guardian_name'      => 'required|string',
-            'guardian_contact'   => 'required|string',
+            'address'            => 'required|string|max:255',
+            // only allow these grade values:
+            'grade_applied'      => [
+                'required',
+                'in:Nursery,Kinder 1,Kinder 2,Grade 1,Grade 2,Grade 3,Grade 4,Grade 5,Grade 6,Grade 7,Grade 8,Grade 9,Grade 10,Grade 11,Grade 12'
+            ],
+            // strand is required only if grade is 11 or 12
+            'strand'             => [
+                'nullable',
+                'required_if:grade_applied,Grade 11,Grade 12',
+                'string',
+                'max:50',
+            ],
+            'guardian_name'      => 'required|string|max:100',
+            'guardian_contact'   => [
+                'required',
+                'regex:/^09[0-9]{9}$/',
+            ],
             'last_school_type'   => 'nullable|in:Public,Private',
-            'last_school_name'   => 'nullable|string',
-            'medical_history'    => 'nullable|string',
-            'payment_mode'       => 'required|string',
-            'preferred_schedule' => 'nullable|date',
+            'last_school_name'   => 'nullable|string|max:100',
+            'medical_history'    => 'nullable|string|max:255',
+            'payment_mode'       => 'required|string|in:Cash',
+            'preferred_schedule' => 'nullable|date|after_or_equal:today',
         ]);
 
         // 2) Store the ID photo

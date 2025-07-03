@@ -1,5 +1,6 @@
         <x-layout>
             @vite('resources/css/enroll.css')
+            @vite('resources/js/enroll.js')
             <div class="row justify-content-center">
                 <div class="col-lg-8 col-md-10">
                     <div class="content-card p-5">
@@ -58,10 +59,12 @@
                                         type="text"
                                         id="first_name"
                                         name="first_name"
-                                        class="form-control form-control-lg @error('first_name') is-invalid @enderror"
+                                        class="form-control form-control-lg text-uppercase @error('first_name') is-invalid @enderror"
                                         value="{{ old('first_name') }}"
                                         required
                                         placeholder="John"
+                                        oninput="this.value = this.value.toUpperCase()"
+                                        autocapitalize="characters"
                                     >
                                     @error('first_name') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
@@ -73,9 +76,11 @@
                                         type="text"
                                         id="middle_name"
                                         name="middle_name"
-                                        class="form-control form-control-lg @error('middle_name') is-invalid @enderror"
+                                        class="form-control form-control-lg text-uppercase @error('middle_name') is-invalid @enderror"
                                         value="{{ old('middle_name') }}"
                                         placeholder="Doe"
+                                        oninput="this.value = this.value.toUpperCase()"
+                                        autocapitalize="characters"
                                     >
                                     @error('middle_name') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
@@ -87,10 +92,12 @@
                                         type="text"
                                         id="last_name"
                                         name="last_name"
-                                        class="form-control form-control-lg @error('last_name') is-invalid @enderror"
+                                        class="form-control form-control-lg text-uppercase @error('last_name') is-invalid @enderror"
                                         value="{{ old('last_name') }}"
                                         required
                                         placeholder="Smith"
+                                        oninput="this.value = this.value.toUpperCase()"
+                                        autocapitalize="characters"
                                     >
                                     @error('last_name') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
@@ -98,33 +105,47 @@
 
                             <!-- DOB & Religion -->
                             <div class="row mb-3">
+                                <!-- Date of Birth (now matches Preferred Schedule style) -->
                                 <div class="col-md-6">
-                                    <label for="dob" class="form-label fw-semibold" style="color: var(--primary-color);">
-                                        Date of Birth
-                                    </label>
-                                    <input
-                                        type="date"
-                                        id="dob"
-                                        name="dob"
-                                        class="form-control form-control-lg @error('dob') is-invalid @enderror"
-                                        value="{{ old('dob') }}"
-                                        required
-                                    >
-                                    @error('dob') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                  <label for="dob" class="form-label fw-semibold" style="color: var(--primary-color);">
+                                    Date of Birth
+                                  </label>
+                                  <input
+                                    type="date"
+                                    id="dob"
+                                    name="dob"
+                                    class="form-control form-control-lg @error('dob') is-invalid @enderror"
+                                    value="{{ old('dob') }}"
+                                    max="{{ date('Y-m-d') }}"
+                                    required
+                                  >
+                                  @error('dob')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                  @enderror
                                 </div>
+
+                                <!-- Religion -->
                                 <div class="col-md-6">
-                                    <label for="religion" class="form-label fw-semibold" style="color: var(--primary-color);">
+                                    <label
+                                        for="religion"
+                                        class="form-label fw-semibold"
+                                        style="color: var(--primary-color);"
+                                    >
                                         Religion
                                     </label>
                                     <input
                                         type="text"
                                         id="religion"
                                         name="religion"
-                                        class="form-control form-control-lg @error('religion') is-invalid @enderror"
+                                        class="form-control form-control-lg text-uppercase @error('religion') is-invalid @enderror"
                                         value="{{ old('religion') }}"
                                         placeholder="e.g. Roman Catholic"
-                                    >
-                                    @error('religion') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                        oninput="this.value = this.value.toUpperCase()"
+                                        autocapitalize="characters"
+                                    />
+                                    @error('religion')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
                             </div>
 
@@ -145,18 +166,26 @@
                                 @error('email') <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
                             <div class="mb-3">
-                                <label for="address" class="form-label fw-semibold" style="color: var(--primary-color);">
+                                <label
+                                    for="address"
+                                    class="form-label fw-semibold"
+                                    style="color: var(--primary-color);"
+                                >
                                     Address
                                 </label>
                                 <textarea
                                     id="address"
                                     name="address"
                                     rows="2"
-                                    class="form-control form-control-lg @error('address') is-invalid @enderror"
+                                    class="form-control form-control-lg text-uppercase @error('address') is-invalid @enderror"
                                     required
                                     placeholder="Street, City, Province"
+                                    oninput="this.value = this.value.toUpperCase()"
+                                    autocapitalize="characters"
                                 >{{ old('address') }}</textarea>
-                                @error('address') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                @error('address')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
                             </div>
 
                             <!-- Document Upload -->
@@ -214,7 +243,7 @@
                                     </select>
                                     @error('grade_applied') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-6 d-none" id="strand-group">
                                     <label for="strand" class="form-label fw-semibold" style="color: var(--primary-color);">
                                         Strand (if applicable)
                                     </label>
@@ -222,9 +251,11 @@
                                         type="text"
                                         id="strand"
                                         name="strand"
-                                        class="form-control form-control-lg @error('strand') is-invalid @enderror"
+                                        class="form-control form-control-lg text-uppercase @error('strand') is-invalid @enderror"
                                         value="{{ old('strand') }}"
                                         placeholder="e.g. STEM, ABM"
+                                        oninput="this.value = this.value.toUpperCase()"
+                                        autocapitalize="characters"
                                     >
                                     @error('strand') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
@@ -233,19 +264,27 @@
                             <!-- Parent / Guardian -->
                             <div class="row mb-3">
                                 <div class="col-md-6">
-                                    <label for="guardian_name" class="form-label fw-semibold" style="color: var(--primary-color);">
+                                    <label
+                                        for="guardian_name"
+                                        class="form-label fw-semibold"
+                                        style="color: var(--primary-color);"
+                                    >
                                         Name of Parent/Guardian
                                     </label>
                                     <input
                                         type="text"
                                         id="guardian_name"
                                         name="guardian_name"
-                                        class="form-control form-control-lg @error('guardian_name') is-invalid @enderror"
+                                        class="form-control form-control-lg text-uppercase @error('guardian_name') is-invalid @enderror"
                                         value="{{ old('guardian_name') }}"
                                         required
                                         placeholder="Jane Doe"
-                                    >
-                                    @error('guardian_name') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                        oninput="this.value = this.value.toUpperCase()"
+                                        autocapitalize="characters"
+                                    />
+                                    @error('guardian_name')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
                                 <div class="col-md-6">
                                     <label for="guardian_contact" class="form-label fw-semibold" style="color: var(--primary-color);">
@@ -301,26 +340,36 @@
                                 <input
                                     type="text"
                                     name="last_school_name"
-                                    class="form-control form-control-lg mt-2 @error('last_school_name') is-invalid @enderror"
+                                    class="form-control form-control-lg mt-2 text-uppercase @error('last_school_name') is-invalid @enderror"
                                     value="{{ old('last_school_name') }}"
                                     placeholder="Name of last school"
+                                    oninput="this.value = this.value.toUpperCase()"
+                                    autocapitalize="characters"
                                 >
                                 @error('last_school_name') <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
 
                             <!-- Medical History -->
                             <div class="mb-3">
-                                <label for="medical_history" class="form-label fw-semibold" style="color: var(--primary-color);">
+                                <label
+                                    for="medical_history"
+                                    class="form-label fw-semibold"
+                                    style="color: var(--primary-color);"
+                                >
                                     Medical History (e.g. Allergies, Conditions)
                                 </label>
                                 <textarea
                                     id="medical_history"
                                     name="medical_history"
                                     rows="2"
-                                    class="form-control form-control-lg @error('medical_history') is-invalid @enderror"
+                                    class="form-control form-control-lg text-uppercase @error('medical_history') is-invalid @enderror"
                                     placeholder="List any allergies or conditions"
+                                    oninput="this.value = this.value.toUpperCase()"
+                                    autocapitalize="characters"
                                 >{{ old('medical_history') }}</textarea>
-                                @error('medical_history') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                @error('medical_history')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
                             </div>
 
                             <!-- Mode of Payment & Preferred Schedule -->
@@ -372,8 +421,4 @@
                     </div>
                 </div>
             </div>
-
-            @push('styles')
-           
-            @endpush
         </x-layout>
