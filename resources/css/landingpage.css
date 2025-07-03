@@ -1,0 +1,141 @@
+        :root {
+            --primary-color: #014421;
+            --secondary-color: #d0d8c3;
+            --accent-color: #2d6a3e;
+            --light-green: #e8f5e8;
+            --dark-green: #012d17;
+        }
+        
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #f8f9fa;
+        }
+        
+        .navbar {
+            background: rgba(208, 216, 195, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(1, 68, 33, 0.1);
+        }
+        
+        .navbar-brand {
+            color: var(--primary-color) !important;
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+        
+        .navbar-nav .nav-link {
+            color: var(--primary-color) !important;
+            font-weight: 600;
+            margin: 0 0.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .navbar-nav .nav-link:hover {
+            color: var(--accent-color) !important;
+            transform: translateY(-1px);
+        }
+        
+        .navbar-nav .nav-link.active {
+            color: var(--accent-color) !important;
+            font-weight: 700;
+        }
+        
+        .nav__logo {
+            height: 40px;
+            width: auto;
+        }
+        
+        .btn-custom {
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            border: none;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .btn-custom.active {
+            transform: translateY(0);
+            box-shadow: 0 4px 15px rgb(208, 216, 195);
+            color: rgb(25, 168, 56);
+            background: linear-gradient(135deg, var(--accent-color), var(--primary-color));
+            opacity: 0.9;
+          }
+
+
+        
+        .btn-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgb(208, 216, 195);
+            color: rgb(25, 168, 56);
+            background: linear-gradient(135deg, var(--accent-color), var(--primary-color));
+        }
+        
+        .main-content {
+            min-height: calc(100vh - 200px);
+            padding-top: 100px;
+        }
+        
+        .content-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(1, 68, 33, 0.1);
+            border: 2px solid var(--secondary-color);
+            transition: all 0.3s ease;
+        }
+        
+        .content-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 60px rgba(1, 68, 33, 0.15);
+        }
+        
+        .page-header {
+            color: var(--primary-color);
+            font-weight: 700;
+        }
+        
+        .page-subheader {
+            color: var(--dark-green);
+        }
+        
+        .footer-section {
+            background: var(--primary-color);
+            color: white;
+            padding: 40px 0 20px;
+            margin-top: auto;
+        }
+        
+        .footer-text {
+            color: var(--secondary-color);
+            opacity: 0.8;
+        }
+        
+        .navbar-toggler {
+            border-color: var(--primary-color);
+        }
+        
+        .navbar-toggler:focus {
+            box-shadow: 0 0 0 0.25rem rgba(1, 68, 33, 0.25);
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                padding-top: 80px;
+            }
+            
+            .navbar-nav {
+                text-align: center;
+                padding: 1rem 0;
+            }
+            
+            .navbar-nav .nav-link {
+                margin: 0.25rem 0;
+            }
+            
+            .btn-custom {
+                margin-top: 1rem;
+                width: 100%;
+            }
+        }
