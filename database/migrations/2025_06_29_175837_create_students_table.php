@@ -36,6 +36,7 @@ return new class extends Migration
             // payment & scheduling
             $table->string('payment_mode');
             $table->date('preferred_schedule')->nullable();
+            $table->boolean('is_paid')->default(false);
             // timestamps
             $table->timestamps();
             
