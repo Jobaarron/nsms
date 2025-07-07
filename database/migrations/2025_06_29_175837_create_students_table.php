@@ -35,6 +35,7 @@ return new class extends Migration
             $table->text('medical_history')->nullable();
             // payment & scheduling
             $table->string('payment_mode');
+            $table->boolean('is_paid')->default(false);
             $table->date('preferred_schedule')->nullable();
             // timestamps
             $table->timestamps();

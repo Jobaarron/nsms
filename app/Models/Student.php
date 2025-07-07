@@ -25,6 +25,7 @@ class Student extends Model
         'medical_history',
         'payment_mode',
         'preferred_schedule',
+        'is_paid',
         'password',
     ];
 
@@ -32,6 +33,7 @@ class Student extends Model
         'documents'          => 'array',
         'dob'                => 'date',
         'preferred_schedule' => 'date',
+        'is_paid'    => 'boolean',
     ];
 
     protected $hidden = [
