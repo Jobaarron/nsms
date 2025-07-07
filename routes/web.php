@@ -9,6 +9,8 @@ use App\Http\Controllers\teacherController;
 use App\Http\Controllers\adminController;
 use App\Http\Controllers\studentController;
 use App\Http\Controllers\guidancedisciplineController;
+use Spatie\Permission\Middlewares\RoleMiddleware;
+use Spatie\Permission\Middlewares\PermissionMiddleware;
 
 Route::get('/', function () {
     return view('welcome');
@@ -45,6 +47,9 @@ Route::post('/enroll', [EnrollmentController::class, 'store'])
     
     //     return 'Check your Mailtrap inbox!';
     // });
+
+   
+
 
 Route::get('/teacher', [teacherController::class, 'index']);
 Route::get('/admin', [adminController::class, 'index']);
