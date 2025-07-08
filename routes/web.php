@@ -48,6 +48,17 @@ Route::post('/enroll', [EnrollmentController::class, 'store'])
     //     return 'Check your Mailtrap inbox!';
     // });
 
+    Route::get('/test-email/student-welcome', function () {
+        $student = (object) [
+            'first_name' => 'Jane',
+            'email' => 'jane.smith@example.com'
+        ];
+        
+        $rawPassword = 'TestPass456';
+        
+        return view('emails.student_welcome', compact('student', 'rawPassword'));
+    });
+
    
 
 

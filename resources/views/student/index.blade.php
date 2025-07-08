@@ -76,6 +76,22 @@
       background-color: var(--primary-color);
       color: #fff;
     }
+
+    .sidebar .nav-link.disabled {
+  color: var(--secondary-color) !important;
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.sidebar .nav-link.disabled:hover {
+  background-color: transparent !important;
+  color: var(--secondary-color) !important;
+}
+
+.sidebar .nav-link.disabled i {
+  opacity: 0.5;
+}
   </style>
 </head>
 <body>
@@ -91,29 +107,34 @@
             </a>
           </li>
           <li class="nav-item mb-2">
-            <a class="nav-link" href="#">
-              <i class="ri-cash-line me-2"></i>Payments
-            </a>
+            <span class="nav-link disabled d-flex justify-content-between align-items-center">
+              <span><i class="ri-cash-line me-2"></i>Payments</span>
+              <small class="badge bg-light text-dark">Soon</small>
+            </span>
           </li>
           <li class="nav-item mb-2">
-            <a class="nav-link" href="#">
-              <i class="ri-book-open-line me-2"></i>My Subjects
-            </a>
+            <span class="nav-link disabled d-flex justify-content-between align-items-center">
+              <span><i class="ri-book-open-line me-2"></i>My Subjects</span>
+              <small class="badge bg-light text-dark">Soon</small>
+            </span>
           </li>
           <li class="nav-item mb-2">
-            <a class="nav-link" href="#">
-              <i class="ri-file-paper-line me-2"></i>Guidance Notes
-            </a>
+            <span class="nav-link disabled d-flex justify-content-between align-items-center">
+              <span><i class="ri-file-paper-line me-2"></i>Guidance Notes</span>
+              <small class="badge bg-light text-dark">Soon</small>
+            </span>
           </li>
           <li class="nav-item mb-2">
-            <a class="nav-link" href="#">
-              <i class="ri-flag-line me-2"></i>Discipline
-            </a>
+            <span class="nav-link disabled d-flex justify-content-between align-items-center">
+              <span><i class="ri-flag-line me-2"></i>Discipline</span>
+              <small class="badge bg-light text-dark">Soon</small>
+            </span>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="#">
-              <i class="ri-user-line me-2"></i>Profile
-            </a>
+            <span class="nav-link disabled d-flex justify-content-between align-items-center">
+              <span><i class="ri-user-line me-2"></i>Profile</span>
+              <small class="badge bg-light text-dark">Soon</small>
+            </span>
           </li>
         </ul>
       </nav>
