@@ -34,7 +34,7 @@ class CheckPermission
             }
         }
 
-        return redirect()->route('index')
+        return redirect()->route('/')
             ->with('error', 'You do not have permission to access this area.');
     }
 }

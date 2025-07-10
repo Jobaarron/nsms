@@ -76,11 +76,31 @@ Route::prefix('admin')->group(function () {
     Route::get('/login', [AdminController::class, 'showLoginForm'])->name('admin.login');
     Route::post('/login', [AdminController::class, 'login'])->name('admin.login.submit');
     
-    // Protected admin routes - temporarily remove middleware
-    Route::get('/', [AdminController::class, 'index'])->name('admin.dashboard');
-    Route::post('/logout', [AdminController::class, 'logout'])->name('admin.logout');
+    // Protected admin routes - use auth middleware
+    Route::middleware(['auth'])->group(function () {
+        // Dashboard
+        Route::get('/', [AdminController::class, 'index'])->name('admin.dashboard');
+        Route::post('/logout', [AdminController::class, 'logout'])->name('admin.logout');
+        
+        // Users management
+        Route::get('/users', [AdminController::class, 'users'])->name('admin.users');
+        Route::get('/users/create', [AdminController::class, 'createUser'])->name('admin.users.create');
+        Route::post('/users', [AdminController::class, 'storeUser'])->name('admin.users.store');
+        Route::get('/users/{user}/edit', [AdminController::class, 'editUser'])->name('admin.users.edit');
+        
+        // Roles management
+        Route::get('/roles', [AdminController::class, 'roles'])->name('admin.roles');
+        Route::get('/roles/create', [AdminController::class, 'createRole'])->name('admin.roles.create');
+        Route::post('/roles', [AdminController::class, 'storeRole'])->name('admin.roles.store');
+        
+        // Enrollments management
+        Route::get('/enrollments', [AdminController::class, 'enrollments'])->name('admin.enrollments');
+        Route::get('/enrollments/create', [AdminController::class, 'createEnrollment'])->name('admin.enrollments.create');
+        Route::post('/enrollments', [AdminController::class, 'storeEnrollment'])->name('admin.enrollments.store');
+        
+        // Add all other admin routes here
+    });
 });
-
 
 // Test route to check authentication and roles
 Route::get('/test', function () {

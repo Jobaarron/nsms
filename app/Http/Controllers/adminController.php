@@ -6,18 +6,18 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Artisan;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 
 class AdminController extends Controller
 {
-        public function index()
+    public function index()
     {
         return view('admin.index');
     }
-    /**
-     * Show admin login form
-     */
+    
     public function showLoginForm()
     {
         // If already logged in and is admin, redirect to dashboard
@@ -38,15 +38,42 @@ class AdminController extends Controller
             'password' => 'required',
         ]);
         
-        if (Auth::attempt($credentials)) {
+        $remember = $request->has('remember');
+        
+        if (Auth::attempt($credentials, $remember)) {
             $request->session()->regenerate();
             
+            $user = Auth::user();
+            
+            // Check if the required tables exist
+            if (!Schema::hasTable('roles') || !Schema::hasTable('model_has_roles')) {
+                // Redirect to admin generator if tables don't exist
+                return redirect()->route('show.admin.generator')
+                    ->with('error', 'Permission tables do not exist. Please set up the admin role first.');
+            }
+            
+            // Check if admin role exists
+            $adminRoleExists = Role::where('name', 'admin')->exists();
+            if (!$adminRoleExists) {
+                // Redirect to admin generator if admin role doesn't exist
+                return redirect()->route('show.admin.generator')
+                    ->with('error', 'Admin role does not exist. Please set up the admin role first.');
+            }
+            
             // Check if user has admin role
-            if (Auth::user()->hasRole('admin')) {
-                return redirect()->route('admin.dashboard');
-            } else {
+            try {
+                if ($user->hasRole('admin')) {
+                    // Redirect to intended URL or dashboard
+                    return redirect()->intended(route('admin.dashboard'))
+                        ->with('success', 'Welcome to the admin dashboard!');
+                } else {
+                    Auth::logout();
+                    return back()->with('error', 'You do not have admin privileges.');
+                }
+            } catch (\Exception $e) {
                 Auth::logout();
-                return back()->with('error', 'You do not have admin privileges.');
+                return redirect()->route('show.admin.generator')
+                    ->with('error', 'Error checking admin role: ' . $e->getMessage());
             }
         }
         
@@ -59,31 +86,15 @@ class AdminController extends Controller
      * Handle admin logout
      */
     public function logout(Request $request)
-    {
-        Auth::logout();
-        
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-        
-        return redirect()->route('admin.login');
-    }
+{
+    Auth::logout();
     
-    /**
-     * Show admin generator form
-     */
-    public function showGeneratorForm()
-    {
-        // Check if admin role exists
-        $adminRoleExists = Role::where('name', 'admin')->exists();
-        
-        // Check if any admin users exist (only if the role exists)
-        $adminExists = false;
-        if ($adminRoleExists) {
-            $adminExists = User::role('admin')->exists();
-        }
-        
-        return view('admin.admin-generator', compact('adminRoleExists', 'adminExists'));
-    }
+    $request->session()->invalidate();
+    $request->session()->regenerateToken();
+    
+    return redirect()->route('admin.login')
+        ->with('success', 'You have been successfully logged out.');
+}
     
     /**
      * Generate admin user
@@ -95,6 +106,26 @@ class AdminController extends Controller
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
         ]);
+        
+        // Check if permission tables exist
+        if (!Schema::hasTable('roles') || !Schema::hasTable('permissions')) {
+            // Publish and run migrations
+            try {
+                Artisan::call('vendor:publish', [
+                    '--provider' => 'Spatie\Permission\PermissionServiceProvider',
+                    '--tag' => 'migrations'
+                ]);
+                
+                Artisan::call('migrate');
+                
+                // Check again after migration
+                if (!Schema::hasTable('roles') || !Schema::hasTable('permissions')) {
+                    return back()->with('error', 'Failed to create permission tables. Please run migrations manually.');
+                }
+            } catch (\Exception $e) {
+                return back()->with('error', 'Error running migrations: ' . $e->getMessage());
+            }
+        }
         
         // Check if admin role exists, if not create it
         $adminRole = Role::where('name', 'admin')->first();
@@ -127,6 +158,18 @@ class AdminController extends Controller
         // Assign admin role
         $user->assignRole('admin');
         
-        return redirect()->back()->with('success', 'Admin user created successfully! You can now log in with these credentials.');
+        // Log in the new admin user
+        Auth::login($user);
+        
+        return redirect()->route('admin.dashboard')
+            ->with('success', 'Admin user created successfully! You are now logged in as an administrator.');
     }
+//     public function __construct()
+// {
+//     // Apply auth middleware to all methods except showLoginForm and login
+//     $this->middleware('auth')->except(['showLoginForm', 'login', 'showGeneratorForm', 'generateAdmin']);
+    
+//     // Once the admin middleware is working, you can uncomment this:
+//     // $this->middleware('admin')->except(['showLoginForm', 'login', 'showGeneratorForm', 'generateAdmin']);
+// }
 }
