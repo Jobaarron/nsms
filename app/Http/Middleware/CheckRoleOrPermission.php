@@ -4,22 +4,33 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Spatie\Permission\Exceptions\UnauthorizedException;
+use Illuminate\Support\Facades\Auth;
 
 class CheckRoleOrPermission
 {
-    public function handle(Request $request, Closure $next, $roleOrPermission)
+    /**
+     * Handle an incoming request.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Closure  $next
+     * @param  string|array  $rolesOrPermissions
+     * @return mixed
+     */
+    public function handle(Request $request, Closure $next, $rolesOrPermissions)
     {
-        if (! $request->user()) {
-            throw UnauthorizedException::notLoggedIn();
+        // Check if user is logged in
+        if (!Auth::check()) {
+            return redirect()->route('admin.login')
+                ->with('error', 'You must be logged in to access this area.');
         }
 
-        $rolesOrPermissions = is_array($roleOrPermission)
-            ? $roleOrPermission
-            : explode('|', $roleOrPermission);
+        // Convert pipe-separated string to array
+        $rolesOrPermissions = is_array($rolesOrPermissions) ? $rolesOrPermissions : explode('|', $rolesOrPermissions);
 
-        if (! $request->user()->hasAnyRole($rolesOrPermissions) && ! $request->user()->hasAnyPermission($rolesOrPermissions)) {
-            throw UnauthorizedException::forRolesOrPermissions($rolesOrPermissions);
+        // Check if user has any of the specified roles or permissions
+        if (!Auth::user()->hasAnyRole($rolesOrPermissions) && !Auth::user()->hasAnyPermission($rolesOrPermissions)) {
+            return redirect()->route('home')
+                ->with('error', 'You do not have permission to access this area.');
         }
 
         return $next($request);

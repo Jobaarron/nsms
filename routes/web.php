@@ -1,24 +1,27 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\EnrollmentController;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\StudentWelcomeMail;
 use App\Models\Student;
-use App\Http\Controllers\teacherController;
-use App\Http\Controllers\adminController;
-use App\Http\Controllers\studentController;
-use App\Http\Controllers\guidancedisciplineController;
+use App\Http\Controllers\TeacherController;
+use App\Http\Controllers\AdminController;
+use App\Http\Controllers\StudentController;
+use App\Http\Controllers\GuidanceDisciplineController;
 use Spatie\Permission\Middlewares\RoleMiddleware;
 use Spatie\Permission\Middlewares\PermissionMiddleware;
+use App\Http\Controllers\AdminGeneratorController;
+use App\Http\Controllers\AuthController;
 
 Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/login', function () {
-    return view('login');
-}); // Excluded in guest side
+// Route::get('/login', function () {
+//     return view('login');
+// }); // Excluded in guest side
 
 // Enrollment side
 Route::get('/enroll', function () {
@@ -56,10 +59,43 @@ Route::post('/enroll', [EnrollmentController::class, 'store'])
     //     return view('emails.student_welcome', compact('student', 'rawPassword'));
     // }); Email form sample, it does not send to the mailtrap.
 
-   
+   // Admin Generator Routes
+//    Route::get('/generate-admin', [AdminGeneratorController::class, 'showForm'])->name('show.admin.generator');
+//    Route::post('/generate-admin', [AdminGeneratorController::class, 'generateAdmin'])->name('generate.admin');
+//    Route::post('/admin/login', [AdminController::class, 'adminLogin'])->name('admin.login.submit');
+//    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 
-Route::get('/teacher', [teacherController::class, 'index']);
-Route::get('/admin', [adminController::class, 'index']);
-Route::get('/student', [studentController::class, 'index']);
-Route::get('/guidance', [guidancedisciplineController::class, 'index']);
+// Admin Generator (accessible without login for initial setup)
+Route::get('/generate-admin', [AdminController::class, 'showGeneratorForm'])->name('show.admin.generator');
+Route::post('/generate-admin', [AdminController::class, 'generateAdmin'])->name('generate.admin');
+
+// Admin routes
+Route::prefix('admin')->group(function () {
+    // Admin login routes (public)
+    Route::get('/login', [AdminController::class, 'showLoginForm'])->name('admin.login');
+    Route::post('/login', [AdminController::class, 'login'])->name('admin.login.submit');
+    
+    // Protected admin routes - temporarily remove middleware
+    Route::get('/', [AdminController::class, 'index'])->name('admin.dashboard');
+    Route::post('/logout', [AdminController::class, 'logout'])->name('admin.logout');
+});
+
+
+// Test route to check authentication and roles
+Route::get('/test', function () {
+    if (Auth::check()) {
+        return 'Logged in as: ' . Auth::user()->name . ' (Roles: ' . implode(', ', Auth::user()->getRoleNames()->toArray()) . ')';
+    } else {
+        return 'Not logged in';
+    }
+})->name('test');
+
+
+
+
+Route::get('/teacher', [TeacherController::class, 'index']);
+// Route::get('/admin', [adminController::class, 'adminindex']);
+// Route::get('/admin/login', [adminController::class, 'adminlogin']);
+Route::get('/student', [StudentController::class, 'index']);
+Route::get('/guidance', [GuidanceDisciplineController::class, 'index']);;

@@ -1,0 +1,96 @@
+:root {
+    --primary-color: #014421;
+    --secondary-color: #D0D8C3;
+    --accent-color: #2d6a3e;
+    --light-green: #e8f5e8;
+    --dark-green: #012d17;
+  }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background-color: var(--light-green);
+  }
+
+  /* Sidebar */
+  .sidebar {
+    background-color: var(--secondary-color);
+  }
+ .sidebar .nav-link button {
+  color: var(--primary-color);
+  font-weight: 600;
+  padding: 0;
+}
+
+.sidebar .nav-link button:hover {
+  background-color: transparent;
+  color: var(--accent-color);
+}
+
+.sidebar form:hover .nav-link {
+  background-color: var(--accent-color);
+  color: #fff;
+  border-radius: .25rem;
+}
+
+  /* Summary Cards */
+  .card-summary {
+    color: #fff;
+  }
+  .card-primary   { background-color: var(--primary-color); }
+  .card-secondary { background-color: var(--secondary-color); color: var(--dark-green); }
+  .card-success   { background-color: var(--accent-color); }
+  .card-dark      { background-color: var(--dark-green); }
+
+  /* Section headers */
+  .section-title {
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+    font-weight: 700;
+  }
+
+  /* Table */
+  .table thead {
+    background-color: var(--primary-color);
+    color: #fff;
+  }
+
+  /* Buttons */
+  .btn-outline-primary {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+  }
+  .btn-outline-primary:hover {
+    background-color: var(--primary-color);
+    color: #fff;
+  }
+  .btn-outline-success {
+    color: var(--accent-color);
+    border-color: var(--accent-color);
+  }
+  .btn-outline-success:hover {
+    background-color: var(--accent-color);
+    color: #fff;
+  }
+  .btn-outline-dark {
+    color: var(--dark-green);
+    border-color: var(--dark-green);
+  }
+  .btn-outline-dark:hover {
+    background-color: var(--dark-green);
+    color: #fff;
+  }
+  .sidebar .nav-link.disabled {
+color: var(--secondary-color) !important;
+opacity: 0.6;
+cursor: not-allowed;
+pointer-events: none;
+}
+
+.sidebar .nav-link.disabled:hover {
+background-color: transparent !important;
+color: var(--secondary-color) !important;
+}
+
+.sidebar .nav-link.disabled i {
+opacity: 0.5;
+}

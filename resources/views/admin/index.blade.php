@@ -14,101 +14,7 @@
 
   <!-- App CSS & JS (includes Bootstrap 5 via Vite) -->
   @vite(['resources/sass/app.scss','resources/js/app.js'])
-
-  <style>
-    /* Color Palette from layout.blade.php */
-    :root {
-      --primary-color: #014421;
-      --secondary-color: #D0D8C3;
-      --accent-color: #2d6a3e;
-      --light-green: #e8f5e8;
-      --dark-green: #012d17;
-    }
-
-    body {
-      font-family: 'Nunito', sans-serif;
-      background-color: var(--light-green);
-    }
-
-    /* Sidebar */
-    .sidebar {
-      background-color: var(--secondary-color);
-    }
-    .sidebar .nav-link {
-      color: var(--primary-color);
-      font-weight: 600;
-      padding: .75rem 1rem;
-    }
-    .sidebar .nav-link.active,
-    .sidebar .nav-link:hover {
-      background-color: var(--accent-color);
-      color: #fff;
-      border-radius: .25rem;
-    }
-
-    /* Summary Cards */
-    .card-summary {
-      color: #fff;
-    }
-    .card-primary   { background-color: var(--primary-color); }
-    .card-secondary { background-color: var(--secondary-color); color: var(--dark-green); }
-    .card-success   { background-color: var(--accent-color); }
-    .card-dark      { background-color: var(--dark-green); }
-
-    /* Section headers */
-    .section-title {
-      color: var(--primary-color);
-      margin-bottom: 1rem;
-      font-weight: 700;
-    }
-
-    /* Table */
-    .table thead {
-      background-color: var(--primary-color);
-      color: #fff;
-    }
-
-    /* Buttons */
-    .btn-outline-primary {
-      color: var(--primary-color);
-      border-color: var(--primary-color);
-    }
-    .btn-outline-primary:hover {
-      background-color: var(--primary-color);
-      color: #fff;
-    }
-    .btn-outline-success {
-      color: var(--accent-color);
-      border-color: var(--accent-color);
-    }
-    .btn-outline-success:hover {
-      background-color: var(--accent-color);
-      color: #fff;
-    }
-    .btn-outline-dark {
-      color: var(--dark-green);
-      border-color: var(--dark-green);
-    }
-    .btn-outline-dark:hover {
-      background-color: var(--dark-green);
-      color: #fff;
-    }
-    .sidebar .nav-link.disabled {
-  color: var(--secondary-color) !important;
-  opacity: 0.6;
-  cursor: not-allowed;
-  pointer-events: none;
-}
-
-.sidebar .nav-link.disabled:hover {
-  background-color: transparent !important;
-  color: var(--secondary-color) !important;
-}
-
-.sidebar .nav-link.disabled i {
-  opacity: 0.5;
-}
-  </style>
+  @vite(['resources/css/index_admin.css'])
 </head>
 <body>
   <div class="container-fluid">
@@ -123,35 +29,42 @@
             </a>
           </li>
           <li class="nav-item mb-2">
-            <span class="nav-link disabled d-flex justify-content-between align-items-center">
-              <span><i class="ri-user-line me-2"></i>Manage Users</span>
-              <small class="badge bg-secondary">Soon</small>
-            </span>
+            <a class="nav-link" href="#">
+              <i class="ri-shield-user-line me-2"></i>Roles & Access
+            </a>
           </li>
           <li class="nav-item mb-2">
-            <span class="nav-link disabled d-flex justify-content-between align-items-center">
-              <span><i class="ri-shield-user-line me-2"></i>Roles & Access</span>
-              <small class="badge bg-secondary">Soon</small>
-            </span>
+            <a class="nav-link" href="#">
+              <i class="ri-user-line me-2"></i>Manage Users
+            </a>
           </li>
           <li class="nav-item mb-2">
-            <span class="nav-link disabled d-flex justify-content-between align-items-center">
-              <span><i class="ri-book-open-line me-2"></i>Enrollments</span>
-              <small class="badge bg-secondary">Soon</small>
-            </span>
+            <a class="nav-link" href="#">
+              <i class="ri-book-open-line me-2"></i>Enrollments
+            </a>
           </li>
-          <li class="nav-item mb-2">
-            <span class="nav-link disabled d-flex justify-content-between align-items-center">
-              <span><i class="ri-file-list-3-line me-2"></i>Reports</span>
-              <small class="badge bg-secondary">Soon</small>
-            </span>
-          </li>
-          <li class="nav-item">
-            <span class="nav-link disabled d-flex justify-content-between align-items-center">
-              <span><i class="ri-cash-line me-2"></i>Cashier</span>
-              <small class="badge bg-secondary">Soon</small>
-            </span>
-          </li>
+          <form method="POST" action="{{ route('admin.logout') }}" class="d-inline">
+            @csrf
+            <button type="submit" class="btn btn-outline-danger">
+                <i class="ri-logout-box-line me-1"></i>Logout
+            </button>
+        </form>
+          {{-- <li class="nav-item mb-2">
+            <a class="nav-link" href="#">
+              <i class="ri-file-list-3-line me-2"></i>Reports
+            </a>
+          </li> To be used later or in the future --}}
+          {{-- <li class="nav-item">
+            <a class="nav-link" href="#">
+              <i class="ri-cash-line me-2"></i>Cashier
+            </a>
+          </li> To be used later or in the future --}}
+          {{-- <form method="POST" action="{{ route('logout') }}" class="d-inline">
+            @csrf
+            <button type="submit" class="btn btn-outline-danger">
+                <i class="ri-logout-box-line me-1"></i>Logout
+            </button> --}}
+        </form>
         </ul>
       </nav>
 
@@ -243,7 +156,7 @@
         </div>
 
         <!-- QUICK ACTIONS -->
-        <h4 class="section-title">Quick Actions</h4>
+        {{-- <h4 class="section-title">Quick Actions</h4>
         <div class="row g-3">
           <div class="col-md-4">
             <button class="btn btn-outline-primary w-100 py-3">
@@ -259,7 +172,7 @@
             <button class="btn btn-outline-dark w-100 py-3">
               <i class="ri-money-dollar-box-line me-2"></i>Cashier Dashboard
             </button>
-          </div>
+          </div> --}}
         </div>
       </main>
     </div>
