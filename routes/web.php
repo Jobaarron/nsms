@@ -16,9 +16,9 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-// Route::get('/login', function () {
-//     return view('login');
-// }); Excluded in guest side
+Route::get('/login', function () {
+    return view('login');
+}); // Excluded in guest side
 
 // Enrollment side
 Route::get('/enroll', function () {
@@ -33,7 +33,7 @@ Route::post('/enroll', [EnrollmentController::class, 'store'])
      ->name('enroll.store');
 
     //  Route::get('/mailtrap-test', function () {
-    //     // Create or grab a Student instance — here we fake one
+        
     //     $student = new Student([
     //         'first_name' => 'Job Aarron',
     //         'email'      => 'jobaarronmisenas26@gmail.com',
@@ -41,23 +41,20 @@ Route::post('/enroll', [EnrollmentController::class, 'store'])
     
     //     Mail::to(env('MAIL_TEST_RECIPIENT'))
     //     ->send(new StudentWelcomeMail($student, 'TestPwd123'));
-    //     if (count(Mail::failures())) {
-    //         dd('Failures: ', Mail::failures());
-    //     } Testing Purposes
-    
+       
     //     return 'Check your Mailtrap inbox!';
-    // });
+    // }); // Mailtrap Testing Purposes Do No Touch
 
-    Route::get('/test-email/student-welcome', function () {
-        $student = (object) [
-            'first_name' => 'Jane',
-            'email' => 'jane.smith@example.com'
-        ];
+    // Route::get('/test-email/student-welcome', function () {
+    //     $student = (object) [
+    //         'first_name' => 'Jane',
+    //         'email' => 'jane.smith@example.com'
+    //     ];
         
-        $rawPassword = 'TestPass456';
+    //     $rawPassword = 'TestPass456';
         
-        return view('emails.student_welcome', compact('student', 'rawPassword'));
-    });
+    //     return view('emails.student_welcome', compact('student', 'rawPassword'));
+    // }); Email form sample, it does not send to the mailtrap.
 
    
 
