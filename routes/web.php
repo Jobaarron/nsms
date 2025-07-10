@@ -102,6 +102,27 @@ Route::prefix('admin')->group(function () {
     });
 });
 
+// Inside the auth middleware group
+Route::middleware(['auth'])->group(function () {
+    // Dashboard - accessible to all authenticated users
+    Route::get('/admin', [AdminController::class, 'index'])->name('admin.dashboard');
+    Route::post('/logout', [AdminController::class, 'logout'])->name('admin.logout');
+    
+    // User management - requires 'Manage users' permission
+    Route::middleware(['permissions:Manage users'])->group(function () {
+        Route::get('/users', [AdminController::class, 'users'])->name('admin.users');
+        Route::get('/users/create', [AdminController::class, 'createUser'])->name('admin.users.create');
+        // Other user routes...
+    });
+    
+    // Role management - requires 'Roles & Access' permission
+    Route::middleware(['permissions:Roles & Access'])->group(function () {
+        Route::get('/roles', [AdminController::class, 'roles'])->name('admin.roles');
+        Route::get('/roles/create', [AdminController::class, 'createRole'])->name('admin.roles.create');
+        // Other role routes...
+    });
+});
+
 // Test route to check authentication and roles
 Route::get('/test', function () {
     if (Auth::check()) {

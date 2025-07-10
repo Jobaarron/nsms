@@ -10,13 +10,20 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Artisan;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use App\Traits\AdminAuthentication;
 
 class AdminController extends Controller
 {
+    use AdminAuthentication;
+    
     public function index()
     {
+        if ($response = $this->checkAdminAuth()) {
+            return $response;
+        }
+        
         return view('admin.index');
-    }
+    } 
     
     public function showLoginForm()
     {
@@ -172,4 +179,28 @@ class AdminController extends Controller
 //     // Once the admin middleware is working, you can uncomment this:
 //     // $this->middleware('admin')->except(['showLoginForm', 'login', 'showGeneratorForm', 'generateAdmin']);
 // }
+
+ public function users()
+    {
+        if ($response = $this->checkAdminAuth()) {
+            return $response;
+        }
+        
+        $users = User::with('roles')->get();
+        return view('admin.users.index', compact('users'));
+    }
+
+public function roles()
+{
+    // Double-check authentication
+    if (!Auth::check()) {
+        return redirect()->route('admin.login')
+            ->with('error', 'You must be logged in to access the admin area.');
+    }
+    
+    // Get all roles with their permissions
+    $roles = Role::with('permissions')->get();
+    
+    return view('admin.roles.index', compact('roles'));
+}
 }
