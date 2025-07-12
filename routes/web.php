@@ -123,7 +123,7 @@ Route::middleware(['auth'])->group(function () {
     });
 });
 
-// Test route to check authentication and roles
+// Test route to check authentication and roles (Spatie)
 Route::get('/test', function () {
     if (Auth::check()) {
         return 'Logged in as: ' . Auth::user()->name . ' (Roles: ' . implode(', ', Auth::user()->getRoleNames()->toArray()) . ')';

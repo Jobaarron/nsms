@@ -198,7 +198,6 @@ public function showGeneratorForm()
 }
 
 
-
  public function users()
     {
         if ($response = $this->checkAdminAuth()) {
