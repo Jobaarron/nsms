@@ -180,6 +180,25 @@ class AdminController extends Controller
 //     // $this->middleware('admin')->except(['showLoginForm', 'login', 'showGeneratorForm', 'generateAdmin']);
 // }
 
+/**
+ * Show the admin generator form
+ */
+public function showGeneratorForm()
+{
+    // Check if admin role exists
+    $adminRoleExists = Role::where('name', 'admin')->where('guard_name', 'web')->exists();
+    
+    // Check if any admin users exist (only if the role exists)
+    $adminExists = false;
+    if ($adminRoleExists) {
+        $adminExists = User::role('admin')->exists();
+    }
+    
+    return view('admin.admin-generator', compact('adminRoleExists', 'adminExists'));
+}
+
+
+
  public function users()
     {
         if ($response = $this->checkAdminAuth()) {
