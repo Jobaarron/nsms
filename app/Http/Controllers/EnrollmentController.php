@@ -9,7 +9,8 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 use App\Mail\StudentWelcomeMail;
 use Illuminate\Support\Facades\Mail;
-
+use Illuminate\Support\Facades\Log; // ✅ ADD THIS IMPORT
+use Spatie\Permission\Models\Role;
 
 class EnrollmentController extends Controller
 {
@@ -28,9 +29,9 @@ class EnrollmentController extends Controller
     {
         // 1) Validate all fields (including files)
         $data = $request->validate([
-            'id_photo'           => 'required|image|mimes:jpeg,png|max:2048',
-            'documents'          => 'required|array',
-            'documents.*'        => 'file|mimes:pdf,docx,jpeg,png|max:4096',
+            'id_photo'           => 'required|image|mimes:jpeg,png,jpg|max:2048',
+            'documents'          => 'required|array|min:1',
+            'documents.*'        => 'file|mimes:pdf,docx,jpeg,png,jpg|max:4096',
             'first_name'         => 'required|string|max:50',
             'middle_name'        => 'nullable|string|max:50',
             'last_name'          => 'required|string|max:50',
@@ -38,12 +39,10 @@ class EnrollmentController extends Controller
             'religion'           => 'nullable|string|max:100',
             'email'              => 'required|email|unique:students,email',
             'address'            => 'required|string|max:255',
-            // only allow these grade values:
             'grade_applied'      => [
                 'required',
                 'in:Nursery,Kinder 1,Kinder 2,Grade 1,Grade 2,Grade 3,Grade 4,Grade 5,Grade 6,Grade 7,Grade 8,Grade 9,Grade 10,Grade 11,Grade 12'
             ],
-            // strand is required only if grade is 11 or 12
             'strand'             => [
                 'nullable',
                 'required_if:grade_applied,Grade 11,Grade 12',
@@ -57,41 +56,57 @@ class EnrollmentController extends Controller
             ],
             'last_school_type'   => 'nullable|in:Public,Private',
             'last_school_name'   => 'nullable|string|max:100',
-            'medical_history'    => 'nullable|string|max:255',
-            'payment_mode'       => 'required|string|in:Cash',
+            'medical_history'    => 'nullable|string|max:1000',
+            'payment_mode'       => 'required|string|in:Cash,Online,Installment',
             'preferred_schedule' => 'nullable|date|after_or_equal:today',
         ]);
 
         // 2) Store the ID photo
-        $data['id_photo'] = $request->file('id_photo')->store('id_photos','public');
-        $docs = [];
-        if ($request->hasFile('documents')) {
-            foreach ($request->file('documents') as $doc) {
-                $docs[] = $doc->store('documents','public');
-            }
-        }
+        $data['id_photo'] = $request->file('id_photo')->store('id_photos', 'public');
 
         // 3) Store the multiple documents
-        $paths = [];
+        $documentPaths = [];
         if ($request->hasFile('documents')) {
             foreach ($request->file('documents') as $doc) {
-                $paths[] = $doc->store('documents', 'public');
-                
+                $documentPaths[] = $doc->store('documents', 'public');
             }
         }
-        $rawPassword = Str::random(10);
-        Hash::make($rawPassword);
-        $data['password'] = $rawPassword;
-        
-        $data['documents'] = json_encode($paths);
 
-        // 4) Persist to the database
+        // 4) Generate password and hash it properly
+        $rawPassword = Str::random(12);
+        $data['password'] = Hash::make($rawPassword);
+        $data['documents'] = $documentPaths;
+
+        // 5) Persist to the database
         $student = Student::create($data);
-        
-        Mail::to($student->email)->send(new StudentWelcomeMail($student, $rawPassword));
 
-        // 5) Redirect back with a success message
+        // 6) ✅ ASSIGN STUDENT ROLE - FIXED
+        try {
+            // Check if student role exists, create if not
+            $studentRole = Role::firstOrCreate([
+                'name' => 'student',
+                'guard_name' => 'web'
+            ]);
+
+            // Assign the student role to the newly created student
+            $student->assignRole('student');
+            
+        } catch (\Exception $e) {
+            // ✅ FIXED: Use proper Log facade
+            Log::error('Failed to assign student role: ' . $e->getMessage());
+        }
+
+        // 7) Send welcome email (with error handling)
+        try {
+            Mail::to($student->email)->send(new StudentWelcomeMail($student, $rawPassword));
+        } catch (\Exception $e) {
+            // ✅ FIXED: Use proper Log facade
+            Log::error('Failed to send welcome email: ' . $e->getMessage());
+        }
+
+        // 8) Redirect back with success message
         return redirect()
             ->route('enroll.create')
-            ->with('success', 'Enrollment successful!');
-    }}
+            ->with('success', 'Enrollment successful! Student role assigned and welcome email sent to ' . $student->email);
+    }
+}
