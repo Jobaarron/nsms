@@ -93,7 +93,8 @@ class EnrollmentController extends Controller
             
         } catch (\Exception $e) {
             // ✅ FIXED: Use proper Log facade
-            Log::error('Failed to assign student role: ' . $e->getMessage());
+            Log::error('Error!: ' . $e->getMessage());
+            // Log::error('Failed to assign student role: ' . $e->getMessage());
         }
 
         // 7) Send welcome email (with error handling)
@@ -101,12 +102,12 @@ class EnrollmentController extends Controller
             Mail::to($student->email)->send(new StudentWelcomeMail($student, $rawPassword));
         } catch (\Exception $e) {
             // ✅ FIXED: Use proper Log facade
-            Log::error('Failed to send welcome email: ' . $e->getMessage());
+            Log::error('Failed to send email: ' . $e->getMessage());
         }
 
         // 8) Redirect back with success message
         return redirect()
             ->route('enroll.create')
-            ->with('success', 'Enrollment successful! Student role assigned and welcome email sent to ' . $student->email);
+            ->with('success', 'Enrollment successful!  Email sent to ' . $student->email);
     }
 }
