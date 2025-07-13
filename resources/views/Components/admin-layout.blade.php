@@ -32,23 +32,24 @@
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link d-flex align-items-center py-3 px-3 rounded" href="#">
-              <i class="ri-shield-user-line me-2 fs-5"></i>
-              <span>Roles & Access</span>
+            <a class="nav-link d-flex align-items-center py-3 px-3 rounded" href="{{ route('admin.roles.access') }}">
+                <i class="ri-shield-user-line me-2 fs-5"></i>
+                <span>Roles & Access</span>
             </a>
+        </li>
           </li>
           <li class="nav-item">
-            <a class="nav-link d-flex align-items-center py-3 px-3 rounded" href="#">
-              <i class="ri-user-line me-2 fs-5"></i>
-              <span>Manage Users</span>
+            <a class="nav-link d-flex align-items-center py-3 px-3 rounded" href="{{ route('admin.manage.users') }}">
+                <i class="ri-user-settings-line me-2 fs-5"></i>
+                <span>Manage Users</span>
             </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link d-flex align-items-center py-3 px-3 rounded" href="#">
-              <i class="ri-book-open-line me-2 fs-5"></i>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link d-flex align-items-center py-3 px-3 rounded" href="{{ route('admin.enrollments') }}">
+              <i class="ri-file-list-line me-2 fs-5"></i>
               <span>Enrollments</span>
-            </a>
-          </li>
+          </a>
+      </li>
           <li class="nav-item mt-4">
             <form method="POST" action="{{ route('admin.logout') }}" class="px-3">
                 @csrf

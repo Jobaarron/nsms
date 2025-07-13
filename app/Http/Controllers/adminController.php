@@ -34,6 +34,21 @@ class AdminController extends Controller
         
         return view('admin.login');
     }
+
+    public function rolesAccess()
+    {
+        return view('admin.roles_access');
+    }
+    
+        public function manageUsers()
+    {
+        return view('admin.manage_users');
+    }
+
+    public function enrollments()
+    {
+        return view('admin.enrollments');
+    }
     
     /**
      * Handle admin login

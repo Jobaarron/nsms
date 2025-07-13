@@ -83,21 +83,25 @@ Route::prefix('admin')->group(function () {
         Route::post('/logout', [AdminController::class, 'logout'])->name('admin.logout');
         
         // Users management
-        Route::get('/users', [AdminController::class, 'users'])->name('admin.users');
-        Route::get('/users/create', [AdminController::class, 'createUser'])->name('admin.users.create');
-        Route::post('/users', [AdminController::class, 'storeUser'])->name('admin.users.store');
-        Route::get('/users/{user}/edit', [AdminController::class, 'editUser'])->name('admin.users.edit');
+        Route::middleware(['auth'])->group(function () {
+            Route::get('/admin/manage-users', [AdminController::class, 'manageUsers'])->name('admin.manage.users');
+            // Other user routes...
+        });
         
         // Roles management
-        Route::get('/roles', [AdminController::class, 'roles'])->name('admin.roles');
-        Route::get('/roles/create', [AdminController::class, 'createRole'])->name('admin.roles.create');
-        Route::post('/roles', [AdminController::class, 'storeRole'])->name('admin.roles.store');
+        Route::middleware(['auth'])->group(function () {
+            // Dashboard - accessible to all authenticated users
+            Route::get('/admin', [AdminController::class, 'index'])->name('admin.dashboard');
+            Route::post('/logout', [AdminController::class, 'logout'])->name('admin.logout');
+            
+            // Roles & Access page
+            Route::get('/admin/roles-access', [AdminController::class, 'rolesAccess'])->name('admin.roles.access');
+        });
         
-        // Enrollments management
-        Route::get('/enrollments', [AdminController::class, 'enrollments'])->name('admin.enrollments');
-        Route::get('/enrollments/create', [AdminController::class, 'createEnrollment'])->name('admin.enrollments.create');
-        Route::post('/enrollments', [AdminController::class, 'storeEnrollment'])->name('admin.enrollments.store');
+         // Enrollments management
+        Route::get('/admin/enrollments', [AdminController::class, 'enrollments'])->name('admin.enrollments');
         
+
         // Add all other admin routes here
     });
 });
@@ -110,27 +114,34 @@ Route::middleware(['auth'])->group(function () {
     
     // User management - requires 'Manage users' permission
     Route::middleware(['permissions:Manage users'])->group(function () {
-        Route::get('/users', [AdminController::class, 'users'])->name('admin.users');
-        Route::get('/users/create', [AdminController::class, 'createUser'])->name('admin.users.create');
+      
         // Other user routes...
     });
     
     // Role management - requires 'Roles & Access' permission
     Route::middleware(['permissions:Roles & Access'])->group(function () {
-        Route::get('/roles', [AdminController::class, 'roles'])->name('admin.roles');
-        Route::get('/roles/create', [AdminController::class, 'createRole'])->name('admin.roles.create');
+     
         // Other role routes...
     });
 });
 
-// Test route to check authentication and roles (Spatie)
+// Test route to check authentication, roles, and permissions (Spatie)
 Route::get('/test', function () {
     if (Auth::check()) {
-        return 'Logged in as: ' . Auth::user()->name . ' (Roles: ' . implode(', ', Auth::user()->getRoleNames()->toArray()) . ')';
+        $user = Auth::user();
+        $roles = $user->getRoleNames()->toArray();
+        $permissions = $user->getAllPermissions()->pluck('name')->toArray();
+        
+        return 'Logged in as: ' . $user->name . 
+               ' (Roles: ' . implode(', ', $roles) . ')' .
+               ' (Permissions: ' . implode(', ', $permissions) . ')';
     } else {
         return 'Not logged in';
     }
 })->name('test');
+
+
+
 
 
 
