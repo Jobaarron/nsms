@@ -14,27 +14,51 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
-document.addEventListener('DOMContentLoaded', function() {
-  const grade  = document.getElementById('grade_applied');
-  const group  = document.getElementById('strand-group');
-  const strand = document.getElementById('strand');
-  // toggle only for these two
-  const SHOW_FOR = ['Grade 11','Grade 12'];
-
-  function toggleStrand() {
-    if (SHOW_FOR.includes(grade.value)) {
-      group.classList.remove('d-none');
-      strand.required = true;
-    } else {
-      group.classList.add('d-none');
-      strand.required = false;
-      strand.value = '';
-    }
+// Show strand field for Grade 11-12
+document.getElementById('grade_level').addEventListener('change', function() {
+  const strandGroup = document.getElementById('strand-group');
+  if (this.value === 'Grade 11' || this.value === 'Grade 12') {
+      strandGroup.classList.remove('d-none'); // Fixed: removed incomplete line
+      document.getElementById('strand').required = true;
+  } else {
+      strandGroup.classList.add('d-none');
+      document.getElementById('strand').required = false;
+      document.getElementById('strand').value = '';
   }
+});
 
-  // initialize on load
-  toggleStrand();
 
-  // re-run on every change
-  grade.addEventListener('change', toggleStrand);
+// Auto-populate guardian name from parent fields
+document.getElementById('father_name').addEventListener('input', function() {
+  if (!document.getElementById('guardian_name').value) {
+      document.getElementById('guardian_name').value = this.value;
+  }
+});
+
+document.getElementById('mother_name').addEventListener('input', function() {
+  if (!document.getElementById('guardian_name').value) {
+      document.getElementById('guardian_name').value = this.value;
+  }
+});
+
+// Auto-populate guardian contact from parent fields
+document.getElementById('father_contact').addEventListener('input', function() {
+  if (!document.getElementById('guardian_contact').value) {
+      document.getElementById('guardian_contact').value = this.value;
+  }
+});
+
+document.getElementById('mother_contact').addEventListener('input', function() {
+  if (!document.getElementById('guardian_contact').value) {
+      document.getElementById('guardian_contact').value = this.value;
+  }
+});
+
+// Check if strand should be shown on page load (for old input)
+document.addEventListener('DOMContentLoaded', function() {
+  const gradeLevel = document.getElementById('grade_level').value;
+  if (gradeLevel === 'Grade 11' || gradeLevel === 'Grade 12') {
+      document.getElementById('strand-group').classList.remove('d-none');
+      document.getElementById('strand').required = true;
+  }
 });

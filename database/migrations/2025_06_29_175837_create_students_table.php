@@ -11,52 +11,104 @@ return new class extends Migration
         Schema::create('students', function (Blueprint $table) {
             $table->id();
             
-            // FIXED: Add enrollment status and academic year
-            $table->enum('enrollment_status', ['pending', 'approved', 'rejected', 'enrolled'])->default('pending');
+            // Link to users table for authentication
+            $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('cascade');
+            
+            // Student identification
+            $table->string('student_id')->unique()->nullable(); // e.g., STU-2024-001
+            $table->string('lrn')->unique()->nullable(); // Learner Reference Number
+            
+            // ENROLLMENT STATUS AND ACADEMIC INFO
+            $table->enum('enrollment_status', ['pending', 'approved', 'rejected', 'enrolled', 'dropped', 'graduated'])->default('pending');
             $table->string('academic_year')->default('2024-2025');
             $table->foreignId('approved_by')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamp('approved_at')->nullable();
+            $table->timestamp('enrolled_at')->nullable();
             
-            // file paths
-            $table->string('id_photo');
-            $table->json('documents');
+            // FILE PATHS
+            $table->string('id_photo')->nullable();
+            $table->json('documents')->nullable(); // Birth certificate, report cards, etc.
             
-            // personal info
+            // PERSONAL INFORMATION
             $table->string('first_name');
             $table->string('middle_name')->nullable();
             $table->string('last_name');
-            $table->date('dob');
+            $table->string('suffix')->nullable(); // Jr., Sr., III, etc.
+            $table->date('date_of_birth');
+            $table->string('place_of_birth')->nullable();
+            $table->enum('gender', ['male', 'female'])->nullable();
+            $table->enum('civil_status', ['single', 'married', 'widowed', 'separated'])->default('single');
+            $table->string('nationality')->default('Filipino');
             $table->string('religion')->nullable();
-            $table->string('email')->unique();
-            $table->string('password');
+            $table->string('contact_number')->nullable();
+            $table->string('email')->unique()->nullable(); // Make nullable since user_id handles auth
             $table->text('address');
+            $table->string('barangay')->nullable();
+            $table->string('city')->nullable();
+            $table->string('province')->nullable();
+            $table->string('zip_code')->nullable();
             
-            // grade & strand
-            $table->string('grade_applied');
-            $table->string('strand')->nullable();
+            // ACADEMIC INFORMATION
+            $table->string('grade_level'); // Changed from grade_applied
+            $table->string('strand')->nullable(); // For SHS students
+            $table->string('track')->nullable(); // Academic, TVL, Sports, Arts & Design
+            $table->string('section')->nullable();
+            $table->enum('student_type', ['new', 'transferee', 'returnee', 'continuing'])->default('new');
             
-            // guardian
-            $table->string('guardian_name');
+            // GUARDIAN/PARENT INFORMATION
+            $table->string('father_name')->nullable();
+            $table->string('father_occupation')->nullable();
+            $table->string('father_contact')->nullable();
+            $table->string('mother_name')->nullable();
+            $table->string('mother_occupation')->nullable();
+            $table->string('mother_contact')->nullable();
+            $table->string('guardian_name'); // Primary guardian
+            $table->string('guardian_relationship')->nullable();
             $table->string('guardian_contact');
+            $table->string('guardian_email')->nullable();
+            $table->text('guardian_address')->nullable();
             
-            // last school
-            $table->enum('last_school_type', ['Public','Private'])->nullable();
+            // PREVIOUS SCHOOL INFORMATION
+            $table->enum('last_school_type', ['public', 'private'])->nullable();
             $table->string('last_school_name')->nullable();
+            $table->string('last_school_address')->nullable();
+            $table->string('last_grade_completed')->nullable();
+            $table->year('year_graduated')->nullable();
+            $table->decimal('general_average', 5, 2)->nullable();
             
-            // medical
+            // MEDICAL AND HEALTH INFORMATION
             $table->text('medical_history')->nullable();
+            $table->json('allergies')->nullable();
+            $table->json('medications')->nullable();
+            $table->string('emergency_contact_name')->nullable();
+            $table->string('emergency_contact_number')->nullable();
+            $table->string('emergency_contact_relationship')->nullable();
             
-            // payment & scheduling
-            $table->string('payment_mode');
-            $table->boolean('is_paid')->default(false);
+            // FINANCIAL INFORMATION
+            $table->enum('payment_mode', ['cash', 'installment', 'scholarship', 'voucher'])->default('cash');
+            $table->boolean('is_scholar')->default(false);
+            $table->string('scholarship_type')->nullable();
+            $table->decimal('scholarship_amount', 10, 2)->nullable();
+            $table->boolean('is_pwd')->default(false); // Person with Disability
+            $table->boolean('is_indigenous')->default(false); // Indigenous People
+            
+            // ENROLLMENT SCHEDULING
             $table->date('preferred_schedule')->nullable();
+            $table->timestamp('enrollment_date')->nullable();
             
-            // timestamps
+            // STATUS TRACKING
+            $table->boolean('is_active')->default(true);
+            $table->text('remarks')->nullable();
+            
+            // TIMESTAMPS
             $table->timestamps();
             
-            // FIXED: Add indexes for better performance
+            // INDEXES FOR BETTER PERFORMANCE
             $table->index(['enrollment_status', 'academic_year']);
-            $table->index('grade_applied');
+            $table->index(['grade_level', 'section']);
+            $table->index(['student_type', 'is_active']);
+            $table->index('last_name');
+            $table->index('user_id');
         });
     }
 

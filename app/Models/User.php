@@ -110,12 +110,23 @@ class User extends Authenticatable
         return $this->disciplineOfficer()->exists() && $this->disciplineOfficer->is_active;
     }
 
+    public function student()
+{
+    return $this->hasOne(Student::class);
+}
+
+    public function isStudent()
+    {
+        return $this->student()->exists() && $this->student->is_active;
+    }
+
     public function getUserRole()
     {
         if ($this->isAdmin()) return 'admin';
         if ($this->isTeacher()) return 'teacher';
         if ($this->isGuidanceCounsellor()) return 'guidance_counsellor';
         if ($this->isDisciplineOfficer()) return 'discipline_officer';
+        if ($this->isStudent()) return 'student';
         return 'user';
     }
 
