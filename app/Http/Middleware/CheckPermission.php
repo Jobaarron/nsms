@@ -33,6 +33,8 @@ class CheckPermission
                 return $next($request);
             }
         }
+        
+        
 
         return redirect()->route('/')
             ->with('error', 'You do not have permission to access this area.');

@@ -50,7 +50,7 @@
                         
                         @if(!$adminRoleExists)
                             <div class="alert alert-info mb-4">
-                                <i class="ri-information-line me-2"></i>Admin role not found. Submitting this form will create the admin role with basic permissions.
+                                <i class="ri-information-line me-2"></i>Admin Role not found. Submitting this form will create the admin role with basic permissions.
                             </div>
                         @elseif($adminExists)
                             <div class="alert alert-info mb-4">
@@ -61,39 +61,123 @@
                         <form method="POST" action="{{ route('generate.admin') }}">
                             @csrf
                             
+                            <!-- Basic User Information -->
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="name" class="form-label">Full Name</label>
+                                        <input id="name" type="text" class="form-control @error('name') is-invalid @enderror" 
+                                               name="name" value="{{ old('name') }}" required autofocus>
+                                        @error('name')
+                                            <span class="invalid-feedback" role="alert">
+                                                <strong>{{ $message }}</strong>
+                                            </span>
+                                        @enderror
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="email" class="form-label">Email Address</label>
+                                        <input id="email" type="email" class="form-control @error('email') is-invalid @enderror" 
+                                               name="email" value="{{ old('email') }}" required>
+                                        @error('email')
+                                            <span class="invalid-feedback" role="alert">
+                                                <strong>{{ $message }}</strong>
+                                            </span>
+                                        @enderror
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Admin Specific Information -->
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="employee_id" class="form-label">Employee ID</label>
+                                        <input id="employee_id" type="text" class="form-control @error('employee_id') is-invalid @enderror" 
+                                               name="employee_id" value="{{ old('employee_id') }}" placeholder="e.g., ADM001">
+                                        @error('employee_id')
+                                            <span class="invalid-feedback" role="alert">
+                                                <strong>{{ $message }}</strong>
+                                            </span>
+                                        @enderror
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="department" class="form-label">Department</label>
+                                        <select id="department" class="form-control @error('department') is-invalid @enderror" name="department">
+                                            <option value="">Select Department</option>
+                                            <option value="Administration" {{ old('department') == 'Administration' ? 'selected' : '' }}>Administration</option>
+                                            <option value="Academic Affairs" {{ old('department') == 'Academic Affairs' ? 'selected' : '' }}>Academic Affairs</option>
+                                            <option value="Student Affairs" {{ old('department') == 'Student Affairs' ? 'selected' : '' }}>Student Affairs</option>
+                                            <option value="Finance" {{ old('department') == 'Finance' ? 'selected' : '' }}>Finance</option>
+                                            <option value="IT Department" {{ old('department') == 'IT Department' ? 'selected' : '' }}>IT Department</option>
+                                            <option value="Human Resources" {{ old('department') == 'Human Resources' ? 'selected' : '' }}>Human Resources</option>
+                                        </select>
+                                        @error('department')
+                                            <span class="invalid-feedback" role="alert">
+                                                <strong>{{ $message }}</strong>
+                                            </span>
+                                        @enderror
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Admin Level Selection -->
                             <div class="mb-3">
-                                <label for="name" class="form-label">Name</label>
-                                <input id="name" type="text" class="form-control @error('name') is-invalid @enderror" name="name" value="{{ old('name') }}" required autofocus>
-                                @error('name')
+                                <label for="admin_level" class="form-label">Admin Level</label>
+                                <select id="admin_level" class="form-control @error('admin_level') is-invalid @enderror" 
+                                        name="admin_level" required>
+                                    <option value="">Select Admin Level</option>
+                                    <option value="super_admin" {{ old('admin_level') == 'super_admin' ? 'selected' : '' }}>
+                                        Super Admin (Full System Access)
+                                    </option>
+                                    <option value="admin" {{ old('admin_level') == 'admin' ? 'selected' : '' }}>
+                                        Admin (Standard Admin Access)
+                                    </option>
+                                    <option value="moderator" {{ old('admin_level') == 'moderator' ? 'selected' : '' }}>
+                                        Moderator (Limited Admin Access)
+                                    </option>
+                                </select>
+                                @error('admin_level')
                                     <span class="invalid-feedback" role="alert">
                                         <strong>{{ $message }}</strong>
                                     </span>
                                 @enderror
+                                <div class="form-text">
+                                    <small>
+                                        <strong>Super Admin:</strong> Full system access including user management, system settings<br>
+                                        <strong>Admin:</strong> Standard admin features, user management, reports<br>
+                                        <strong>Moderator:</strong> Basic admin features, limited access
+                                    </small>
+                                </div>
                             </div>
                             
-                            <div class="mb-3">
-                                <label for="email" class="form-label">Email Address</label>
-                                <input id="email" type="email" class="form-control @error('email') is-invalid @enderror" name="email" value="{{ old('email') }}" required>
-                                @error('email')
-                                    <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $message }}</strong>
-                                    </span>
-                                @enderror
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="password" class="form-label">Password</label>
-                                <input id="password" type="password" class="form-control @error('password') is-invalid @enderror" name="password" required>
-                                @error('password')
-                                    <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $message }}</strong>
-                                    </span>
-                                @enderror
-                            </div>
-                            
-                            <div class="mb-4">
-                                <label for="password-confirm" class="form-label">Confirm Password</label>
-                                <input id="password-confirm" type="password" class="form-control" name="password_confirmation" required>
+                            <!-- Password Fields -->
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="password" class="form-label">Password</label>
+                                        <input id="password" type="password" class="form-control @error('password') is-invalid @enderror" 
+                                               name="password" required>
+                                        @error('password')
+                                            <span class="invalid-feedback" role="alert">
+                                                <strong>{{ $message }}</strong>
+                                            </span>
+                                        @enderror
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="mb-4">
+                                        <label for="password-confirm" class="form-label">Confirm Password</label>
+                                        <input id="password-confirm" type="password" class="form-control" 
+                                               name="password_confirmation" required>
+                                    </div>
+                                </div>
                             </div>
                             
                             <div class="d-grid">

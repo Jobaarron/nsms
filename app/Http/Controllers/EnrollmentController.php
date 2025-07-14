@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 use App\Mail\StudentWelcomeMail;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Log; // ✅ ADD THIS IMPORT
+use Illuminate\Support\Facades\Log;
 use Spatie\Permission\Models\Role;
 
 class EnrollmentController extends Controller
@@ -80,7 +80,7 @@ class EnrollmentController extends Controller
         // 5) Persist to the database
         $student = Student::create($data);
 
-        // 6) ✅ ASSIGN STUDENT ROLE - FIXED
+        // 6) ASSIGN STUDENT ROLE - FIXED
         try {
             // Check if student role exists, create if not
             $studentRole = Role::firstOrCreate([
@@ -92,7 +92,7 @@ class EnrollmentController extends Controller
             $student->assignRole('student');
             
         } catch (\Exception $e) {
-            // ✅ FIXED: Use proper Log facade
+            //  FIXED: Use proper Log facade
             Log::error('Error!: ' . $e->getMessage());
             // Log::error('Failed to assign student role: ' . $e->getMessage());
         }
@@ -101,7 +101,7 @@ class EnrollmentController extends Controller
         try {
             Mail::to($student->email)->send(new StudentWelcomeMail($student, $rawPassword));
         } catch (\Exception $e) {
-            // ✅ FIXED: Use proper Log facade
+            //  FIXED: Use proper Log facade
             Log::error('Failed to send email: ' . $e->getMessage());
         }
 

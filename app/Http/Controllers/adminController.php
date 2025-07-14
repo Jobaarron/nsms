@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Artisan;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Illuminate\Support\Facades\DB;
+use App\Models\Admin;
 use App\Traits\AdminAuthentication;
 
 class AdminController extends Controller
@@ -118,20 +120,21 @@ class AdminController extends Controller
         ->with('success', 'You have been successfully logged out.');
 }
     
-    /**
-     * Generate admin user
-     */
+    
+    // Generate admin user
     public function generateAdmin(Request $request)
     {
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
+            'employee_id' => 'nullable|string|unique:admins',
+            'department' => 'nullable|string|max:255',
+            'admin_level' => 'required|in:super_admin,admin,moderator',
         ]);
-        
+
         // Check if permission tables exist
         if (!Schema::hasTable('roles') || !Schema::hasTable('permissions')) {
-            // Publish and run migrations
             try {
                 Artisan::call('vendor:publish', [
                     '--provider' => 'Spatie\Permission\PermissionServiceProvider',
@@ -140,7 +143,6 @@ class AdminController extends Controller
                 
                 Artisan::call('migrate');
                 
-                // Check again after migration
                 if (!Schema::hasTable('roles') || !Schema::hasTable('permissions')) {
                     return back()->with('error', 'Failed to create permission tables. Please run migrations manually.');
                 }
@@ -148,44 +150,91 @@ class AdminController extends Controller
                 return back()->with('error', 'Error running migrations: ' . $e->getMessage());
             }
         }
+
+        DB::beginTransaction();
         
-        // Check if admin role exists, if not create it
-        $adminRole = Role::where('name', 'admin')->first();
-        
-        if (!$adminRole) {
-            // Create admin role
-            $adminRole = Role::create(['name' => 'admin']);
-            
-            // Create basic permissions
-            $permissions = [
-                'Dashboard',
-                'Roles & Access',
-                'Manage users',
-                'Enrollments'
-            ];
-            
-            foreach ($permissions as $permissionName) {
-                $permission = Permission::firstOrCreate(['name' => $permissionName]);
-                $adminRole->givePermissionTo($permission);
-            }
+        try {
+            // Create user first
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+            ]);
+
+            // Create admin record
+            $admin = Admin::create([
+                'user_id' => $user->id,
+                'employee_id' => $request->employee_id,
+                'department' => $request->department,
+                'admin_level' => $request->admin_level,
+                'is_active' => true,
+            ]);
+
+            // Setup roles and permissions
+            $this->setupAdminRoleAndPermissions($user, $request->admin_level);
+
+            DB::commit();
+
+            // Log in the new admin user
+            Auth::login($user);
+
+            return redirect()->route('admin.dashboard')
+                ->with('success', 'Admin user created successfully! You are now logged in as an administrator.');
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            return back()->with('error', 'Error creating admin: ' . $e->getMessage());
         }
-        
-        // Create admin user
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-        ]);
-        
-        // Assign admin role
-        $user->assignRole('admin');
-        
-        // Log in the new admin user
-        Auth::login($user);
-        
-        return redirect()->route('admin.dashboard')
-            ->with('success', 'Admin user created successfully! You are now logged in as an administrator.');
     }
+
+    private function setupAdminRoleAndPermissions(User $user, string $adminLevel)
+    {
+        // Create or get admin role
+        $adminRole = Role::firstOrCreate(['name' => $adminLevel]);
+
+        // Define permissions based on admin level
+        $permissions = $this->getPermissionsByLevel($adminLevel);
+
+        foreach ($permissions as $permissionName) {
+            $permission = Permission::firstOrCreate(['name' => $permissionName]);
+            $adminRole->givePermissionTo($permission);
+        }
+
+        // Assign role to user
+        $user->assignRole($adminLevel);
+    }
+
+    private function getPermissionsByLevel(string $level): array
+    {
+        $basePermissions = [
+            'Dashboard',
+            'View Reports',
+        ];
+
+        $adminPermissions = [
+            'Manage Users',
+            'Manage Enrollments',
+            'Manage Students',
+            'View Analytics',
+        ];
+
+        $superAdminPermissions = [
+            'Roles & Access',
+            'System Settings',
+            'Manage Admins',
+            'Database Management',
+            'Backup & Restore',
+        ];
+
+        return match($level) {
+            'moderator' => $basePermissions,
+            'admin' => array_merge($basePermissions, $adminPermissions),
+            'super_admin' => array_merge($basePermissions, $adminPermissions, $superAdminPermissions),
+            default => $basePermissions,
+        };
+    }
+     
+    
 //     public function __construct()
 // {
 //     // Apply auth middleware to all methods except showLoginForm and login
