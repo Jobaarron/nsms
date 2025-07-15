@@ -21,12 +21,36 @@ class AdminController extends Controller
     
     public function index()
     {
+        $totalUsers = User::count();
+        $totalRoles = Role::count();
+
         if ($response = $this->checkAdminAuth()) {
             return $response;
         }
+        $activeUsers = User::where('status', 'active')->count();
+        $recentUsers = User::where('created_at', '>=', now()->subDays(30))->count();
+
+         return view('admin.index', compact(
+            'totalUsers',
+            'totalRoles',
+            'activeUsers',
+            'recentUsers'
+        ));
+    }
+    
+    public function getStats()
+    {
+        $stats = [
+            'total_users' => User::count(),
+            'total_roles' => Role::count(),
+            'active_users' => User::where('status', 'active')->count(),
+            'recent_users' => User::where('created_at', '>=', now()->subDays(30))->count(),
+        ];
         
-        return view('admin.index');
-    } 
+        return response()->json($stats);
+    }
+    
+    
     
     public function showLoginForm()
     {

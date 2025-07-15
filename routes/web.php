@@ -81,6 +81,11 @@ Route::prefix('admin')->group(function () {
     // Protected admin routes - use auth middleware
     Route::middleware(['auth'])->group(function () {
         // Dashboard
+        
+        Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+            Route::get('/dashboard', [AdminController::class, 'index'])->name('dashboard');
+            Route::get('/dashboard/stats', [AdminController::class, 'getStats'])->name('dashboard.stats');
+        });
         Route::get('/', [AdminController::class, 'index'])->name('admin.dashboard');
         Route::post('/logout', [AdminController::class, 'logout'])->name('admin.logout');
         

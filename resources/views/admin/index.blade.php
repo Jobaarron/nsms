@@ -11,7 +11,7 @@
           <i class="ri-user-3-line display-6 me-3"></i>
           <div>
             <div>Total Users</div>
-            <h3>--</h3>
+            <h3 id="total-users">{{ $totalUsers ?? 0 }}</h3>
           </div>
         </div>
       </div>
@@ -22,12 +22,12 @@
           <i class="ri-shield-user-line display-6 me-3"></i>
           <div>
             <div>Roles Defined</div>
-            <h3>--</h3>
+            <h3 id="total-roles">{{ $totalRoles ?? 0 }}</h3>
           </div>
         </div>
       </div>
     </div>
-    <div class="col-6 col-lg-3">
+    {{-- <div class="col-6 col-lg-3">
       <div class="card card-summary card-success h-100">
         <div class="card-body d-flex align-items-center">
           <i class="ri-book-open-line display-6 me-3"></i>
@@ -37,8 +37,8 @@
           </div>
         </div>
       </div>
-    </div>
-    <div class="col-6 col-lg-3">
+    </div>  do not touch also--}}
+    {{-- <div class="col-6 col-lg-3">
       <div class="card card-summary card-success h-100">
         <div class="card-body d-flex align-items-center">
           <i class="ri-book-mark-line display-6 me-3"></i>
@@ -48,11 +48,11 @@
           </div>
         </div>
       </div>
-    </div>
+    </div> --}}
   </div>
 
   <!-- RECENT ENROLLMENTS TABLE -->
-  <h4 class="section-title">Latest Enrollments</h4>
+  {{-- <h4 class="section-title">Latest Enrollments</h4>
   <div class="table-responsive mb-5">
     <table class="table table-striped align-middle">
       <thead>
@@ -83,6 +83,29 @@
           </td>
         </tr>
       </tbody>
-    </table>
+    </table> --}}
   </div>
+
+  {{-- internal js dahil ayaw gumana ng internal js via resources using vite syntax --}}
+  <script>
+    // Auto-refresh sa dashboard stats every 30 seconds
+    setInterval(function() {
+      refreshDashboardStats();
+    }, 30000);
+
+    function refreshDashboardStats() {
+      fetch('{{ route("admin.dashboard.stats") }}')
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById('total-users').textContent = data.total_users;
+          document.getElementById('total-roles').textContent = data.total_roles;
+          document.getElementById('active-users').textContent = data.active_users;
+          document.getElementById('recent-users').textContent = data.recent_users;
+        })
+        .catch(error => {
+          console.error('Error fetching dashboard stats:', error);
+        });
+    }
+  </script>
+
 </x-admin-layout>

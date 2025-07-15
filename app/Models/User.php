@@ -17,6 +17,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'status',
     ];
 
     protected $hidden = [
@@ -31,6 +32,17 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
+    }
+
+    public function scopeRecent($query, $days = 30)
+    {
+        return $query->where('created_at', '>=', now()->subDays($days));
+    }
+
 
     // RELATIONSHIPS
     public function approvedStudents()
