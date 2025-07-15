@@ -1,6 +1,6 @@
 <x-admin-layout>
     <head>
-        {{-- @vite(['resources/js/admin-enrollments.js']) --}}
+        {{-- @vite(['resources/js/admin-enrollments.js']) External JS is not working so, refer to the script below --}}
     </head>
     <x-slot name="title">Enrollments Management</x-slot>
 

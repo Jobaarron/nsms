@@ -11,8 +11,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">  
       <!-- Bootstrap 5 / CSS / JS -->
       @vite(['resources/sass/app.scss','resources/js/app.js'])
-      @vite('resources/css/landingpage.css')
-      @vite('resources/js/landingpage.js')
+      @vite(['resources/css/landingpage.css'])
+      @vite(['resources/js/landingpage.js'])
 </head>
 <body>
     <!-- Navigation -->
