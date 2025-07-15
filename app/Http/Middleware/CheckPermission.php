@@ -33,10 +33,9 @@ class CheckPermission
                 return $next($request);
             }
         }
-        
-        
 
-        return redirect()->route('/')
+        // If no permissions match, deny access
+        return redirect()->route('admin.dashboard')
             ->with('error', 'You do not have permission to access this area.');
     }
 }

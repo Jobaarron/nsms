@@ -182,3 +182,51 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 5000);
     }
 });
+
+    // Select All functionality
+    document.getElementById('selectAll').addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('.student-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+        updateBulkActions();
+    });
+
+    // Individual checkbox functionality
+    document.querySelectorAll('.student-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', updateBulkActions);
+    });
+
+    function updateBulkActions() {
+        const selectedCheckboxes = document.querySelectorAll('.student-checkbox:checked');
+        const bulkActions = document.getElementById('bulkActions');
+        const selectedCount = document.getElementById('selectedCount');
+
+        if (selectedCheckboxes.length > 0) {
+            bulkActions.style.display = 'block';
+            selectedCount.textContent = selectedCheckboxes.length;
+        } else {
+            bulkActions.style.display = 'none';
+        }
+    }
+
+    // Action functions
+    function viewStudent(id) {
+        // Implement view student modal or redirect
+        window.location.href = `/admin/enrollments/${id}/view`;
+    }
+
+    function editStudent(id) {
+        // Implement edit functionality
+        console.log('Edit student:', id);
+    }
+
+    function exportEnrollments() {
+        // Implement export functionality
+        console.log('Export enrollments');
+    }
+
+    function getSelectedStudents() {
+        const checkboxes = document.querySelectorAll('.student-checkbox:checked');
+        return Array.from(checkboxes).map(cb => cb.value);
+    }

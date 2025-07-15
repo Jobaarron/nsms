@@ -6,6 +6,9 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
 
   <title>{{ $title ?? 'Admin Dashboard' }} • NSMS</title>
 
@@ -15,7 +18,6 @@
   
   @vite(['resources/sass/app.scss','resources/js/app.js'])
   @vite(['resources/css/index_admin.css'])
-  @vite('resources/js/admin-enrollments.js')
 </head>
 <body>
   <div class="container-fluid">

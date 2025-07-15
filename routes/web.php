@@ -3,17 +3,19 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\EnrollmentController;
-use Illuminate\Support\Facades\Mail;
-use App\Mail\StudentWelcomeMail;
-use App\Models\Student;
+// use Illuminate\Support\Facades\Mail;
+// use App\Mail\StudentWelcomeMail;
+// use App\Models\Student;
+use App\Models\User;
 use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\GuidanceDisciplineController;
-use Spatie\Permission\Middlewares\RoleMiddleware;
-use Spatie\Permission\Middlewares\PermissionMiddleware;
-use App\Http\Controllers\AdminGeneratorController;
-use App\Http\Controllers\AuthController;
+// use Spatie\Permission\Middlewares\RoleMiddleware;
+// use Spatie\Permission\Middlewares\PermissionMiddleware;
+// use App\Http\Controllers\AdminGeneratorController;
+// use App\Http\Controllers\AuthController;
+
 
 Route::get('/', function () {
     return view('welcome');
@@ -83,28 +85,31 @@ Route::prefix('admin')->group(function () {
         Route::post('/logout', [AdminController::class, 'logout'])->name('admin.logout');
         
         // Users management
-        Route::middleware(['auth'])->group(function () {
-            Route::get('/manage-users', [AdminController::class, 'manageUsers'])->name('admin.manage.users');
-            // Other user routes...
-        });
+        Route::get('/manage-users', [AdminController::class, 'manageUsers'])->name('admin.manage.users');
         
-        // Roles management
-        Route::middleware(['auth'])->group(function () {
-            // Dashboard - accessible to all authenticated users
-            Route::get('/admin', [AdminController::class, 'index'])->name('admin.dashboard');
-            Route::post('/logout', [AdminController::class, 'logout'])->name('admin.logout');
-            
-            // Roles & Access page
+        // Roles & Access Management - Use your custom permission middleware
+        Route::middleware(['can:manage roles'])->group(function () {
             Route::get('/roles-access', [AdminController::class, 'rolesAccess'])->name('admin.roles.access');
+            
+            // AJAX endpoints for roles & access management
+            Route::post('/roles-access/assign-role', [AdminController::class, 'assignRole'])->name('admin.assign.role');
+            Route::post('/roles-access/remove-role', [AdminController::class, 'removeRole'])->name('admin.remove.role');
+            Route::get('/users/{user}/roles', [AdminController::class, 'getUserRoles'])->name('admin.user.roles');
+            
+            Route::post('/roles-access/create-role', [AdminController::class, 'createRole'])->name('admin.create.role');
+            Route::put('/roles-access/update-role/{id}', [AdminController::class, 'updateRole'])->name('admin.update.role');
+            Route::delete('/roles-access/delete-role/{id}', [AdminController::class, 'deleteRole'])->name('admin.delete.role');
+            
+            Route::post('/roles-access/create-permission', [AdminController::class, 'createPermission'])->name('admin.create.permission');
+            Route::put('/roles-access/update-permission/{id}', [AdminController::class, 'updatePermission'])->name('admin.update.permission');
+            Route::delete('/roles-access/delete-permission/{id}', [AdminController::class, 'deletePermission'])->name('admin.delete.permission');
         });
-        
-         // Enrollments management
-        Route::get('/admin/enrollments', [AdminController::class, 'enrollments'])->name('admin.enrollments');
-        
-
-        // Add all other admin routes here
     });
+
+    // Enrollments management 
+    Route::get('/enrollments', [AdminController::class, 'enrollments'])->name('admin.enrollments');
 });
+
 
 // Inside the auth middleware group
 Route::middleware(['auth'])->group(function () {

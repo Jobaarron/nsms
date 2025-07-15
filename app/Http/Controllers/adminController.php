@@ -39,9 +39,221 @@ class AdminController extends Controller
     }
 
     public function rolesAccess()
-    {
-        return view('admin.roles_access');
+{
+    $users = User::with('roles')->get();
+    $roles = Role::with(['permissions', 'users'])->get();
+    $permissions = Permission::with('roles')->get();
+    
+    return view('admin.roles_access', compact('users', 'roles', 'permissions'));
+}
+
+// AJAX Methods for Role Management
+public function assignRole(Request $request)
+{
+    try {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'role' => 'required|string|exists:roles,name'
+        ]);
+
+        $user = User::findOrFail($request->user_id);
+        $user->assignRole($request->role);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Role '{$request->role}' assigned successfully to {$user->name}."
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error assigning role: ' . $e->getMessage()
+        ], 500);
     }
+}
+
+public function removeRole(Request $request)
+{
+    try {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'role' => 'required|string'
+        ]);
+
+        $user = User::findOrFail($request->user_id);
+        $user->removeRole($request->role);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Role '{$request->role}' removed successfully from {$user->name}."
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error removing role: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+public function createRole(Request $request)
+{
+    try {
+        $request->validate([
+            'name' => 'required|string|unique:roles,name|max:255',
+            'permissions' => 'array'
+        ]);
+
+        $role = Role::create(['name' => $request->name]);
+        
+        if ($request->permissions) {
+            $role->syncPermissions($request->permissions);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Role '{$request->name}' created successfully."
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error creating role: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+public function updateRole(Request $request, $id)
+{
+    try {
+        $request->validate([
+            'name' => 'required|string|max:255|unique:roles,name,' . $id,
+            'permissions' => 'array'
+        ]);
+
+        $role = Role::findOrFail($id);
+        $role->update(['name' => $request->name]);
+        
+        if ($request->has('permissions')) {
+            $role->syncPermissions($request->permissions);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Role '{$request->name}' updated successfully."
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error updating role: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+public function deleteRole($id)
+{
+    try {
+        $role = Role::findOrFail($id);
+        
+        // Prevent deletion of system roles
+        $systemRoles = ['admin', 'super_admin', 'teacher', 'student', 'guidance', 'discipline'];
+        if (in_array($role->name, $systemRoles)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot delete system role.'
+            ], 403);
+        }
+
+        $roleName = $role->name;
+        $role->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => "Role '{$roleName}' deleted successfully."
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error deleting role: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+public function createPermission(Request $request)
+{
+    try {
+        $request->validate([
+            'name' => 'required|string|unique:permissions,name|max:255'
+        ]);
+
+        Permission::create(['name' => $request->name]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Permission '{$request->name}' created successfully."
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error creating permission: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+public function updatePermission(Request $request, $id)
+{
+    try {
+        $request->validate([
+            'name' => 'required|string|max:255|unique:permissions,name,' . $id
+        ]);
+
+        $permission = Permission::findOrFail($id);
+        $permission->update(['name' => $request->name]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Permission '{$request->name}' updated successfully."
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error updating permission: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+public function deletePermission($id)
+{
+    try {
+        $permission = Permission::findOrFail($id);
+        
+        // Prevent deletion of system permissions
+        $systemPermissions = ['Dashboard', 'Manage Users', 'Manage Enrollments', 'Manage Students', 'View Reports', 'Roles & Access', 'System Settings', 'manage roles'];
+        if (in_array($permission->name, $systemPermissions)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot delete system permission.'
+            ], 403);
+        }
+
+        $permissionName = $permission->name;
+        $permission->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => "Permission '{$permissionName}' deleted successfully."
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error deleting permission: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+public function getUserRoles(User $user)
+{
+    return response()->json([
+        'roles' => $user->roles
+    ]);
+}
     
         public function manageUsers()
     {
@@ -444,4 +656,6 @@ public function roles()
     
     return view('admin.roles.index', compact('roles'));
 }
+
+
 }
