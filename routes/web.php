@@ -84,7 +84,7 @@ Route::prefix('admin')->group(function () {
         
         // Users management
         Route::middleware(['auth'])->group(function () {
-            Route::get('/admin/manage-users', [AdminController::class, 'manageUsers'])->name('admin.manage.users');
+            Route::get('/manage-users', [AdminController::class, 'manageUsers'])->name('admin.manage.users');
             // Other user routes...
         });
         
@@ -95,7 +95,7 @@ Route::prefix('admin')->group(function () {
             Route::post('/logout', [AdminController::class, 'logout'])->name('admin.logout');
             
             // Roles & Access page
-            Route::get('/admin/roles-access', [AdminController::class, 'rolesAccess'])->name('admin.roles.access');
+            Route::get('/roles-access', [AdminController::class, 'rolesAccess'])->name('admin.roles.access');
         });
         
          // Enrollments management

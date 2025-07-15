@@ -15,16 +15,29 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Show strand field for Grade 11-12
-document.getElementById('grade_level').addEventListener('change', function() {
+document.addEventListener('DOMContentLoaded', function() {
+  const gradeSelect = document.getElementById('grade_level');
   const strandGroup = document.getElementById('strand-group');
-  if (this.value === 'Grade 11' || this.value === 'Grade 12') {
-      strandGroup.classList.remove('d-none'); // Fixed: removed incomplete line
-      document.getElementById('strand').required = true;
-  } else {
-      strandGroup.classList.add('d-none');
-      document.getElementById('strand').required = false;
-      document.getElementById('strand').value = '';
+  const strandSelect = document.getElementById('strand');
+
+  function toggleStrandField() {
+      const selectedGrade = gradeSelect.value;
+      
+      if (selectedGrade === 'Grade 11' || selectedGrade === 'Grade 12') {
+          strandGroup.classList.remove('d-none');
+          strandSelect.setAttribute('required', 'required');
+      } else {
+          strandGroup.classList.add('d-none');
+          strandSelect.removeAttribute('required');
+          strandSelect.value = ''; // Clear selection
+      }
   }
+
+  // Initial check
+  toggleStrandField();
+  
+  // Listen for changes
+  gradeSelect.addEventListener('change', toggleStrandField);
 });
 
 

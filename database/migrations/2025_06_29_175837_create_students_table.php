@@ -24,6 +24,7 @@ return new class extends Migration
             $table->foreignId('approved_by')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamp('approved_at')->nullable();
             $table->timestamp('enrolled_at')->nullable();
+            $table->string('password');
             
             // FILE PATHS
             $table->string('id_photo')->nullable();
@@ -37,13 +38,13 @@ return new class extends Migration
             $table->date('date_of_birth');
             $table->string('place_of_birth')->nullable();
             $table->enum('gender', ['male', 'female'])->nullable();
-            $table->enum('civil_status', ['single', 'married', 'widowed', 'separated'])->default('single');
+            // $table->enum('civil_status', ['single', 'married', 'widowed', 'separated'])->default('single');
             $table->string('nationality')->default('Filipino');
             $table->string('religion')->nullable();
             $table->string('contact_number')->nullable();
             $table->string('email')->unique()->nullable(); // Make nullable since user_id handles auth
             $table->text('address');
-            $table->string('barangay')->nullable();
+            // $table->string('barangay')->nullable();
             $table->string('city')->nullable();
             $table->string('province')->nullable();
             $table->string('zip_code')->nullable();
@@ -63,34 +64,31 @@ return new class extends Migration
             $table->string('mother_occupation')->nullable();
             $table->string('mother_contact')->nullable();
             $table->string('guardian_name'); // Primary guardian
-            $table->string('guardian_relationship')->nullable();
+            // $table->string('guardian_relationship')->nullable();
             $table->string('guardian_contact');
-            $table->string('guardian_email')->nullable();
-            $table->text('guardian_address')->nullable();
+            // $table->string('guardian_email')->nullable();
+            // $table->text('guardian_address')->nullable();
             
             // PREVIOUS SCHOOL INFORMATION
             $table->enum('last_school_type', ['public', 'private'])->nullable();
             $table->string('last_school_name')->nullable();
-            $table->string('last_school_address')->nullable();
-            $table->string('last_grade_completed')->nullable();
-            $table->year('year_graduated')->nullable();
-            $table->decimal('general_average', 5, 2)->nullable();
+            // $table->string('last_school_address')->nullable();
+            // $table->string('last_grade_completed')->nullable();
+            // $table->year('year_graduated')->nullable();
+            // $table->decimal('general_average', 5, 2)->nullable();
             
             // MEDICAL AND HEALTH INFORMATION
             $table->text('medical_history')->nullable();
-            $table->json('allergies')->nullable();
-            $table->json('medications')->nullable();
-            $table->string('emergency_contact_name')->nullable();
-            $table->string('emergency_contact_number')->nullable();
-            $table->string('emergency_contact_relationship')->nullable();
+            
             
             // FINANCIAL INFORMATION
             $table->enum('payment_mode', ['cash', 'installment', 'scholarship', 'voucher'])->default('cash');
-            $table->boolean('is_scholar')->default(false);
-            $table->string('scholarship_type')->nullable();
-            $table->decimal('scholarship_amount', 10, 2)->nullable();
-            $table->boolean('is_pwd')->default(false); // Person with Disability
-            $table->boolean('is_indigenous')->default(false); // Indigenous People
+            $table->boolean('is_paid')->default(false);
+            // $table->boolean('is_scholar')->default(false);
+            // $table->string('scholarship_type')->nullable();
+            // $table->decimal('scholarship_amount', 10, 2)->nullable();
+            // $table->boolean('is_pwd')->default(false); // Person with Disability
+            // $table->boolean('is_indigenous')->default(false); // Indigenous People
             
             // ENROLLMENT SCHEDULING
             $table->date('preferred_schedule')->nullable();

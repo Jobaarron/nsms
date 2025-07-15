@@ -32,32 +32,61 @@ class EnrollmentController extends Controller
             'id_photo'           => 'required|image|mimes:jpeg,png,jpg|max:2048',
             'documents'          => 'required|array|min:1',
             'documents.*'        => 'file|mimes:pdf,docx,jpeg,png,jpg|max:4096',
+            
+            // Student Info
+            'lrn'                => 'nullable|string|max:12',
+            'student_type'       => 'required|in:new,transferee,returnee,continuing',
+            
+            // Name fields
             'first_name'         => 'required|string|max:50',
             'middle_name'        => 'nullable|string|max:50',
             'last_name'          => 'required|string|max:50',
-            'dob'                => 'required|date|before_or_equal:today',
+            'suffix'             => 'nullable|string|max:10',
+            
+            // Personal Info
+            'date_of_birth'      => 'required|date|before:today',
+            'gender'             => 'required|in:male,female',
             'religion'           => 'nullable|string|max:100',
+            
+            // Contact Info
             'email'              => 'required|email|unique:students,email',
+            'contact_number'     => 'nullable|regex:/^09[0-9]{9}$/',
+            
+            // Address
             'address'            => 'required|string|max:255',
-            'grade_applied'      => [
-                'required',
-                'in:Nursery,Kinder 1,Kinder 2,Grade 1,Grade 2,Grade 3,Grade 4,Grade 5,Grade 6,Grade 7,Grade 8,Grade 9,Grade 10,Grade 11,Grade 12'
-            ],
+            'city'               => 'nullable|string|max:100',
+            'province'           => 'nullable|string|max:100',
+            'zip_code'           => 'nullable|string|max:10',
+            
+            // Academic Info
+            'grade_level'        => 'required|in:Nursery,Kinder 1,Kinder 2,Grade 1,Grade 2,Grade 3,Grade 4,Grade 5,Grade 6,Grade 7,Grade 8,Grade 9,Grade 10,Grade 11,Grade 12',
             'strand'             => [
                 'nullable',
-                'required_if:grade_applied,Grade 11,Grade 12',
+                'required_if:grade_level,Grade 11,Grade 12',
                 'string',
                 'max:50',
             ],
+            
+            // Parent/Guardian Info
+            'father_name'        => 'nullable|string|max:100',
+            'father_occupation'  => 'nullable|string|max:100',
+            'father_contact'     => 'nullable|regex:/^09[0-9]{9}$/',
+            'mother_name'        => 'nullable|string|max:100',
+            'mother_occupation'  => 'nullable|string|max:100',
+            'mother_contact'     => 'nullable|regex:/^09[0-9]{9}$/',
             'guardian_name'      => 'required|string|max:100',
             'guardian_contact'   => [
                 'required',
                 'regex:/^09[0-9]{9}$/',
             ],
-            'last_school_type'   => 'nullable|in:Public,Private',
+            
+            // School Info
+            'last_school_type'   => 'nullable|in:public,private',
             'last_school_name'   => 'nullable|string|max:100',
+            
+            // Medical & Payment
             'medical_history'    => 'nullable|string|max:1000',
-            'payment_mode'       => 'required|string|in:Cash,Online,Installment',
+            'payment_mode'       => 'required|in:cash,installment',
             'preferred_schedule' => 'nullable|date|after_or_equal:today',
         ]);
 
@@ -71,43 +100,38 @@ class EnrollmentController extends Controller
                 $documentPaths[] = $doc->store('documents', 'public');
             }
         }
+        $data['documents'] = json_encode($documentPaths);
 
-        // 4) Generate password and hash it properly
+        // 4) Generate password and hash it properly - MOVED BEFORE Student::create()
         $rawPassword = Str::random(12);
         $data['password'] = Hash::make($rawPassword);
-        $data['documents'] = $documentPaths;
 
         // 5) Persist to the database
         $student = Student::create($data);
 
-        // 6) ASSIGN STUDENT ROLE - FIXED
+        // 6) ASSIGN STUDENT ROLE
         try {
-            // Check if student role exists, create if not
             $studentRole = Role::firstOrCreate([
                 'name' => 'student',
                 'guard_name' => 'web'
             ]);
 
-            // Assign the student role to the newly created student
             $student->assignRole('student');
             
         } catch (\Exception $e) {
-            //  FIXED: Use proper Log facade
-            Log::error('Error!: ' . $e->getMessage());
-            // Log::error('Failed to assign student role: ' . $e->getMessage());
+            Log::error('Error assigning student role: ' . $e->getMessage());
         }
 
         // 7) Send welcome email (with error handling)
         try {
             Mail::to($student->email)->send(new StudentWelcomeMail($student, $rawPassword));
         } catch (\Exception $e) {
-            //  FIXED: Use proper Log facade
             Log::error('Failed to send email: ' . $e->getMessage());
         }
 
         // 8) Redirect back with success message
         return redirect()
             ->route('enroll.create')
-            ->with('success', 'Enrollment successful!  Email sent to ' . $student->email);
+            ->with('success', 'Enrollment successful! Email sent to ' . $student->email);
     }
 }

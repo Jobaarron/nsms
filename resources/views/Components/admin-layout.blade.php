@@ -15,6 +15,7 @@
   
   @vite(['resources/sass/app.scss','resources/js/app.js'])
   @vite(['resources/css/index_admin.css'])
+  @vite('resources/js/admin-enrollments.js')
 </head>
 <body>
   <div class="container-fluid">

@@ -12,6 +12,7 @@ use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use Illuminate\Support\Facades\DB;
 use App\Models\Admin;
+use App\Models\Student;
 use App\Traits\AdminAuthentication;
 
 class AdminController extends Controller
@@ -47,10 +48,168 @@ class AdminController extends Controller
         return view('admin.manage_users');
     }
 
-    public function enrollments()
-    {
-        return view('admin.enrollments');
+    public function enrollments(Request $request)
+{
+    if ($response = $this->checkAdminAuth()) {
+        return $response;
     }
+
+    $query = Student::query();
+
+    // Apply filters
+    if ($request->filled('status')) {
+        $query->where('enrollment_status', $request->status);
+    }
+
+    if ($request->filled('grade_level')) {
+        $query->where('grade_level', $request->grade_level);
+    }
+
+    if ($request->filled('search')) {
+        $search = $request->search;
+        $query->where(function($q) use ($search) {
+            $q->where('first_name', 'LIKE', "%{$search}%")
+              ->orWhere('last_name', 'LIKE', "%{$search}%")
+              ->orWhere('email', 'LIKE', "%{$search}%")
+              ->orWhere('lrn', 'LIKE', "%{$search}%");
+        });
+    }
+
+    $enrollments = $query->orderBy('created_at', 'desc')->paginate(15);
+
+    // Get counts for filter cards
+    $pendingCount = Student::where('enrollment_status', 'pending')->count();
+    $approvedCount = Student::where('enrollment_status', 'enrolled')->count();
+    $rejectedCount = Student::where('enrollment_status', 'rejected')->count();
+    $totalCount = Student::count();
+
+    return view('admin.enrollments', compact(
+        'enrollments',
+        'pendingCount',
+        'approvedCount', 
+        'rejectedCount',
+        'totalCount'
+    ));
+}
+
+public function approveEnrollment($id)
+{
+    if ($response = $this->checkAdminAuth()) {
+        return $response;
+    }
+
+    $student = Student::findOrFail($id);
+    $student->update([
+        'enrollment_status' => 'enrolled',
+        'approved_at' => now(),
+        'approved_by' => Auth::id()
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Student enrollment approved successfully!'
+    ]);
+}
+
+public function rejectEnrollment($id)
+{
+    if ($response = $this->checkAdminAuth()) {
+        return $response;
+    }
+
+    $student = Student::findOrFail($id);
+    $student->update([
+        'enrollment_status' => 'rejected',
+        'rejected_at' => now(),
+        'rejected_by' => Auth::id()
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Student enrollment rejected.'
+    ]);
+}
+
+public function bulkApprove(Request $request)
+{
+    if ($response = $this->checkAdminAuth()) {
+        return $response;
+    }
+
+    $studentIds = $request->input('student_ids', []);
+    
+    Student::whereIn('id', $studentIds)->update([
+        'enrollment_status' => 'enrolled',
+        'approved_at' => now(),
+        'approved_by' => Auth::id()
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'message' => count($studentIds) . ' students approved successfully!'
+    ]);
+}
+
+public function bulkReject(Request $request)
+{
+    if ($response = $this->checkAdminAuth()) {
+        return $response;
+    }
+
+    $studentIds = $request->input('student_ids', []);
+    
+    Student::whereIn('id', $studentIds)->update([
+        'enrollment_status' => 'rejected',
+        'rejected_at' => now(),
+        'rejected_by' => Auth::id()
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'message' => count($studentIds) . ' students rejected.'
+    ]);
+}
+
+public function deleteEnrollment($id)
+{
+    if ($response = $this->checkAdminAuth()) {
+        return $response;
+    }
+
+    $student = Student::findOrFail($id);
+    $student->delete();
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Student record deleted successfully!'
+    ]);
+}
+
+public function bulkDelete(Request $request)
+{
+    if ($response = $this->checkAdminAuth()) {
+        return $response;
+    }
+
+    $studentIds = $request->input('student_ids', []);
+    Student::whereIn('id', $studentIds)->delete();
+
+    return response()->json([
+        'success' => true,
+        'message' => count($studentIds) . ' student records deleted successfully!'
+    ]);
+}
+
+public function viewEnrollment($id)
+{
+    if ($response = $this->checkAdminAuth()) {
+        return $response;
+    }
+
+    $student = Student::findOrFail($id);
+    return view('admin.enrollment-details', compact('student'));
+}
+
     
     /**
      * Handle admin login
