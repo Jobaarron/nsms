@@ -225,7 +225,7 @@ public function deletePermission($id)
         $permission = Permission::findOrFail($id);
         
         // Prevent deletion of system permissions
-        $systemPermissions = ['Dashboard', 'Manage Users', 'Manage Enrollments', 'Manage Students', 'View Reports', 'Roles & Access', 'System Settings', 'manage roles'];
+        $systemPermissions = ['Dashboard', 'Manage Users', 'Manage Enrollments', 'Manage Students', 'View Reports', 'Roles & Access', 'System Settings', 'Manage Roles'];
         if (in_array($permission->name, $systemPermissions)) {
             return response()->json([
                 'success' => false,
@@ -494,116 +494,210 @@ public function viewEnrollment($id)
     
     // Generate admin user
     public function generateAdmin(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
-            'employee_id' => 'nullable|string|unique:admins',
-            'department' => 'nullable|string|max:255',
-            'admin_level' => 'required|in:super_admin,admin,moderator',
-        ]);
+{
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'email' => 'required|string|email|max:255|unique:users',
+        'password' => 'required|string|min:8|confirmed',
+        'employee_id' => 'nullable|string|unique:admins',
+        'department' => 'nullable|string|max:255',
+        'admin_level' => 'required|in:super_admin,admin,moderator',
+    ]);
 
-        // Check if permission tables exist
-        if (!Schema::hasTable('roles') || !Schema::hasTable('permissions')) {
-            try {
-                Artisan::call('vendor:publish', [
-                    '--provider' => 'Spatie\Permission\PermissionServiceProvider',
-                    '--tag' => 'migrations'
-                ]);
-                
-                Artisan::call('migrate');
-                
-                if (!Schema::hasTable('roles') || !Schema::hasTable('permissions')) {
-                    return back()->with('error', 'Failed to create permission tables. Please run migrations manually.');
-                }
-            } catch (\Exception $e) {
-                return back()->with('error', 'Error running migrations: ' . $e->getMessage());
-            }
-        }
-
-        DB::beginTransaction();
-        
+    // Check if permission tables exist
+    if (!Schema::hasTable('roles') || !Schema::hasTable('permissions')) {
         try {
-            // Create user first
-            $user = User::create([
-                'name' => $request->name,
-                'email' => $request->email,
-                'password' => Hash::make($request->password),
+            Artisan::call('vendor:publish', [
+                '--provider' => 'Spatie\Permission\PermissionServiceProvider',
+                '--tag' => 'migrations'
             ]);
-
-            // Create admin record
-            $admin = Admin::create([
-                'user_id' => $user->id,
-                'employee_id' => $request->employee_id,
-                'department' => $request->department,
-                'admin_level' => $request->admin_level,
-                'is_active' => true,
-            ]);
-
-            // Setup roles and permissions
-            $this->setupAdminRoleAndPermissions($user, $request->admin_level);
-
-            DB::commit();
-
-            // Log in the new admin user
-            Auth::login($user);
-
-            return redirect()->route('admin.dashboard')
-                ->with('success', 'Admin user created successfully! You are now logged in as an administrator.');
-
+            
+            Artisan::call('migrate');
+            
+            if (!Schema::hasTable('roles') || !Schema::hasTable('permissions')) {
+                return back()->with('error', 'Failed to create permission tables. Please run migrations manually.');
+            }
         } catch (\Exception $e) {
-            DB::rollback();
-            return back()->with('error', 'Error creating admin: ' . $e->getMessage());
+            return back()->with('error', 'Error running migrations: ' . $e->getMessage());
         }
     }
 
-    private function setupAdminRoleAndPermissions(User $user, string $adminLevel)
-    {
-        // Create or get admin role
-        $adminRole = Role::firstOrCreate(['name' => $adminLevel]);
+    DB::beginTransaction();
+    
+    try {
+        // Create user first
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+        ]);
 
-        // Define permissions based on admin level
-        $permissions = $this->getPermissionsByLevel($adminLevel);
+        // Create admin record
+        $admin = Admin::create([
+            'user_id' => $user->id,
+            'employee_id' => $request->employee_id,
+            'department' => $request->department,
+            'admin_level' => $request->admin_level,
+            'is_active' => true,
+        ]);
 
-        foreach ($permissions as $permissionName) {
-            $permission = Permission::firstOrCreate(['name' => $permissionName]);
+        // Setup roles and permissions with proper model_has_permissions population
+        $this->setupAdminRoleAndPermissions($user, $request->admin_level);
+
+        // Clear permission cache to ensure fresh permissions
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
+        DB::commit();
+
+        // Log in the new admin user
+        Auth::login($user);
+
+        return redirect()->route('admin.dashboard')
+            ->with('success', 'Admin user created successfully! You are now logged in as an administrator.');
+
+    } catch (\Exception $e) {
+        DB::rollback();
+        return back()->with('error', 'Error creating admin: ' . $e->getMessage());
+    }
+}
+
+private function setupAdminRoleAndPermissions(User $user, string $adminLevel)
+{
+    // Create or get the admin role (using 'admin' as the primary role name as per your middleware)
+    $adminRole = Role::firstOrCreate([
+        'name' => 'admin',
+        'guard_name' => 'web'
+    ]);
+
+    // Also create the specific level role if it's different
+    if ($adminLevel !== 'admin') {
+        $levelRole = Role::firstOrCreate([
+            'name' => $adminLevel,
+            'guard_name' => 'web'
+        ]);
+    }
+
+    // Define permissions based on admin level
+    $permissions = $this->getPermissionsByLevel($adminLevel);
+
+    // Create permissions if they don't exist and assign to admin role
+    foreach ($permissions as $permissionName) {
+        $permission = Permission::firstOrCreate([
+            'name' => $permissionName,
+            'guard_name' => 'web'
+        ]);
+        
+        // Assign permission to admin role if not already assigned
+        if (!$adminRole->hasPermissionTo($permission)) {
             $adminRole->givePermissionTo($permission);
         }
 
-        // Assign role to user
+        // Also assign to level-specific role if it exists
+        if (isset($levelRole) && !$levelRole->hasPermissionTo($permission)) {
+            $levelRole->givePermissionTo($permission);
+        }
+    }
+
+    // Assign the main 'admin' role to user (this is what your middleware checks for)
+    if (!$user->hasRole('admin')) {
+        $user->assignRole('admin');
+    }
+
+    // Also assign the level-specific role if different
+    if ($adminLevel !== 'admin' && !$user->hasRole($adminLevel)) {
         $user->assignRole($adminLevel);
     }
 
-    private function getPermissionsByLevel(string $level): array
-    {
-        $basePermissions = [
-            'Dashboard',
-            'View Reports',
-        ];
-
-        $adminPermissions = [
-            'Manage Users',
-            'Manage Enrollments',
-            'Manage Students',
-            'View Analytics',
-        ];
-
-        $superAdminPermissions = [
-            'Roles & Access',
-            'System Settings',
-            'Manage Admins',
-            'Database Management',
-            'Backup & Restore',
-        ];
-
-        return match($level) {
-            'moderator' => $basePermissions,
-            'admin' => array_merge($basePermissions, $adminPermissions),
-            'super_admin' => array_merge($basePermissions, $adminPermissions, $superAdminPermissions),
-            default => $basePermissions,
-        };
+    // IMPORTANT: Also directly assign permissions to user 
+    // This populates the model_has_permissions table
+    foreach ($permissions as $permissionName) {
+        $permission = Permission::where('name', $permissionName)->where('guard_name', 'web')->first();
+        if ($permission && !$user->hasDirectPermission($permission)) {
+            $user->givePermissionTo($permission);
+        }
     }
+
+    // Refresh user permissions and roles
+    $user->load('permissions', 'roles');
+}
+
+private function getPermissionsByLevel(string $level): array
+{
+    $basePermissions = [
+        'Dashboard',
+        'View Reports',
+    ];
+
+    $adminPermissions = [
+        'Manage Users',
+        'Manage Enrollments', 
+        'Manage Students',
+        'View Analytics',
+    ];
+
+    $superAdminPermissions = [
+        'Roles & Access',
+        'System Settings',
+        'Manage Admins',
+        'Database Management',
+        'Backup & Restore',
+        'Manage Roles', // This permission is referenced in your role management methods
+    ];
+
+    return match($level) {
+        'moderator' => $basePermissions,
+        'admin' => array_merge($basePermissions, $adminPermissions),
+        'super_admin' => array_merge($basePermissions, $adminPermissions, $superAdminPermissions),
+        default => array_merge($basePermissions, $adminPermissions), // Default to admin level
+    };
+}
+    
+    public function fixAdminPermissions()
+{
+    if ($response = $this->checkAdminAuth()) {
+        return $response;
+    }
+
+    // Only super admins can fix permissions
+    if (!Auth::user()->hasRole('super_admin') && !Auth::user()->hasPermissionTo('Manage Roles')) {
+        return response()->json(['error' => 'Unauthorized'], 403);
+    }
+
+    try {
+        // Get all users with admin role
+        $adminUsers = User::role('admin')->get();
+        
+        $fixed = 0;
+        foreach ($adminUsers as $user) {
+            // Try to determine admin level from existing roles
+            $adminLevel = 'admin'; // default
+            
+            if ($user->hasRole('super_admin')) {
+                $adminLevel = 'super_admin';
+            } elseif ($user->hasRole('moderator')) {
+                $adminLevel = 'moderator';
+            }
+            
+            // Re-setup permissions
+            $this->setupAdminRoleAndPermissions($user, $adminLevel);
+            $fixed++;
+        }
+
+        // Clear permission cache
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
+        return response()->json([
+            'success' => true,
+            'message' => "Fixed permissions for {$fixed} admin users."
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error fixing permissions: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
      
     
 //     public function __construct()

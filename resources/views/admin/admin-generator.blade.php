@@ -50,15 +50,18 @@
                         
                         @if(!$adminRoleExists)
                             <div class="alert alert-info mb-4">
-                                <i class="ri-information-line me-2"></i>Admin Role not found. Submitting this form will create the admin role with basic permissions.
+                                <i class="ri-information-line me-2"></i>
+                                <strong>Setup Required:</strong> Admin roles and permissions will be created automatically. 
+                                This will populate the necessary permission tables for proper access control.
                             </div>
                         @elseif($adminExists)
                             <div class="alert alert-info mb-4">
-                                <i class="ri-information-line me-2"></i>An admin user already exists. Creating another admin will give you an additional admin account.
+                                <i class="ri-information-line me-2"></i>
+                                <strong>Additional Admin:</strong> An admin user already exists. Creating another admin will give you an additional admin account with full permissions.
                             </div>
                         @endif
                         
-                        <form method="POST" action="{{ route('generate.admin') }}">
+                        <form method="POST" action="{{ route('generate.admin') }}" id="adminForm">
                             @csrf
                             
                             <!-- Basic User Information -->
@@ -149,9 +152,9 @@
                                 @enderror
                                 <div class="form-text">
                                     <small>
-                                        <strong>Super Admin:</strong> Full system access including user management, system settings<br>
-                                        <strong>Admin:</strong> Standard admin features, user management, reports<br>
-                                        <strong>Moderator:</strong> Basic admin features, limited access
+                                        <strong>Super Admin:</strong> Full system access including user management, system settings, roles & permissions<br>
+                                        <strong>Admin:</strong> Standard admin features, user management, enrollment management, reports<br>
+                                        <strong>Moderator:</strong> Basic admin features, limited access to core functions
                                     </small>
                                 </div>
                             </div>
@@ -181,7 +184,7 @@
                             </div>
                             
                             <div class="d-grid">
-                                <button type="submit" class="btn btn-primary btn-lg">
+                                <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
                                     <i class="ri-user-add-line me-2"></i>Generate Admin Account
                                 </button>
                             </div>
@@ -197,5 +200,13 @@
             </div>
         </div>
     </div>
+
+    <script>
+        document.getElementById('adminForm').addEventListener('submit', function() {
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.innerHTML = '<i class="ri-loader-4-line me-2"></i>Creating Admin Account...';
+            submitBtn.disabled = true;
+        });
+    </script>
 </body>
 </html>
