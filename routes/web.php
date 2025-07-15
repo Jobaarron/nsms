@@ -88,7 +88,7 @@ Route::prefix('admin')->group(function () {
         Route::get('/manage-users', [AdminController::class, 'manageUsers'])->name('admin.manage.users');
         
         // Roles & Access Management - Use your custom permission middleware
-        Route::middleware(['can:manage roles'])->group(function () {
+        Route::middleware(['can:Manage Roles'])->group(function () {
             Route::get('/roles-access', [AdminController::class, 'rolesAccess'])->name('admin.roles.access');
             
             // AJAX endpoints for roles & access management
