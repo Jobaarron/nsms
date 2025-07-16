@@ -281,22 +281,22 @@ body {
 }
 
 /* Form Styles */
-.form-control {
+/* .form-control {
     border: 2px solid var(--secondary-color);
     border-radius: 10px;
     padding: 12px 15px;
     transition: all 0.3s ease;
     background: white;
     color: var(--dark-green);
-}
+} */
 
-.form-control:focus {
+/* .form-control:focus {
     border-color: var(--accent-color);
     box-shadow: 0 0 0 0.2rem rgba(45, 106, 62, 0.25);
     background: var(--light-green);
-}
+} */
 
-.form-select {
+/* .form-select {
     border: 2px solid var(--secondary-color);
     border-radius: 10px;
     padding: 12px 15px;
@@ -315,7 +315,7 @@ body {
     font-weight: 600;
     color: var(--dark-green);
     margin-bottom: 8px;
-}
+} */
 
 /* Social Links */
 .social-links-contact .btn {
@@ -532,7 +532,7 @@ body {
         }
         
         /* Large Screen Enhancements */
-        @media (min-width: 1200px) {
+        /* @media (min-width: 1200px) {
             .container {
                 max-width: 1140px;
             }
@@ -544,7 +544,7 @@ body {
             .content-card {
                 padding: 40px;
             }
-        }
+        } */
         
         /* Print Styles */
         @media print {

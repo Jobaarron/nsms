@@ -160,4 +160,17 @@ Route::get('/teacher', [TeacherController::class, 'index']);
 // Route::get('/admin', [adminController::class, 'adminindex']);
 // Route::get('/admin/login', [adminController::class, 'adminlogin']);
 Route::get('/student', [StudentController::class, 'index']);
-Route::get('/guidance', [GuidanceDisciplineController::class, 'index']);;
+Route::get('/guidance', [GuidanceDisciplineController::class, 'index']);
+
+// Student routes
+Route::prefix('student')->name('student.')->group(function () {
+    // Student login routes (public)
+    Route::get('/login', [StudentController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [StudentController::class, 'login'])->name('login.submit');
+    
+    // Protected student routes
+    Route::middleware(['auth:student'])->group(function () {
+        Route::get('/dashboard', [StudentController::class, 'index'])->name('dashboard');
+        Route::post('/logout', [StudentController::class, 'logout'])->name('logout');
+    });
+});

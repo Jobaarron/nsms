@@ -17,7 +17,7 @@
 
       <div style="padding: 40px 30px;">
         <p style="font-size: 1.1rem; color: #012d17; margin-bottom: 30px; line-height: 1.6;">
-          Hello, Jane!<br />
+          Hello, {{ $student->first_name }}!<br />
           We're excited to welcome you to the Nicolites Portal. Your student account has been successfully created and is ready to use.
         </p>
 
@@ -29,14 +29,14 @@
           <div style="display: flex; align-items: center; margin-bottom: 12px; padding: 8px 0;">
             <span style="font-weight: 600; color: #014421; min-width: 80px; margin-right: 15px;">Email:</span>
             <span style="color: #012d17; font-family: 'Courier New', monospace; background-color: #ffffff; padding: 8px 12px; border-radius: 4px; border: 1px solid #d0d8c3; flex: 1;">
-              jane.smith@example.com
+              {{ $student->email }}
             </span>
           </div>
 
           <div style="display: flex; align-items: center; margin-bottom: 12px; padding: 8px 0;">
             <span style="font-weight: 600; color: #014421; min-width: 80px; margin-right: 15px;">Password:</span>
             <span style="color: #012d17; font-family: 'Courier New', monospace; background-color: #ffffff; padding: 8px 12px; border-radius: 4px; border: 1px solid #d0d8c3; flex: 1;">
-              TestPass456
+              {{ $rawPassword }}
             </span>
           </div>
         </div>
@@ -48,7 +48,7 @@
         </div>
 
         <div style="text-align: center;">
-          <a href="#" style="display: inline-block; background: linear-gradient(135deg, #014421 0%, #2d6a3e 100%); color: white; text-decoration: none; padding: 15px 30px; border-radius: 8px; font-weight: 600; font-size: 1.1rem; text-align: center; margin: 25px 0; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(1, 68, 33, 0.3);">
+          <a href="{{ request()->is('/student/login') ? 'active' : '' }}" style="display: inline-block; background: linear-gradient(135deg, #014421 0%, #2d6a3e 100%); color: white; text-decoration: none; padding: 15px 30px; border-radius: 8px; font-weight: 600; font-size: 1.1rem; text-align: center; margin: 25px 0; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(1, 68, 33, 0.3);">
             🔗 Access Student Portal
           </a>
         </div>

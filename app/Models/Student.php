@@ -4,12 +4,15 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Spatie\Permission\Traits\HasRoles;
 
 
 
-class Student extends Model
+class Student extends Authenticatable
 {
-    use HasFactory;
+    use HasFactory, Notifiable, HasRoles;
 
     protected $fillable = [
         'lrn',
@@ -45,6 +48,12 @@ class Student extends Model
         'id_photo',
         'documents',
         'password',
+        'is_paid',
+        'enrollment_status',
+        'academic_year',
+        'approved_by',
+        'approved_at',
+        'enrolled_at',
         
     ];
 
@@ -52,13 +61,16 @@ class Student extends Model
     protected $casts = [
         'birth_date' => 'date',
         'approved_at' => 'datetime',
-        'rejected_at' => 'datetime'
+        'rejected_at' => 'datetime',
+        'is_paid' => 'boolean'
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
     ];
+    
+    protected $guard_name = 'student';
     
     protected function casts(): array
     {
@@ -126,5 +138,26 @@ class Student extends Model
     public function scopeCurrentYear($query)
     {
         return $query->where('academic_year', date('Y'));
+    }
+
+    // Payment-related methods
+    public function isPaid()
+    {
+        return $this->is_paid;
+    }
+
+    public function canAccessFeatures()
+    {
+        return $this->is_paid && $this->enrollment_status === 'enrolled';
+    }
+
+    public function getPaymentStatusAttribute()
+    {
+        return $this->is_paid ? 'Paid' : 'Unpaid';
+    }
+
+    public function getPaymentStatusBadgeAttribute()
+    {
+        return $this->is_paid ? 'success' : 'danger';
     }
 }

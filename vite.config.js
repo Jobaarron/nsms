@@ -8,7 +8,9 @@ export default defineConfig({
                 'resources/sass/app.scss',
                 'resources/js/app.js',
                 'resources/css/landingpage.css',
-                'resources/js/landingpage.js'
+                'resources/js/landingpage.js',
+                'resources/css/enroll.css',
+                'resources/js/enroll.js',
             ],
             refresh: true,
         }),

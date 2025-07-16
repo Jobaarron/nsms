@@ -107,41 +107,91 @@
             </a>
           </li>
           <li class="nav-item mb-2">
-            <span class="nav-link disabled d-flex justify-content-between align-items-center">
-              <span><i class="ri-cash-line me-2"></i>Payments</span>
-              <small class="badge bg-light text-dark">Soon</small>
-            </span>
+            @if($student->canAccessFeatures())
+              <a class="nav-link" href="#">
+                <i class="ri-cash-line me-2"></i>Payments
+              </a>
+            @else
+              <span class="nav-link disabled d-flex justify-content-between align-items-center">
+                <span><i class="ri-cash-line me-2"></i>Payments</span>
+                <small class="badge bg-warning text-dark">Pay First</small>
+              </span>
+            @endif
           </li>
           <li class="nav-item mb-2">
-            <span class="nav-link disabled d-flex justify-content-between align-items-center">
-              <span><i class="ri-book-open-line me-2"></i>My Subjects</span>
-              <small class="badge bg-light text-dark">Soon</small>
-            </span>
+            @if($student->canAccessFeatures())
+              <a class="nav-link" href="#">
+                <i class="ri-book-open-line me-2"></i>My Subjects
+              </a>
+            @else
+              <span class="nav-link disabled d-flex justify-content-between align-items-center">
+                <span><i class="ri-book-open-line me-2"></i>My Subjects</span>
+                <small class="badge bg-warning text-dark">Pay First</small>
+              </span>
+            @endif
           </li>
           <li class="nav-item mb-2">
-            <span class="nav-link disabled d-flex justify-content-between align-items-center">
-              <span><i class="ri-file-paper-line me-2"></i>Guidance Notes</span>
-              <small class="badge bg-light text-dark">Soon</small>
-            </span>
+            @if($student->canAccessFeatures())
+              <a class="nav-link" href="#">
+                <i class="ri-file-paper-line me-2"></i>Guidance Notes
+              </a>
+            @else
+              <span class="nav-link disabled d-flex justify-content-between align-items-center">
+                <span><i class="ri-file-paper-line me-2"></i>Guidance Notes</span>
+                <small class="badge bg-warning text-dark">Pay First</small>
+              </span>
+            @endif
           </li>
           <li class="nav-item mb-2">
-            <span class="nav-link disabled d-flex justify-content-between align-items-center">
-              <span><i class="ri-flag-line me-2"></i>Discipline</span>
-              <small class="badge bg-light text-dark">Soon</small>
-            </span>
+            @if($student->canAccessFeatures())
+              <a class="nav-link" href="#">
+                <i class="ri-flag-line me-2"></i>Discipline
+              </a>
+            @else
+              <span class="nav-link disabled d-flex justify-content-between align-items-center">
+                <span><i class="ri-flag-line me-2"></i>Discipline</span>
+                <small class="badge bg-warning text-dark">Pay First</small>
+              </span>
+            @endif
           </li>
           <li class="nav-item">
-            <span class="nav-link disabled d-flex justify-content-between align-items-center">
-              <span><i class="ri-user-line me-2"></i>Profile</span>
-              <small class="badge bg-light text-dark">Soon</small>
-            </span>
+            @if($student->canAccessFeatures())
+              <a class="nav-link" href="#">
+                <i class="ri-user-line me-2"></i>Profile
+              </a>
+            @else
+              <span class="nav-link disabled d-flex justify-content-between align-items-center">
+                <span><i class="ri-user-line me-2"></i>Profile</span>
+                <small class="badge bg-warning text-dark">Pay First</small>
+              </span>
+            @endif
           </li>
         </ul>
+        
+        <!-- LOGOUT SECTION -->
+        <div class="mt-auto pt-3">
+          <form action="{{ route('student.logout') }}" method="POST">
+            @csrf
+            <button type="submit" class="nav-link text-danger border-0 bg-transparent w-100 text-start d-flex align-items-center" style="font-weight: 600;">
+              <i class="ri-logout-circle-line me-2"></i>Logout
+            </button>
+          </form>
+        </div>
       </nav>
 
       <!-- MAIN CONTENT -->
       <main class="col-12 col-md-10 px-4 py-4">
-        <h1 class="section-title">Welcome, Student Name</h1>
+        <h1 class="section-title">Welcome, {{ $student->first_name ?? 'Student' }}</h1>
+        
+        @if(!$student->canAccessFeatures())
+            <div class="alert alert-warning d-flex align-items-center mb-4">
+                <i class="ri-alert-line me-2"></i>
+                <div>
+                    <strong>Payment Required!</strong> 
+                    You need to complete your payment to access all features. Current status: <strong>{{ $student->paymentStatus }}</strong>
+                </div>
+            </div>
+        @endif
 
         <!-- SUMMARY CARDS -->
         <div class="row g-3 mb-5">
@@ -151,12 +201,12 @@
                 <i class="ri-checkbox-circle-line display-6 me-3"></i>
                 <div>
                   <div>Payment Status</div>
-                  <h3>Paid</h3>
+                  <h3>{{ $student->paymentStatus }}</h3>
                 </div>
               </div>
             </div>
           </div>
-          <div class="col-6 col-lg-3">
+          {{-- <div class="col-6 col-lg-3">
             <div class="card card-summary card-credits h-100">
               <div class="card-body d-flex align-items-center">
                 <i class="ri-bar-chart-line display-6 me-3"></i>
@@ -188,11 +238,11 @@
                 </div>
               </div>
             </div>
-          </div>
+          </div> --}}
         </div>
 
         <!-- PAYMENT HISTORY -->
-        <h4 class="section-title">Payment History</h4>
+        {{-- <h4 class="section-title">Payment History</h4>
         <div class="table-responsive mb-5">
           <table class="table table-striped">
             <thead>
@@ -218,10 +268,10 @@
               </tr>
             </tbody>
           </table>
-        </div>
+        </div> --}}
 
         <!-- ACTIVE SUBJECTS -->
-        <h4 class="section-title">My Subjects</h4>
+        {{-- <h4 class="section-title">My Subjects</h4>
         <div class="table-responsive mb-5">
           <table class="table table-hover align-middle">
             <thead>
@@ -250,10 +300,10 @@
               </tr>
             </tbody>
           </table>
-        </div>
+        </div> --}}
 
         <!-- GUIDANCE & DISCIPLINE -->
-        <h4 class="section-title">Guidance & Discipline</h4>
+        {{-- <h4 class="section-title">Guidance & Discipline</h4>
         <div class="row mb-5">
           <div class="col-md-6">
             <h6 class="fw-bold">Guidance Notes</h6>
@@ -279,7 +329,7 @@
               </li>
             </ul>
           </div>
-        </div>
+        </div> --}}
 
         <!-- PROFILE -->
         <h4 class="section-title">My Profile</h4>
@@ -287,19 +337,40 @@
           <div class="card-body">
             <dl class="row">
               <dt class="col-sm-3">Student ID</dt>
-              <dd class="col-sm-9">202410001</dd>
+              <dd class="col-sm-9">{{ $student->student_id ?? $student->lrn ?? 'STU-' . str_pad($student->id, 6, '0', STR_PAD_LEFT) }}</dd>
               <dt class="col-sm-3">Name</dt>
-              <dd class="col-sm-9">Jane Doe</dd>
-              <dt class="col-sm-3">Program</dt>
-              <dd class="col-sm-9">Grade School</dd>
-              <dt class="col-sm-3">Year Level</dt>
-              <dd class="col-sm-9">Grade 5</dd>
+              <dd class="col-sm-9">{{ $student->full_name }}</dd>
+              <dt class="col-sm-3">Student Type</dt>
+              <dd class="col-sm-9">{{ ucfirst($student->student_type) }}</dd>
+              <dt class="col-sm-3">Grade Level</dt>
+              <dd class="col-sm-9">{{ $student->grade_level }}{{ $student->strand ? ' - ' . $student->strand : '' }}</dd>
               <dt class="col-sm-3">Email</dt>
-              <dd class="col-sm-9">jane.doe@example.com</dd>
+              <dd class="col-sm-9">{{ $student->email }}</dd>
+              <dt class="col-sm-3">Contact Number</dt>
+              <dd class="col-sm-9">{{ $student->contact_number ?? 'Not provided' }}</dd>
+              <dt class="col-sm-3">Address</dt>
+              <dd class="col-sm-9">{{ $student->address }}, {{ $student->city }}, {{ $student->province }} {{ $student->zip_code }}</dd>
+              <dt class="col-sm-3">Guardian</dt>
+              <dd class="col-sm-9">{{ $student->guardian_name }} ({{ $student->guardian_contact }})</dd>
+              <dt class="col-sm-3">Enrollment Status</dt>
+              <dd class="col-sm-9">
+                <span class="badge bg-{{ $student->enrollment_status === 'enrolled' ? 'success' : ($student->enrollment_status === 'pending' ? 'warning' : 'secondary') }}">
+                  {{ ucfirst($student->enrollment_status) }}
+                </span>
+              </dd>
+              <dt class="col-sm-3">Payment Mode</dt>
+              <dd class="col-sm-9">{{ ucfirst($student->payment_mode) }}</dd>
             </dl>
-            <button class="btn btn-outline-primary">
-              <i class="ri-edit-line me-1"></i>Edit Profile
-            </button>
+            @if($student->canAccessFeatures())
+              <button class="btn btn-outline-primary">
+                <i class="ri-edit-line me-1"></i>Edit Profile
+              </button>
+            @else
+              <button class="btn btn-outline-secondary" disabled title="Payment required to edit profile">
+                <i class="ri-edit-line me-1"></i>Edit Profile
+                <span class="badge bg-warning text-dark ms-2">Pay First</span>
+              </button>
+            @endif
           </div>
         </div>
 
@@ -307,19 +378,40 @@
         <h4 class="section-title">Quick Actions</h4>
         <div class="row g-3">
           <div class="col-md-4">
-            <button class="btn btn-outline-primary w-100 py-3">
-              <i class="ri-wallet-line me-2"></i>Make Payment
-            </button>
+            @if($student->canAccessFeatures())
+              <button class="btn btn-outline-primary w-100 py-3">
+                <i class="ri-wallet-line me-2"></i>Make Payment
+              </button>
+            @else
+              <button class="btn btn-outline-secondary w-100 py-3" disabled title="Payment required to access this feature">
+                <i class="ri-wallet-line me-2"></i>Make Payment
+                <span class="badge bg-warning text-dark ms-2">Pay First</span>
+              </button>
+            @endif
           </div>
           <div class="col-md-4">
-            <button class="btn btn-outline-primary w-100 py-3">
-              <i class="ri-calendar-line me-2"></i>View Schedule
-            </button>
+            @if($student->canAccessFeatures())
+              <button class="btn btn-outline-primary w-100 py-3">
+                <i class="ri-calendar-line me-2"></i>View Schedule
+              </button>
+            @else
+              <button class="btn btn-outline-secondary w-100 py-3" disabled title="Payment required to access this feature">
+                <i class="ri-calendar-line me-2"></i>View Schedule
+                <span class="badge bg-warning text-dark ms-2">Pay First</span>
+              </button>
+            @endif
           </div>
           <div class="col-md-4">
-            <button class="btn btn-outline-primary w-100 py-3">
-              <i class="ri-chat-1-line me-2"></i>Message Counselor
-            </button>
+            @if($student->canAccessFeatures())
+              <button class="btn btn-outline-primary w-100 py-3">
+                <i class="ri-chat-1-line me-2"></i>Message Counselor
+              </button>
+            @else
+              <button class="btn btn-outline-secondary w-100 py-3" disabled title="Payment required to access this feature">
+                <i class="ri-chat-1-line me-2"></i>Message Counselor
+                <span class="badge bg-warning text-dark ms-2">Pay First</span>
+              </button>
+            @endif
           </div>
         </div>
       </main>
