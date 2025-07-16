@@ -1,0 +1,44 @@
+:root {
+    --primary-color: #014421;
+    --secondary-color: #D0D8C3;
+    --accent-color: #2d6a3e;
+    --light-green: #e8f5e8;
+    --dark-green: #012d17;
+}
+
+body {
+    font-family: 'Nunito', sans-serif;
+    background-color: var(--light-green);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: 10px 10px 0 0 !important;
+    padding: 1.5rem;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+}
+
+.form-label {
+    color: var(--primary-color);
+    font-weight: 600;
+}

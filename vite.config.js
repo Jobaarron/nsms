@@ -1,13 +1,31 @@
 import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
-import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
     plugins: [
         laravel({
-            input: ['resources/css/app.css', 'resources/js/app.js'],
+            input: [
+                'resources/sass/app.scss',
+                'resources/js/app.js',
+                'resources/css/landingpage.css',
+                'resources/js/landingpage.js',
+                'resources/css/enroll.css',
+                'resources/js/enroll.js',
+            ],
             refresh: true,
         }),
-        tailwindcss(),
     ],
+    build: {
+        rollupOptions: {
+            external: [],
+            output: {
+                assetFileNames: (assetInfo) => {
+                    if (assetInfo.name && assetInfo.name.endsWith('.png')) {
+                        return 'assets/images/[name].[hash][extname]';
+                    }
+                    return 'assets/[name].[hash][extname]';
+                }
+            }
+        }
+    }
 });

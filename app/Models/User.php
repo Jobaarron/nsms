@@ -2,42 +2,29 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, HasRoles;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
+    protected $guard_name = 'web';
+
     protected $fillable = [
         'name',
         'email',
         'password',
+        'status',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
@@ -45,4 +32,115 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
+    }
+
+    public function scopeRecent($query, $days = 30)
+    {
+        return $query->where('created_at', '>=', now()->subDays($days));
+    }
+
+
+    // RELATIONSHIPS
+    public function approvedStudents()
+    {
+        return $this->hasMany(Student::class, 'approved_by');
+    }
+
+    public function gradesGiven()
+    {
+        return $this->hasMany(Grade::class, 'teacher_id');
+    }
+
+    public function processedEnrollments()
+    {
+        return $this->hasMany(Enrollment::class, 'processed_by');
+    }
+
+    public function processedPayments()
+    {
+        return $this->hasMany(Payment::class, 'processed_by');
+    }
+
+    // ACCESSORS
+    public function getRoleNamesAttribute()
+    {
+        return $this->roles->pluck('name')->toArray();
+    }
+
+    public function getIsAdminAttribute()
+    {
+        return $this->hasRole('admin');
+    }
+
+    public function getIsTeacherAttribute()
+    {
+        return $this->hasRole('teacher');
+    }
+    
+    // Add this relationship to your existing User model
+    public function admin()
+    {
+        return $this->hasOne(Admin::class);
+    }
+
+    public function isAdmin()
+    {
+        return $this->admin()->exists() && $this->admin->is_active;
+    }
+
+    public function teacher()
+    {
+        return $this->hasOne(Teacher::class);
+    }
+
+    public function guidanceCounsellor()
+    {
+        return $this->hasOne(GuidanceCounsellor::class);
+    }
+
+    public function disciplineOfficer()
+    {
+        return $this->hasOne(DisciplineOfficer::class);
+    }
+
+    public function isTeacher()
+    {
+        return $this->teacher()->exists() && $this->teacher->is_active;
+    }
+
+    public function isGuidanceCounsellor()
+    {
+        return $this->guidanceCounsellor()->exists() && $this->guidanceCounsellor->is_active;
+    }
+
+    public function isDisciplineOfficer()
+    {
+        return $this->disciplineOfficer()->exists() && $this->disciplineOfficer->is_active;
+    }
+
+    public function student()
+{
+    return $this->hasOne(Student::class);
+}
+
+    public function isStudent()
+    {
+        return $this->student()->exists() && $this->student->is_active;
+    }
+
+    public function getUserRole()
+    {
+        if ($this->isAdmin()) return 'admin';
+        if ($this->isTeacher()) return 'teacher';
+        if ($this->isGuidanceCounsellor()) return 'guidance_counsellor';
+        if ($this->isDisciplineOfficer()) return 'discipline_officer';
+        if ($this->isStudent()) return 'student';
+        return 'user';
+    }
+
+
 }

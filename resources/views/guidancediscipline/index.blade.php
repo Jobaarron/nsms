@@ -77,6 +77,22 @@
       background-color: var(--primary-color);
       color: #fff;
     }
+
+    .sidebar .nav-link.disabled {
+  color: var(--secondary-color) !important;
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.sidebar .nav-link.disabled:hover {
+  background-color: transparent !important;
+  color: var(--secondary-color) !important;
+}
+
+.sidebar .nav-link.disabled i {
+  opacity: 0.5;
+}
   </style>
 </head>
 <body>
@@ -92,39 +108,46 @@
             </a>
           </li>
           <li class="nav-item mb-2">
-            <a class="nav-link" href="#">
-              <i class="ri-user-line me-2"></i>Student Profiles
-            </a>
+            <span class="nav-link disabled d-flex justify-content-between align-items-center">
+              <span><i class="ri-user-line me-2"></i>Student Profiles</span>
+              <small class="badge bg-light text-dark">Soon</small>
+            </span>
           </li>
           <li class="nav-item mb-2">
-            <a class="nav-link" href="#">
-              <i class="ri-scan-2-line me-2"></i>Facial Recognition
-            </a>
+            <span class="nav-link disabled d-flex justify-content-between align-items-center">
+              <span><i class="ri-scan-2-line me-2"></i>Facial Recognition</span>
+              <small class="badge bg-light text-dark">Soon</small>
+            </span>
           </li>
           <li class="nav-item mb-2">
-            <a class="nav-link" href="#">
-              <i class="ri-alert-line me-2"></i>Violations
-            </a>
+            <span class="nav-link disabled d-flex justify-content-between align-items-center">
+              <span><i class="ri-alert-line me-2"></i>Violations</span>
+              <small class="badge bg-light text-dark">Soon</small>
+            </span>
           </li>
           <li class="nav-item mb-2">
-            <a class="nav-link" href="#">
-              <i class="ri-chat-quote-line me-2"></i>Counseling
-            </a>
+            <span class="nav-link disabled d-flex justify-content-between align-items-center">
+              <span><i class="ri-chat-quote-line me-2"></i>Counseling</span>
+              <small class="badge bg-light text-dark">Soon</small>
+            </span>
           </li>
           <li class="nav-item mb-2">
-            <a class="nav-link" href="#">
-              <i class="ri-briefcase-line me-2"></i>Career Advice
-            </a>
+            <span class="nav-link disabled d-flex justify-content-between align-items-center">
+              <span><i class="ri-briefcase-line me-2"></i>Career Advice</span>
+              <small class="badge bg-light text-dark">Soon</small>
+            </span>
           </li>
           <li class="nav-item mb-2">
-            <a class="nav-link" href="#">
-              <i class="ri-bar-chart-line me-2"></i>Analytics & Reports
-            </a>
+            <span class="nav-link disabled d-flex justify-content-between align-items-center">
+              <span><i class="ri-bar-chart-line me-2"></i>Analytics & Reports</span>
+              <small class="badge bg-light text-dark">Soon</small>
+            </span>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="#">
-              <i class="ri-settings-3-line me-2"></i>Settings
-            </a>
+            <span class="nav-link disabled d-flex justify-content-between align-items-center">
+              <span><i class="ri-settings-3-line me-2"></i>Settings</span>
+              <small class="badge bg-light text-dark">Soon</small>
+            </span>
           </li>
         </ul>
       </nav>
