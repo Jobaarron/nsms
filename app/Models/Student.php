@@ -115,10 +115,10 @@ class Student extends Authenticatable
         return $name;
     }
 
-    public function getAgeAttribute()
-    {
-        return $this->birth_date ? $this->birth_date->age : null;
-    }
+    // public function getAgeAttribute()
+    // {
+    //     return $this->birth_date ? $this->birth_date->age : null;
+    // }
 
     public function scopeEnrolled($query)
     {
