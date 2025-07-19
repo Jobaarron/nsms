@@ -17,7 +17,7 @@ export default defineConfig({
                 'resources/css/admin_enrollments.css',
                 'resources/js/landingpage.js',
                 'resources/js/enroll.js',
-                'resources/js/admin-enrollment.js',
+                'resources/js/admin-enrollments.js',
                 
             ],
             refresh: true,

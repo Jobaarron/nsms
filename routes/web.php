@@ -113,7 +113,33 @@ Route::prefix('admin')->group(function () {
 
     // Enrollments management 
     Route::get('/enrollments', [AdminController::class, 'enrollments'])->name('admin.enrollments');
-});
+    
+    
+        
+        // Individual enrollment actions
+        Route::post('/enrollments/{id}/approve', [AdminController::class, 'approveEnrollment'])->name('enrollments.approve');
+        Route::post('/enrollments/{id}/reject', [AdminController::class, 'rejectEnrollment'])->name('enrollments.reject');
+        Route::delete('/enrollments/{id}', [AdminController::class, 'deleteEnrollment'])->name('enrollments.delete');
+        Route::put('/enrollments/{id}', [AdminController::class, 'updateEnrollment'])->name('enrollments.update');
+        Route::post('/enrollments/{id}/status', [AdminController::class, 'updateEnrollmentStatus'])->name('enrollments.status');
+        Route::get('/enrollments/{id}/view', [AdminController::class, 'viewEnrollment'])->name('enrollments.view');
+        Route::get('/enrollments/{id}/edit', [AdminController::class, 'editEnrollment'])->name('enrollments.edit');
+        
+        // Bulk operations
+        Route::post('/enrollments/bulk/approve', [AdminController::class, 'bulkApprove'])->name('enrollments.bulk.approve');
+        Route::post('/enrollments/bulk/reject', [AdminController::class, 'bulkReject'])->name('enrollments.bulk.reject');
+        Route::post('/enrollments/bulk/delete', [AdminController::class, 'bulkDelete'])->name('enrollments.bulk.delete');
+
+        Route::post('/enrollments/export', [AdminController::class, 'exportSelected'])->name('enrollments.export');
+        Route::post('/enrollments/export-all', [AdminController::class, 'exportAll'])->name('enrollments.export.all');
+        Route::post('/enrollments/send-notification', [AdminController::class, 'sendBulkNotification'])->name('enrollments.notification');
+        Route::post('/enrollments/print', [AdminController::class, 'printEnrollments'])->name('enrollments.print');
+    });
+
+   
+
+
+// Route::put('/enrollments/{id}', [AdminController::class, 'updateEnrollment'])->name('enrollments.update');
 
 
 // Inside the auth middleware group

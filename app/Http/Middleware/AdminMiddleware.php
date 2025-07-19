@@ -25,6 +25,15 @@ class AdminMiddleware
                 'url' => $request->fullUrl()
             ]);
             
+            // Handle AJAX requests
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You must be logged in to access the admin area.',
+                    'redirect' => route('admin.login')
+                ], 401);
+            }
+            
             return redirect()->route('admin.login')
                 ->with('error', 'You must be logged in to access the admin area.');
         }
@@ -46,6 +55,14 @@ class AdminMiddleware
                 return $next($request);
             }
             
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'System configuration error. Please contact the administrator.',
+                    'redirect' => route('index')
+                ], 500);
+            }
+            
             return redirect()->route('index')
                 ->with('error', 'System configuration error. Please contact the administrator.');
         }
@@ -62,6 +79,14 @@ class AdminMiddleware
                 return $next($request);
             }
             
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Admin role does not exist. Please set up the admin role first.',
+                    'redirect' => route('show.admin.generator')
+                ], 500);
+            }
+            
             return redirect()->route('show.admin.generator')
                 ->with('error', 'Admin role does not exist. Please set up the admin role first.');
         }
@@ -73,6 +98,14 @@ class AdminMiddleware
                     'user_id' => $user->id,
                     'user_email' => $user->email
                 ]);
+                
+                if ($request->expectsJson() || $request->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'You do not have permission to access the admin area.',
+                        'redirect' => route('index')
+                    ], 403);
+                }
                 
                 return redirect()->route('index')
                     ->with('error', 'You do not have permission to access the admin area.');
@@ -86,6 +119,14 @@ class AdminMiddleware
             // Temporarily allow access if there's an error (development only)
             if (app()->environment('local', 'development')) {
                 return $next($request);
+            }
+            
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'System error checking permissions. Please contact the administrator.',
+                    'redirect' => route('index')
+                ], 500);
             }
             
             return redirect()->route('index')

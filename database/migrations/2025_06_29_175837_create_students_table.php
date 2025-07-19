@@ -96,7 +96,7 @@ return new class extends Migration
             
             // STATUS TRACKING
             $table->boolean('is_active')->default(true);
-            $table->text('remarks')->nullable();
+            // $table->text('remarks')->nullable();
             
             // TIMESTAMPS
             $table->timestamps();

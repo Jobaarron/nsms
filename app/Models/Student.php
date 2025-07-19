@@ -54,6 +54,12 @@ class Student extends Authenticatable
         'approved_by',
         'approved_at',
         'enrolled_at',
+        // Additional
+        'rejected_by',
+        'rejected_at',
+        'status_updated_at',
+        'status_updated_by',
+        'status_reason',
         
     ];
 

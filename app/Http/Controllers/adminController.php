@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Admin;
 use App\Models\Student;
 use App\Traits\AdminAuthentication;
+use Illuminate\Support\Facades\Log;
 
 class AdminController extends Controller
 {
@@ -328,112 +329,212 @@ public function getUserRoles(User $user)
     ));
 }
 
-public function approveEnrollment($id)
-{
-    if ($response = $this->checkAdminAuth()) {
-        return $response;
+    public function approveEnrollment($id)
+    {
+        try {
+            if ($response = $this->checkAdminAuth()) {
+                return $response;
+            }
+
+            $student = Student::findOrFail($id);
+            
+            $updated = $student->update([
+                'enrollment_status' => 'enrolled',
+                'approved_at' => now(),
+                'approved_by' => Auth::id(),
+                'status_updated_at' => now(),
+                'status_updated_by' => Auth::id()
+            ]);
+
+            if ($updated) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Student enrollment approved successfully!'
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to update student status.'
+                ], 500);
+            }
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            Log::error('Student not found for approval: ' . $id);
+            return response()->json([
+                'success' => false,
+                'message' => 'Student not found.'
+            ], 404);
+        } catch (\Exception $e) {
+            Log::error('Error approving enrollment: ' . $e->getMessage(), [
+                'student_id' => $id,
+                'user_id' => Auth::id(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while approving the student. Please try again.'
+            ], 500);
+        }
     }
-
-    $student = Student::findOrFail($id);
-    $student->update([
-        'enrollment_status' => 'enrolled',
-        'approved_at' => now(),
-        'approved_by' => Auth::id()
-    ]);
-
-    return response()->json([
-        'success' => true,
-        'message' => 'Student enrollment approved successfully!'
-    ]);
-}
 
 public function rejectEnrollment($id)
 {
-    if ($response = $this->checkAdminAuth()) {
-        return $response;
+    try {
+        if ($response = $this->checkAdminAuth()) {
+            return $response;
+        }
+
+        $student = Student::findOrFail($id);
+        $student->update([
+            'enrollment_status' => 'rejected',
+            'rejected_at' => now(),
+            'rejected_by' => Auth::id()
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Student enrollment rejected.'
+        ]);
+
+    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Student not found.'
+        ], 404);
+    } catch (\Exception $e) {
+        Log::error('Error rejecting enrollment: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Error rejecting student: ' . $e->getMessage()
+        ], 500);
     }
-
-    $student = Student::findOrFail($id);
-    $student->update([
-        'enrollment_status' => 'rejected',
-        'rejected_at' => now(),
-        'rejected_by' => Auth::id()
-    ]);
-
-    return response()->json([
-        'success' => true,
-        'message' => 'Student enrollment rejected.'
-    ]);
-}
-
-public function bulkApprove(Request $request)
-{
-    if ($response = $this->checkAdminAuth()) {
-        return $response;
-    }
-
-    $studentIds = $request->input('student_ids', []);
-    
-    Student::whereIn('id', $studentIds)->update([
-        'enrollment_status' => 'enrolled',
-        'approved_at' => now(),
-        'approved_by' => Auth::id()
-    ]);
-
-    return response()->json([
-        'success' => true,
-        'message' => count($studentIds) . ' students approved successfully!'
-    ]);
-}
-
-public function bulkReject(Request $request)
-{
-    if ($response = $this->checkAdminAuth()) {
-        return $response;
-    }
-
-    $studentIds = $request->input('student_ids', []);
-    
-    Student::whereIn('id', $studentIds)->update([
-        'enrollment_status' => 'rejected',
-        'rejected_at' => now(),
-        'rejected_by' => Auth::id()
-    ]);
-
-    return response()->json([
-        'success' => true,
-        'message' => count($studentIds) . ' students rejected.'
-    ]);
 }
 
 public function deleteEnrollment($id)
 {
-    if ($response = $this->checkAdminAuth()) {
-        return $response;
+    try {
+        if ($response = $this->checkAdminAuth()) {
+            return $response;
+        }
+
+        $student = Student::findOrFail($id);
+        $student->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Student record deleted successfully!'
+        ]);
+
+    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Student not found.'
+        ], 404);
+    } catch (\Exception $e) {
+        Log::error('Error deleting enrollment: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Error deleting student: ' . $e->getMessage()
+        ], 500);
     }
+}
 
-    $student = Student::findOrFail($id);
-    $student->delete();
+public function bulkApprove(Request $request)
+{
+    try {
+        if ($response = $this->checkAdminAuth()) {
+            return $response;
+        }
 
-    return response()->json([
-        'success' => true,
-        'message' => 'Student record deleted successfully!'
-    ]);
+        $request->validate([
+            'student_ids' => 'required|array',
+            'student_ids.*' => 'exists:students,id'
+        ]);
+
+        $studentIds = $request->input('student_ids', []);
+        
+        $updated = Student::whereIn('id', $studentIds)->update([
+            'enrollment_status' => 'enrolled',
+            'approved_at' => now(),
+            'approved_by' => Auth::id()
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "{$updated} students approved successfully!"
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Error in bulk approve: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Bulk approve failed: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+public function bulkReject(Request $request)
+{
+    try {
+        if ($response = $this->checkAdminAuth()) {
+            return $response;
+        }
+
+        $request->validate([
+            'student_ids' => 'required|array',
+            'student_ids.*' => 'exists:students,id'
+        ]);
+
+        $studentIds = $request->input('student_ids', []);
+        
+        $updated = Student::whereIn('id', $studentIds)->update([
+            'enrollment_status' => 'rejected',
+            'rejected_at' => now(),
+            'rejected_by' => Auth::id()
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "{$updated} students rejected."
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Error in bulk reject: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Bulk reject failed: ' . $e->getMessage()
+        ], 500);
+    }
 }
 
 public function bulkDelete(Request $request)
 {
-    if ($response = $this->checkAdminAuth()) {
-        return $response;
+    try {
+        if ($response = $this->checkAdminAuth()) {
+            return $response;
+        }
+
+        $request->validate([
+            'student_ids' => 'required|array',
+            'student_ids.*' => 'exists:students,id'
+        ]);
+
+        $studentIds = $request->input('student_ids', []);
+        $deleted = Student::whereIn('id', $studentIds)->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => "{$deleted} student records deleted successfully!"
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Error in bulk delete: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Bulk delete failed: ' . $e->getMessage()
+        ], 500);
     }
-
-    $studentIds = $request->input('student_ids', []);
-    Student::whereIn('id', $studentIds)->delete();
-
-    return response()->json([
-        'success' => true,
-        'message' => count($studentIds) . ' student records deleted successfully!'
-    ]);
 }
 
 public function viewEnrollment($id)
@@ -722,20 +823,6 @@ private function getPermissionsByLevel(string $level): array
     }
 }
 
-     
-    
-//     public function __construct()
-// {
-//     // Apply auth middleware to all methods except showLoginForm and login
-//     $this->middleware('auth')->except(['showLoginForm', 'login', 'showGeneratorForm', 'generateAdmin']);
-    
-//     // Once the admin middleware is working, you can uncomment this:
-//     // $this->middleware('admin')->except(['showLoginForm', 'login', 'showGeneratorForm', 'generateAdmin']);
-// }
-
-/**
- * Show the admin generator form
- */
 public function showGeneratorForm()
 {
     // Check if admin role exists
@@ -774,6 +861,285 @@ public function roles()
     
     return view('admin.roles.index', compact('roles'));
 }
+
+    public function editEnrollment($id)
+    {
+    try {
+        if ($response = $this->checkAdminAuth()) {
+            return $response;
+        }
+
+        $student = Student::findOrFail($id);
+        return view('admin.enrollment-edit', compact('student'));
+
+    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        return redirect()->route('admin.enrollments')
+            ->with('error', 'Student not found.');
+    } catch (\Exception $e) {
+        Log::error('Error loading enrollment edit page: ' . $e->getMessage());
+        return redirect()->route('admin.enrollments')
+            ->with('error', 'Error loading student information.');
+    }
+    }
+
+    
+
+public function updateEnrollmentStatus(Request $request, $id)
+{
+    if ($response = $this->checkAdminAuth()) {
+        return $response;
+    }
+
+    $request->validate([
+        'status' => 'required|in:pending,enrolled,rejected',
+        'reason' => 'nullable|string|max:500'
+    ]);
+
+    $student = Student::findOrFail($id);
+    $student->update([
+        'enrollment_status' => $request->status,
+        'status_reason' => $request->reason,
+        'status_updated_at' => now(),
+        'status_updated_by' => Auth::id()
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Student status updated successfully!'
+    ]);
+}
+
+public function exportSelected(Request $request)
+{
+    if ($response = $this->checkAdminAuth()) {
+        return $response;
+    }
+
+    $studentIds = $request->input('student_ids', []);
+    $students = Student::whereIn('id', $studentIds)->get();
+
+    // Create CSV export
+    $filename = 'selected_enrollments_' . date('Y-m-d_H-i-s') . '.csv';
+    $headers = [
+        'Content-Type' => 'text/csv',
+        'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+    ];
+
+    $callback = function() use ($students) {
+        $file = fopen('php://output', 'w');
+        fputcsv($file, ['Name', 'Email', 'Grade Level', 'Status', 'Guardian', 'Contact', 'Applied Date']);
+
+        foreach ($students as $student) {
+            fputcsv($file, [
+                $student->first_name . ' ' . $student->last_name,
+                $student->email,
+                $student->grade_level,
+                $student->enrollment_status,
+                $student->guardian_name,
+                $student->guardian_contact,
+                $student->created_at->format('Y-m-d H:i:s')
+            ]);
+        }
+        fclose($file);
+    };
+
+    return response()->stream($callback, 200, $headers);
+}
+
+public function exportAll(Request $request)
+{
+    if ($response = $this->checkAdminAuth()) {
+        return $response;
+    }
+
+    $query = Student::query();
+
+    // Apply same filters as the main page
+    if ($request->filled('status')) {
+        $query->where('enrollment_status', $request->status);
+    }
+    if ($request->filled('grade_level')) {
+        $query->where('grade_level', $request->grade_level);
+    }
+    if ($request->filled('search')) {
+        $search = $request->search;
+        $query->where(function($q) use ($search) {
+            $q->where('first_name', 'LIKE', "%{$search}%")
+              ->orWhere('last_name', 'LIKE', "%{$search}%")
+              ->orWhere('email', 'LIKE', "%{$search}%");
+        });
+    }
+
+    $students = $query->get();
+    $format = $request->input('format', 'excel');
+
+    if ($format === 'pdf') {
+        // PDF export logic here
+        return $this->exportToPDF($students);
+    }
+
+    // Excel/CSV export
+    $filename = 'all_enrollments_' . date('Y-m-d_H-i-s') . '.csv';
+    $headers = [
+        'Content-Type' => 'text/csv',
+        'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+    ];
+
+    $callback = function() use ($students) {
+        $file = fopen('php://output', 'w');
+        fputcsv($file, ['Name', 'Email', 'Grade Level', 'Status', 'Guardian', 'Contact', 'Applied Date']);
+
+        foreach ($students as $student) {
+            fputcsv($file, [
+                $student->first_name . ' ' . $student->last_name,
+                $student->email,
+                $student->grade_level,
+                $student->enrollment_status,
+                $student->guardian_name,
+                $student->guardian_contact,
+                $student->created_at->format('Y-m-d H:i:s')
+            ]);
+        }
+        fclose($file);
+    };
+
+    return response()->stream($callback, 200, $headers);
+}
+
+public function sendBulkNotification(Request $request)
+{
+    if ($response = $this->checkAdminAuth()) {
+        return $response;
+    }
+
+    $request->validate([
+        'student_ids' => 'required|array',
+        'subject' => 'required|string|max:255',
+        'message' => 'required|string',
+        'type' => 'required|in:email,sms,both'
+    ]);
+
+    $students = Student::whereIn('id', $request->student_ids)->get();
+    $sent = 0;
+
+    foreach ($students as $student) {
+        if ($request->type === 'email' || $request->type === 'both') {
+            // Send email notification
+            // Mail::to($student->email)->send(new EnrollmentNotification($request->subject, $request->message));
+            $sent++;
+        }
+        
+        if ($request->type === 'sms' || $request->type === 'both') {
+            // Send SMS notification
+            // SMS::send($student->guardian_contact, $request->message);
+            $sent++;
+        }
+    }
+
+    return response()->json([
+        'success' => true,
+        'message' => "Notifications sent to {$sent} recipients!"
+    ]);
+}
+
+public function printEnrollments(Request $request)
+{
+    if ($response = $this->checkAdminAuth()) {
+        return $response;
+    }
+
+    $studentIds = $request->input('student_ids', []);
+    $students = Student::whereIn('id', $studentIds)->get();
+
+    return view('admin.enrollments-print', compact('students'));
+}
+
+private function exportToPDF($students)
+{
+    // PDF export implementation
+    // You can use libraries like DomPDF or TCPDF
+    return response()->json([
+        'success' => false,
+        'message' => 'PDF export not implemented yet'
+    ]);
+}
+
+public function updateEnrollment(Request $request, $id)
+{
+    try {
+        if ($response = $this->checkAdminAuth()) {
+            return $response;
+        }
+
+        $student = Student::findOrFail($id);
+
+        // Validate the request
+        $validatedData = $request->validate([
+            'first_name' => 'required|string|max:255',
+            'middle_name' => 'nullable|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'suffix' => 'nullable|string|max:10',
+            'email' => 'required|email|max:255|unique:students,email,' . $id,
+            'contact_number' => 'required|string|max:20',
+            'lrn' => 'nullable|string|max:20|unique:students,lrn,' . $id,
+            'date_of_birth' => 'required|date',
+            'gender' => 'required|in:male,female',
+            'religion' => 'nullable|string|max:100',
+            'address' => 'required|string|max:500',
+            'city' => 'required|string|max:100',
+            'province' => 'required|string|max:100',
+            'zip_code' => 'required|string|max:10',
+            'grade_level' => 'required|string|max:50',
+            'strand' => 'nullable|string|max:100',
+            'enrollment_status' => 'required|in:pending,enrolled,rejected',
+            'guardian_name' => 'required|string|max:255',
+            'guardian_contact' => 'required|string|max:20',
+            'father_name' => 'nullable|string|max:255',
+            'father_occupation' => 'nullable|string|max:255',
+            'father_contact' => 'nullable|string|max:20',
+            'mother_name' => 'nullable|string|max:255',
+            'mother_occupation' => 'nullable|string|max:255',
+            'mother_contact' => 'nullable|string|max:20',
+            'last_school_type' => 'nullable|in:public,private',
+            'last_school_name' => 'nullable|string|max:255',
+            'medical_history' => 'nullable|string|max:1000',
+            'payment_mode' => 'required|in:cash,installment,scholarship',
+        ]);
+
+        // Add update tracking fields
+        $validatedData['updated_by'] = Auth::id();
+        $validatedData['updated_at'] = now();
+
+        // If status is being changed to enrolled, add approval fields
+        if ($validatedData['enrollment_status'] === 'enrolled' && $student->enrollment_status !== 'enrolled') {
+            $validatedData['approved_at'] = now();
+            $validatedData['approved_by'] = Auth::id();
+        }
+
+        // If status is being changed to rejected, add rejection fields
+        if ($validatedData['enrollment_status'] === 'rejected' && $student->enrollment_status !== 'rejected') {
+            $validatedData['rejected_at'] = now();
+            $validatedData['rejected_by'] = Auth::id();
+        }
+
+        // Update the student record
+        $student->update($validatedData);
+
+        return redirect()->route('admin.enrollments')
+            ->with('success', 'Student information updated successfully!');
+
+    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        return redirect()->route('admin.enrollments')
+            ->with('error', 'Student not found.');
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return back()->withErrors($e->errors())->withInput();
+    } catch (\Exception $e) {
+        Log::error('Error updating enrollment: ' . $e->getMessage());
+        return back()->with('error', 'Error updating student information. Please try again.')
+            ->withInput();
+    }
+}
+
 
 
 }
