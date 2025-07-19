@@ -50,20 +50,20 @@ class User extends Authenticatable
         return $this->hasMany(Student::class, 'approved_by');
     }
 
-    public function gradesGiven()
-    {
-        return $this->hasMany(Grade::class, 'teacher_id');
-    }
+    // public function gradesGiven()
+    // {
+    //     return $this->hasMany(Grade::class, 'teacher_id');
+    // }
 
-    public function processedEnrollments()
-    {
-        return $this->hasMany(Enrollment::class, 'processed_by');
-    }
+    // public function processedEnrollments()
+    // {
+    //     return $this->hasMany(Enrollment::class, 'processed_by');
+    // }
 
-    public function processedPayments()
-    {
-        return $this->hasMany(Payment::class, 'processed_by');
-    }
+    // public function processedPayments()
+    // {
+    //     return $this->hasMany(Payment::class, 'processed_by');
+    // }
 
     // ACCESSORS
     public function getRoleNamesAttribute()
@@ -92,35 +92,35 @@ class User extends Authenticatable
         return $this->admin()->exists() && $this->admin->is_active;
     }
 
-    public function teacher()
-    {
-        return $this->hasOne(Teacher::class);
-    }
+    // public function teacher()
+    // {
+    //     return $this->hasOne(Teacher::class);
+    // }
 
-    public function guidanceCounsellor()
-    {
-        return $this->hasOne(GuidanceCounsellor::class);
-    }
+    // public function guidanceCounsellor()
+    // {
+    //     return $this->hasOne(GuidanceCounsellor::class);
+    // }
 
-    public function disciplineOfficer()
-    {
-        return $this->hasOne(DisciplineOfficer::class);
-    }
+    // public function disciplineOfficer()
+    // {
+    //     return $this->hasOne(DisciplineOfficer::class);
+    // }
 
-    public function isTeacher()
-    {
-        return $this->teacher()->exists() && $this->teacher->is_active;
-    }
+    // public function isTeacher()
+    // {
+    //     return $this->teacher()->exists() && $this->teacher->is_active;
+    // }
 
-    public function isGuidanceCounsellor()
-    {
-        return $this->guidanceCounsellor()->exists() && $this->guidanceCounsellor->is_active;
-    }
+    // public function isGuidanceCounsellor()
+    // {
+    //     return $this->guidanceCounsellor()->exists() && $this->guidanceCounsellor->is_active;
+    // }
 
-    public function isDisciplineOfficer()
-    {
-        return $this->disciplineOfficer()->exists() && $this->disciplineOfficer->is_active;
-    }
+    // public function isDisciplineOfficer()
+    // {
+    //     return $this->disciplineOfficer()->exists() && $this->disciplineOfficer->is_active;
+    // }
 
     public function student()
 {
@@ -135,9 +135,9 @@ class User extends Authenticatable
     public function getUserRole()
     {
         if ($this->isAdmin()) return 'admin';
-        if ($this->isTeacher()) return 'teacher';
-        if ($this->isGuidanceCounsellor()) return 'guidance_counsellor';
-        if ($this->isDisciplineOfficer()) return 'discipline_officer';
+        // if ($this->isTeacher()) return 'teacher';
+        // if ($this->isGuidanceCounsellor()) return 'guidance_counsellor';
+        // if ($this->isDisciplineOfficer()) return 'discipline_officer';
         if ($this->isStudent()) return 'student';
         return 'user';
     }
