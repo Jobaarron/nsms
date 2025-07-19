@@ -166,11 +166,10 @@ document.addEventListener('DOMContentLoaded', function() {
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': token,
-                'X-Requested-With': 'XMLHttpRequest' // This helps Laravel identify AJAX requests
+                'X-Requested-With': 'XMLHttpRequest'
             }
         })
         .then(response => {
-            // Handle authentication/authorization errors
             if (response.status === 401) {
                 hideLoadingOverlay();
                 showAlert('error', 'Your session has expired. Please log in again.');
@@ -186,14 +185,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            // Try to parse JSON response
             return response.json().catch(() => {
-                // If JSON parsing fails, it might be an HTML error page
                 throw new Error(`Server returned ${response.status}: ${response.statusText}`);
             });
         })
         .then(data => {
-            if (!data) return; // Handle early returns from auth errors
+            if (!data) return;
             
             hideLoadingOverlay();
             if (data.success) {
@@ -202,7 +199,6 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 showAlert('error', data.message || 'Operation failed');
                 
-                // Handle redirect if provided
                 if (data.redirect) {
                     setTimeout(() => {
                         window.location.href = data.redirect;
@@ -214,7 +210,6 @@ document.addEventListener('DOMContentLoaded', function() {
             hideLoadingOverlay();
             console.error('Error:', error);
             
-            // More specific error messages
             if (error.message.includes('500')) {
                 showAlert('error', 'Server error occurred. Please try again or contact support.');
             } else if (error.message.includes('404')) {
@@ -225,7 +220,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Also update performBulkAction function
     function performBulkAction(url, studentIds, successMessage) {
         showLoadingOverlay();
         
@@ -239,7 +233,6 @@ document.addEventListener('DOMContentLoaded', function() {
             body: JSON.stringify({ student_ids: studentIds })
         })
         .then(response => {
-            // Handle authentication/authorization errors
             if (response.status === 401) {
                 hideLoadingOverlay();
                 showAlert('error', 'Your session has expired. Please log in again.');
@@ -297,7 +290,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Enhanced alert function with auto-dismiss and better styling
     function showAlert(type, message) {
-        // Remove existing alerts
         const existingAlerts = document.querySelectorAll('.custom-alert');
         existingAlerts.forEach(alert => alert.remove());
         
@@ -329,7 +321,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         document.body.appendChild(alertDiv);
         
-        // Auto remove after 5 seconds
         setTimeout(() => {
             if (alertDiv.parentNode) {
                 alertDiv.style.opacity = '0';
@@ -372,7 +363,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (modalTitle) modalTitle.textContent = title;
         if (modalBody) modalBody.innerHTML = message;
         
-        // Set button style based on type
         const btnClass = type === 'danger' ? 'btn-danger' : 
                         type === 'warning' ? 'btn-warning' : 'btn-success';
         if (confirmBtn) {
@@ -381,15 +371,12 @@ document.addEventListener('DOMContentLoaded', function() {
                                     type === 'warning' ? 'Reject' : 'Approve';
         }
         
-        // Set up confirm action
         if (confirmBtn) {
             confirmBtn.onclick = function() {
-                // Check if Bootstrap is available
                 if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
                     const modalInstance = bootstrap.Modal.getInstance(modal);
                     if (modalInstance) modalInstance.hide();
                 } else {
-                    // Fallback: hide modal manually
                     modal.style.display = 'none';
                     modal.classList.remove('show');
                     document.body.classList.remove('modal-open');
@@ -400,17 +387,14 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         }
         
-        // Show modal
         if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
             const modalInstance = new bootstrap.Modal(modal);
             modalInstance.show();
         } else {
-            // Fallback: show modal manually
             modal.style.display = 'block';
             modal.classList.add('show');
             document.body.classList.add('modal-open');
             
-            // Create backdrop
             const backdrop = document.createElement('div');
             backdrop.className = 'modal-backdrop fade show';
             document.body.appendChild(backdrop);
@@ -427,7 +411,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="d-flex justify-content-center align-items-center h-100">
                     <div class="text-center">
                         <div class="spinner-border text-primary mb-3" role="status">
-                            <span class="visually-hidden">Loading...</span>
+                             <span class="visually-hidden">Loading...</span>
                         </div>
                         <div class="loading-message text-muted">${message}</div>
                     </div>
@@ -445,7 +429,7 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
             document.body.appendChild(overlay);
         }
-        
+
         const loadingMessage = overlay.querySelector('.loading-message');
         if (loadingMessage) loadingMessage.textContent = message;
         overlay.style.display = 'block';
@@ -492,7 +476,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <textarea class="form-control" id="statusReason" rows="3" placeholder="Enter reason for status change..."></textarea>
                             </div>
                         </div>
-                                                <div class="modal-footer">
+                        <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                             <button type="button" class="btn btn-primary" onclick="updateStudentStatus()">Update Status</button>
                         </div>
@@ -515,15 +499,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (newStatusEl) newStatusEl.value = currentStatus;
         if (statusReasonEl) statusReasonEl.value = '';
         
-        // Store student ID for later use
         modal.dataset.studentId = id;
         
-        // Show modal
         if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
             const modalInstance = new bootstrap.Modal(modal);
             modalInstance.show();
         } else {
-            // Fallback
             modal.style.display = 'block';
             modal.classList.add('show');
             document.body.classList.add('modal-open');
@@ -560,7 +541,6 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             hideLoadingOverlay();
             if (data.success) {
-                // Hide modal
                 if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
                     const modalInstance = bootstrap.Modal.getInstance(modal);
                     if (modalInstance) modalInstance.hide();
@@ -638,10 +618,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (messageEl) messageEl.value = '';
         if (typeEl) typeEl.value = 'email';
         
-        // Store selected IDs
         modal.dataset.selectedIds = JSON.stringify(selectedIds);
         
-        // Show modal
         if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
             const modalInstance = new bootstrap.Modal(modal);
             modalInstance.show();
@@ -691,7 +669,6 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             hideLoadingOverlay();
             if (data.success) {
-                // Hide modal
                 if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
                     const modalInstance = bootstrap.Modal.getInstance(modal);
                     if (modalInstance) modalInstance.hide();
@@ -744,7 +721,6 @@ document.addEventListener('DOMContentLoaded', function() {
         formatInput.value = format;
         form.appendChild(formatInput);
         
-        // Add current filters
         const urlParams = new URLSearchParams(window.location.search);
         urlParams.forEach((value, key) => {
             const input = document.createElement('input');
@@ -807,11 +783,9 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Select all pending students
         pendingStudents.forEach(checkbox => checkbox.checked = true);
         updateBulkActions();
         
-        // Trigger bulk approve
         bulkApprove();
     };
 
@@ -846,7 +820,6 @@ document.addEventListener('DOMContentLoaded', function() {
         checkbox.addEventListener('change', function() {
             updateBulkActions();
             
-            // Update select all checkbox
             const allCheckboxes = document.querySelectorAll('.student-checkbox');
             const checkedCheckboxes = document.querySelectorAll('.student-checkbox:checked');
             const selectAllCheckbox = document.getElementById('selectAll');
@@ -876,7 +849,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 bulkActions.style.display = 'block';
                 selectedCount.textContent = selectedCheckboxes.length;
                 
-                // Update button states based on selection
                 updateBulkButtonStates(selectedCheckboxes);
             } else {
                 bulkActions.style.display = 'none';
@@ -891,7 +863,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const hasPending = statuses.includes('pending');
         
-        // Enable/disable buttons based on selection
         const approveBtn = document.querySelector('[onclick="bulkApprove()"]');
         const rejectBtn = document.querySelector('[onclick="bulkReject()"]');
         
@@ -906,6 +877,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // Keyboard shortcuts - FIXED: Remove conflicting search auto-submit
     document.addEventListener('keydown', function(e) {
         if (e.ctrlKey && e.key === 'a' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
             e.preventDefault();
@@ -917,266 +889,261 @@ document.addEventListener('DOMContentLoaded', function() {
             clearAllSelections();
         }
     
-        // Ctrl+E to export
         if (e.ctrlKey && e.key === 'e') {
             e.preventDefault();
             exportSelected();
         }
     });
 
-// Auto-refresh functionality
-let autoRefreshInterval;
-window.toggleAutoRefresh = function() {
-    const btn = document.getElementById('autoRefreshBtn');
-    if (!btn) return;
-    
-    if (autoRefreshInterval) {
-        clearInterval(autoRefreshInterval);
-        autoRefreshInterval = null;
-        btn.innerHTML = '<i class="ri-refresh-line me-1"></i>Auto Refresh: OFF';
-        btn.classList.remove('btn-success');
-        btn.classList.add('btn-outline-secondary');
-        showAlert('info', 'Auto-refresh disabled.');
-    } else {
-        autoRefreshInterval = setInterval(() => {
-            location.reload();
-        }, 30000); // Refresh every 30 seconds
+    // Auto-refresh functionality
+    let autoRefreshInterval;
+    window.toggleAutoRefresh = function() {
+        const btn = document.getElementById('autoRefreshBtn');
+        if (!btn) return;
         
-        btn.innerHTML = '<i class="ri-refresh-line me-1"></i>Auto Refresh: ON';
-        btn.classList.remove('btn-outline-secondary');
-        btn.classList.add('btn-success');
-        showAlert('info', 'Auto-refresh enabled (30 seconds).');
-    }
-};
+        if (autoRefreshInterval) {
+            clearInterval(autoRefreshInterval);
+            autoRefreshInterval = null;
+            btn.innerHTML = '<i class="ri-refresh-line me-1"></i>Auto Refresh: OFF';
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-outline-secondary');
+            showAlert('info', 'Auto-refresh disabled.');
+        } else {
+            autoRefreshInterval = setInterval(() => {
+                location.reload();
+            }, 30000);
+            
+            btn.innerHTML = '<i class="ri-refresh-line me-1"></i>Auto Refresh: ON';
+            btn.classList.remove('btn-outline-secondary');
+            btn.classList.add('btn-success');
+            showAlert('info', 'Auto-refresh enabled (30 seconds).');
+        }
+    };
 
-// Initialize tooltips with fallback
-function initializeTooltips() {
-    if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
-        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl);
-        });
-    }
-}
-
-// Initialize page
-updateBulkActions();
-initializeTooltips();
-
-// Clean up intervals on page unload
-window.addEventListener('beforeunload', function() {
-    if (autoRefreshInterval) {
-        clearInterval(autoRefreshInterval);
-    }
-});
-
-// Additional utility functions for better UX
-window.refreshPage = function() {
-    showLoadingOverlay('Refreshing...');
-    location.reload();
-};
-
-// Handle modal close events
-document.addEventListener('click', function(e) {
-    if (e.target.classList.contains('btn-close') || e.target.getAttribute('data-bs-dismiss') === 'modal') {
-        const modal = e.target.closest('.modal');
-        if (modal) {
-            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                const modalInstance = bootstrap.Modal.getInstance(modal);
-                if (modalInstance) modalInstance.hide();
-            } else {
-                modal.style.display = 'none';
-                modal.classList.remove('show');
-                document.body.classList.remove('modal-open');
-                const backdrop = document.querySelector('.modal-backdrop');
-                if (backdrop) backdrop.remove();
-            }
+    // Initialize tooltips with fallback
+    function initializeTooltips() {
+        if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
         }
     }
-});
 
-// Handle escape key for modals
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        const openModals = document.querySelectorAll('.modal.show');
-        openModals.forEach(modal => {
-            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                const modalInstance = bootstrap.Modal.getInstance(modal);
-                if (modalInstance) modalInstance.hide();
-            } else {
-                modal.style.display = 'none';
-                modal.classList.remove('show');
-                document.body.classList.remove('modal-open');
-                const backdrop = document.querySelector('.modal-backdrop');
-                if (backdrop) backdrop.remove();
-            }
-        });
-    }
-});
+    // Initialize page
+    updateBulkActions();
+    initializeTooltips();
 
-// Enhanced error handling for network issues
-window.addEventListener('online', function() {
-    showAlert('success', 'Connection restored!');
-});
-
-window.addEventListener('offline', function() {
-    showAlert('warning', 'Connection lost. Some features may not work properly.');
-});
-
-// Performance optimization: debounce search input
-const searchInput = document.querySelector('input[name="search"]');
-if (searchInput) {
-    let searchTimeout;
-    searchInput.addEventListener('input', function() {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            // Auto-submit search after 500ms of no typing
-            if (this.value.length > 2 || this.value.length === 0) {
-                this.form.submit();
-            }
-        }, 500);
+    // Clean up intervals on page unload
+    window.addEventListener('beforeunload', function() {
+        if (autoRefreshInterval) {
+            clearInterval(autoRefreshInterval);
+        }
     });
-}
 
-// Add visual feedback for form submissions
-const filterForm = document.querySelector('form[action*="admin.enrollments"]');
-if (filterForm) {
-    filterForm.addEventListener('submit', function() {
-        showLoadingOverlay('Applying filters...');
-    });
-}
+    // Additional utility functions for better UX
+    window.refreshPage = function() {
+        showLoadingOverlay('Refreshing...');
+        location.reload();
+    };
 
-// Add confirmation for dangerous actions
-const dangerousButtons = document.querySelectorAll('.btn-danger, .btn-outline-danger');
-dangerousButtons.forEach(button => {
-    if (!button.onclick && button.textContent.toLowerCase().includes('delete')) {
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-            const confirmed = confirm('Are you sure you want to perform this action? This cannot be undone.');
-            if (confirmed) {
-                // Proceed with the original action
-                if (this.onclick) {
-                    this.onclick();
+    // Handle modal close events
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('btn-close') || e.target.getAttribute('data-bs-dismiss') === 'modal') {
+            const modal = e.target.closest('.modal');
+            if (modal) {
+                if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                    const modalInstance = bootstrap.Modal.getInstance(modal);
+                    if (modalInstance) modalInstance.hide();
+                } else {
+                    modal.style.display = 'none';
+                    modal.classList.remove('show');
+                    document.body.classList.remove('modal-open');
+                    const backdrop = document.querySelector('.modal-backdrop');
+                    if (backdrop) backdrop.remove();
                 }
             }
-        });
-    }
-});
+        }
+    });
 
-// Add loading state to buttons on click
-document.addEventListener('click', function(e) {
-    if (e.target.classList.contains('btn') && !e.target.classList.contains('btn-close')) {
-        const button = e.target;
-        const originalText = button.innerHTML;
-        
-        // Add loading state
-        button.disabled = true;
-        button.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>Loading...';
-        
-        // Restore button after 3 seconds (fallback)
-        setTimeout(() => {
-            button.disabled = false;
-            button.innerHTML = originalText;
-        }, 3000);
-    }
-});
-
-// Add smooth scrolling for better UX
-const smoothScrollLinks = document.querySelectorAll('a[href^="#"]');
-smoothScrollLinks.forEach(link => {
-    link.addEventListener('click', function(e) {
-        e.preventDefault();
-        const target = document.querySelector(this.getAttribute('href'));
-        if (target) {
-            target.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start'
+    // Handle escape key for modals
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const openModals = document.querySelectorAll('.modal.show');
+            openModals.forEach(modal => {
+                if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                    const modalInstance = bootstrap.Modal.getInstance(modal);
+                    if (modalInstance) modalInstance.hide();
+                } else {
+                    modal.style.display = 'none';
+                    modal.classList.remove('show');
+                    document.body.classList.remove('modal-open');
+                    const backdrop = document.querySelector('.modal-backdrop');
+                    if (backdrop) backdrop.remove();
+                }
             });
         }
     });
-});
 
-// Add table row hover effects
-const tableRows = document.querySelectorAll('tbody tr');
-tableRows.forEach(row => {
-    row.addEventListener('mouseenter', function() {
-        this.style.transform = 'scale(1.01)';
-        this.style.transition = 'transform 0.2s ease';
+    // Enhanced error handling for network issues
+    window.addEventListener('online', function() {
+        showAlert('success', 'Connection restored!');
     });
-    
-    row.addEventListener('mouseleave', function() {
-        this.style.transform = 'scale(1)';
-    });
-});
 
-// Add progress indicator for bulk operations
-function showProgressModal(title, total) {
-    const modalId = 'progressModal';
-    let modal = document.getElementById(modalId);
-    
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.id = modalId;
-        modal.className = 'modal fade';
-        modal.innerHTML = `
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">${title}</h5>
-                    </div>
-                    <div class="modal-body">
-                        <div class="progress mb-3">
-                            <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+    window.addEventListener('offline', function() {
+        showAlert('warning', 'Connection lost. Some features may not work properly.');
+    });
+
+    // FIXED: Remove the problematic debounced search that was interfering with filters
+    // The search input will now work normally with the form submission
+    const searchInput = document.querySelector('input[name="search"]');
+    if (searchInput) {
+        // Remove the auto-submit functionality that was causing issues
+        // Let the form handle search normally
+        console.log('Search input found, normal form submission enabled');
+    }
+
+    // FIXED: Ensure filter form works properly
+    const filterForm = document.querySelector('form[method="GET"]');
+    if (filterForm) {
+        // Remove the loading overlay that was preventing form submission
+        filterForm.addEventListener('submit', function(e) {
+            // Don't prevent default or show loading overlay for GET forms
+            console.log('Filter form submitted');
+        });
+    }
+
+    // Add confirmation for dangerous actions
+    const dangerousButtons = document.querySelectorAll('.btn-danger, .btn-outline-danger');
+    dangerousButtons.forEach(button => {
+        if (!button.onclick && button.textContent.toLowerCase().includes('delete')) {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                const confirmed = confirm('Are you sure you want to perform this action? This cannot be undone.');
+                if (confirmed) {
+                    if (this.onclick) {
+                        this.onclick();
+                    }
+                }
+            });
+        }
+    });
+
+    // FIXED: Only add loading state to non-form buttons
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('btn') && 
+            !e.target.classList.contains('btn-close') &&
+            e.target.type !== 'submit' &&
+            !e.target.closest('form')) {
+            
+            const button = e.target;
+            const originalText = button.innerHTML;
+            
+            button.disabled = true;
+            button.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>Loading...';
+            
+            setTimeout(() => {
+                button.disabled = false;
+                button.innerHTML = originalText;
+            }, 3000);
+        }
+    });
+
+    // Add smooth scrolling for better UX
+    const smoothScrollLinks = document.querySelectorAll('a[href^="#"]');
+    smoothScrollLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        });
+    });
+
+    // Add table row hover effects
+    const tableRows = document.querySelectorAll('tbody tr');
+    tableRows.forEach(row => {
+        row.addEventListener('mouseenter', function() {
+            this.style.transform = 'scale(1.01)';
+            this.style.transition = 'transform 0.2s ease';
+        });
+        
+        row.addEventListener('mouseleave', function() {
+            this.style.transform = 'scale(1)';
+        });
+    });
+
+    // Add progress indicator for bulk operations
+    function showProgressModal(title, total) {
+        const modalId = 'progressModal';
+        let modal = document.getElementById(modalId);
+        
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = modalId;
+            modal.className = 'modal fade';
+            modal.innerHTML = `
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">${title}</h5>
                         </div>
-                        <p class="text-center mb-0">
-                            Processing <span class="current">0</span> of <span class="total">${total}</span> items...
-                        </p>
+                        <div class="modal-body">
+                            <div class="progress mb-3">
+                                <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <p class="text-center mb-0">
+                                Processing <span class="current">0</span> of <span class="total">${total}</span> items...
+                            </p>
+                        </div>
                     </div>
                 </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
+            `;
+            document.body.appendChild(modal);
+        }
+        
+        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+            const modalInstance = new bootstrap.Modal(modal, { backdrop: 'static', keyboard: false });
+            modalInstance.show();
+        } else {
+            modal.style.display = 'block';
+            modal.classList.add('show');
+            document.body.classList.add('modal-open');
+        }
+        
+        return modal;
     }
-    
-    // Show modal
-    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-        const modalInstance = new bootstrap.Modal(modal, { backdrop: 'static', keyboard: false });
-        modalInstance.show();
-    } else {
-        modal.style.display = 'block';
-        modal.classList.add('show');
-        document.body.classList.add('modal-open');
-    }
-    
-    return modal;
-}
 
-// Console log for debugging (remove in production)
-console.log('Admin Enrollments JS loaded successfully');
+    // Console log for debugging
+    console.log('Admin Enrollments JS loaded successfully');
 
-// Show success message if page loaded successfully
-setTimeout(() => {
-    if (document.readyState === 'complete') {
-        console.log('Page fully loaded and interactive');
-    }
-}, 1000);
+    // Show success message if page loaded successfully
+    setTimeout(() => {
+        if (document.readyState === 'complete') {
+            console.log('Page fully loaded and interactive');
+        }
+    }, 1000);
 
 }); // End of DOMContentLoaded event listener
 
 // Global error handler
 window.addEventListener('error', function(e) {
-console.error('JavaScript Error:', e.error);
-// Don't show error alerts to users in production
-if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    alert('JavaScript Error: ' + e.message);
-}
+    console.error('JavaScript Error:', e.error);
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        // Only show alerts in development
+        console.log('Development mode - JavaScript Error:', e.message);
+    }
 });
 
 // Global unhandled promise rejection handler
 window.addEventListener('unhandledrejection', function(e) {
-console.error('Unhandled Promise Rejection:', e.reason);
-// Don't show error alerts to users in production
-if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    alert('Promise Rejection: ' + e.reason);
-}
+    console.error('Unhandled Promise Rejection:', e.reason);
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        // Only show alerts in development
+        console.log('Development mode - Promise Rejection:', e.reason);
+    }
 });
