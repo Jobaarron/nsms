@@ -91,6 +91,10 @@ Route::prefix('admin')->group(function () {
         
         // Users management
         Route::get('/manage-users', [AdminController::class, 'manageUsers'])->name('admin.manage.users');
+        Route::post('/manage-users/store', [AdminController::class, 'storeUser'])->name('admin.manage.store');
+        Route::get('manage-users/{id}', [AdminController::class, 'showUser'])->name('admin.manage.show');
+        Route::put('/manage-users/{id}', [AdminController::class, 'updateUser'])->name('admin.manage.update');
+        Route::delete('/manage-users/{id}', [AdminController::class, 'destroyUser'])->name('admin.manage.destroy');
         
         // Roles & Access Management - Use your custom permission middleware
         Route::middleware(['can:Manage Roles'])->group(function () {
@@ -177,16 +181,162 @@ Route::get('/test', function () {
 })->name('test');
 
 
+// Public Guidance Account Generator (no authentication required)
+Route::get('/guidance-generator', [GuidanceDisciplineController::class, 'showPublicGenerator'])
+    ->name('guidance.generator');
 
-
-
+Route::post('/guidance-generator', [GuidanceDisciplineController::class, 'createPublicAccount'])
+    ->name('guidance.generator.submit');
+    
+// Guidance & Discipline Routes
+Route::prefix('guidance')->name('guidance.')->group(function () {
+    
+    // Authentication Routes
+    Route::get('/login', [GuidanceDisciplineController::class, 'showLogin'])
+        ->name('login');
+    
+    Route::post('/login', [GuidanceDisciplineController::class, 'login'])
+        ->name('login.submit');
+    
+    Route::post('/logout', [GuidanceDisciplineController::class, 'logout'])
+        ->name('logout');
+    
+    // Protected Routes (require authentication and guidance staff role)
+    Route::middleware(['auth'])->group(function () {
+        
+        // Dashboard
+        Route::get('/dashboard', [GuidanceDisciplineController::class, 'dashboard'])
+            ->name('dashboard');
+        
+        // Account Management Routes
+        Route::get('/create-account', [GuidanceDisciplineController::class, 'showCreateAccount'])
+            ->name('create-account');
+        
+        Route::post('/create-account', [GuidanceDisciplineController::class, 'createAccount'])
+            ->name('create-account.submit');
+        
+        // Student Management Routes
+        Route::prefix('students')->name('students.')->group(function () {
+            Route::get('/', [GuidanceDisciplineController::class, 'studentsIndex'])
+                ->name('index');
+            
+            Route::get('/{student}', [GuidanceDisciplineController::class, 'showStudent'])
+                ->name('show');
+                
+            Route::get('/{student}/info', [GuidanceDisciplineController::class, 'getStudentInfo'])
+                ->name('info');
+        });
+        
+        // Violations Management Routes
+        Route::prefix('violations')->name('violations.')->group(function () {
+            Route::get('/', [GuidanceDisciplineController::class, 'violationsIndex'])
+                ->name('index');
+            
+            Route::post('/', [GuidanceDisciplineController::class, 'storeViolation'])
+                ->name('store');
+            
+            Route::get('/{violation}', [GuidanceDisciplineController::class, 'showViolation'])
+                ->name('show');
+            
+            Route::get('/{violation}/edit', [GuidanceDisciplineController::class, 'editViolation'])
+                ->name('edit');
+            
+            Route::put('/{violation}', [GuidanceDisciplineController::class, 'updateViolation'])
+                ->name('update');
+            
+            Route::delete('/{violation}', [GuidanceDisciplineController::class, 'destroyViolation'])
+                ->name('destroy');
+        });
+        
+        // Counseling Records Routes (to be implemented)
+        Route::prefix('counseling')->name('counseling.')->group(function () {
+            Route::get('/', function () {
+                return view('guidancediscipline.counseling.index');
+            })->name('index');
+            
+            Route::get('/create', function () {
+                return view('guidancediscipline.counseling.create');
+            })->name('create');
+            
+            Route::post('/', function () {
+                // Store counseling record logic
+            })->name('store');
+            
+            Route::get('/{record}/edit', function () {
+                return view('guidancediscipline.counseling.edit');
+            })->name('edit');
+        });
+        
+        // Facial Recognition Routes (to be implemented)
+        Route::prefix('facial-recognition')->name('facial-recognition.')->group(function () {
+            Route::get('/', function () {
+                return view('guidancediscipline.facial-recognition.index');
+            })->name('index');
+            
+            Route::post('/enroll', function () {
+                // Enroll face logic
+            })->name('enroll');
+            
+            Route::post('/recognize', function () {
+                // Face recognition logic
+            })->name('recognize');
+        });
+        
+        // Disciplinary Actions Routes (to be implemented)
+        Route::prefix('disciplinary-actions')->name('disciplinary-actions.')->group(function () {
+            Route::get('/', function () {
+                return view('guidancediscipline.disciplinary-actions.index');
+            })->name('index');
+            
+            Route::get('/create', function () {
+                return view('guidancediscipline.disciplinary-actions.create');
+            })->name('create');
+            
+            Route::post('/', function () {
+                // Store disciplinary action logic
+            })->name('store');
+        });
+        
+        // Analytics & Reports Routes (to be implemented)
+        Route::prefix('reports')->name('reports.')->group(function () {
+            Route::get('/', function () {
+                return view('guidancediscipline.reports.index');
+            })->name('index');
+            
+            Route::get('/violations', function () {
+                return view('guidancediscipline.reports.violations');
+            })->name('violations');
+            
+            Route::get('/counseling', function () {
+                return view('guidancediscipline.reports.counseling');
+            })->name('counseling');
+        });
+        
+        // Settings Routes (to be implemented)
+        Route::prefix('settings')->name('settings.')->group(function () {
+            Route::get('/', function () {
+                return view('guidancediscipline.settings.index');
+            })->name('index');
+            
+            Route::get('/profile', function () {
+                return view('guidancediscipline.settings.profile');
+            })->name('profile');
+            
+            Route::put('/profile', function () {
+                // Update profile logic
+            })->name('profile.update');
+        });
+    });
+});
 
 
 Route::get('/teacher', [TeacherController::class, 'index']);
 // Route::get('/admin', [adminController::class, 'adminindex']);
 // Route::get('/admin/login', [adminController::class, 'adminlogin']);
 Route::get('/student', [StudentController::class, 'index']);
-Route::get('/guidance', [GuidanceDisciplineController::class, 'index']);
+
+// Route::get('/guidance', [GuidanceDisciplineController::class, 'index']);
+// Route::get('/guidance/login', [GuidanceDisciplineController::class, 'loginform']);
 
 // Student routes
 Route::prefix('student')->name('student.')->group(function () {

@@ -166,4 +166,12 @@ class Student extends Authenticatable
     {
         return $this->is_paid ? 'success' : 'danger';
     }
+
+    /**
+     * Get violations for this student
+     */
+    public function violations()
+    {
+        return $this->hasMany(Violation::class);
+    }
 }

@@ -15,9 +15,11 @@ export default defineConfig({
                 'resources/css/email.css',
                 'resources/css/admin_generator.css',
                 'resources/css/admin_enrollments.css',
+                'resources/css/manage_users.css',
                 'resources/js/landingpage.js',
                 'resources/js/enroll.js',
                 'resources/js/admin-enrollments.js',
+                'resources/js/manage_users.js',
                 
             ],
             refresh: true,

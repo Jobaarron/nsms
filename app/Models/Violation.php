@@ -1,0 +1,93 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class Violation extends Model
+{
+    protected $fillable = [
+        'student_id',
+        'reported_by',
+        'violation_type',
+        'title',
+        'description',
+        'severity',
+        'violation_date',
+        'violation_time',
+        'location',
+        'witnesses',
+        'evidence',
+        'attachments',
+        'status',
+        'resolution',
+        'resolved_by',
+        'resolved_at',
+        'student_statement',
+        'disciplinary_action',
+        'parent_notified',
+        'parent_notification_date',
+        'notes',
+    ];
+
+    protected $casts = [
+        'violation_date' => 'date',
+        'resolved_at' => 'date',
+        'parent_notification_date' => 'date',
+        'witnesses' => 'array',
+        'attachments' => 'array',
+        'parent_notified' => 'boolean',
+    ];
+
+    /**
+     * Get the student that owns this violation.
+     */
+    public function student(): BelongsTo
+    {
+        return $this->belongsTo(Student::class);
+    }
+
+    /**
+     * Get the staff member who reported this violation.
+     */
+    public function reportedBy(): BelongsTo
+    {
+        return $this->belongsTo(GuidanceDiscipline::class, 'reported_by');
+    }
+
+    /**
+     * Get the staff member who resolved this violation.
+     */
+    public function resolvedBy(): BelongsTo
+    {
+        return $this->belongsTo(GuidanceDiscipline::class, 'resolved_by');
+    }
+
+    /**
+     * Get the severity color for display.
+     */
+    public function getSeverityColorAttribute(): string
+    {
+        return match($this->severity) {
+            'minor' => 'success',
+            'major' => 'warning',
+            'severe' => 'danger',
+            default => 'secondary'
+        };
+    }
+
+    /**
+     * Get the status color for display.
+     */
+    public function getStatusColorAttribute(): string
+    {
+        return match($this->status) {
+            'pending' => 'warning',
+            'investigating' => 'info',
+            'resolved' => 'success',
+            'dismissed' => 'secondary',
+            default => 'secondary'
+        };
+    }
+}

@@ -142,5 +142,30 @@ class User extends Authenticatable
         return 'user';
     }
 
+    /**
+     * Check if user is guidance staff (counselor, discipline officer, or security guard)
+     */
+    public function isGuidanceStaff()
+    {
+        return $this->hasRole(['guidance_counselor', 'discipline_officer', 'security_guard']);
+    }
+
+    /**
+     * Update last login timestamp (if you want to track this)
+     */
+    public function updateLastLogin()
+    {
+        // You can implement this if you add a last_login column to users table
+        // For now, we'll just return without doing anything
+        return;
+    }
+
+    /**
+     * Get the guidance discipline record for this user
+     */
+    public function guidanceDiscipline()
+    {
+        return $this->hasOne(GuidanceDiscipline::class);
+    }
 
 }

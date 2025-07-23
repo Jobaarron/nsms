@@ -280,10 +280,94 @@ public function getUserRoles(User $user)
     ]);
 }
     
-        public function manageUsers()
+ public function manageUsers()
     {
-        return view('admin.manage_users');
+        $users = User::with(['roles', 'permissions'])->get();
+        $roles = Role::all();
+        return view('admin.manage_users', compact('users', 'roles'));
     }
+
+    public function storeUser(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|min:8|confirmed',
+            'roles' => 'array'
+        ]);
+
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password)
+        ]);
+
+        if ($request->roles) {
+            $user->assignRole($request->roles);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "User '{$request->name}' created successfully!"
+        ]);
+    }
+
+    public function showUser($id)
+    {
+        $user = User::with(['roles', 'permissions'])->findOrFail($id);
+        return response()->json($user);
+    }
+
+    public function updateUser(Request $request, $id)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,' . $id,
+            'password' => 'nullable|min:8|confirmed',
+            'roles' => 'array'
+        ]);
+
+        $user = User::findOrFail($id);
+        $user->update([
+            'name' => $request->name,
+            'email' => $request->email,
+        ]);
+
+        if ($request->password) {
+            $user->update(['password' => Hash::make($request->password)]);
+        }
+
+        if ($request->has('roles')) {
+            $user->syncRoles($request->roles ?? []);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "User '{$request->name}' updated successfully!"
+        ]);
+    }
+
+    public function destroyUser($id)
+    {
+        $user = User::findOrFail($id);
+        
+        // Prevent deletion of admin user if it's the only one
+        if ($user->hasRole('admin') && User::role('admin')->count() <= 1) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot delete the only admin user'
+            ], 400);
+        }
+
+        $userName = $user->name;
+        $user->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => "User '{$userName}' deleted successfully!"
+        ]);
+    }
+
 
     public function enrollments(Request $request)
 {
@@ -1139,6 +1223,7 @@ public function updateEnrollment(Request $request, $id)
             ->withInput();
     }
 }
+
 
 
 
