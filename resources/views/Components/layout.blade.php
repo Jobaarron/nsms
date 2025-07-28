@@ -53,7 +53,11 @@
                             <div class="dropdown-divider"></div>
                             <a href="/admin/login" class="dropdown-item {{ request()->is('/admin/login') ? 'active' : '' }}">
                                 <i class="ri-admin-line"></i>
-                                Admin Dashboard
+                                Admin Login
+                            </a>
+                            <a href="/guidance/login" class="dropdown-item {{ request()->is('/guidance/login') ? 'active' : '' }}">
+                                <i class="ri-building-4-line"></i>
+                                Guidance & Discipline Login
                             </a>
                             {{-- <a href="/portal/parent" class="dropdown-item {{ request()->is('portal/parent*') ? 'active' : '' }}">
                                 <i class="ri-parent-line"></i>
