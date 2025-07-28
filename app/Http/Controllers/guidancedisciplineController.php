@@ -143,12 +143,26 @@ class GuidanceDisciplineController extends Controller
         // Get statistics
         $totalStudents = Student::count();
         $facesRegistered = 0; // Will be implemented when face_encoding column is added
-        $violationsThisMonth = 0; // Will be implemented when violations table is created
+        
+        // Get violations this month using violation_date
+        $violationsThisMonth = Violation::whereMonth('violation_date', now()->month)
+            ->whereYear('violation_date', now()->year)
+            ->count();
+            
+        // Additional violation statistics
+        $totalViolations = Violation::count();
+        $pendingViolations = Violation::where('status', 'pending')->count();
+        $violationsToday = Violation::whereDate('violation_date', now()->toDateString())->count();
+        $majorViolations = Violation::where('severity', 'major')->count();
         
         $stats = [
             'total_students' => $totalStudents,
             'faces_registered' => $facesRegistered,
             'violations_this_month' => $violationsThisMonth,
+            'total_violations' => $totalViolations,
+            'pending_violations' => $pendingViolations,
+            'violations_today' => $violationsToday,
+            'major_violations' => $majorViolations,
         ];
 
         return view('guidancediscipline.index', compact('stats'));

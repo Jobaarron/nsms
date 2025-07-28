@@ -358,8 +358,8 @@
                                     <select class="form-select @error('payment_mode') is-invalid @enderror" id="payment_mode" name="payment_mode" required>
                                         <option value="">Select Payment Mode</option>
                                         <option value="cash" {{ old('payment_mode', $student->payment_mode) == 'cash' ? 'selected' : '' }}>Cash</option>
-                                        <option value="installment" {{ old('payment_mode', $student->payment_mode) == 'installment' ? 'selected' : '' }}>Installment</option>
-                                        <option value="scholarship" {{ old('payment_mode', $student->payment_mode) == 'scholarship' ? 'selected' : '' }}>Scholarship</option>
+                                        <option value="online payment" {{ old('payment_mode', $student->payment_mode) == 'online payment' ? 'selected' : '' }}>Online Payment</option>
+                                        {{-- <option value="scholarship" {{ old('payment_mode', $student->payment_mode) == 'scholarship' ? 'selected' : '' }}>Scholarship</option> --}}
                                     </select>
                                     @error('payment_mode')
                                         <div class="invalid-feedback">{{ $message }}</div>

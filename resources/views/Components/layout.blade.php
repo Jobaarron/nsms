@@ -44,7 +44,7 @@
                             </a>
                             <a href="/student/login" class="dropdown-item {{ request()->is('/student/login*') ? 'active' : '' }}">
                                 <i class="ri-graduation-cap-line"></i>
-                                Student Portal
+                                Student Login
                             </a>
                             {{-- <a href="/portal/teacher" class="dropdown-item {{ request()->is('portal/teacher*') ? 'active' : '' }}">
                                 <i class="ri-user-star-line"></i>

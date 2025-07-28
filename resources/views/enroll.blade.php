@@ -190,7 +190,7 @@
                                 name="religion"
                                 class="form-control form-control-lg text-uppercase @error('religion') is-invalid @enderror"
                                 value="{{ old('religion') }}"
-                                placeholder="e.g. Roman Catholic"
+                                placeholder="Roman Catholic"
                                 oninput="this.value = this.value.toUpperCase()"
                             />
                             @error('religion') <div class="invalid-feedback">{{ $message }}</div> @enderror
@@ -563,7 +563,7 @@
                             >
                                 <option value="">-- Select Mode --</option>
                                 <option value="cash" {{ old('payment_mode')=='cash'?'selected':'' }}>Cash</option>
-                                <option value="installment" {{ old('payment_mode')=='Online Payment'?'selected':'' }}>Online Payment(GCASH)</option>
+                                <option value="installment" {{ old('payment_mode')=='Online Payment'?'selected':'' }}>Online Payment</option>
                                 {{-- <option value="installment" {{ old('payment_mode')=='installment'?'selected':'' }}>Installment</option>
                                 <option value="scholarship" {{ old('payment_mode')=='scholarship'?'selected':'' }}>Scholarship</option> --}}
                             </select>

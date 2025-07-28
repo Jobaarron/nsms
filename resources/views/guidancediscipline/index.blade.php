@@ -252,33 +252,42 @@
               </div>
             </div>
           </div>
-          {{-- <div class="col-6 col-lg-2">
+          <div class="col-6 col-lg-2">
             <div class="card card-summary card-counsel h-100">
               <div class="card-body text-center">
-                <i class="ri-chat-quote-line display-6 mb-2"></i>
-                <div>Counsel Sessions</div>
-                <h3>8</h3>
+                <i class="ri-flag-2-line display-6 mb-2"></i>
+                <div>Total Violations</div>
+                <h3>{{ $stats['total_violations'] ?? 0 }}</h3>
               </div>
             </div>
-          </div> --}}
-          {{-- <div class="col-6 col-lg-2">
+          </div>
+          <div class="col-6 col-lg-2">
             <div class="card card-summary card-counsel h-100">
               <div class="card-body text-center">
-                <i class="ri-briefcase-line display-6 mb-2"></i>
-                <div>Career Advisories</div>
-                <h3>5</h3>
+                <i class="ri-time-line display-6 mb-2"></i>
+                <div>Pending Violations</div>
+                <h3>{{ $stats['pending_violations'] ?? 0 }}</h3>
               </div>
             </div>
-          </div> --}}
-          {{-- <div class="col-6 col-lg-2">
+          </div>
+          <div class="col-6 col-lg-2">
             <div class="card card-summary card-reports h-100">
               <div class="card-body text-center">
-                <i class="ri-bar-chart-line display-6 mb-2"></i>
-                <div>Reports Generated</div>
-                <h3>20</h3>
+                <i class="ri-calendar-check-line display-6 mb-2"></i>
+                <div>Today's Violations</div>
+                <h3>{{ $stats['violations_today'] ?? 0 }}</h3>
               </div>
             </div>
-          </div> --}}
+          </div>
+          <div class="col-6 col-lg-2">
+            <div class="card card-summary card-violations h-100">
+              <div class="card-body text-center">
+                <i class="ri-error-warning-line display-6 mb-2"></i>
+                <div>Major Violations</div>
+                <h3>{{ $stats['major_violations'] ?? 0 }}</h3>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- FACIAL RECOGNITION PANEL -->

@@ -83,7 +83,8 @@ return new class extends Migration
             
             
             // FINANCIAL INFORMATION
-            $table->enum('payment_mode', ['cash', 'installment', 'scholarship', 'voucher'])->default('cash');
+            // $table->enum('payment_mode', ['cash', 'installment', 'scholarship', 'voucher'])->default('cash');
+            $table->enum('payment_mode', ['cash', 'online payment', 'scholarship', 'voucher'])->default('cash');
             $table->boolean('is_paid')->default(false);
             // $table->boolean('is_scholar')->default(false);
             // $table->string('scholarship_type')->nullable();
