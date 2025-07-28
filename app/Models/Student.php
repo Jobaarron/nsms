@@ -46,6 +46,7 @@ class Student extends Authenticatable
         'payment_mode',
         'preferred_schedule',
         'id_photo',
+        'id_photo_mime_type',
         'documents',
         'password',
         'is_paid',
@@ -173,5 +174,48 @@ class Student extends Authenticatable
     public function violations()
     {
         return $this->hasMany(Violation::class);
+    }
+
+    /**
+     * Get face registrations for this student
+     */
+    public function faceRegistrations()
+    {
+        return $this->hasMany(FaceRegistration::class);
+    }
+
+    /**
+     * Get the active face registration for this student
+     */
+    public function activeFaceRegistration()
+    {
+        return $this->hasOne(FaceRegistration::class)->where('is_active', true)->latest();
+    }
+
+    /**
+     * Check if student has face registered
+     */
+    public function hasFaceRegistered()
+    {
+        return $this->activeFaceRegistration()->exists();
+    }
+
+    /**
+     * Get ID photo as base64 data URL for display
+     */
+    public function getIdPhotoDataUrlAttribute()
+    {
+        if ($this->id_photo && $this->id_photo_mime_type) {
+            return "data:{$this->id_photo_mime_type};base64,{$this->id_photo}";
+        }
+        return null;
+    }
+
+    /**
+     * Check if student has ID photo
+     */
+    public function hasIdPhoto()
+    {
+        return !empty($this->id_photo);
     }
 }

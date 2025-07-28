@@ -43,13 +43,13 @@
                 </div>
             </div>
             <div class="col-md-4">
-                @if($student->id_photo)
+                @if($student->hasIdPhoto())
                     <div class="card">
                         <div class="card-header">
                             <h5 class="mb-0">Student Photo</h5>
                         </div>
                         <div class="card-body text-center">
-                            <img src="{{ asset('storage/' . $student->id_photo) }}" alt="Student Photo" class="img-fluid rounded">
+                            <img src="{{ $student->id_photo_data_url }}" alt="Student Photo" class="img-fluid rounded">
                         </div>
                     </div>
                 @endif

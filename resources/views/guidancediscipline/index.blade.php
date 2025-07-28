@@ -148,13 +148,13 @@
           <li class="nav-item mb-2">
             <a class="nav-link d-flex justify-content-between align-items-center" href="{{ route('guidance.students.index') }}">
               <span><i class="ri-user-line me-2"></i>Student Profiles</span>
-              <small class="badge bg-success text-white">Active</small>
+              {{-- <small class="badge bg-success text-white">Active</small> --}}
             </a>
           </li>
           <li class="nav-item mb-2">
             <a class="nav-link d-flex justify-content-between align-items-center" href="{{ route('guidance.violations.index') }}">
               <span><i class="ri-alert-line me-2"></i>Violations</span>
-              <small class="badge bg-success text-white">Active</small>
+              {{-- <small class="badge bg-success text-white">Active</small> --}}
             </a>
           </li>
           <li class="nav-item mb-2">
@@ -234,7 +234,7 @@
               </div>
             </div>
           </div>
-          <div class="col-6 col-lg-2">
+          {{-- <div class="col-6 col-lg-2">
             <div class="card card-summary card-facerec h-100">
               <div class="card-body text-center">
                 <i class="ri-scan-2-line display-6 mb-2"></i>
@@ -242,7 +242,7 @@
                 <h3>{{ $stats['faces_registered'] ?? 0 }}</h3>
               </div>
             </div>
-          </div>
+          </div> --}}
           <div class="col-6 col-lg-2">
             <div class="card card-summary card-violations h-100">
               <div class="card-body text-center">
@@ -282,7 +282,7 @@
         </div>
 
         <!-- FACIAL RECOGNITION PANEL -->
-        <h4 class="section-title">Facial Recognition</h4>
+        {{-- <h4 class="section-title">Facial Recognition</h4>
         <div class="card mb-5">
           <div class="card-body">
             <div class="row">
@@ -305,7 +305,7 @@
               </div>
             </div>
           </div>
-        </div>
+        </div> --}}
 
         <!-- QUICK ACTIONS -->
         {{-- <h4 class="section-title">Quick Actions</h4>

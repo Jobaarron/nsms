@@ -10,6 +10,8 @@ return new class extends Migration
     {
         Schema::create('students', function (Blueprint $table) {
             $table->id();
+            $table->longText('id_photo')->nullable(); // Store image as base64 binary data
+            $table->string('id_photo_mime_type')->nullable(); // Store MIME type (image/jpeg, image/png)
             
             // Link to users table for authentication
             $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('cascade');
@@ -27,7 +29,6 @@ return new class extends Migration
             $table->string('password');
             
             // FILE PATHS
-            $table->string('id_photo')->nullable();
             $table->json('documents')->nullable(); // Birth certificate, report cards, etc.
             
             // PERSONAL INFORMATION

@@ -173,13 +173,13 @@
           <li class="nav-item mb-2">
             <a class="nav-link active d-flex justify-content-between align-items-center" href="{{ route('guidance.students.index') }}">
               <span><i class="ri-user-line me-2"></i>Student Profiles</span>
-              <small class="badge bg-success text-white">Active</small>
+              {{-- <small class="badge bg-success text-white">Active</small> --}}
             </a>
           </li>
           <li class="nav-item mb-2">
             <a class="nav-link d-flex justify-content-between align-items-center" href="{{ route('guidance.violations.index') }}">
               <span><i class="ri-alert-line me-2"></i>Violations</span>
-              <small class="badge bg-success text-white">Active</small>
+              {{-- <small class="badge bg-success text-white">Active</small> --}}
             </a>
           </li>
           <li class="nav-item mb-2">
@@ -315,7 +315,8 @@
                   <tr>
                     <th>Photo</th>
                     <th>Student Info</th>
-                    <th>Grade & Section</th>
+                    <th>Grade</th>
+                    {{-- <th>Grade & Section</th> --}}
                     <th>Status</th>
                     <th>Face Registration</th>
                     <th>Actions</th>
@@ -325,8 +326,8 @@
                   @forelse($students as $student)
                   <tr>
                     <td>
-                      @if($student->id_photo)
-                        <img src="{{ asset('storage/' . $student->id_photo) }}" 
+                      @if($student->hasIdPhoto())
+                      <img src="{{ $student->id_photo_data_url }}" 
                              alt="Student Photo" 
                              class="rounded-circle" 
                              width="50" height="50">
@@ -340,7 +341,7 @@
                     <td>
                       <div>
                         <strong>{{ $student->first_name }} {{ $student->last_name }}</strong>
-                        <br><small class="text-muted">ID: {{ $student->student_id ?: 'N/A' }}</small>
+                        <br><small class="text-muted">ID: {{ $student->student_id ?: ($student->lrn ? 'LRN: '.$student->lrn : 'No ID') }}</small>
                         @if($student->lrn)
                           <br><small class="text-muted">LRN: {{ $student->lrn }}</small>
                         @endif
@@ -349,7 +350,9 @@
                     <td>
                       <span class="fw-bold">{{ $student->grade_level }}</span>
                       @if($student->section)
-                        <br><small class="text-muted">{{ $student->section }}</small>
+                        {{-- <br><small class="text-muted">Section: {{ $student->section }}</small> --}}
+                      @else
+                        {{-- <br><small class="text-muted">No section assigned</small> --}}
                       @endif
                     </td>
                     <td>
@@ -423,6 +426,9 @@
         </div>
         <div class="modal-body" id="studentModalBody">
           <!-- Student details will be loaded here -->
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="hideModal('studentModal')">Close</button>
         </div>
       </div>
     </div>
@@ -523,7 +529,55 @@
   </div>
 
   <script>
+    // Wait for both DOM and Bootstrap to be ready
     document.addEventListener('DOMContentLoaded', function() {
+      // Wait a bit for Bootstrap to initialize
+      setTimeout(function() {
+        console.log('Page loaded, Bootstrap status:', typeof window.bootstrap !== 'undefined' ? 'Available' : 'Not Available');
+        initializeModalEventListeners();
+      }, 100);
+
+      // Initialize modal event listeners
+      function initializeModalEventListeners() {
+        // Add close button functionality to all modals
+        document.querySelectorAll('.modal').forEach(modal => {
+          const closeButtons = modal.querySelectorAll('[data-bs-dismiss="modal"], .btn-close');
+          closeButtons.forEach(button => {
+            button.addEventListener('click', function() {
+              hideModal(modal.id);
+            });
+          });
+          
+          // Close on backdrop click
+          modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+              hideModal(modal.id);
+            }
+          });
+        });
+        
+        // Global ESC key listener
+        document.addEventListener('keydown', function(e) {
+          if (e.key === 'Escape') {
+            window.ModalManager.hideAll();
+          }
+        });
+      }
+
+      // Cleanup function for camera streams
+      function cleanupCameraStreams() {
+        if (stream) {
+          stream.getTracks().forEach(track => track.stop());
+          stream = null;
+        }
+        if (registrationStream) {
+          registrationStream.getTracks().forEach(track => track.stop());
+          registrationStream = null;
+        }
+      }
+
+      // Cleanup when page is unloaded
+      window.addEventListener('beforeunload', cleanupCameraStreams);
       // Search functionality
       const searchInput = document.getElementById('searchInput');
       const gradeFilter = document.getElementById('gradeFilter');
@@ -635,7 +689,7 @@
           captureRegistrationBtn.style.display = 'none';
         }
         
-        bootstrap.Modal.getInstance(document.getElementById('faceRegistrationModal')).hide();
+        hideModal('faceRegistrationModal');
       });
 
       // Modal cleanup
@@ -663,21 +717,284 @@
       });
     });
 
+    // Comprehensive modal management system
+    window.ModalManager = {
+      activeModals: new Set(),
+      
+      show: function(modalId) {
+        try {
+          const modalElement = document.getElementById(modalId);
+          if (!modalElement) {
+            console.error('Modal not found:', modalId);
+            return false;
+          }
+
+          // Try Bootstrap first
+          if (typeof window.bootstrap !== 'undefined' && window.bootstrap.Modal) {
+            const modal = new window.bootstrap.Modal(modalElement, {
+              backdrop: true,
+              keyboard: true,
+              focus: true
+            });
+            modal.show();
+            this.activeModals.add(modalId);
+            
+            // Add event listeners for proper cleanup
+            modalElement.addEventListener('hidden.bs.modal', () => {
+              this.activeModals.delete(modalId);
+            }, { once: true });
+            
+            return true;
+          }
+          
+          // Fallback implementation
+          return this.showFallback(modalId);
+          
+        } catch (error) {
+          console.error('Error showing modal:', error);
+          return this.showFallback(modalId);
+        }
+      },
+      
+      hide: function(modalId) {
+        try {
+          const modalElement = document.getElementById(modalId);
+          if (!modalElement) return false;
+
+          // Try Bootstrap first
+          if (typeof window.bootstrap !== 'undefined') {
+            const modal = window.bootstrap.Modal.getInstance(modalElement);
+            if (modal) {
+              modal.hide();
+              return true;
+            }
+          }
+          
+          // Fallback implementation
+          return this.hideFallback(modalId);
+          
+        } catch (error) {
+          console.error('Error hiding modal:', error);
+          return this.hideFallback(modalId);
+        }
+      },
+      
+      showFallback: function(modalId) {
+        const modalElement = document.getElementById(modalId);
+        const backdrop = this.createBackdrop(modalId);
+        
+        modalElement.style.display = 'block';
+        modalElement.classList.add('show');
+        modalElement.setAttribute('aria-hidden', 'false');
+        modalElement.setAttribute('aria-modal', 'true');
+        modalElement.setAttribute('role', 'dialog');
+        
+        document.body.classList.add('modal-open');
+        document.body.appendChild(backdrop);
+        
+        this.activeModals.add(modalId);
+        this.addFallbackEventListeners(modalId);
+        
+        return true;
+      },
+      
+      hideFallback: function(modalId) {
+        const modalElement = document.getElementById(modalId);
+        const backdrop = document.getElementById(modalId + '-backdrop');
+        
+        modalElement.style.display = 'none';
+        modalElement.classList.remove('show');
+        modalElement.setAttribute('aria-hidden', 'true');
+        modalElement.removeAttribute('aria-modal');
+        modalElement.removeAttribute('role');
+        
+        if (backdrop) backdrop.remove();
+        
+        if (this.activeModals.size <= 1) {
+          document.body.classList.remove('modal-open');
+        }
+        
+        this.activeModals.delete(modalId);
+        return true;
+      },
+      
+      createBackdrop: function(modalId) {
+        // Remove existing backdrop
+        const existingBackdrop = document.getElementById(modalId + '-backdrop');
+        if (existingBackdrop) existingBackdrop.remove();
+        
+        const backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop fade show';
+        backdrop.id = modalId + '-backdrop';
+        backdrop.style.zIndex = '1040';
+        
+        // Click to close
+        backdrop.addEventListener('click', () => this.hide(modalId));
+        
+        return backdrop;
+      },
+      
+      addFallbackEventListeners: function(modalId) {
+        const modalElement = document.getElementById(modalId);
+        
+        // ESC key to close
+        const escHandler = (e) => {
+          if (e.key === 'Escape' && this.activeModals.has(modalId)) {
+            this.hide(modalId);
+            document.removeEventListener('keydown', escHandler);
+          }
+        };
+        document.addEventListener('keydown', escHandler);
+        
+        // Close buttons
+        const closeButtons = modalElement.querySelectorAll('[data-bs-dismiss="modal"], .btn-close');
+        closeButtons.forEach(button => {
+          button.addEventListener('click', () => this.hide(modalId));
+        });
+        
+        // Click outside to close
+        modalElement.addEventListener('click', (e) => {
+          if (e.target === modalElement) {
+            this.hide(modalId);
+          }
+        });
+      },
+      
+      hideAll: function() {
+        this.activeModals.forEach(modalId => this.hide(modalId));
+      }
+    };
+
+    // Convenient wrapper functions
+    function showModal(modalId) {
+      return window.ModalManager.show(modalId);
+    }
+
+    function hideModal(modalId) {
+      return window.ModalManager.hide(modalId);
+    }
+
+
+    // <tr><td><strong>Date of Birth:</strong></td><td>${data.date_of_birth || 'N/A'}</td></tr> Keep this here and do not remove
+    
     // Global functions for button actions
     function viewStudent(studentId) {
-      alert('Student profile view coming soon for student ID: ' + studentId);
+      // Fetch student data from server
+      fetch(`/guidance/students/${studentId}`)
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById('studentModalBody').innerHTML = `
+            <div class="row">
+              <div class="col-md-4 text-center">
+                ${data.id_photo ? 
+                  `<img src="${data.id_photo_data_url}" alt="Student Photo" class="img-fluid rounded-circle mb-3" style="max-width: 150px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                   <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 150px; height: 150px; display: none;">
+                     <i class="ri-user-line text-white display-4"></i>
+                   </div>` :
+                  `<div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 150px; height: 150px;">
+                     <i class="ri-user-line text-white display-4"></i>
+                   </div>`
+                }
+                <h5>${data.first_name} ${data.last_name}</h5>
+                <p class="text-muted">${data.grade_level}${data.section ? ' - ' + data.section : ''}</p>
+              </div>
+              <div class="col-md-8">
+                <h6>Student Information</h6>
+                <table class="table table-sm">
+                  <tbody>
+                    <tr><td><strong>Student ID:</strong></td><td>${data.student_id || 'N/A'}</td></tr>
+                    <tr><td><strong>LRN:</strong></td><td>${data.lrn || 'N/A'}</td></tr>
+                    <tr><td><strong>Gender:</strong></td><td>${data.gender || 'N/A'}</td></tr>
+                    
+                    <tr><td><strong>Contact:</strong></td><td>${data.contact_number || 'N/A'}</td></tr>
+                    <tr><td><strong>Email:</strong></td><td>${data.email || 'N/A'}</td></tr>
+                    <tr><td><strong>Address:</strong></td><td>${data.address || 'N/A'}</td></tr>
+                    <tr><td><strong>Status:</strong></td><td>
+                      <span class="badge bg-${data.enrollment_status === 'enrolled' ? 'success' : (data.enrollment_status === 'pending' ? 'warning' : 'info')}">
+                        ${data.enrollment_status ? data.enrollment_status.charAt(0).toUpperCase() + data.enrollment_status.slice(1) : 'N/A'}
+                      </span>
+                    </td></tr>
+                  </tbody>
+                </table>
+                
+                <h6 class="mt-3">Parent/Guardian Information</h6>
+                <table class="table table-sm">
+                  <tbody>
+                    <tr><td><strong>Father:</strong></td><td>${data.father_name || 'N/A'}</td></tr>
+                    <tr><td><strong>Father Contact:</strong></td><td>${data.father_contact || 'N/A'}</td></tr>
+                    <tr><td><strong>Mother:</strong></td><td>${data.mother_name || 'N/A'}</td></tr>
+                    <tr><td><strong>Mother Contact:</strong></td><td>${data.mother_contact || 'N/A'}</td></tr>
+                    <tr><td><strong>Guardian:</strong></td><td>${data.guardian_name || 'N/A'}</td></tr>
+                    <tr><td><strong>Guardian Contact:</strong></td><td>${data.guardian_contact || 'N/A'}</td></tr>
+                  </tbody>
+                </table>
+                
+                ${data.violations && data.violations.length > 0 ? `
+                  <h6 class="mt-3">Recent Violations (${data.violations.length})</h6>
+                  <div class="list-group">
+                    ${data.violations.slice(0, 3).map(violation => `
+                      <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                          <h6 class="mb-1">${violation.title}</h6>
+                          <small class="text-muted">${new Date(violation.violation_date).toLocaleDateString()}</small>
+                        </div>
+                        <p class="mb-1">${violation.description}</p>
+                        <small class="badge bg-${violation.severity === 'minor' ? 'success' : (violation.severity === 'major' ? 'warning' : 'danger')}">${violation.severity}</small>
+                      </div>
+                    `).join('')}
+                    ${data.violations.length > 3 ? `<small class="text-muted">... and ${data.violations.length - 3} more</small>` : ''}
+                  </div>
+                ` : '<p class="text-muted mt-3">No violations recorded</p>'}
+              </div>
+            </div>
+          `;
+          showModal('studentModal');
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('Error loading student information');
+        });
     }
 
     function registerFace(studentId) {
-      document.getElementById('studentInfoForRegistration').innerHTML = `
-        <div class="card">
-          <div class="card-body">
-            <h6>Student ID: ${studentId}</h6>
-            <p class="mb-0">Face registration will be implemented soon.</p>
-          </div>
-        </div>
-      `;
-      new bootstrap.Modal(document.getElementById('faceRegistrationModal')).show();
+      // Fetch student data first
+      fetch(`/guidance/students/${studentId}/info`)
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById('studentInfoForRegistration').innerHTML = `
+            <div class="card">
+              <div class="card-body">
+                <div class="text-center mb-3">
+                  ${data.id_photo ? 
+                    `<img src="${data.id_photo_data_url}" alt="Student Photo" class="img-fluid rounded-circle" style="max-width: 100px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                     <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center mx-auto" style="width: 100px; height: 100px; display: none;">
+                       <i class="ri-user-line text-white"></i>
+                     </div>` :
+                    `<div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center mx-auto" style="width: 100px; height: 100px;">
+                       <i class="ri-user-line text-white"></i>
+                     </div>`
+                  }
+                </div>
+                <h6 class="text-center">${data.first_name} ${data.last_name}</h6>
+                <p class="text-center text-muted mb-1">ID: ${data.student_id || 'N/A'}</p>
+                <p class="text-center text-muted">${data.grade_level}${data.section ? ' - ' + data.section : ''}</p>
+              </div>
+            </div>
+          `;
+          showModal('faceRegistrationModal');
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          document.getElementById('studentInfoForRegistration').innerHTML = `
+            <div class="card">
+              <div class="card-body">
+                <h6>Student ID: ${studentId}</h6>
+                <p class="mb-0">Face registration will be implemented soon.</p>
+              </div>
+            </div>
+          `;
+          showModal('faceRegistrationModal');
+        });
     }
 
     function viewViolations(studentId) {
