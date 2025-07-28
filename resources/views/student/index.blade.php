@@ -340,8 +340,8 @@
               <dd class="col-sm-9">{{ $student->student_id ?? $student->lrn ?? 'STU-' . str_pad($student->id, 6, '0', STR_PAD_LEFT) }}</dd>
               <dt class="col-sm-3">Name</dt>
               <dd class="col-sm-9">{{ $student->full_name }}</dd>
-              <dt class="col-sm-3">Student Type</dt>
-              <dd class="col-sm-9">{{ ucfirst($student->student_type) }}</dd>
+              {{-- <dt class="col-sm-3">Student Type</dt>
+              <dd class="col-sm-9">{{ ucfirst($student->student_type) }}</dd> --}}
               <dt class="col-sm-3">Grade Level</dt>
               <dd class="col-sm-9">{{ $student->grade_level }}{{ $student->strand ? ' - ' . $student->strand : '' }}</dd>
               <dt class="col-sm-3">Email</dt>
