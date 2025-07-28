@@ -106,7 +106,7 @@
               <i class="ri-dashboard-line me-2"></i>Dashboard
             </a>
           </li>
-          <li class="nav-item mb-2">
+          {{-- <li class="nav-item mb-2">
             @if($student->canAccessFeatures())
               <a class="nav-link" href="#">
                 <i class="ri-cash-line me-2"></i>Payments
@@ -117,8 +117,8 @@
                 <small class="badge bg-warning text-dark">Pay First</small>
               </span>
             @endif
-          </li>
-          <li class="nav-item mb-2">
+          </li> --}}
+          {{-- <li class="nav-item mb-2">
             @if($student->canAccessFeatures())
               <a class="nav-link" href="#">
                 <i class="ri-book-open-line me-2"></i>My Subjects
@@ -129,8 +129,8 @@
                 <small class="badge bg-warning text-dark">Pay First</small>
               </span>
             @endif
-          </li>
-          <li class="nav-item mb-2">
+          </li> --}}
+          {{-- <li class="nav-item mb-2">
             @if($student->canAccessFeatures())
               <a class="nav-link" href="#">
                 <i class="ri-file-paper-line me-2"></i>Guidance Notes
@@ -141,20 +141,20 @@
                 <small class="badge bg-warning text-dark">Pay First</small>
               </span>
             @endif
-          </li>
+          </li> --}}
           <li class="nav-item mb-2">
-            @if($student->canAccessFeatures())
+            {{-- @if($student->canAccessFeatures()) --}}
               <a class="nav-link" href="#">
-                <i class="ri-flag-line me-2"></i>Discipline
+                <i class="ri-flag-line me-2"></i>Violations
               </a>
-            @else
-              <span class="nav-link disabled d-flex justify-content-between align-items-center">
+            {{-- @else --}}
+              {{-- <span class="nav-link disabled d-flex justify-content-between align-items-center">
                 <span><i class="ri-flag-line me-2"></i>Discipline</span>
                 <small class="badge bg-warning text-dark">Pay First</small>
-              </span>
-            @endif
+              </span> --}}
+            {{-- @endif --}}
           </li>
-          <li class="nav-item">
+          {{-- <li class="nav-item">
             @if($student->canAccessFeatures())
               <a class="nav-link" href="#">
                 <i class="ri-user-line me-2"></i>Profile
@@ -165,7 +165,7 @@
                 <small class="badge bg-warning text-dark">Pay First</small>
               </span>
             @endif
-          </li>
+          </li> --}}
         </ul>
         
         <!-- LOGOUT SECTION -->
@@ -183,7 +183,7 @@
       <main class="col-12 col-md-10 px-4 py-4">
         <h1 class="section-title">Welcome, {{ $student->first_name ?? 'Student' }}</h1>
         
-        @if(!$student->canAccessFeatures())
+        {{-- @if(!$student->canAccessFeatures())
             <div class="alert alert-warning d-flex align-items-center mb-4">
                 <i class="ri-alert-line me-2"></i>
                 <div>
@@ -191,11 +191,11 @@
                     You need to complete your payment to access all features. Current status: <strong>{{ $student->paymentStatus }}</strong>
                 </div>
             </div>
-        @endif
+        @endif --}}
 
         <!-- SUMMARY CARDS -->
-        <div class="row g-3 mb-5">
-          <div class="col-6 col-lg-3">
+        {{-- <div class="row g-3 mb-5"> --}}
+          {{-- <div class="col-6 col-lg-3">
             <div class="card card-summary card-paid h-100">
               <div class="card-body d-flex align-items-center">
                 <i class="ri-checkbox-circle-line display-6 me-3"></i>
@@ -205,7 +205,7 @@
                 </div>
               </div>
             </div>
-          </div>
+          </div> --}}
           {{-- <div class="col-6 col-lg-3">
             <div class="card card-summary card-credits h-100">
               <div class="card-body d-flex align-items-center">
@@ -239,7 +239,7 @@
               </div>
             </div>
           </div> --}}
-        </div>
+        {{-- </div> --}}
 
         <!-- PAYMENT HISTORY -->
         {{-- <h4 class="section-title">Payment History</h4>
@@ -361,7 +361,7 @@
               <dt class="col-sm-3">Payment Mode</dt>
               <dd class="col-sm-9">{{ ucfirst($student->payment_mode) }}</dd>
             </dl>
-            @if($student->canAccessFeatures())
+            {{-- @if($student->canAccessFeatures())
               <button class="btn btn-outline-primary">
                 <i class="ri-edit-line me-1"></i>Edit Profile
               </button>
@@ -370,12 +370,12 @@
                 <i class="ri-edit-line me-1"></i>Edit Profile
                 <span class="badge bg-warning text-dark ms-2">Pay First</span>
               </button>
-            @endif
+            @endif --}}
           </div>
         </div>
 
         <!-- QUICK ACTIONS -->
-        <h4 class="section-title">Quick Actions</h4>
+        {{-- <h4 class="section-title">Quick Actions</h4>
         <div class="row g-3">
           <div class="col-md-4">
             @if($student->canAccessFeatures())
@@ -413,7 +413,7 @@
               </button>
             @endif
           </div>
-        </div>
+        </div> --}}
       </main>
     </div>
   </div>

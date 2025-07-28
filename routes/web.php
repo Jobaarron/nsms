@@ -330,7 +330,7 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
 });
 
 
-Route::get('/teacher', [TeacherController::class, 'index']);
+// Route::get('/teacher', [TeacherController::class, 'index']);
 // Route::get('/admin', [adminController::class, 'adminindex']);
 // Route::get('/admin/login', [adminController::class, 'adminlogin']);
 Route::get('/student', [StudentController::class, 'index']);

@@ -1188,6 +1188,7 @@ public function updateEnrollment(Request $request, $id)
             'last_school_name' => 'nullable|string|max:255',
             'medical_history' => 'nullable|string|max:1000',
             'payment_mode' => 'required|in:cash,installment,scholarship',
+            'new_password' => 'nullable|string|min:6|max:255',
         ]);
 
         // Add update tracking fields
@@ -1205,6 +1206,14 @@ public function updateEnrollment(Request $request, $id)
             $validatedData['rejected_at'] = now();
             $validatedData['rejected_by'] = Auth::id();
         }
+
+        // Handle password update if provided
+        if (!empty($validatedData['new_password'])) {
+            $validatedData['password'] = Hash::make($validatedData['new_password']);
+        }
+        
+        // Remove new_password from the array since it's not a database field
+        unset($validatedData['new_password']);
 
         // Update the student record
         $student->update($validatedData);

@@ -367,6 +367,29 @@
                                 </div>
                             </div>
 
+                            <!-- Password Management -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <h6 class="text-primary border-bottom pb-2 mb-3">Password Management</h6>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label for="new_password" class="form-label">New Password (Optional)</label>
+                                    <input type="text" class="form-control @error('new_password') is-invalid @enderror" 
+                                           id="new_password" name="new_password" placeholder="Leave blank to keep current password">
+                                    @error('new_password')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    <small class="form-text text-muted">If you want to set a new password for this student, enter it here.</small>
+                                </div>
+
+                                <div class="col-md-6 d-flex align-items-end">
+                                    <button type="button" class="btn btn-outline-primary" id="generatePassword">
+                                        <i class="ri-refresh-line me-1"></i>Generate Random Password
+                                    </button>
+                                </div>
+                            </div>
+
                             <!-- Form Actions -->
                             <div class="row">
                                 <div class="col-12">
@@ -450,4 +473,32 @@
             box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
         }
     </style>
+
+    <script>
+        document.getElementById('generatePassword').addEventListener('click', function() {
+            // Generate a random password
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+            let password = '';
+            for (let i = 0; i < 12; i++) {
+                password += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            
+            // Set the generated password to the input field
+            document.getElementById('new_password').value = password;
+            
+            // Show a success message
+            const button = this;
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="ri-check-line me-1"></i>Password Generated!';
+            button.classList.remove('btn-outline-primary');
+            button.classList.add('btn-success');
+            
+            // Reset button after 2 seconds
+            setTimeout(() => {
+                button.innerHTML = originalText;
+                button.classList.remove('btn-success');
+                button.classList.add('btn-outline-primary');
+            }, 2000);
+        });
+    </script>
 </x-admin-layout>

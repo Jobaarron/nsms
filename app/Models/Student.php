@@ -76,6 +76,10 @@ class Student extends Authenticatable
         'password',
         'remember_token',
     ];
+
+    protected $appends = [
+        'id_photo_data_url',
+    ];
     
     protected $guard_name = 'student';
     

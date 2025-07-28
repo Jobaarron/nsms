@@ -277,6 +277,7 @@
                 <option value="Grade 12">Grade 12</option>
               </select>
             </div>
+            {{-- COMMENTED OUT FOR FUTURE USE: Status Filter
             <div class="col-md-2">
               <label for="statusFilter" class="form-label fw-bold">Status</label>
               <select class="form-select" id="statusFilter">
@@ -286,6 +287,7 @@
                 <option value="approved">Approved</option>
               </select>
             </div>
+            --}}
             <div class="col-md-2">
               <label for="faceFilter" class="form-label fw-bold">Face Registration</label>
               <select class="form-select" id="faceFilter">
@@ -317,7 +319,7 @@
                     <th>Student Info</th>
                     <th>Grade</th>
                     {{-- <th>Grade & Section</th> --}}
-                    <th>Status</th>
+                    {{-- <th>Status</th> --}}
                     <th>Face Registration</th>
                     <th>Actions</th>
                   </tr>
@@ -355,11 +357,13 @@
                         {{-- <br><small class="text-muted">No section assigned</small> --}}
                       @endif
                     </td>
+                    {{-- COMMENTED OUT FOR FUTURE USE: Status Column
                     <td>
                       <span class="badge bg-{{ $student->enrollment_status === 'enrolled' ? 'success' : ($student->enrollment_status === 'pending' ? 'warning' : 'info') }}">
                         {{ ucfirst($student->enrollment_status) }}
                       </span>
                     </td>
+                    --}}
                     <td>
                       <span class="badge bg-warning">
                         <i class="ri-close-line me-1"></i>Not Registered
@@ -387,7 +391,7 @@
                   </tr>
                   @empty
                   <tr>
-                    <td colspan="6" class="text-center py-5">
+                    <td colspan="5" class="text-center py-5">
                       <i class="ri-user-line display-4 text-muted"></i>
                       <p class="text-muted mt-2">No students found</p>
                     </td>
@@ -532,10 +536,10 @@
     // Wait for both DOM and Bootstrap to be ready
     document.addEventListener('DOMContentLoaded', function() {
       // Wait a bit for Bootstrap to initialize
-      setTimeout(function() {
-        console.log('Page loaded, Bootstrap status:', typeof window.bootstrap !== 'undefined' ? 'Available' : 'Not Available');
-        initializeModalEventListeners();
-      }, 100);
+      // setTimeout(function() {
+      //   console.log('Page loaded, Bootstrap status:', typeof window.bootstrap !== 'undefined' ? 'Available' : 'Not Available');
+      //   initializeModalEventListeners();
+      // }, 100);
 
       // Initialize modal event listeners
       function initializeModalEventListeners() {
@@ -581,27 +585,28 @@
       // Search functionality
       const searchInput = document.getElementById('searchInput');
       const gradeFilter = document.getElementById('gradeFilter');
-      const statusFilter = document.getElementById('statusFilter');
+      // const statusFilter = document.getElementById('statusFilter'); // COMMENTED OUT FOR FUTURE USE
       const faceFilter = document.getElementById('faceFilter');
       
       function filterTable() {
         const searchTerm = searchInput.value.toLowerCase();
         const gradeValue = gradeFilter.value;
-        const statusValue = statusFilter.value;
+        // const statusValue = statusFilter.value; // COMMENTED OUT FOR FUTURE USE
         const faceValue = faceFilter.value;
         const rows = document.querySelectorAll('#studentsTable tbody tr');
         
         rows.forEach(row => {
-          if (row.cells.length < 6) return; // Skip empty rows
+          if (row.cells.length < 5) return; // Skip empty rows (updated since status column removed)
           
           const studentInfo = row.cells[1].textContent.toLowerCase();
           const grade = row.cells[2].textContent;
-          const status = row.cells[3].textContent.toLowerCase();
-          const faceStatus = row.cells[4].textContent.toLowerCase();
+          // const status = row.cells[3].textContent.toLowerCase(); // COMMENTED OUT FOR FUTURE USE
+          const faceStatus = row.cells[3].textContent.toLowerCase(); // Updated index since status column removed
           
           const matchesSearch = studentInfo.includes(searchTerm);
           const matchesGrade = !gradeValue || grade.includes(gradeValue);
-          const matchesStatus = !statusValue || status.includes(statusValue);
+          // const matchesStatus = !statusValue || status.includes(statusValue); // COMMENTED OUT FOR FUTURE USE
+          const matchesStatus = true; // Always true since status filter is disabled
           const matchesFace = !faceValue || 
             (faceValue === 'registered' && faceStatus.includes('registered')) ||
             (faceValue === 'not_registered' && faceStatus.includes('not registered'));
@@ -610,7 +615,7 @@
         });
       }
       
-      [searchInput, gradeFilter, statusFilter, faceFilter].forEach(element => {
+      [searchInput, gradeFilter, faceFilter].forEach(element => { // Removed statusFilter
         element.addEventListener('input', filterTable);
         element.addEventListener('change', filterTable);
       });
@@ -876,7 +881,6 @@
 
 
     // <tr><td><strong>Date of Birth:</strong></td><td>${data.date_of_birth || 'N/A'}</td></tr> Keep this here and do not remove
-    
     // Global functions for button actions
     function viewStudent(studentId) {
       // Fetch student data from server
@@ -886,11 +890,8 @@
           document.getElementById('studentModalBody').innerHTML = `
             <div class="row">
               <div class="col-md-4 text-center">
-                ${data.id_photo ? 
-                  `<img src="${data.id_photo_data_url}" alt="Student Photo" class="img-fluid rounded-circle mb-3" style="max-width: 150px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                   <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 150px; height: 150px; display: none;">
-                     <i class="ri-user-line text-white display-4"></i>
-                   </div>` :
+                ${data.id_photo_data_url && data.id_photo_data_url !== null ? 
+                  `<img src="${data.id_photo_data_url}" alt="Student Photo" class="img-fluid rounded-circle mb-3" style="max-width: 150px;">` :
                   `<div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 150px; height: 150px;">
                      <i class="ri-user-line text-white display-4"></i>
                    </div>`
@@ -902,18 +903,20 @@
                 <h6>Student Information</h6>
                 <table class="table table-sm">
                   <tbody>
-                    <tr><td><strong>Student ID:</strong></td><td>${data.student_id || 'N/A'}</td></tr>
+                    <!-- <tr><td><strong>Student ID:</strong></td><td>${data.student_id || 'N/A'}</td></tr> -->
                     <tr><td><strong>LRN:</strong></td><td>${data.lrn || 'N/A'}</td></tr>
                     <tr><td><strong>Gender:</strong></td><td>${data.gender || 'N/A'}</td></tr>
                     
                     <tr><td><strong>Contact:</strong></td><td>${data.contact_number || 'N/A'}</td></tr>
                     <tr><td><strong>Email:</strong></td><td>${data.email || 'N/A'}</td></tr>
                     <tr><td><strong>Address:</strong></td><td>${data.address || 'N/A'}</td></tr>
+                    <!-- COMMENTED OUT FOR FUTURE USE: Status Row
                     <tr><td><strong>Status:</strong></td><td>
                       <span class="badge bg-${data.enrollment_status === 'enrolled' ? 'success' : (data.enrollment_status === 'pending' ? 'warning' : 'info')}">
                         ${data.enrollment_status ? data.enrollment_status.charAt(0).toUpperCase() + data.enrollment_status.slice(1) : 'N/A'}
                       </span>
                     </td></tr>
+                    -->
                   </tbody>
                 </table>
                 
@@ -965,11 +968,8 @@
             <div class="card">
               <div class="card-body">
                 <div class="text-center mb-3">
-                  ${data.id_photo ? 
-                    `<img src="${data.id_photo_data_url}" alt="Student Photo" class="img-fluid rounded-circle" style="max-width: 100px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                     <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center mx-auto" style="width: 100px; height: 100px; display: none;">
-                       <i class="ri-user-line text-white"></i>
-                     </div>` :
+                  ${data.id_photo_data_url && data.id_photo_data_url !== null ? 
+                    `<img src="${data.id_photo_data_url}" alt="Student Photo" class="img-fluid rounded-circle" style="max-width: 100px;">` :
                     `<div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center mx-auto" style="width: 100px; height: 100px;">
                        <i class="ri-user-line text-white"></i>
                      </div>`
