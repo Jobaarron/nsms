@@ -336,7 +336,7 @@
         <div class="card mb-5">
           <div class="card-body">
             <dl class="row">
-              <dt class="col-sm-3">Student ID</dt>
+              <dt class="col-sm-3">LRN</dt>
               <dd class="col-sm-9">{{ $student->student_id ?? $student->lrn ?? 'STU-' . str_pad($student->id, 6, '0', STR_PAD_LEFT) }}</dd>
               <dt class="col-sm-3">Name</dt>
               <dd class="col-sm-9">{{ $student->full_name }}</dd>
