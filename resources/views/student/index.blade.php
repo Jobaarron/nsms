@@ -144,7 +144,7 @@
           </li> --}}
           <li class="nav-item mb-2">
             {{-- @if($student->canAccessFeatures()) --}}
-              <a class="nav-link" href="#">
+              <a class="nav-link" href="{{ route('student.violations') }}">
                 <i class="ri-flag-line me-2"></i>Violations
               </a>
             {{-- @else --}}

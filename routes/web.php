@@ -347,6 +347,7 @@ Route::prefix('student')->name('student.')->group(function () {
     // Protected student routes
     Route::middleware(['auth:student'])->group(function () {
         Route::get('/dashboard', [StudentController::class, 'index'])->name('dashboard');
+        Route::get('/violations', [StudentController::class, 'violations'])->name('violations');
         Route::post('/logout', [StudentController::class, 'logout'])->name('logout');
     });
 });

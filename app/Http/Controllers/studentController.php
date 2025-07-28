@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\Student;
+use App\Models\Violation;
 
 class studentController extends Controller
 {
@@ -43,6 +44,24 @@ class studentController extends Controller
         return back()->withErrors([
             'email' => 'The provided credentials do not match our records.',
         ])->onlyInput('email');
+    }
+
+    public function violations()
+    {
+        $student = Auth::guard('student')->user();
+        
+        if (!$student) {
+            return redirect()->route('student.login');
+        }
+        
+        // Get all violations for the current student, ordered by most recent first
+        $violations = Violation::where('student_id', $student->id)
+            ->with(['reportedBy', 'resolvedBy']) // Load relationships if needed
+            ->orderBy('violation_date', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->get();
+        
+        return view('student.violations', compact('student', 'violations'));
     }
 
     public function logout(Request $request)

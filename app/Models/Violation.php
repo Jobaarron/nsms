@@ -90,4 +90,28 @@ class Violation extends Model
             default => 'secondary'
         };
     }
+
+    /**
+     * Get the name of the staff member who reported this violation.
+     */
+    public function getReportedByNameAttribute(): string
+    {
+        return $this->reportedBy ? $this->reportedBy->full_name : 'Unknown';
+    }
+
+    /**
+     * Get the name of the staff member who handled this violation.
+     */
+    public function getHandledByNameAttribute(): string
+    {
+        return $this->resolvedBy ? $this->resolvedBy->full_name : 'Pending';
+    }
+
+    /**
+     * Get the action taken for this violation.
+     */
+    public function getActionTakenAttribute(): string
+    {
+        return $this->disciplinary_action ?: $this->resolution ?: 'No action recorded';
+    }
 }
