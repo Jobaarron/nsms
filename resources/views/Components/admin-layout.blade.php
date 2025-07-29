@@ -41,12 +41,12 @@
             </a>
         </li>
           </li>
-          <li class="nav-item">
+          {{-- <li class="nav-item">
             <a class="nav-link disabled d-flex align-items-center py-3 px-3 rounded" href="{{ route('admin.manage.users') }}">
                 <i class="ri-user-settings-line me-2 fs-5"></i>
                 <span>Manage Users</span>
             </a>
-        </li>
+        </li> --}}
         <li class="nav-item">
           <a class="nav-link d-flex align-items-center py-3 px-3 rounded" href="{{ route('admin.enrollments') }}">
               <i class="ri-file-list-line me-2 fs-5"></i>
@@ -78,6 +78,7 @@
                 {{ session('error') }}
             </div>
         @endif
+        
         
         {{ $slot }}
       </main>

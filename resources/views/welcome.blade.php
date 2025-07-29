@@ -155,7 +155,7 @@
             </div>
             <div class="row g-5">
                 <!-- Contact Form -->
-                <div class="col-lg-8">
+                {{-- <div class="col-lg-8">
                     <div class="content-card p-4">
                         <h4 class="fw-bold mb-4">Send us a Message</h4>
                         <form>
@@ -191,10 +191,10 @@
                             </div>
                         </form>
                     </div>
-                </div>
+                </div> --}}
 
                 <!-- Contact Information -->
-                <div class="col-lg-4">
+                <div class="col-lg-4 mx-auto">
                     <div class="content-card p-4 h-100">
                         <h4 class="fw-bold mb-4">Contact Information</h4>
                         
@@ -376,9 +376,9 @@
                             <a href="/enroll" class="btn btn-custom btn-lg">
                                 <i class="ri-user-add-line me-2"></i>Start Enrollment
                             </a>
-                            <a href="#contact" class="btn btn-outline-primary btn-lg">
+                            {{-- <a href="#contact" class="btn btn-outline-primary btn-lg">
                                 <i class="ri-phone-line me-2"></i>Contact Us
-                            </a>
+                            </a> --}}
                         </div>
                     </div>
                 </div>
