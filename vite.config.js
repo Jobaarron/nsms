@@ -26,6 +26,8 @@ export default defineConfig({
                 'resources/js/landingpage.js',
                 'resources/js/enroll.js',
                 'resources/js/admin-enrollments.js',
+                'resources/js/admin-role-access.js',
+                'resources/js/role-modals.js',
                 'resources/js/manage_users.js',
                 
             ],

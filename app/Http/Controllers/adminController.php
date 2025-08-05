@@ -127,7 +127,10 @@ public function createRole(Request $request)
             'permissions' => 'array'
         ]);
 
-        $role = Role::create(['name' => $request->name]);
+        $role = Role::create([
+            'name' => $request->name,
+            'guard_name' => 'web'
+        ]);
         
         if ($request->permissions) {
             $role->syncPermissions($request->permissions);
@@ -138,6 +141,8 @@ public function createRole(Request $request)
             'message' => "Role '{$request->name}' created successfully."
         ]);
     } catch (\Exception $e) {
+        \Log::error('Error creating role: ' . $e->getMessage());
+        \Log::error('Request data: ' . json_encode($request->all()));
         return response()->json([
             'success' => false,
             'message' => 'Error creating role: ' . $e->getMessage()
@@ -208,13 +213,18 @@ public function createPermission(Request $request)
             'name' => 'required|string|unique:permissions,name|max:255'
         ]);
 
-        Permission::create(['name' => $request->name]);
+        Permission::create([
+            'name' => $request->name,
+            'guard_name' => 'web'
+        ]);
 
         return response()->json([
             'success' => true,
             'message' => "Permission '{$request->name}' created successfully."
         ]);
     } catch (\Exception $e) {
+        Log::error('Error creating permission: ' . $e->getMessage());
+        Log::error('Request data: ' . json_encode($request->all()));
         return response()->json([
             'success' => false,
             'message' => 'Error creating permission: ' . $e->getMessage()
@@ -275,9 +285,25 @@ public function deletePermission($id)
 
 public function getUserRoles(User $user)
 {
-    return response()->json([
-        'roles' => $user->roles
-    ]);
+    try {
+        // Load the user with roles relationship
+        $user->load('roles');
+        
+        return response()->json([
+            'roles' => $user->roles->map(function($role) {
+                return [
+                    'id' => $role->id,
+                    'name' => $role->name
+                ];
+            })
+        ]);
+    } catch (\Exception $e) {
+        \Log::error('Error in getUserRoles: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Error loading user roles: ' . $e->getMessage()
+        ], 500);
+    }
 }
     
  public function manageUsers()
