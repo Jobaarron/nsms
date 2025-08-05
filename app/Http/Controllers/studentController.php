@@ -10,8 +10,9 @@ use App\Models\Violation;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
 use App\Models\FaceRegistration;
+use Illuminate\Support\Facades\Log;
 
-class studentController extends Controller
+class StudentController extends Controller
 {
     public function index()
     {
@@ -157,7 +158,7 @@ class studentController extends Controller
             ], 201);
 
         } catch (\Exception $e) {
-            \Log::error('Student registration failed: ' . $e->getMessage());
+            Log::error('Student registration failed: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Registration failed',

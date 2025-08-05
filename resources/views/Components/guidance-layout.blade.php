@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="csrf-token" content="{{ csrf_token() }}"/>
 
   <title>Guidance & Discipline • NSMS</title>
 
@@ -21,6 +22,8 @@
   <!-- App CSS (includes Bootstrap 5 via Vite) -->
   @vite(['resources/sass/app.scss','resources/js/app.js'])
   @vite(['resources/css/index_guidance.css'])
+  
+
 </head>
 <body>
   <div class="container-fluid">
@@ -36,7 +39,7 @@
 
         <ul class="nav flex-column">
           <li class="nav-item mb-2">
-            <a class="nav-link active" href="{{ route('guidance.dashboard') }}">
+            <a class="nav-link" href="{{ route('guidance.dashboard') }}">
               <i class="ri-dashboard-line me-2"></i>Dashboard
             </a>
           </li>
