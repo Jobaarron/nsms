@@ -1,100 +1,135 @@
 <?php
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use App\Http\Controllers\StudentController;
-use App\Http\Controllers\FaceRegistrationController;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use App\Models\User;
+use App\Models\Student;
+use App\Models\FaceRegistration;
 
-/*
-|--------------------------------------------------------------------------
-| Public Routes
-|--------------------------------------------------------------------------
-*/
 Route::post('/login', function (Request $request) {
     $request->validate([
         'email' => 'required|email',
         'password' => 'required',
-        'device_name' => 'required|string',
+    ]);
+    $user = User::where('email', $request->email)->first();
+    if (!$user || !Hash::check($request->password, $user->password)) {
+        return response()->json(['error' => 'Invalid credentials'], 401);
+    }
+    return response()->json([
+        'success' => true,
+        'message' => 'Login successful',
+        'user' => ['id' => $user->id, 'name' => $user->name, 'email' => $user->email]
+    ]);
+});
+
+Route::get('/students', function () {
+    $students = Student::select('id', 'first_name', 'last_name')->get();
+    return response()->json(['success' => true, 'students' => $students]);
+});
+
+// -------------------------
+// Register Face Route
+// -------------------------
+Route::post('/register-face', function (Request $request) {
+    $request->validate([
+        'student_id' => 'required|exists:students,id',
+        'face_encoding' => 'required|array',
+        'source' => 'required|in:id_photo,manual_upload,camera_capture',
+        'face_image_data' => 'nullable',
+        'face_image_mime_type' => 'nullable|string',
+        'device_id' => 'nullable|string',
+        'confidence_score' => 'nullable|numeric',
+        'face_landmarks' => 'nullable|array',
     ]);
 
-    $user = User::where('email', $request->email)->first();
+    $encoding = $request->face_encoding;
 
-    if (! $user || ! Hash::check($request->password, $user->password)) {
-        return response()->json([
-            'success' => false,
-            'message' => 'The provided credentials are incorrect.',
-        ], 401);
+    // Normalize embedding
+    $norm = sqrt(array_sum(array_map(fn($v) => $v*$v, $encoding)));
+    $encoding = array_map(fn($v) => $v/$norm, $encoding);
+
+    $face = FaceRegistration::create([
+        'student_id' => $request->student_id,
+        'face_encoding' => json_encode($encoding),
+        'face_image_data' => $request->face_image_data ?? null,
+        'face_image_mime_type' => $request->face_image_mime_type ?? null,
+        'confidence_score' => $request->input('confidence_score', 0.0),
+        'face_landmarks' => $request->input('face_landmarks') ? json_encode($request->input('face_landmarks')) : null,
+        'source' => $request->source,
+        'device_id' => $request->device_id,
+        'registered_by' => optional($request->user())->id,
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Face registered successfully',
+        'face' => $face
+    ], 201);
+});
+
+// -------------------------
+// Recognize Face Route
+// -------------------------
+Route::post('/recognize-face', function (Request $request) {
+    $request->validate([
+        'face_encoding' => 'required|array',
+        'threshold' => 'nullable|numeric|min:0.1|max:1.0',
+    ]);
+
+    $threshold = $request->input('threshold', 0.35); // cosine similarity threshold
+    $inputEncoding = $request->face_encoding;
+
+    // Normalize input embedding
+    $norm = sqrt(array_sum(array_map(fn($v) => $v*$v, $inputEncoding)));
+    $inputEncoding = array_map(fn($v) => $v/$norm, $inputEncoding);
+
+    $registeredFaces = FaceRegistration::with('student')->whereNotNull('face_encoding')->get();
+
+    $bestMatch = null;
+    $bestScore = -1;
+    $debug = [];
+
+    foreach ($registeredFaces as $face) {
+        $storedEncoding = json_decode($face->face_encoding, true);
+        if (!is_array($storedEncoding) || empty($storedEncoding)) continue;
+
+        // Normalize stored embedding
+        $normStored = sqrt(array_sum(array_map(fn($v)=>$v*$v, $storedEncoding)));
+        $storedEncoding = array_map(fn($v)=>$v/$normStored, $storedEncoding);
+
+        // Cosine similarity
+        $dot = array_sum(array_map(fn($a,$b)=>$a*$b, $inputEncoding, $storedEncoding));
+
+        $debug[] = [
+            'student_id' => $face->student_id,
+            'student_name' => $face->student->first_name . ' ' . $face->student->last_name,
+            'similarity' => $dot
+        ];
+
+        if ($dot > $bestScore && $dot >= $threshold) {
+            $bestScore = $dot;
+            $bestMatch = $face;
+        }
     }
 
-    // Revoke existing tokens (optional security measure)
-    $user->tokens()->delete();
-
-    $token = $user->createToken($request->device_name)->plainTextToken;
-
-    return response()->json([
-        'success' => true,
-        'token' => $token,
-        'user' => $user->only(['id', 'name', 'email']), // Only return necessary user data
-    ]);
-});
-
-Route::post('/register', function (Request $request) {
-    $request->validate([
-        'name' => 'required|string|max:255',
-        'email' => 'required|email|unique:users,email',
-        'password' => 'required|min:8|confirmed', // Increased minimum password length
-        'device_name' => 'required|string',
-    ]);
-
-    $user = User::create([
-        'name' => $request->name,
-        'email' => $request->email,
-        'password' => Hash::make($request->password),
-    ]);
-
-    $token = $user->createToken($request->device_name)->plainTextToken;
-
-    return response()->json([
-        'success' => true,
-        'token' => $token,
-        'user' => $user->only(['id', 'name', 'email']),
-    ]);
-});
-
-// Public student registration endpoint
-Route::post('/students/register', [StudentController::class, 'registerStudent']);
-
-/*
-|--------------------------------------------------------------------------
-| Authenticated Routes
-|--------------------------------------------------------------------------
-*/
-Route::middleware('auth:sanctum')->group(function () {
-    // User management
-    Route::get('/user', function (Request $request) {
-        return $request->user()->only(['id', 'name', 'email']); // Only return necessary data
-    });
-    
-    Route::post('/logout', function (Request $request) {
-        $request->user()->currentAccessToken()->delete();
+    if ($bestMatch) {
         return response()->json([
             'success' => true,
-            'message' => 'Logged out successfully'
+            'recognized' => true,
+            'confidence' => $bestScore,
+            'student' => $bestMatch->student,
+            'face' => $bestMatch,
+            'debug' => $debug
         ]);
-    });
+    }
 
-    // Student routes
-    Route::prefix('students')->group(function () {
-        Route::get('/{id}', [StudentController::class, 'getStudent'])
-            ->where('id', '[0-9]+'); // Ensure ID is numeric
-        
-        Route::put('/{id}', [StudentController::class, 'updateStudent'])
-            ->where('id', '[0-9]+');
-    });
-
-    // Face registration
-    Route::post('/face/register', [FaceRegistrationController::class, 'register'])
-        ->middleware('throttle:10,1'); // Rate limiting (10 requests per minute)
+    return response()->json([
+        'success' => true,
+        'recognized' => false,
+        'message' => 'No matching face found',
+        'debug' => $debug
+    ]);
 });
