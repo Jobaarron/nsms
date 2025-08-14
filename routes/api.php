@@ -30,11 +30,14 @@ Route::get('/students', function () {
     return response()->json(['success' => true, 'students' => $students]);
 });
 
+// -------------------------
+// Register Face Route
+// -------------------------
 Route::post('/register-face', function (Request $request) {
     $request->validate([
         'student_id' => 'required|exists:students,id',
+        'face_encoding' => 'required|array',
         'source' => 'required|in:id_photo,manual_upload,camera_capture',
-        'face_encoding' => 'nullable',
         'face_image_data' => 'nullable',
         'face_image_mime_type' => 'nullable|string',
         'device_id' => 'nullable|string',
@@ -43,13 +46,10 @@ Route::post('/register-face', function (Request $request) {
     ]);
 
     $encoding = $request->face_encoding;
-    if (is_string($encoding)) {
-        $decoded = json_decode($encoding, true);
-        if (json_last_error() === JSON_ERROR_NONE) $encoding = $decoded;
-    }
-    if (!is_array($encoding) || empty($encoding)) {
-        return response()->json(['error' => 'face_encoding must be a non-empty array'], 422);
-    }
+
+    // Normalize embedding
+    $norm = sqrt(array_sum(array_map(fn($v) => $v*$v, $encoding)));
+    $encoding = array_map(fn($v) => $v/$norm, $encoding);
 
     $face = FaceRegistration::create([
         'student_id' => $request->student_id,
@@ -68,4 +68,68 @@ Route::post('/register-face', function (Request $request) {
         'message' => 'Face registered successfully',
         'face' => $face
     ], 201);
+});
+
+// -------------------------
+// Recognize Face Route
+// -------------------------
+Route::post('/recognize-face', function (Request $request) {
+    $request->validate([
+        'face_encoding' => 'required|array',
+        'threshold' => 'nullable|numeric|min:0.1|max:1.0',
+    ]);
+
+    $threshold = $request->input('threshold', 0.35); // cosine similarity threshold
+    $inputEncoding = $request->face_encoding;
+
+    // Normalize input embedding
+    $norm = sqrt(array_sum(array_map(fn($v) => $v*$v, $inputEncoding)));
+    $inputEncoding = array_map(fn($v) => $v/$norm, $inputEncoding);
+
+    $registeredFaces = FaceRegistration::with('student')->whereNotNull('face_encoding')->get();
+
+    $bestMatch = null;
+    $bestScore = -1;
+    $debug = [];
+
+    foreach ($registeredFaces as $face) {
+        $storedEncoding = json_decode($face->face_encoding, true);
+        if (!is_array($storedEncoding) || empty($storedEncoding)) continue;
+
+        // Normalize stored embedding
+        $normStored = sqrt(array_sum(array_map(fn($v)=>$v*$v, $storedEncoding)));
+        $storedEncoding = array_map(fn($v)=>$v/$normStored, $storedEncoding);
+
+        // Cosine similarity
+        $dot = array_sum(array_map(fn($a,$b)=>$a*$b, $inputEncoding, $storedEncoding));
+
+        $debug[] = [
+            'student_id' => $face->student_id,
+            'student_name' => $face->student->first_name . ' ' . $face->student->last_name,
+            'similarity' => $dot
+        ];
+
+        if ($dot > $bestScore && $dot >= $threshold) {
+            $bestScore = $dot;
+            $bestMatch = $face;
+        }
+    }
+
+    if ($bestMatch) {
+        return response()->json([
+            'success' => true,
+            'recognized' => true,
+            'confidence' => $bestScore,
+            'student' => $bestMatch->student,
+            'face' => $bestMatch,
+            'debug' => $debug
+        ]);
+    }
+
+    return response()->json([
+        'success' => true,
+        'recognized' => false,
+        'message' => 'No matching face found',
+        'debug' => $debug
+    ]);
 });
