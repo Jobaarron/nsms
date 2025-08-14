@@ -21,10 +21,6 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-// Route::get('/login', function () {
-//     return view('login');
-// }); // Excluded in guest side
-
 // Enrollment side
 Route::get('/enroll', function () {
     return view('enroll');
@@ -37,35 +33,6 @@ Route::get('/enroll', [EnrollmentController::class, 'create'])
 Route::post('/enroll', [EnrollmentController::class, 'store'])
      ->name('enroll.store');
 
-    //  Route::get('/mailtrap-test', function () {
-        
-    //     $student = new Student([
-    //         'first_name' => 'Job Aarron',
-    //         'email'      => 'jobaarronmisenas26@gmail.com',
-    //     ]);
-    
-    //     Mail::to(env('MAIL_TEST_RECIPIENT'))
-    //     ->send(new StudentWelcomeMail($student, 'TestPwd123'));
-       
-    //     return 'Check your Mailtrap inbox!';
-    // }); // Mailtrap Testing Purposes Do No Touch
-
-    // Route::get('/test-email/student-welcome', function () {
-    //     $student = (object) [
-    //         'first_name' => 'Jane',
-    //         'email' => 'jane.smith@example.com'
-    //     ];
-        
-    //     $rawPassword = 'TestPass456';
-        
-    //     return view('emails.student_welcome', compact('student', 'rawPassword'));
-    // }); Email form sample, it does not send to the mailtrap.
-
-   // Admin Generator Routes
-//    Route::get('/generate-admin', [AdminGeneratorController::class, 'showForm'])->name('show.admin.generator');
-//    Route::post('/generate-admin', [AdminGeneratorController::class, 'generateAdmin'])->name('generate.admin');
-//    Route::post('/admin/login', [AdminController::class, 'adminLogin'])->name('admin.login.submit');
-//    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 
 // Admin Generator (accessible without login for initial setup)
@@ -166,19 +133,19 @@ Route::middleware(['auth'])->group(function () {
 });
 
 // Test route to check authentication, roles, and permissions (Spatie)
-Route::get('/test', function () {
-    if (Auth::check()) {
-        $user = Auth::user();
-        $roles = $user->getRoleNames()->toArray();
-        $permissions = $user->getAllPermissions()->pluck('name')->toArray();
+// Route::get('/test', function () {
+//     if (Auth::check()) {
+//         $user = Auth::user();
+//         $roles = $user->getRoleNames()->toArray();
+//         $permissions = $user->getAllPermissions()->pluck('name')->toArray();
         
-        return 'Logged in as: ' . $user->name . 
-               ' (Roles: ' . implode(', ', $roles) . ')' .
-               ' (Permissions: ' . implode(', ', $permissions) . ')';
-    } else {
-        return 'Not logged in';
-    }
-})->name('test');
+//         return 'Logged in as: ' . $user->name . 
+//                ' (Roles: ' . implode(', ', $roles) . ')' .
+//                ' (Permissions: ' . implode(', ', $permissions) . ')';
+//     } else {
+//         return 'Not logged in';
+//     }
+// })->name('test');
 
 
 // Public Guidance Account Generator (no authentication required)
@@ -205,7 +172,7 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
     Route::middleware(['auth'])->group(function () {
         
         // Dashboard
-        Route::get('/dashboard', [GuidanceDisciplineController::class, 'dashboard'])
+        Route::get('/', [GuidanceDisciplineController::class, 'dashboard'])
             ->name('dashboard');
         
         // Account Management Routes
@@ -333,12 +300,13 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
 // Route::get('/teacher', [TeacherController::class, 'index']);
 // Route::get('/admin', [adminController::class, 'adminindex']);
 // Route::get('/admin/login', [adminController::class, 'adminlogin']);
-Route::get('/student', [StudentController::class, 'index']);
+
 
 // Route::get('/guidance', [GuidanceDisciplineController::class, 'index']);
 // Route::get('/guidance/login', [GuidanceDisciplineController::class, 'loginform']);
 
 // Student routes
+Route::get('/student', [StudentController::class, 'index']);
 Route::prefix('student')->name('student.')->group(function () {
     // Student login routes (public)
     Route::get('/login', [StudentController::class, 'showLoginForm'])->name('login');
@@ -346,7 +314,7 @@ Route::prefix('student')->name('student.')->group(function () {
     
     // Protected student routes
     Route::middleware(['auth:student'])->group(function () {
-        Route::get('/dashboard', [StudentController::class, 'index'])->name('dashboard');
+        Route::get('/student', [StudentController::class, 'index'])->name('dashboard');
         Route::get('/violations', [StudentController::class, 'violations'])->name('violations');
         Route::post('/logout', [StudentController::class, 'logout'])->name('logout');
     });

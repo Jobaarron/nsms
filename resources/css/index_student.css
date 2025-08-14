@@ -1,0 +1,88 @@
+ /* Color Palette */
+ :root {
+    --primary-color: #014421;
+    --secondary-color: #D0D8C3;
+    --accent-color: #2d6a3e;
+    --light-green: #e8f5e8;
+    --dark-green: #012d17;
+  }
+  body {
+    font-family: 'Nunito', sans-serif;
+    background-color: var(--light-green);
+  }
+  /* Sidebar */
+  .sidebar {
+    background-color: var(--secondary-color);
+    min-height: 100vh;
+  }
+  .sidebar .nav-link {
+    color: var(--primary-color);
+    font-weight: 600;
+    padding: 0.75rem 1rem;
+  }
+  .sidebar .nav-link:hover,
+  .sidebar .nav-link.active {
+    background-color: var(--accent-color);
+    color: #fff;
+    border-radius: 0.25rem;
+  }
+  /* Section Titles */
+  .section-title {
+    color: var(--primary-color);
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+  /* Summary Cards */
+  .card-summary { color: #fff; }
+  .card-paid     { background-color: var(--primary-color); }
+  .card-credits  { background-color: var(--accent-color); }
+  .card-subjects { background-color: var(--dark-green); }
+  .card-gpa      { background-color: var(--secondary-color); color: var(--dark-green); }
+  /* Table Head */
+  .table thead {
+    background-color: var(--primary-color);
+    color: #fff;
+  }
+  /* Buttons */
+  .btn-outline-primary {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+  }
+  .btn-outline-primary:hover {
+    background-color: var(--primary-color);
+    color: #fff;
+  }
+
+  .sidebar .nav-link.disabled {
+color: var(--secondary-color) !important;
+opacity: 0.6;
+cursor: not-allowed;
+pointer-events: none;
+}
+
+.sidebar .nav-link.disabled:hover {
+background-color: transparent !important;
+color: var(--secondary-color) !important;
+}
+
+.sidebar .nav-link.disabled i {
+opacity: 0.5;
+}
+
+/* Violation cards */
+.violation-card {
+  border-left: 4px solid;
+  transition: all 0.3s ease;
+}
+.violation-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+.violation-minor { border-left-color: #28a745; }
+.violation-major { border-left-color: #ffc107; }
+.violation-critical { border-left-color: #dc3545; }
+
+.badge-violation {
+  font-size: 0.75rem;
+  padding: 0.4em 0.8em;
+}

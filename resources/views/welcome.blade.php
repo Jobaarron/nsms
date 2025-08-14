@@ -154,8 +154,8 @@
                 </div>
             </div>
             <div class="row g-5">
-                <!-- Contact Form -->
-                {{-- <div class="col-lg-8">
+                <!-- Contact Form (STATIC / WIP)-->
+                <div class="col-lg-8">
                     <div class="content-card p-4">
                         <h4 class="fw-bold mb-4">Send us a Message</h4>
                         <form>
@@ -191,10 +191,10 @@
                             </div>
                         </form>
                     </div>
-                </div> --}}
+                </div>
 
                 <!-- Contact Information -->
-                <div class="col-lg-4 mx-auto">
+                <div class="col-lg-4">
                     <div class="content-card p-4 h-100">
                         <h4 class="fw-bold mb-4">Contact Information</h4>
                         
@@ -283,7 +283,7 @@
     </section>
 
     <!-- Why Choose Us Section -->
-    {{-- <section id="why-choose-us" class="py-5">
+    <section id="why-choose-us" class="py-5">
         <div class="container">
             <div class="row mb-5">
                 <div class="col-12 text-center">
@@ -330,39 +330,39 @@
                 </div>
             </div>
         </div>
-    </section> --}}
+    </section>
 
     <!-- Quick Stats Section -->
-    {{-- <section id="stats" class="py-5 bg-primary text-white">
+    <section id="stats" class="py-5 bg-primary text-white">
         <div class="container">
             <div class="row g-4 text-center">
                 <div class="col-lg-3 col-md-6">
                     <div class="stat-item">
-                        <h2 class="display-4 fw-bold mb-2">500+</h2>
-                        <p class="mb-0">Happy Students</p>
+                        <h2 class="display-4 fw-bold mb-2">Value here</h2>
+                        <p class="mb-0">Label here</p>
                     </div>
                 </div>
                 <div class="col-lg-3 col-md-6">
                     <div class="stat-item">
-                        <h2 class="display-4 fw-bold mb-2">50+</h2>
-                        <p class="mb-0">Qualified Teachers</p>
+                        <h2 class="display-4 fw-bold mb-2">Value here</h2>
+                        <p class="mb-0">Label here</p>
                     </div>
                 </div>
                 <div class="col-lg-3 col-md-6">
                     <div class="stat-item">
-                        <h2 class="display-4 fw-bold mb-2">20+</h2>
-                        <p class="mb-0">Years of Excellence</p>
+                        <h2 class="display-4 fw-bold mb-2">Value here</h2>
+                        <p class="mb-0">Label here</p>
                     </div>
                 </div>
                 <div class="col-lg-3 col-md-6">
                     <div class="stat-item">
-                        <h2 class="display-4 fw-bold mb-2">95%</h2>
-                        <p class="mb-0">Graduate Success Rate</p>
+                        <h2 class="display-4 fw-bold mb-2">Value here</h2>
+                        <p class="mb-0">Label here</p>
                     </div>
                 </div>
             </div>
         </div>
-    </section> --}}
+    </section>
 
     <!-- Call to Action Section -->
     <section id="cta" class="py-5">
@@ -376,9 +376,9 @@
                             <a href="/enroll" class="btn btn-custom btn-lg">
                                 <i class="ri-user-add-line me-2"></i>Start Enrollment
                             </a>
-                            {{-- <a href="#contact" class="btn btn-outline-primary btn-lg">
+                            <a href="#contact" class="btn btn-outline-primary btn-lg">
                                 <i class="ri-phone-line me-2"></i>Contact Us
-                            </a> --}}
+                            </a>  {{-- WIP --}}
                         </div>
                     </div>
                 </div>

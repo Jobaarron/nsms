@@ -26,7 +26,7 @@ return new class extends Migration
             $table->foreignId('approved_by')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamp('approved_at')->nullable();
             $table->timestamp('enrolled_at')->nullable();
-            $table->string('password');
+           $table->string('password')->nullable(); // Made nullable
             
             // FILE PATHS
             $table->json('documents')->nullable(); // Birth certificate, report cards, etc.

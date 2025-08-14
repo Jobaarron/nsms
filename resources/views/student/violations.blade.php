@@ -1,147 +1,5 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-
-  <title>My Violations • NSMS</title>
-
-  <!-- Remix Icons -->
-  <link 
-    href="https://cdn.jsdelivr.net/npm/remixicon@3.4.0/fonts/remixicon.css" 
-    rel="stylesheet"
-  />
-
-  <!-- Google Font -->
-  <link 
-    href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" 
-    rel="stylesheet"
-  />
-
-  <!-- App CSS (includes Bootstrap 5 via Vite) -->
-  @vite('resources/sass/app.scss')
-
-  <style>
-    /* Color Palette */
-    :root {
-      --primary-color: #014421;
-      --secondary-color: #D0D8C3;
-      --accent-color: #2d6a3e;
-      --light-green: #e8f5e8;
-      --dark-green: #012d17;
-    }
-    body {
-      font-family: 'Nunito', sans-serif;
-      background-color: var(--light-green);
-    }
-    /* Sidebar */
-    .sidebar {
-      background-color: var(--secondary-color);
-      min-height: 100vh;
-    }
-    .sidebar .nav-link {
-      color: var(--primary-color);
-      font-weight: 600;
-      padding: 0.75rem 1rem;
-    }
-    .sidebar .nav-link:hover,
-    .sidebar .nav-link.active {
-      background-color: var(--accent-color);
-      color: #fff;
-      border-radius: 0.25rem;
-    }
-    /* Section Titles */
-    .section-title {
-      color: var(--primary-color);
-      font-weight: 700;
-      margin-bottom: 1rem;
-    }
-    /* Summary Cards */
-    .card-summary { color: #fff; }
-    .card-total { background-color: var(--primary-color); }
-    .card-minor { background-color: var(--accent-color); }
-    .card-major { background-color: #dc3545; }
-    .card-recent { background-color: var(--secondary-color); color: var(--dark-green); }
-    /* Table Head */
-    .table thead {
-      background-color: var(--primary-color);
-      color: #fff;
-    }
-    /* Buttons */
-    .btn-outline-primary {
-      color: var(--primary-color);
-      border-color: var(--primary-color);
-    }
-    .btn-outline-primary:hover {
-      background-color: var(--primary-color);
-      color: #fff;
-    }
-
-    .sidebar .nav-link.disabled {
-      color: var(--secondary-color) !important;
-      opacity: 0.6;
-      cursor: not-allowed;
-      pointer-events: none;
-    }
-
-    .sidebar .nav-link.disabled:hover {
-      background-color: transparent !important;
-      color: var(--secondary-color) !important;
-    }
-
-    .sidebar .nav-link.disabled i {
-      opacity: 0.5;
-    }
-
-    /* Violation cards */
-    .violation-card {
-      border-left: 4px solid;
-      transition: all 0.3s ease;
-    }
-    .violation-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-    .violation-minor { border-left-color: #28a745; }
-    .violation-major { border-left-color: #ffc107; }
-    .violation-critical { border-left-color: #dc3545; }
-
-    .badge-violation {
-      font-size: 0.75rem;
-      padding: 0.4em 0.8em;
-    }
-  </style>
-</head>
-<body>
-  <div class="container-fluid">
-    <div class="row">
-
-      <!-- SIDEBAR -->
-      <nav class="col-12 col-md-2 sidebar d-none d-md-block py-4">
-        <ul class="nav flex-column">
-          <li class="nav-item mb-2">
-            <a class="nav-link" href="{{ route('student.dashboard') }}">
-              <i class="ri-dashboard-line me-2"></i>Dashboard
-            </a>
-          </li>
-          <li class="nav-item mb-2">
-            <a class="nav-link active" href="{{ route('student.violations') }}">
-              <i class="ri-flag-line me-2"></i>Violations
-            </a>
-          </li>
-        </ul>
-        
-        <!-- LOGOUT SECTION -->
-        <div class="mt-auto pt-3">
-          <form action="{{ route('student.logout') }}" method="POST">
-            @csrf
-            <button type="submit" class="nav-link text-danger border-0 bg-transparent w-100 text-start d-flex align-items-center" style="font-weight: 600;">
-              <i class="ri-logout-circle-line me-2"></i>Logout
-            </button>
-          </form>
-        </div>
-      </nav>
-
+<x-student-layout>
+  @vite(['resources/css/student_violations.css'])
       <!-- MAIN CONTENT -->
       <main class="col-12 col-md-10 px-4 py-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -273,7 +131,7 @@
                       Last violation: {{ $violations->first()->violation_date->diffForHumans() }}
                     </li>
                     <li class="mb-2">
-                      <i class="ri-trend-{{ $violations->where('violation_date', '>=', now()->subMonth())->count() <= $violations->where('violation_date', '>=', now()->subMonths(2))->where('violation_date', '<', now()->subMonth())->count() ? 'down' : 'up' }}-line me-2 text-{{ $violations->where('violation_date', '>=', now()->subMonth())->count() <= $violations->where('violation_date', '>=', now()->subMonths(2))->where('violation_date', '<', now()->subMonth())->count() ? 'success' : 'warning' }}"></i>
+                      <i class="ri-arrow-{{ $violations->where('violation_date', '>=', now()->subMonth())->count() <= $violations->where('violation_date', '>=', now()->subMonths(2))->where('violation_date', '<', now()->subMonth())->count() ? 'down' : 'up' }}-line me-2 text-{{ $violations->where('violation_date', '>=', now()->subMonth())->count() <= $violations->where('violation_date', '>=', now()->subMonths(2))->where('violation_date', '<', now()->subMonth())->count() ? 'success' : 'warning' }}"></i>
                       Trend: {{ $violations->where('violation_date', '>=', now()->subMonth())->count() <= $violations->where('violation_date', '>=', now()->subMonths(2))->where('violation_date', '<', now()->subMonth())->count() ? 'Improving' : 'Needs Attention' }}
                     </li>
                   </ul>
@@ -338,7 +196,7 @@
         @endif
 
         <!-- CONTACT INFO -->
-        {{-- <div class="card bg-light">
+        <div class="card bg-light">
           <div class="card-body text-center">
             <h6 class="fw-bold text-primary mb-3">Need Help or Have Questions?</h6>
             <p class="text-muted mb-3">If you have any questions about these violations or need guidance on improving your behavior, don't hesitate to reach out to the Guidance Office.</p>
@@ -353,9 +211,8 @@
               </div>
             </div>
           </div>
-        </div> --}}
+        </div>
       </main>
     </div>
   </div>
-</body>
-</html>
+</x-student-layout>
