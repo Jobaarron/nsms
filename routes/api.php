@@ -19,9 +19,20 @@ Route::post('/logout', [AuthController::class, 'apiLogout'])->middleware('auth:s
 // Students (Protected)
 // -------------------------
 Route::middleware('auth:sanctum')->get('/students', function () {
-    $students = Student::select('id', 'first_name', 'last_name')->get();
-    return response()->json(['success' => true, 'students' => $students]);
+    $students = Student::select(
+        'id',
+        'first_name',
+        'last_name',
+        'grade_level',
+        'lrn' // include LRN
+    )->get();
+
+    return response()->json([
+        'success' => true,
+        'students' => $students
+    ]);
 });
+
 
 // -------------------------
 // Register Face (Protected)
@@ -125,4 +136,15 @@ Route::post('/recognize-face', function (Request $request) {
         'message' => 'No matching face found',
         'debug' => $debug
     ]);
+});
+
+// -------------------------
+// Violation Routes (Protected)
+// -------------------------
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/violations', [ViolationController::class,'store']); // Submit violation
+    Route::get('/violations', [ViolationController::class,'index']); // List all
+    Route::get('/violations/statistics', [ViolationController::class,'statistics']); // Stats
+    Route::get('/violations/{id}', [ViolationController::class,'show']); // Show one
+    Route::get('/students/{studentId}/violations', [ViolationController::class,'studentViolations']); // Student violations
 });
