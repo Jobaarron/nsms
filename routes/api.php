@@ -3,37 +3,30 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use App\Models\User;
 use App\Models\Student;
 use App\Models\FaceRegistration;
+use App\Http\Controllers\ViolationController;
+use App\Http\Controllers\AuthController;
 
-Route::post('/login', function (Request $request) {
-    $request->validate([
-        'email' => 'required|email',
-        'password' => 'required',
-    ]);
-    $user = User::where('email', $request->email)->first();
-    if (!$user || !Hash::check($request->password, $user->password)) {
-        return response()->json(['error' => 'Invalid credentials'], 401);
-    }
-    return response()->json([
-        'success' => true,
-        'message' => 'Login successful',
-        'user' => ['id' => $user->id, 'name' => $user->name, 'email' => $user->email]
-    ]);
-});
+// -------------------------
+// Login (Mobile)
+// -------------------------
+Route::post('/login', [AuthController::class, 'apiLogin']);
+Route::post('/logout', [AuthController::class, 'apiLogout'])->middleware('auth:sanctum');
 
-Route::get('/students', function () {
+// -------------------------
+// Students (Protected)
+// -------------------------
+Route::middleware('auth:sanctum')->get('/students', function () {
     $students = Student::select('id', 'first_name', 'last_name')->get();
     return response()->json(['success' => true, 'students' => $students]);
 });
 
 // -------------------------
-// Register Face Route
+// Register Face (Protected)
 // -------------------------
-Route::post('/register-face', function (Request $request) {
+Route::middleware('auth:sanctum')->post('/register-face', function (Request $request) {
     $request->validate([
         'student_id' => 'required|exists:students,id',
         'face_encoding' => 'required|array',
@@ -60,7 +53,7 @@ Route::post('/register-face', function (Request $request) {
         'face_landmarks' => $request->input('face_landmarks') ? json_encode($request->input('face_landmarks')) : null,
         'source' => $request->source,
         'device_id' => $request->device_id,
-        'registered_by' => optional($request->user())->id,
+        'registered_by' => $request->user()->id,
     ]);
 
     return response()->json([
@@ -71,7 +64,7 @@ Route::post('/register-face', function (Request $request) {
 });
 
 // -------------------------
-// Recognize Face Route
+// Recognize Face (Public)
 // -------------------------
 Route::post('/recognize-face', function (Request $request) {
     $request->validate([
