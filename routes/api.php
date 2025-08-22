@@ -49,6 +49,16 @@ Route::middleware('auth:sanctum')->post('/register-face', function (Request $req
         'face_landmarks' => 'nullable|array',
     ]);
 
+    // Check if student already has a registered face
+    $existingFace = FaceRegistration::where('student_id', $request->student_id)->first();
+    if ($existingFace) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Face already registered for this student',
+            'error_code' => 'FACE_ALREADY_REGISTERED'
+        ], 409); // 409 Conflict status code
+    }
+
     $encoding = $request->face_encoding;
 
     // Normalize embedding
@@ -73,7 +83,6 @@ Route::middleware('auth:sanctum')->post('/register-face', function (Request $req
         'face' => $face
     ], 201);
 });
-
 // -------------------------
 // Recognize Face (Public)
 // -------------------------
