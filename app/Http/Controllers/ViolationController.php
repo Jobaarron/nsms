@@ -8,6 +8,7 @@ use App\Models\GuidanceDiscipline;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Carbon\Carbon;
 
 class ViolationController extends Controller
 {
@@ -24,6 +25,46 @@ class ViolationController extends Controller
             'success' => true,
             'violations' => $violations
         ]);
+    }
+
+    /**
+     * Check for duplicate violation on the same day.
+     */
+    public function checkDuplicate(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'student_id' => 'required|exists:students,id',
+            'violation_type' => 'required|string|max:50',
+            'date' => 'required|date',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $date = Carbon::parse($request->date)->format('Y-m-d');
+            
+            $duplicate = Violation::where('student_id', $request->student_id)
+                ->where('violation_type', $request->violation_type)
+                ->whereDate('violation_date', $date)
+                ->exists();
+
+            return response()->json([
+                'success' => true,
+                'is_duplicate' => $duplicate
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to check for duplicate violation',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -50,6 +91,21 @@ class ViolationController extends Controller
         }
 
         try {
+            // Check for duplicate violation on the same day
+            $date = Carbon::parse($request->date)->format('Y-m-d');
+            $duplicate = Violation::where('student_id', $request->student_id)
+                ->where('violation_type', $request->violation_type)
+                ->whereDate('violation_date', $date)
+                ->exists();
+
+            if ($duplicate) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Duplicate violation found for this student on the same day',
+                    'is_duplicate' => true
+                ], 409);
+            }
+
             $violation = Violation::create([
                 'student_id' => $request->student_id,
                 'reported_by' => Auth::id(), // Assuming staff is authenticated
@@ -70,6 +126,7 @@ class ViolationController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Violation submitted successfully',
+                'violation_id' => $violation->id,
                 'violation' => $violation->load('student')
             ], 201);
 
