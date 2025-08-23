@@ -155,5 +155,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/violations', [ViolationController::class,'index']); // List all
     Route::get('/violations/statistics', [ViolationController::class,'statistics']); // Stats
     Route::get('/violations/{id}', [ViolationController::class,'show']); // Show one
+    Route::put('/violations/{id}', [ViolationController::class,'update']); // ✅ Update violation
+    Route::post('/violations/check-duplicate', [ViolationController::class, 'checkDuplicate']);
     Route::get('/students/{studentId}/violations', [ViolationController::class,'studentViolations']); // Student violations
 });
