@@ -563,7 +563,7 @@
                             >
                                 <option value="">-- Select Mode --</option>
                                 <option value="cash" {{ old('payment_mode')=='cash'?'selected':'' }}>Cash</option>
-                                <option value="installment" {{ old('payment_mode')=='Online Payment'?'selected':'' }}>Online Payment</option>
+                                <option value="online payment" {{ old('payment_mode')=='Online Payment'?'selected':'' }}>Online Payment</option>
                                 {{-- <option value="installment" {{ old('payment_mode')=='installment'?'selected':'' }}>Installment</option>
                                 <option value="scholarship" {{ old('payment_mode')=='scholarship'?'selected':'' }}>Scholarship</option> --}}
                             </select>

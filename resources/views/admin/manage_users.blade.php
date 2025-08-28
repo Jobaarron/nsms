@@ -1,7 +1,6 @@
 <x-admin-layout>
     @vite(['resources/js/manage_users.js'])
     @vite(['resources/css/manage_users.css'])
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <div class="container-fluid">
         <!-- Page Header -->
         <div class="row mb-4">
@@ -61,6 +60,17 @@
                     </div>
                 </div>
             </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="stats-card">
+                    <div class="stats-icon bg-warning">
+                        <i class="fas fa-user-tie"></i>
+                    </div>
+                    <div class="stats-content">
+                        <h3 class="stats-number">{{ $users->filter(fn($u) => $u->hasRole('guidance_discipline'))->count() }}</h3>
+                        <p class="stats-label">Guidance & Discipline</p>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Main Content Card -->
@@ -70,15 +80,38 @@
                     <div class="card-header">
                         <div class="d-flex justify-content-between align-items-center">
                             <h3 class="card-title mb-0">
-                                <i class="fas fa-list me-2"></i>Users List
+                                <i class="ri-list-check me-2"></i>Users List
                             </h3>
                             <div class="header-actions">
-                                <button type="button" class="btn btn-outline-secondary me-2" id="bulkActionsBtn" disabled>
-                                    <i class="fas fa-tasks me-1"></i>Bulk Actions
+                                <button type="button" class="btn btn-outline-secondary me-2" id="bulkActionsBtn" disabled
+                                        title="Select users to perform bulk actions" data-bs-toggle="tooltip">
+                                    <i class="ri-checkbox-multiple-line me-1"></i>Bulk Actions
                                 </button>
-                                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createUserModal">
-                                    <i class="fas fa-plus me-1"></i>Create New User
+                                <button type="button" class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#createUserModal"
+                                        title="Create a new user account" data-bs-toggle="tooltip">
+                                    <i class="ri-user-add-line me-1"></i>Add New User
                                 </button>
+                                <button type="button" class="btn btn-outline-info me-2" onclick="location.reload()"
+                                        title="Refresh the users list" data-bs-toggle="tooltip">
+                                    <i class="ri-refresh-line me-1"></i>Refresh
+                                </button>
+                                {{-- <div class="dropdown">
+                                    <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                                            title="Export users data" data-bs-toggle="tooltip">
+                                        <i class="ri-download-line me-1"></i>Export
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#" onclick="exportUsers('excel')">
+                                            <i class="ri-file-excel-line me-2 text-success"></i>Excel Format
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="exportUsers('pdf')">
+                                            <i class="ri-file-pdf-line me-2 text-danger"></i>PDF Format
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="exportUsers('csv')">
+                                            <i class="ri-file-text-line me-2 text-info"></i>CSV Format
+                                        </a></li>
+                                    </ul>
+                                </div> --}}
                             </div>
                         </div>
                     </div>
@@ -203,25 +236,34 @@
                                         </td>
                                         <td>
                                             <div class="action-buttons">
-                                                <button type="button" class="btn btn-sm btn-info" 
-                                                        onclick="viewUser({{ $user->id }})" title="View Details">
-                                                    <i class="fas fa-eye"></i>
-                                                </button>
-                                                <button type="button" class="btn btn-sm btn-warning" 
-                                                        onclick="editUser({{ $user->id }})" title="Edit User">
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
-                                                @if(!($user->hasRole('admin') && \App\Models\User::role('admin')->count() <= 1) && $user->id !== auth()->id())
-                                                <button type="button" class="btn btn-sm btn-danger" 
-                                                        onclick="deleteUser({{ $user->id }}, '{{ addslashes($user->name) }}')" title="Delete User">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                                @else
-                                                <button type="button" class="btn btn-sm btn-secondary" disabled 
-                                                        title="{{ $user->id === auth()->id() ? 'Cannot delete yourself' : 'Cannot delete last admin' }}">
-                                                    <i class="fas fa-shield-alt"></i>
-                                                </button>
-                                                @endif
+                                                <div class="btn-group" role="group">
+                                                    <button type="button" class="btn btn-sm btn-info" 
+                                                            onclick="viewUser({{ $user->id }})" 
+                                                            title="View user details and information"
+                                                            data-bs-toggle="tooltip" data-bs-placement="top">
+                                                        <i class="ri-eye-line"></i>
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm btn-warning" 
+                                                            onclick="editUser({{ $user->id }})" 
+                                                            title="Edit user information and settings"
+                                                            data-bs-toggle="tooltip" data-bs-placement="top">
+                                                        <i class="ri-edit-line"></i>
+                                                    </button>
+                                                    @if(!($user->hasRole('admin') && \App\Models\User::role('admin')->count() <= 1) && $user->id !== auth()->id())
+                                                    <button type="button" class="btn btn-sm btn-danger" 
+                                                            onclick="deleteUser({{ $user->id }}, '{{ addslashes($user->name) }}')" 
+                                                            title="Delete this user permanently"
+                                                            data-bs-toggle="tooltip" data-bs-placement="top">
+                                                        <i class="ri-delete-bin-line"></i>
+                                                    </button>
+                                                    @else
+                                                    <button type="button" class="btn btn-sm btn-secondary" disabled 
+                                                            title="{{ $user->id === auth()->id() ? 'Cannot delete yourself' : 'Cannot delete the last admin user' }}"
+                                                            data-bs-toggle="tooltip" data-bs-placement="top">
+                                                        <i class="ri-shield-line"></i>
+                                                    </button>
+                                                    @endif
+                                                </div>
                                             </div>                                            
                                         </td>
                                     </tr>
@@ -241,7 +283,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="createUserModalLabel">
-                        <i class="fas fa-user-plus me-2"></i>Create New User
+                        <i class="ri-user-add-line me-2"></i>Create New User
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
@@ -267,11 +309,18 @@
                                                 <p>Teaching staff member</p>
                                             </div>
                                         </div>
-                                        <div class="col-md-4">
+                                        <div class="col-md-3">
                                             <div class="user-type-card" data-type="student">
                                                 <i class="fas fa-user-graduate"></i>
                                                 <h6>Student</h6>
                                                 <p>Student account</p>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="user-type-card" data-type="guidance_discipline">
+                                                <i class="fas fa-user-tie"></i>
+                                                <h6>Guidance & Discipline</h6>
+                                                <p>Counseling and discipline staff</p>
                                             </div>
                                         </div>
                                     </div>
@@ -297,31 +346,33 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label for="create_password" class="form-label">Password *</label>
-                                    <input type="password" class="form-control" id="create_password" name="password" required>
-                                    <button class="btn btn-outline-secondary" type="button" id="toggleCreatePassword">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
+                                    <div class="input-group">
+                                        <input type="password" class="form-control" id="create_password" name="password" required>
+                                        <button class="btn btn-outline-secondary" type="button" id="toggleCreatePassword">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                    <div class="invalid-feedback"></div>
                                 </div>
-                                <div class="invalid-feedback"></div>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="create_password_confirmation" class="form-label">Confirm Password *</label>
-                                <div class="input-group">
-                                    <input type="password" class="form-control" id="create_password_confirmation" name="password_confirmation" required>
-                                    <button class="btn btn-outline-secondary" type="button" id="toggleCreatePasswordConfirm">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
+                                <div class="col-md-6">
+                                    <label for="create_password_confirmation" class="form-label">Confirm Password *</label>
+                                    <div class="input-group">
+                                        <input type="password" class="form-control" id="create_password_confirmation" name="password_confirmation" required>
+                                        <button class="btn btn-outline-secondary" type="button" id="toggleCreatePasswordConfirm">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                    <div class="invalid-feedback"></div>
                                 </div>
-                                <div class="invalid-feedback"></div>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="create_status" class="form-label">Status</label>
-                                <select class="form-select" id="create_status" name="status">
-                                    <option value="active">Active</option>
-                                    <option value="inactive">Inactive</option>
-                                    <option value="pending">Pending</option>
-                                    <option value="suspended">Suspended</option>
-                                </select>
+                                <div class="col-md-6">
+                                    <label for="create_status" class="form-label">Status</label>
+                                    <select class="form-select" id="create_status" name="status">
+                                        <option value="active">Active</option>
+                                        <option value="inactive">Inactive</option>
+                                        <option value="pending">Pending</option>
+                                        <option value="suspended">Suspended</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -401,15 +452,17 @@
                         <div id="studentFields" class="user-type-fields" style="display: none;">
                             <div class="row g-3">
                                 <div class="col-md-6">
-                                    <label for="create_student_id" class="form-label">Student ID</label>
-                                    <input type="text" class="form-control" id="create_student_id" name="student_id">
+                                    <label for="create_student_id" class="form-label">Student ID *</label>
+                                    <input type="text" class="form-control" id="create_student_id" name="student_id" placeholder="e.g., 2024-001">
+                                    <div class="invalid-feedback"></div>
                                 </div>
                                 <div class="col-md-6">
-                                    <label for="create_lrn" class="form-label">LRN (Learner Reference Number)</label>
-                                    <input type="text" class="form-control" id="create_lrn" name="lrn">
+                                    <label for="create_lrn" class="form-label">LRN (Learner Reference Number) *</label>
+                                    <input type="text" class="form-control" id="create_lrn" name="lrn" placeholder="12-digit LRN">
+                                    <div class="invalid-feedback"></div>
                                 </div>
                                 <div class="col-md-4">
-                                    <label for="create_grade_level" class="form-label">Grade Level</label>
+                                    <label for="create_grade_level" class="form-label">Grade Level *</label>
                                     <select class="form-select" id="create_grade_level" name="grade_level">
                                         <option value="">Select Grade</option>
                                         <option value="Kindergarten">Kindergarten</option>
@@ -426,14 +479,127 @@
                                         <option value="Grade 11">Grade 11</option>
                                         <option value="Grade 12">Grade 12</option>
                                     </select>
+                                    <div class="invalid-feedback"></div>
                                 </div>
                                 <div class="col-md-4">
                                     <label for="create_section" class="form-label">Section</label>
-                                    <input type="text" class="form-control" id="create_section" name="section">
+                                    <input type="text" class="form-control" id="create_section" name="section" placeholder="e.g., A, B, C">
                                 </div>
                                 <div class="col-md-4">
-                                    <label for="create_academic_year" class="form-label">Academic Year</label>
+                                    <label for="create_academic_year" class="form-label">Academic Year *</label>
                                     <input type="text" class="form-control" id="create_academic_year" name="academic_year" value="2024-2025">
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="create_enrollment_date" class="form-label">Enrollment Date</label>
+                                    <input type="date" class="form-control" id="create_enrollment_date" name="enrollment_date" value="{{ date('Y-m-d') }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="create_enrollment_status" class="form-label">Enrollment Status</label>
+                                    <select class="form-select" id="create_enrollment_status" name="enrollment_status">
+                                        <option value="enrolled">Enrolled</option>
+                                        <option value="pending">Pending</option>
+                                        <option value="transferred">Transferred</option>
+                                        <option value="dropped">Dropped</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Teacher specific fields -->
+                        <div id="teacherFields" class="user-type-fields" style="display: none;">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="create_teacher_employee_id" class="form-label">Employee ID *</label>
+                                    <input type="text" class="form-control" id="create_teacher_employee_id" name="teacher_employee_id" placeholder="e.g., EMP-2024-001">
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="create_teacher_department" class="form-label">Department *</label>
+                                    <select class="form-select" id="create_teacher_department" name="teacher_department">
+                                        <option value="">Select Department</option>
+                                        <option value="Mathematics">Mathematics</option>
+                                        <option value="Science">Science</option>
+                                        <option value="English">English</option>
+                                        <option value="Filipino">Filipino</option>
+                                        <option value="Social Studies">Social Studies</option>
+                                        <option value="Physical Education">Physical Education</option>
+                                        <option value="Arts">Arts</option>
+                                        <option value="Technology">Technology</option>
+                                    </select>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="create_teacher_position" class="form-label">Position *</label>
+                                    <input type="text" class="form-control" id="create_teacher_position" name="teacher_position" placeholder="e.g., Subject Teacher, Adviser">
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="create_teacher_hire_date" class="form-label">Hire Date *</label>
+                                    <input type="date" class="form-control" id="create_teacher_hire_date" name="teacher_hire_date" value="{{ date('Y-m-d') }}">
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="create_teacher_phone" class="form-label">Phone Number</label>
+                                    <input type="text" class="form-control" id="create_teacher_phone" name="teacher_phone" placeholder="e.g., +63 912 345 6789">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="create_teacher_qualifications" class="form-label">Qualifications</label>
+                                    <input type="text" class="form-control" id="create_teacher_qualifications" name="teacher_qualifications" placeholder="e.g., Bachelor of Education">
+                                </div>
+                                <div class="col-12">
+                                    <label for="create_teacher_address" class="form-label">Address</label>
+                                    <textarea class="form-control" id="create_teacher_address" name="teacher_address" rows="2" placeholder="Complete address"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Guidance & Discipline specific fields -->
+                        <div id="guidanceFields" class="user-type-fields" style="display: none;">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="create_guidance_employee_id" class="form-label">Employee ID *</label>
+                                    <input type="text" class="form-control" id="create_guidance_employee_id" name="guidance_employee_id" placeholder="e.g., GD-2024-001">
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="create_guidance_position" class="form-label">Position *</label>
+                                    <select class="form-select" id="create_guidance_position" name="guidance_position">
+                                        <option value="">Select Position</option>
+                                        <option value="Guidance Counselor">Guidance Counselor</option>
+                                        <option value="Discipline Officer">Discipline Officer</option>
+                                        <option value="Head of Guidance">Head of Guidance</option>
+                                        <option value="Assistant Counselor">Assistant Counselor</option>
+                                    </select>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="create_guidance_specialization" class="form-label">Specialization</label>
+                                    <select class="form-select" id="create_guidance_specialization" name="guidance_specialization">
+                                        <option value="">Select Specialization</option>
+                                        <option value="Academic Counseling">Academic Counseling</option>
+                                        <option value="Career Guidance">Career Guidance</option>
+                                        <option value="Behavioral Management">Behavioral Management</option>
+                                        <option value="Crisis Intervention">Crisis Intervention</option>
+                                        <option value="Student Discipline">Student Discipline</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="create_guidance_hire_date" class="form-label">Hire Date *</label>
+                                    <input type="date" class="form-control" id="create_guidance_hire_date" name="guidance_hire_date" value="{{ date('Y-m-d') }}">
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="create_guidance_phone" class="form-label">Phone Number</label>
+                                    <input type="text" class="form-control" id="create_guidance_phone" name="guidance_phone" placeholder="e.g., +63 912 345 6789">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="create_guidance_license" class="form-label">License Number</label>
+                                    <input type="text" class="form-control" id="create_guidance_license" name="guidance_license" placeholder="Professional license number">
+                                </div>
+                                <div class="col-12">
+                                    <label for="create_guidance_qualifications" class="form-label">Qualifications</label>
+                                    <textarea class="form-control" id="create_guidance_qualifications" name="guidance_qualifications" rows="2" placeholder="Educational background and certifications"></textarea>
                                 </div>
                             </div>
                         </div>
@@ -441,11 +607,11 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="fas fa-times me-1"></i>Cancel
+                        <i class="ri-close-line me-1"></i>Cancel
                     </button>
                     <button type="submit" class="btn btn-primary">
                         <span class="spinner-border spinner-border-sm d-none" role="status"></span>
-                        <i class="fas fa-save me-1"></i>Create User
+                        <i class="ri-save-line me-1"></i>Create User
                     </button>
                 </div>
             </form>
@@ -459,7 +625,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="editUserModalLabel">
-                    <i class="fas fa-user-edit me-2"></i>Edit User
+                    <i class="ri-user-settings-line me-2"></i>Edit User
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -556,11 +722,11 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="fas fa-times me-1"></i>Cancel
+                        <i class="ri-close-line me-1"></i>Cancel
                     </button>
                     <button type="submit" class="btn btn-warning">
                         <span class="spinner-border spinner-border-sm d-none" role="status"></span>
-                        <i class="fas fa-save me-1"></i>Update User
+                        <i class="ri-save-line me-1"></i>Update User
                     </button>
                 </div>
             </form>
@@ -574,7 +740,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="viewUserModalLabel">
-                    <i class="fas fa-user me-2"></i>User Details
+                    <i class="ri-user-line me-2"></i>User Details
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -641,17 +807,27 @@
                     <ul class="nav nav-tabs" id="userDetailsTabs" role="tablist">
                         <li class="nav-item" role="presentation">
                             <button class="nav-link active" id="general-tab" data-bs-toggle="tab" data-bs-target="#general" type="button" role="tab">
-                                <i class="fas fa-info-circle me-1"></i>General
+                                <i class="ri-information-line me-1"></i>General
                             </button>
                         </li>
                         <li class="nav-item" role="presentation" id="admin-tab-li" style="display: none;">
                             <button class="nav-link" id="admin-tab" data-bs-toggle="tab" data-bs-target="#admin-info" type="button" role="tab">
-                                <i class="fas fa-user-shield me-1"></i>Admin Info
+                                <i class="ri-admin-line me-1"></i>Admin Info
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation" id="teacher-tab-li" style="display: none;">
+                            <button class="nav-link" id="teacher-tab" data-bs-toggle="tab" data-bs-target="#teacher-info" type="button" role="tab">
+                                <i class="ri-presentation-line me-1"></i>Teacher Info
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation" id="guidance-tab-li" style="display: none;">
+                            <button class="nav-link" id="guidance-tab" data-bs-toggle="tab" data-bs-target="#guidance-info" type="button" role="tab">
+                                <i class="ri-user-heart-line me-1"></i>Guidance Info
                             </button>
                         </li>
                         <li class="nav-item" role="presentation" id="student-tab-li" style="display: none;">
                             <button class="nav-link" id="student-tab" data-bs-toggle="tab" data-bs-target="#student-info" type="button" role="tab">
-                                <i class="fas fa-user-graduate me-1"></i>Student Info
+                                <i class="ri-graduation-cap-line me-1"></i>Student Info
                             </button>
                         </li>
                     </ul>
@@ -688,6 +864,62 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="tab-pane fade" id="teacher-info" role="tabpanel">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <strong>Employee ID:</strong>
+                                    <p id="view_teacher_employee_id">-</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Department:</strong>
+                                    <p id="view_teacher_department">-</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Position:</strong>
+                                    <p id="view_teacher_position">-</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Hire Date:</strong>
+                                    <p id="view_teacher_hire_date">-</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Specialization:</strong>
+                                    <p id="view_teacher_specialization">-</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Employment Status:</strong>
+                                    <p id="view_teacher_employment_status">-</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="guidance-info" role="tabpanel">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <strong>Employee ID:</strong>
+                                    <p id="view_guidance_employee_id">-</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Department:</strong>
+                                    <p id="view_guidance_department">-</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Position:</strong>
+                                    <p id="view_guidance_position">-</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Hire Date:</strong>
+                                    <p id="view_guidance_hire_date">-</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Specialization:</strong>
+                                    <p id="view_guidance_specialization">-</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Employment Status:</strong>
+                                    <p id="view_guidance_employment_status">-</p>
+                                </div>
+                            </div>
+                        </div>
                         <div class="tab-pane fade" id="student-info" role="tabpanel">
                             <div class="row g-3">
                                 <div class="col-md-6">
@@ -721,10 +953,10 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="fas fa-times me-1"></i>Close
+                    <i class="ri-close-line me-1"></i>Close
                 </button>
                 <button type="button" class="btn btn-warning" onclick="editUserFromView()">
-                    <i class="fas fa-edit me-1"></i>Edit User
+                    <i class="ri-edit-line me-1"></i>Edit User
                 </button>
             </div>
         </div>

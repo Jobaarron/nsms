@@ -56,12 +56,19 @@ Route::prefix('admin')->group(function () {
         Route::get('/', [AdminController::class, 'index'])->name('admin.dashboard');
         Route::post('/logout', [AdminController::class, 'logout'])->name('admin.logout');
         
-        // Users management
-        Route::get('/manage-users', [AdminController::class, 'manageUsers'])->name('admin.manage.users');
-        Route::post('/manage-users/store', [AdminController::class, 'storeUser'])->name('admin.manage.store');
-        Route::get('manage-users/{id}', [AdminController::class, 'showUser'])->name('admin.manage.show');
-        Route::put('/manage-users/{id}', [AdminController::class, 'updateUser'])->name('admin.manage.update');
-        Route::delete('/manage-users/{id}', [AdminController::class, 'destroyUser'])->name('admin.manage.destroy');
+        // Users management - Updated to use UserManagementController
+        Route::get('/manage-users', [App\Http\Controllers\UserManagementController::class, 'index'])->name('admin.manage.users');
+        Route::post('/manage-users', [App\Http\Controllers\UserManagementController::class, 'store'])->name('admin.manage.store');
+        Route::get('/manage-users/{user}', [App\Http\Controllers\UserManagementController::class, 'show'])->name('admin.manage.show');
+        Route::post('/manage-users/{user}', [App\Http\Controllers\UserManagementController::class, 'update'])->name('admin.manage.update');
+        Route::delete('/manage-users/{user}', [App\Http\Controllers\UserManagementController::class, 'destroy'])->name('admin.manage.destroy');
+        
+        // Additional user management endpoints
+        Route::get('/manage-users/stats', [App\Http\Controllers\UserManagementController::class, 'getStats'])->name('admin.manage.stats');
+        Route::post('/manage-users/bulk-action', [App\Http\Controllers\UserManagementController::class, 'bulkAction'])->name('admin.manage.bulk');
+        Route::get('/manage-users/export', [App\Http\Controllers\UserManagementController::class, 'export'])->name('admin.manage.export');
+        Route::post('/manage-users/import', [App\Http\Controllers\UserManagementController::class, 'import'])->name('admin.manage.import');
+        Route::get('/manage-users/report', [App\Http\Controllers\UserManagementController::class, 'generateReport'])->name('admin.manage.report');
         
         // Roles & Access Management - Use your custom permission middleware
         Route::middleware(['can:Manage Roles'])->group(function () {
@@ -147,6 +154,28 @@ Route::middleware(['auth'])->group(function () {
 //     }
 // })->name('test');
 
+
+// Public Teacher Account Generator (no authentication required)
+Route::get('/teacher-generator', [TeacherController::class, 'showGeneratorForm'])
+    ->name('teacher.generator');
+
+Route::post('/teacher-generator', [TeacherController::class, 'generateTeacher'])
+    ->name('generate.teacher');
+
+// Teacher Authentication Routes
+Route::get('/teacher/login', [TeacherController::class, 'showLoginForm'])
+    ->name('teacher.login');
+
+Route::post('/teacher/login', [TeacherController::class, 'login'])
+    ->name('teacher.login.submit');
+
+Route::post('/teacher/logout', [TeacherController::class, 'logout'])
+    ->name('teacher.logout');
+
+// Teacher Dashboard Route (protected)
+Route::get('/teacher', [TeacherController::class, 'index'])
+    ->name('teacher.dashboard')
+    ->middleware(['auth', 'role:teacher']);
 
 // Public Guidance Account Generator (no authentication required)
 Route::get('/guidance-generator', [GuidanceDisciplineController::class, 'showPublicGenerator'])

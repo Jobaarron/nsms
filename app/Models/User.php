@@ -94,10 +94,10 @@ class User extends Authenticatable
         return $this->admin()->exists() && $this->admin->is_active;
     }
 
-    // public function teacher()
-    // {
-    //     return $this->hasOne(Teacher::class);
-    // }
+    public function teacher()
+    {
+        return $this->hasOne(Teacher::class);
+    }
 
     // public function guidanceCounsellor()
     // {
@@ -153,12 +153,12 @@ class User extends Authenticatable
     }
 
     /**
-     * Update last login timestamp (if you want to track this)
+     * Update last login timestamp 
      */
     public function updateLastLogin()
     {
-        // You can implement this if you add a last_login column to users table
-        // For now, we'll just return without doing anything
+        // 
+
         return;
     }
 
