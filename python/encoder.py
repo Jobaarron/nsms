@@ -1,4 +1,3 @@
-# face_recognition_api.py
 import os
 os.environ["ALBUMENTATIONS_CHECK_FOR_UPDATES"] = "false"  # Disable albumentations online check
 
@@ -42,13 +41,15 @@ def encode_face():
 
         face = faces[0]  # take first detected face
         embedding = face.embedding.tolist()
-        landmarks = face.kps.tolist()  # 5-point landmarks: left_eye, right_eye, nose, mouth_left, mouth_right
+        landmarks = face.kps.tolist()  # 5-point landmarks
         confidence = float(face.det_score)
+        bbox = face.bbox.tolist()  # [x1, y1, x2, y2]
 
         return jsonify({
             'encoding': embedding,
             'landmarks': landmarks,
-            'confidence': confidence
+            'confidence': confidence,
+            'bbox': bbox
         }), 200
 
     except Exception as e:
