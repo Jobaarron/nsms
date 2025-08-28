@@ -191,10 +191,10 @@
                                 </td>
                                 <td>
                                     <div class="d-flex align-items-center">
-                                        <div class="avatar-circle me-3">
-                                            {{ substr($student->first_name, 0, 1) }}{{ substr($student->last_name, 0, 1) }}
+                                        {{-- <div class="avatar-circle me-3"> --}}
+                                            {{-- {{ substr($student->first_name, 0, 1) }}{{ substr($student->last_name, 0, 1) }} --}}
                                            {{-- <img src="{{ asset('storage/' . $student->id_photo) }}" alt="Student Avatar" class="avatar-img"> --}}
-                                        </div>
+                                        {{-- </div> --}}
                                         <div>
                                             <strong>{{ $student->first_name }} {{ $student->last_name }}</strong>
                                             <br>
