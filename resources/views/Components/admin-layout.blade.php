@@ -42,7 +42,7 @@
         </li>
           </li>
           <li class="nav-item">
-            <a class="nav-link d-flex align-items-center py-3 px-3 rounded" href="{{ route('admin.manage.users') }}">
+            <a class="nav-link disabled d-flex align-items-center py-3 px-3 rounded" href="{{ route('admin.manage.users') }}">
                 <i class="ri-user-settings-line me-2 fs-5"></i>
                 <span>Manage Users</span>
             </a>
@@ -51,6 +51,12 @@
           <a class="nav-link d-flex align-items-center py-3 px-3 rounded" href="{{ route('admin.enrollments') }}">
               <i class="ri-file-list-line me-2 fs-5"></i>
               <span>Enrollments</span>
+          </a>
+      </li>
+      <li class="nav-item">
+          <a class="nav-link d-flex align-items-center py-3 px-3 rounded {{ request()->routeIs('admin.contact.messages') ? 'active bg-light' : '' }}" href="{{ route('admin.contact.messages') }}">
+              <i class="ri-mail-line me-2 fs-5"></i>
+              <span>Contact Messages</span>
           </a>
       </li>
           <li class="nav-item mt-4">

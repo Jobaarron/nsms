@@ -35,7 +35,7 @@
       <nav class="col-12 col-md-2 sidebar d-none d-md-block py-4">
         <ul class="nav flex-column">
           <li class="nav-item mb-2">
-            <a class="nav-link active" href="{{ route('student.dashboard') }}">
+            <a class="nav-link {{ request()->routeIs('student.dashboard') ? 'active' : '' }}" href="{{ route('student.dashboard') }}">
               <i class="ri-dashboard-line me-2"></i>Dashboard
             </a>
           </li>
@@ -77,7 +77,7 @@
           </li> --}}
           <li class="nav-item mb-2">
             {{-- @if($student->canAccessFeatures()) --}}
-              <a class="nav-link" href="{{ route('student.violations') }}">
+              <a class="nav-link {{ request()->routeIs('student.violations') ? 'active' : '' }}" href="{{ route('student.violations') }}">
                 <i class="ri-flag-line me-2"></i>Violations
               </a>
             {{-- @else --}}

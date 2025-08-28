@@ -435,7 +435,8 @@ class GuidanceDisciplineController extends Controller
         //     abort(403, 'Unauthorized access');
         // }
 
-        $students = Student::orderBy('last_name', 'asc')
+        $students = Student::with('activeFaceRegistration')
+            ->orderBy('last_name', 'asc')
             ->paginate(20);
 
         return view('guidancediscipline.student-profile', compact('students'));

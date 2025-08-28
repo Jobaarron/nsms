@@ -205,6 +205,14 @@ class Student extends Authenticatable
     }
 
     /**
+     * Get face registration status for filtering
+     */
+    public function getFaceRegistrationStatusAttribute()
+    {
+        return $this->hasFaceRegistered() ? 'registered' : 'not_registered';
+    }
+
+    /**
      * Get ID photo as base64 data URL for display
      */
     public function getIdPhotoDataUrlAttribute()

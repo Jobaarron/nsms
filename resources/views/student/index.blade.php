@@ -41,7 +41,7 @@
                 <i class="ri-book-2-line display-6 me-3"></i>
                 <div>
                   <div>Active Subjects</div>
-                  <h3>5</h3>
+                  <h3>2</h3>
                 </div>
               </div>
             </div>

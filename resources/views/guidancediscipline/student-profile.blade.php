@@ -135,10 +135,16 @@
                       </span>
                     </td>
                     --}}
-                    <td>
-                      <span class="badge bg-warning">
-                        <i class="ri-close-line me-1"></i>Not Registered
-                      </span>
+                    <td data-face-status="{{ $student->face_registration_status }}">
+                      @if($student->hasFaceRegistered())
+                        <span class="badge bg-success">
+                          <i class="ri-check-line me-1"></i>Registered
+                        </span>
+                      @else
+                        <span class="badge bg-warning">
+                          <i class="ri-close-line me-1"></i>Not Registered
+                        </span>
+                      @endif
                     </td>
                     <td>
                       <div class="btn-group" role="group">

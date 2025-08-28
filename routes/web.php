@@ -11,6 +11,7 @@ use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\GuidanceDisciplineController;
+use App\Http\Controllers\ContactController;
 // use Spatie\Permission\Middlewares\RoleMiddleware;
 // use Spatie\Permission\Middlewares\PermissionMiddleware;
 // use App\Http\Controllers\AdminGeneratorController;
@@ -32,6 +33,9 @@ Route::get('/enroll', [EnrollmentController::class, 'create'])
      ->name('enroll.create');
 Route::post('/enroll', [EnrollmentController::class, 'store'])
      ->name('enroll.store');
+
+// Contact form routes
+Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
 
 
 
@@ -112,6 +116,13 @@ Route::prefix('admin')->group(function () {
         Route::post('/enrollments/export-all', [AdminController::class, 'exportAll'])->name('enrollments.export.all');
         Route::post('/enrollments/send-notification', [AdminController::class, 'sendBulkNotification'])->name('enrollments.notification');
         Route::post('/enrollments/print', [AdminController::class, 'printEnrollments'])->name('enrollments.print');
+        
+        // Contact Messages Management
+        Route::get('/contact-messages', [ContactController::class, 'adminIndex'])->name('admin.contact.messages');
+        Route::get('/contact-messages/{message}', [ContactController::class, 'show'])->name('admin.contact.show');
+        Route::post('/contact-messages/{message}/status', [ContactController::class, 'updateStatus'])->name('admin.contact.status');
+        Route::delete('/contact-messages/{message}', [ContactController::class, 'destroy'])->name('admin.contact.destroy');
+        Route::post('/contact-messages/bulk-action', [ContactController::class, 'bulkAction'])->name('admin.contact.bulk');
     });
 
    

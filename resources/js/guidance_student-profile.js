@@ -66,15 +66,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const studentInfo = row.cells[1].textContent.toLowerCase();
         const grade = row.cells[2].textContent;
         // const status = row.cells[3].textContent.toLowerCase(); // COMMENTED OUT FOR FUTURE USE
-        const faceStatus = row.cells[3].textContent.toLowerCase(); // Updated index since status column removed
+        const faceStatusCell = row.cells[3]; // Face registration cell
+        const faceStatus = faceStatusCell.getAttribute('data-face-status') || 'not_registered';
         
         const matchesSearch = studentInfo.includes(searchTerm);
         const matchesGrade = !gradeValue || grade.includes(gradeValue);
         // const matchesStatus = !statusValue || status.includes(statusValue); // COMMENTED OUT FOR FUTURE USE
         const matchesStatus = true; // Always true since status filter is disabled
-        const matchesFace = !faceValue || 
-          (faceValue === 'registered' && faceStatus.includes('registered')) ||
-          (faceValue === 'not_registered' && faceStatus.includes('not registered'));
+        const matchesFace = !faceValue || faceStatus === faceValue;
         
         row.style.display = matchesSearch && matchesGrade && matchesStatus && matchesFace ? '' : 'none';
       });

@@ -85,7 +85,7 @@
                             <li><i class="ri-check-line text-success me-2"></i>Montessori Method</li>
                             <li><i class="ri-check-line text-success me-2"></i>Creative Arts & Music</li>
                         </ul>
-                        <a href="#" class="btn btn-custom">Learn More</a>
+                        {{-- <a href="#" class="btn btn-custom">Learn More</a> --}}
                     </div>
                 </div>
 
@@ -103,7 +103,7 @@
                             <li><i class="ri-check-line text-success me-2"></i>Values Education</li>
                             <li><i class="ri-check-line text-success me-2"></i>Extracurricular Activities</li>
                         </ul>
-                        <a href="#" class="btn btn-custom">Learn More</a>
+                        {{-- <a href="#" class="btn btn-custom">Learn More</a> --}}
                     </div>
                 </div>
 
@@ -121,7 +121,7 @@
                             <li><i class="ri-check-line text-success me-2"></i>Laboratory Sciences</li>
                             <li><i class="ri-check-line text-success me-2"></i>Research Projects</li>
                         </ul>
-                        <a href="#" class="btn btn-custom">Learn More</a>
+                        {{-- <a href="#" class="btn btn-custom">Learn More</a> --}}
                     </div>
                 </div>
 
@@ -139,7 +139,7 @@
                             <li><i class="ri-check-line text-success me-2"></i>STEM (Science, Technology, Engineering & Math)</li>
                             <li><i class="ri-check-line text-success me-2"></i>TVL (Technical-Vocational-Livelihood)</li>
                         </ul>
-                        <a href="#" class="btn btn-custom">Learn More</a>
+                        {{-- <a href="#" class="btn btn-custom">Learn More</a> --}}
                     </div>
                 </div>
             </div>
@@ -156,34 +156,70 @@
                 </div>
             </div>
             <div class="row g-5">
-                <!-- Contact Form (STATIC / WIP)-->
+                <!-- Contact Form -->
                 <div class="col-lg-8">
                     <div class="content-card p-4">
                         <h4 class="fw-bold mb-4">Send us a Message</h4>
-                        <form>
+                        
+                        @if(session('success'))
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                <i class="ri-check-circle-line me-2"></i>{{ session('success') }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        @endif
+
+                        @if(session('error'))
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <i class="ri-error-warning-line me-2"></i>{{ session('error') }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        @endif
+
+                        <form method="POST" action="{{ route('contact.store') }}">
+                            @csrf
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label for="name" class="form-label">Full Name *</label>
-                                    <input type="text" class="form-control" id="name" required>
+                                    <input type="text" class="form-control @error('name') is-invalid @enderror" 
+                                           id="name" name="name" value="{{ old('name') }}" required>
+                                    @error('name')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
                                 <div class="col-md-6">
                                     <label for="email" class="form-label">Email Address *</label>
-                                    <input type="email" class="form-control" id="email" required>
+                                    <input type="email" class="form-control @error('email') is-invalid @enderror" 
+                                           id="email" name="email" value="{{ old('email') }}" required>
+                                    @error('email')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
                                 <div class="col-12">
                                     <label for="subject" class="form-label">Subject *</label>
-                                    <select class="form-select" id="subject" required>
+                                    <select class="form-select @error('subject') is-invalid @enderror" 
+                                            id="subject" name="subject" required>
                                         <option value="">Choose a subject...</option>
-                                        <option value="enrollment">Enrollment Inquiry</option>
-                                        <option value="academic">Academic Information</option>
-                                        <option value="admission">Admission Requirements</option>
-                                        <option value="facilities">School Facilities</option>
-                                        <option value="other">Other</option>
+                                        <option value="enrollment" {{ old('subject') == 'enrollment' ? 'selected' : '' }}>Enrollment Inquiry</option>
+                                        <option value="academic" {{ old('subject') == 'academic' ? 'selected' : '' }}>Academic Information</option>
+                                        <option value="admission" {{ old('subject') == 'admission' ? 'selected' : '' }}>Admission Requirements</option>
+                                        <option value="facilities" {{ old('subject') == 'facilities' ? 'selected' : '' }}>School Facilities</option>
+                                        <option value="other" {{ old('subject') == 'other' ? 'selected' : '' }}>Other</option>
                                     </select>
+                                    @error('subject')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
                                 <div class="col-12">
                                     <label for="message" class="form-label">Message *</label>
-                                    <textarea class="form-control" id="message" rows="5" required></textarea>
+                                    <textarea class="form-control @error('message') is-invalid @enderror" 
+                                              id="message" name="message" rows="5" maxlength="2000" required>{{ old('message') }}</textarea>
+                                    <div class="form-text d-flex justify-content-between">
+                                        <span>Maximum 2000 characters</span>
+                                        <span id="char-count">0/2000</span>
+                                    </div>
+                                    @error('message')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
                                 <div class="col-12">
                                     <button type="submit" class="btn btn-custom btn-lg">
@@ -194,6 +230,34 @@
                         </form>
                     </div>
                 </div>
+
+                <script>
+                    // Character counter for message textarea
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const messageTextarea = document.getElementById('message');
+                        const charCount = document.getElementById('char-count');
+                        
+                        function updateCharCount() {
+                            const currentLength = messageTextarea.value.length;
+                            charCount.textContent = `${currentLength}/2000`;
+                            
+                            // Change color based on character count
+                            if (currentLength > 1800) {
+                                charCount.style.color = '#dc3545'; // Red when approaching limit
+                            } else if (currentLength > 1500) {
+                                charCount.style.color = '#fd7e14'; // Orange when getting close
+                            } else {
+                                charCount.style.color = '#6c757d'; // Default gray
+                            }
+                        }
+                        
+                        // Update count on page load (for old input)
+                        updateCharCount();
+                        
+                        // Update count as user types
+                        messageTextarea.addEventListener('input', updateCharCount);
+                    });
+                </script>
 
                 <!-- Contact Information -->
                 <div class="col-lg-4">
@@ -335,7 +399,7 @@
     </section>
 
     <!-- Quick Stats Section -->
-    <section id="stats" class="py-5 bg-primary text-white">
+    {{-- <section id="stats" class="py-5 bg-primary text-white">
         <div class="container">
             <div class="row g-4 text-center">
                 <div class="col-lg-3 col-md-6">
@@ -364,7 +428,7 @@
                 </div>
             </div>
         </div>
-    </section>
+    </section> --}}
 
     <!-- Call to Action Section -->
     <section id="cta" class="py-5">

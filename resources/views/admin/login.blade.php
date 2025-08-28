@@ -1,90 +1,91 @@
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Admin Login • NSMS</title>
-    
-    <!-- Remix Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.4.0/fonts/remixicon.css" rel="stylesheet"/>
-    
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet"/>
-    
-    <!-- App CSS & JS (includes Bootstrap 5 via Vite) -->
-    @vite(['resources/sass/app.scss','resources/js/app.js'])
-    @vite(['resources/css/login_admin.css'])
-    <style>
-        
-    </style>
-</head>
-<body>
-    @php
-        if(Auth::check()) {
-                header('Location: ' . route('admin.dashboard'));
-                exit;
-            }
-        @endphp
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="mb-0 text-center">
-                            <i class="ri-admin-line me-2"></i>Admin Login
-                        </h3>
+<x-layout>
+    @vite('resources/css/enroll.css')
+    <div class="row justify-content-center">
+        <div class="col-lg-6 col-md-8">
+            <div class="content-card p-5">
+                <div class="text-center mb-4">
+                    <i class="ri-admin-line" style="font-size: 4rem; color: var(--primary-color);"></i>
+                    <h2 class="page-header mb-2">Registrar & Admin Login</h2>
+                    <p class="text-muted">Login to access the admin panel</p>
+                </div>
+
+                @if(session('error'))
+                    <div class="alert alert-danger">{{ session('error') }}</div>
+                @endif
+
+                @if(session('success'))
+                    <div class="alert alert-success">{{ session('success') }}</div>
+                @endif
+
+                @if($errors->any())
+                    <div class="alert alert-danger">
+                        <ul class="mb-0">
+                            @foreach($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
                     </div>
-                    <div class="card-body p-4">
-                        @if(session('error'))
-                            <div class="alert alert-danger mb-4">
-                                {{ session('error') }}
-                            </div>
-                        @endif
-                        
-                        <form method="POST" action="{{ route('admin.login.submit') }}">
-                            @csrf
-                            
-                            <div class="mb-3">
-                                <label for="email" class="form-label">Email Address</label>
-                                <input id="email" type="email" class="form-control @error('email') is-invalid @enderror" name="email" value="{{ old('email') }}" required autofocus>
-                                @error('email')
-                                    <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $message }}</strong>
-                                    </span>
-                                @enderror
-                            </div>
-                            
-                            <div class="mb-4">
-                                <label for="password" class="form-label">Password</label>
-                                <input id="password" type="password" class="form-control @error('password') is-invalid @enderror" name="password" required>
-                                @error('password')
-                                    <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $message }}</strong>
-                                    </span>
-                                @enderror
-                            </div>
-                            
-                            <div class="mb-3 form-check">
-                                <input type="checkbox" class="form-check-input" id="remember" name="remember">
-                                <label class="form-check-label" for="remember">Remember Me</label>
-                            </div>
-                            
-                            <div class="d-grid">
-                                <button type="submit" class="btn btn-primary btn-lg">
-                                    <i class="ri-login-box-line me-2"></i>Login
-                                </button>
-                            </div>
-                        </form>
+                @endif
+
+                <form method="POST" action="{{ route('admin.login.submit') }}">
+                    @csrf
+                    
+                    <div class="mb-3">
+                        <label for="email" class="form-label fw-semibold" style="color: var(--primary-color);">
+                            <i class="ri-mail-line me-2"></i>Email Address
+                        </label>
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            class="form-control form-control-lg @error('email') is-invalid @enderror"
+                            value="{{ old('email') }}"
+                            required
+                            autofocus
+                            placeholder="your.email@example.com"
+                            autocomplete="email"
+                        />
+                        @error('email')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
                     </div>
+
+                    <div class="mb-4">
+                        <label for="password" class="form-label fw-semibold" style="color: var(--primary-color);">
+                            <i class="ri-lock-line me-2"></i>Password
+                        </label>
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            class="form-control form-control-lg @error('password') is-invalid @enderror"
+                            required
+                            placeholder="Enter your password"
+                            autocomplete="current-password"
+                        />
+                        @error('password')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="remember" name="remember">
+                        <label class="form-check-label" for="remember">Remember Me</label>
+                    </div>
+
+                    <button type="submit" class="btn btn-custom btn-lg w-100 mb-3">
+                        <i class="ri-login-circle-line me-2"></i>Login
+                    </button>
+                </form>
+
+                <div class="text-center mt-4">
+                    <small class="text-muted">
+                        <i class="ri-information-line me-1"></i>
+                        For Registrar & Administration only
+                    </small>
                 </div>
                 
-                <div class="text-center mt-4">
-                    <a href="/" class="text-decoration-none text-primary">
-                        <i class="ri-home-line me-1"></i>Return to Home
-                    </a>
-                </div>
             </div>
         </div>
     </div>
-</body>
-</html>
+</x-layout>

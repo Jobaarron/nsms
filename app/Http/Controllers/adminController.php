@@ -1213,7 +1213,7 @@ public function updateEnrollment(Request $request, $id)
             'last_school_type' => 'nullable|in:public,private',
             'last_school_name' => 'nullable|string|max:255',
             'medical_history' => 'nullable|string|max:1000',
-            'payment_mode' => 'required|in:cash,installment,scholarship',
+            'payment_mode' => 'required|in:cash,installment,scholarship,online payment',
             'new_password' => 'nullable|string|min:6|max:255',
         ]);
 
