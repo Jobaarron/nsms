@@ -1,5 +1,4 @@
 <x-admin-layout>
-   
         @vite(['resources/js/admin-enrollments.js'])
         @vite(['resources/css/admin_enrollments.css'])
   

@@ -1,0 +1,102 @@
+:root {
+      --primary-color: #014421;
+      --secondary-color: #D0D8C3;
+      --accent-color: #2d6a3e;
+      --light-green: #e8f5e8;
+      --dark-green: #012d17;
+    }
+    body {
+      font-family: 'Nunito', sans-serif;
+      background-color: var(--light-green);
+    }
+    /* Sidebar */
+    .sidebar {
+      background-color: var(--secondary-color);
+      min-height: 100vh;
+    }
+    .sidebar .nav-link {
+      color: var(--primary-color);
+      font-weight: 600;
+      padding: .75rem 1rem;
+    }
+    .sidebar .nav-link:hover,
+    .sidebar .nav-link.active {
+      background-color: var(--accent-color);
+      color: #fff;
+      border-radius: .25rem;
+    }
+    /* Section Title */
+    .section-title {
+      color: var(--primary-color);
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
+    /* Summary Cards */
+    .card-summary { color: #fff; }
+    .card-students    { background-color: var(--primary-color); }
+    .card-facerec     { background-color: var(--accent-color); }
+    .card-violations  { background-color: var(--dark-green); }
+    .card-counsel     { background-color: var(--secondary-color); color: var(--dark-green); }
+    .card-reports     { background-color: #4a4a4a; }
+    /* Tables */
+    .table thead {
+      background-color: var(--primary-color);
+      color: #fff;
+    }
+    /* Buttons */
+    .btn-outline-primary {
+      color: var(--primary-color);
+      border-color: var(--primary-color);
+    }
+    .btn-outline-primary:hover {
+      background-color: var(--primary-color);
+      color: #fff;
+    }
+
+    .sidebar .nav-link.disabled {
+      color: var(--secondary-color) !important;
+      opacity: 0.6;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    .sidebar .nav-link.disabled:hover {
+      background-color: transparent !important;
+      color: var(--secondary-color) !important;
+    }
+
+    .sidebar .nav-link.disabled i {
+      opacity: 0.5;
+    }
+
+    /* User info in sidebar */
+    .user-info {
+      background-color: var(--primary-color);
+      color: white;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border-radius: 0.5rem;
+    }
+
+    .user-info .user-name {
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+    }
+
+    .user-info .user-role {
+      font-size: 0.875rem;
+      opacity: 0.9;
+    }
+
+    /* Logout button */
+    .btn-logout {
+      background-color: #dc3545;
+      border-color: #dc3545;
+      color: white;
+    }
+
+    .btn-logout:hover {
+      background-color: #c82333;
+      border-color: #bd2130;
+      color: white;
+    }

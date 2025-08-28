@@ -7,8 +7,12 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\Student;
 use App\Models\Violation;
+use Illuminate\Support\Facades\Validator;
+use Carbon\Carbon;
+use App\Models\FaceRegistration;
+use Illuminate\Support\Facades\Log;
 
-class studentController extends Controller
+class StudentController extends Controller
 {
     public function index()
     {
@@ -72,5 +76,94 @@ class studentController extends Controller
         $request->session()->regenerateToken();
         
         return redirect()->route('student.login');
+    }
+
+
+   public function registerStudent(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'lrn' => 'required|string|unique:students,lrn',
+            'gender' => 'required|in:male,female',
+            'date_of_birth' => 'required|date|before_or_equal:today',
+            'contact_number' => 'required|string|max:20',
+            'email' => 'nullable|email|unique:students,email',
+            'address' => 'required|string|max:255',
+            'grade_level' => 'required|string|max:50',
+            'section' => 'required|string|max:50',
+            'guardian_name' => 'required|string|max:255',
+            'guardian_contact' => 'required|string|max:20',
+            'id_photo' => 'required|string',
+            'id_photo_mime_type' => 'required|string|in:image/jpeg,image/png',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation errors',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $studentData = [
+                'first_name' => $request->first_name,
+                'middle_name' => $request->middle_name ?? null,
+                'last_name' => $request->last_name,
+                'suffix' => $request->suffix ?? null,
+                'lrn' => $request->lrn,
+                'gender' => $request->gender,
+                'date_of_birth' => Carbon::parse($request->date_of_birth)->format('Y-m-d'),
+                'contact_number' => $request->contact_number,
+                'email' => $request->email ?? null,
+                'address' => $request->address,
+                'city' => $request->city ?? null,
+                'province' => $request->province ?? null,
+                'zip_code' => $request->zip_code ?? null,
+                'grade_level' => $request->grade_level,
+                'section' => $request->section,
+                'father_name' => $request->father_name ?? null,
+                'father_contact' => $request->father_contact ?? null,
+                'mother_name' => $request->mother_name ?? null,
+                'mother_contact' => $request->mother_contact ?? null,
+                'guardian_name' => $request->guardian_name,
+                'guardian_contact' => $request->guardian_contact,
+                'id_photo' => $request->id_photo,
+                'id_photo_mime_type' => $request->id_photo_mime_type,
+                'enrollment_status' => 'pending',
+                'academic_year' => $request->academic_year ?? '2024-2025',
+                'student_type' => $request->student_type ?? 'new',
+                'password' => null, // Explicitly set to null
+            ];
+
+            $student = Student::create($studentData);
+
+            // Automatically create face registration if ID photo exists
+            if ($request->id_photo) {
+                FaceRegistration::create([
+                    'student_id' => $student->id,
+                    'face_image_data' => $request->id_photo,
+                    'face_image_mime_type' => $request->id_photo_mime_type,
+                    'source' => 'registration_form',
+                    'registered_at' => now(),
+                    'is_active' => true
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Student registered successfully',
+                'student' => $student
+            ], 201);
+
+        } catch (\Exception $e) {
+            Log::error('Student registration failed: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Registration failed',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }
