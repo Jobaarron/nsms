@@ -86,12 +86,16 @@ class EnrollmentController extends Controller
             
             // Medical & Payment
             'medical_history'    => 'nullable|string|max:1000',
-            'payment_mode'       => 'required|in:cash,installment',
+            'payment_mode'       => 'required|in:cash,online payment',
             'preferred_schedule' => 'nullable|date|after_or_equal:today',
         ]);
 
-        // 2) Store the ID photo
-        $data['id_photo'] = $request->file('id_photo')->store('id_photos', 'public');
+        // 2) Store the ID photo as base64 data
+        if ($request->hasFile('id_photo')) {
+            $photo = $request->file('id_photo');
+            $data['id_photo'] = base64_encode(file_get_contents($photo->getRealPath()));
+            $data['id_photo_mime_type'] = $photo->getMimeType();
+        }
 
         // 3) Store the multiple documents
         $documentPaths = [];

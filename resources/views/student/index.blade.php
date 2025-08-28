@@ -1,188 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-
-  <title>Student Dashboard • NSMS</title>
-
-  <!-- Remix Icons -->
-  <link 
-    href="https://cdn.jsdelivr.net/npm/remixicon@3.4.0/fonts/remixicon.css" 
-    rel="stylesheet"
-  />
-
-  <!-- Google Font -->
-  <link 
-    href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" 
-    rel="stylesheet"
-  />
-
-  <!-- App CSS (includes Bootstrap 5 via Vite) -->
-  @vite('resources/sass/app.scss')
-
-  <style>
-    /* Color Palette */
-    :root {
-      --primary-color: #014421;
-      --secondary-color: #D0D8C3;
-      --accent-color: #2d6a3e;
-      --light-green: #e8f5e8;
-      --dark-green: #012d17;
-    }
-    body {
-      font-family: 'Nunito', sans-serif;
-      background-color: var(--light-green);
-    }
-    /* Sidebar */
-    .sidebar {
-      background-color: var(--secondary-color);
-      min-height: 100vh;
-    }
-    .sidebar .nav-link {
-      color: var(--primary-color);
-      font-weight: 600;
-      padding: 0.75rem 1rem;
-    }
-    .sidebar .nav-link:hover,
-    .sidebar .nav-link.active {
-      background-color: var(--accent-color);
-      color: #fff;
-      border-radius: 0.25rem;
-    }
-    /* Section Titles */
-    .section-title {
-      color: var(--primary-color);
-      font-weight: 700;
-      margin-bottom: 1rem;
-    }
-    /* Summary Cards */
-    .card-summary { color: #fff; }
-    .card-paid     { background-color: var(--primary-color); }
-    .card-credits  { background-color: var(--accent-color); }
-    .card-subjects { background-color: var(--dark-green); }
-    .card-gpa      { background-color: var(--secondary-color); color: var(--dark-green); }
-    /* Table Head */
-    .table thead {
-      background-color: var(--primary-color);
-      color: #fff;
-    }
-    /* Buttons */
-    .btn-outline-primary {
-      color: var(--primary-color);
-      border-color: var(--primary-color);
-    }
-    .btn-outline-primary:hover {
-      background-color: var(--primary-color);
-      color: #fff;
-    }
-
-    .sidebar .nav-link.disabled {
-  color: var(--secondary-color) !important;
-  opacity: 0.6;
-  cursor: not-allowed;
-  pointer-events: none;
-}
-
-.sidebar .nav-link.disabled:hover {
-  background-color: transparent !important;
-  color: var(--secondary-color) !important;
-}
-
-.sidebar .nav-link.disabled i {
-  opacity: 0.5;
-}
-  </style>
-</head>
-<body>
-  <div class="container-fluid">
-    <div class="row">
-
-      <!-- SIDEBAR -->
-      <nav class="col-12 col-md-2 sidebar d-none d-md-block py-4">
-        <ul class="nav flex-column">
-          <li class="nav-item mb-2">
-            <a class="nav-link active" href="#">
-              <i class="ri-dashboard-line me-2"></i>Dashboard
-            </a>
-          </li>
-          <li class="nav-item mb-2">
-            @if($student->canAccessFeatures())
-              <a class="nav-link" href="#">
-                <i class="ri-cash-line me-2"></i>Payments
-              </a>
-            @else
-              <span class="nav-link disabled d-flex justify-content-between align-items-center">
-                <span><i class="ri-cash-line me-2"></i>Payments</span>
-                <small class="badge bg-warning text-dark">Pay First</small>
-              </span>
-            @endif
-          </li>
-          <li class="nav-item mb-2">
-            @if($student->canAccessFeatures())
-              <a class="nav-link" href="#">
-                <i class="ri-book-open-line me-2"></i>My Subjects
-              </a>
-            @else
-              <span class="nav-link disabled d-flex justify-content-between align-items-center">
-                <span><i class="ri-book-open-line me-2"></i>My Subjects</span>
-                <small class="badge bg-warning text-dark">Pay First</small>
-              </span>
-            @endif
-          </li>
-          <li class="nav-item mb-2">
-            @if($student->canAccessFeatures())
-              <a class="nav-link" href="#">
-                <i class="ri-file-paper-line me-2"></i>Guidance Notes
-              </a>
-            @else
-              <span class="nav-link disabled d-flex justify-content-between align-items-center">
-                <span><i class="ri-file-paper-line me-2"></i>Guidance Notes</span>
-                <small class="badge bg-warning text-dark">Pay First</small>
-              </span>
-            @endif
-          </li>
-          <li class="nav-item mb-2">
-            @if($student->canAccessFeatures())
-              <a class="nav-link" href="#">
-                <i class="ri-flag-line me-2"></i>Discipline
-              </a>
-            @else
-              <span class="nav-link disabled d-flex justify-content-between align-items-center">
-                <span><i class="ri-flag-line me-2"></i>Discipline</span>
-                <small class="badge bg-warning text-dark">Pay First</small>
-              </span>
-            @endif
-          </li>
-          <li class="nav-item">
-            @if($student->canAccessFeatures())
-              <a class="nav-link" href="#">
-                <i class="ri-user-line me-2"></i>Profile
-              </a>
-            @else
-              <span class="nav-link disabled d-flex justify-content-between align-items-center">
-                <span><i class="ri-user-line me-2"></i>Profile</span>
-                <small class="badge bg-warning text-dark">Pay First</small>
-              </span>
-            @endif
-          </li>
-        </ul>
-        
-        <!-- LOGOUT SECTION -->
-        <div class="mt-auto pt-3">
-          <form action="{{ route('student.logout') }}" method="POST">
-            @csrf
-            <button type="submit" class="nav-link text-danger border-0 bg-transparent w-100 text-start d-flex align-items-center" style="font-weight: 600;">
-              <i class="ri-logout-circle-line me-2"></i>Logout
-            </button>
-          </form>
-        </div>
-      </nav>
-
-      <!-- MAIN CONTENT -->
+<x-student-layout>
       <main class="col-12 col-md-10 px-4 py-4">
         <h1 class="section-title">Welcome, {{ $student->first_name ?? 'Student' }}</h1>
-        
         @if(!$student->canAccessFeatures())
             <div class="alert alert-warning d-flex align-items-center mb-4">
                 <i class="ri-alert-line me-2"></i>
@@ -206,13 +24,13 @@
               </div>
             </div>
           </div>
-          {{-- <div class="col-6 col-lg-3">
+          <div class="col-6 col-lg-3">
             <div class="card card-summary card-credits h-100">
               <div class="card-body d-flex align-items-center">
                 <i class="ri-bar-chart-line display-6 me-3"></i>
                 <div>
-                  <div>Credits Earned</div>
-                  <h3>18</h3>
+                  <div>To be use soon</div>
+                  <h3>Value</h3>
                 </div>
               </div>
             </div>
@@ -223,7 +41,7 @@
                 <i class="ri-book-2-line display-6 me-3"></i>
                 <div>
                   <div>Active Subjects</div>
-                  <h3>5</h3>
+                  <h3>2</h3>
                 </div>
               </div>
             </div>
@@ -233,16 +51,16 @@
               <div class="card-body d-flex align-items-center">
                 <i class="ri-star-line display-6 me-3"></i>
                 <div>
-                  <div>Average</div>
-                  <h3>85</h3>
+                  <div>To be use soon</div>
+                  <h3>Value</h3>
                 </div>
               </div>
             </div>
-          </div> --}}
+          </div>
         </div>
 
         <!-- PAYMENT HISTORY -->
-        {{-- <h4 class="section-title">Payment History</h4>
+        <h4 class="section-title">Payment History</h4>
         <div class="table-responsive mb-5">
           <table class="table table-striped">
             <thead>
@@ -268,10 +86,10 @@
               </tr>
             </tbody>
           </table>
-        </div> --}}
+        </div>
 
         <!-- ACTIVE SUBJECTS -->
-        {{-- <h4 class="section-title">My Subjects</h4>
+        <h4 class="section-title">My Subjects</h4>
         <div class="table-responsive mb-5">
           <table class="table table-hover align-middle">
             <thead>
@@ -300,7 +118,7 @@
               </tr>
             </tbody>
           </table>
-        </div> --}}
+        </div>
 
         <!-- GUIDANCE & DISCIPLINE -->
         {{-- <h4 class="section-title">Guidance & Discipline</h4>
@@ -336,12 +154,12 @@
         <div class="card mb-5">
           <div class="card-body">
             <dl class="row">
-              <dt class="col-sm-3">Student ID</dt>
+              <dt class="col-sm-3">LRN</dt>
               <dd class="col-sm-9">{{ $student->student_id ?? $student->lrn ?? 'STU-' . str_pad($student->id, 6, '0', STR_PAD_LEFT) }}</dd>
               <dt class="col-sm-3">Name</dt>
               <dd class="col-sm-9">{{ $student->full_name }}</dd>
-              <dt class="col-sm-3">Student Type</dt>
-              <dd class="col-sm-9">{{ ucfirst($student->student_type) }}</dd>
+              {{-- <dt class="col-sm-3">Student Type</dt>
+              <dd class="col-sm-9">{{ ucfirst($student->student_type) }}</dd> --}}
               <dt class="col-sm-3">Grade Level</dt>
               <dd class="col-sm-9">{{ $student->grade_level }}{{ $student->strand ? ' - ' . $student->strand : '' }}</dd>
               <dt class="col-sm-3">Email</dt>
@@ -417,5 +235,5 @@
       </main>
     </div>
   </div>
-</body>
-</html>
+
+</x-student-layout>

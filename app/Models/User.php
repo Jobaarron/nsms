@@ -6,10 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, HasRoles;
+    use HasApiTokens, HasFactory, Notifiable, HasRoles;
 
     protected $guard_name = 'web';
 
@@ -50,20 +51,20 @@ class User extends Authenticatable
         return $this->hasMany(Student::class, 'approved_by');
     }
 
-    public function gradesGiven()
-    {
-        return $this->hasMany(Grade::class, 'teacher_id');
-    }
+    // public function gradesGiven()
+    // {
+    //     return $this->hasMany(Grade::class, 'teacher_id');
+    // }
 
-    public function processedEnrollments()
-    {
-        return $this->hasMany(Enrollment::class, 'processed_by');
-    }
+    // public function processedEnrollments()
+    // {
+    //     return $this->hasMany(Enrollment::class, 'processed_by');
+    // }
 
-    public function processedPayments()
-    {
-        return $this->hasMany(Payment::class, 'processed_by');
-    }
+    // public function processedPayments()
+    // {
+    //     return $this->hasMany(Payment::class, 'processed_by');
+    // }
 
     // ACCESSORS
     public function getRoleNamesAttribute()
@@ -97,30 +98,30 @@ class User extends Authenticatable
         return $this->hasOne(Teacher::class);
     }
 
-    public function guidanceCounsellor()
-    {
-        return $this->hasOne(GuidanceCounsellor::class);
-    }
+    // public function guidanceCounsellor()
+    // {
+    //     return $this->hasOne(GuidanceCounsellor::class);
+    // }
 
-    public function disciplineOfficer()
-    {
-        return $this->hasOne(DisciplineOfficer::class);
-    }
+    // public function disciplineOfficer()
+    // {
+    //     return $this->hasOne(DisciplineOfficer::class);
+    // }
 
-    public function isTeacher()
-    {
-        return $this->teacher()->exists() && $this->teacher->is_active;
-    }
+    // public function isTeacher()
+    // {
+    //     return $this->teacher()->exists() && $this->teacher->is_active;
+    // }
 
-    public function isGuidanceCounsellor()
-    {
-        return $this->guidanceCounsellor()->exists() && $this->guidanceCounsellor->is_active;
-    }
+    // public function isGuidanceCounsellor()
+    // {
+    //     return $this->guidanceCounsellor()->exists() && $this->guidanceCounsellor->is_active;
+    // }
 
-    public function isDisciplineOfficer()
-    {
-        return $this->disciplineOfficer()->exists() && $this->disciplineOfficer->is_active;
-    }
+    // public function isDisciplineOfficer()
+    // {
+    //     return $this->disciplineOfficer()->exists() && $this->disciplineOfficer->is_active;
+    // }
 
     public function student()
 {
@@ -135,12 +136,37 @@ class User extends Authenticatable
     public function getUserRole()
     {
         if ($this->isAdmin()) return 'admin';
-        if ($this->isTeacher()) return 'teacher';
-        if ($this->isGuidanceCounsellor()) return 'guidance_counsellor';
-        if ($this->isDisciplineOfficer()) return 'discipline_officer';
+        // if ($this->isTeacher()) return 'teacher';
+        // if ($this->isGuidanceCounsellor()) return 'guidance_counsellor';
+        // if ($this->isDisciplineOfficer()) return 'discipline_officer';
         if ($this->isStudent()) return 'student';
         return 'user';
     }
 
+    /**
+     * Check if user is guidance staff (counselor, discipline officer, or security guard)
+     */
+    public function isGuidanceStaff()
+    {
+        return $this->hasRole(['guidance_counselor', 'discipline_officer', 'security_guard']);
+    }
+
+    /**
+     * Update last login timestamp 
+     */
+    public function updateLastLogin()
+    {
+        // 
+
+        return;
+    }
+
+    /**
+     * Get the guidance discipline record for this user
+     */
+    public function guidanceDiscipline()
+    {
+        return $this->hasOne(GuidanceDiscipline::class);
+    }
 
 }

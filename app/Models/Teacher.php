@@ -2,62 +2,58 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Spatie\Permission\Traits\HasRoles;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Teacher extends Model
 {
-    use HasFactory, HasRoles;
-
     protected $fillable = [
         'user_id',
         'employee_id',
         'department',
-        'subject_specialization',
-        'employment_type',
-        'teacher_level',
+        'position',
         'hire_date',
-        'qualification',
-        'years_experience',
-        'subjects_taught',
-        'class_assignments',
-        'permissions',
-        'last_login_at',
+        'phone_number',
+        'address',
+        'qualifications',
         'is_active',
     ];
 
     protected $casts = [
-        'subjects_taught' => 'array',
-        'class_assignments' => 'array',
-        'permissions' => 'array',
         'hire_date' => 'date',
-        'last_login_at' => 'datetime',
         'is_active' => 'boolean',
     ];
 
-    public function user()
+    /**
+     * Get the user that owns the teacher profile.
+     */
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    public function isDepartmentHead()
-    {
-        return $this->teacher_level === 'department_head';
-    }
-
-    public function isHeadTeacher()
-    {
-        return $this->teacher_level === 'head_teacher';
-    }
-
+    /**
+     * Scope a query to only include active teachers.
+     */
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
     }
 
-    public function scopeByDepartment($query, $department)
+    /**
+     * Get the teacher's full name.
+     */
+    public function getFullNameAttribute(): string
     {
-        return $query->where('department', $department);
+        return $this->user->name;
+    }
+
+    /**
+     * Get the teacher's email.
+     */
+    public function getEmailAttribute(): string
+    {
+        return $this->user->email;
     }
 }

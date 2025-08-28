@@ -46,6 +46,7 @@ class Student extends Authenticatable
         'payment_mode',
         'preferred_schedule',
         'id_photo',
+        'id_photo_mime_type',
         'documents',
         'password',
         'is_paid',
@@ -54,6 +55,12 @@ class Student extends Authenticatable
         'approved_by',
         'approved_at',
         'enrolled_at',
+        // Additional
+        'rejected_by',
+        'rejected_at',
+        'status_updated_at',
+        'status_updated_by',
+        'status_reason',
         
     ];
 
@@ -68,6 +75,10 @@ class Student extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+    ];
+
+    protected $appends = [
+        'id_photo_data_url',
     ];
     
     protected $guard_name = 'student';
@@ -115,10 +126,10 @@ class Student extends Authenticatable
         return $name;
     }
 
-    public function getAgeAttribute()
-    {
-        return $this->birth_date ? $this->birth_date->age : null;
-    }
+    // public function getAgeAttribute()
+    // {
+    //     return $this->birth_date ? $this->birth_date->age : null;
+    // }
 
     public function scopeEnrolled($query)
     {
@@ -159,5 +170,64 @@ class Student extends Authenticatable
     public function getPaymentStatusBadgeAttribute()
     {
         return $this->is_paid ? 'success' : 'danger';
+    }
+
+    /**
+     * Get violations for this student
+     */
+    public function violations()
+    {
+        return $this->hasMany(Violation::class);
+    }
+
+    /**
+     * Get face registrations for this student
+     */
+    public function faceRegistrations()
+    {
+        return $this->hasMany(FaceRegistration::class);
+    }
+
+    /**
+     * Get the active face registration for this student
+     */
+    public function activeFaceRegistration()
+    {
+        return $this->hasOne(FaceRegistration::class)->where('is_active', true)->latest();
+    }
+
+    /**
+     * Check if student has face registered
+     */
+    public function hasFaceRegistered()
+    {
+        return $this->activeFaceRegistration()->exists();
+    }
+
+    /**
+     * Get face registration status for filtering
+     */
+    public function getFaceRegistrationStatusAttribute()
+    {
+        return $this->hasFaceRegistered() ? 'registered' : 'not_registered';
+    }
+
+    /**
+     * Get ID photo as base64 data URL for display
+     */
+    public function getIdPhotoDataUrlAttribute()
+    {
+        if ($this->id_photo && $this->id_photo_mime_type) {
+            return "data:{$this->id_photo_mime_type};base64,{$this->id_photo}";
+        }
+        return null;
+    }
+
+    /**
+     * Check if student has ID photo
+     */
+    public function hasIdPhoto()
+    {
+        return !empty($this->id_photo);
     }
 }

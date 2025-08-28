@@ -11,6 +11,7 @@ use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\GuidanceDisciplineController;
+use App\Http\Controllers\ContactController;
 // use Spatie\Permission\Middlewares\RoleMiddleware;
 // use Spatie\Permission\Middlewares\PermissionMiddleware;
 // use App\Http\Controllers\AdminGeneratorController;
@@ -20,10 +21,6 @@ use App\Http\Controllers\GuidanceDisciplineController;
 Route::get('/', function () {
     return view('welcome');
 });
-
-// Route::get('/login', function () {
-//     return view('login');
-// }); // Excluded in guest side
 
 // Enrollment side
 Route::get('/enroll', function () {
@@ -37,35 +34,9 @@ Route::get('/enroll', [EnrollmentController::class, 'create'])
 Route::post('/enroll', [EnrollmentController::class, 'store'])
      ->name('enroll.store');
 
-    //  Route::get('/mailtrap-test', function () {
-        
-    //     $student = new Student([
-    //         'first_name' => 'Job Aarron',
-    //         'email'      => 'jobaarronmisenas26@gmail.com',
-    //     ]);
-    
-    //     Mail::to(env('MAIL_TEST_RECIPIENT'))
-    //     ->send(new StudentWelcomeMail($student, 'TestPwd123'));
-       
-    //     return 'Check your Mailtrap inbox!';
-    // }); // Mailtrap Testing Purposes Do No Touch
+// Contact form routes
+Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
 
-    // Route::get('/test-email/student-welcome', function () {
-    //     $student = (object) [
-    //         'first_name' => 'Jane',
-    //         'email' => 'jane.smith@example.com'
-    //     ];
-        
-    //     $rawPassword = 'TestPass456';
-        
-    //     return view('emails.student_welcome', compact('student', 'rawPassword'));
-    // }); Email form sample, it does not send to the mailtrap.
-
-   // Admin Generator Routes
-//    Route::get('/generate-admin', [AdminGeneratorController::class, 'showForm'])->name('show.admin.generator');
-//    Route::post('/generate-admin', [AdminGeneratorController::class, 'generateAdmin'])->name('generate.admin');
-//    Route::post('/admin/login', [AdminController::class, 'adminLogin'])->name('admin.login.submit');
-//    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 
 // Admin Generator (accessible without login for initial setup)
@@ -89,8 +60,19 @@ Route::prefix('admin')->group(function () {
         Route::get('/', [AdminController::class, 'index'])->name('admin.dashboard');
         Route::post('/logout', [AdminController::class, 'logout'])->name('admin.logout');
         
-        // Users management
-        Route::get('/manage-users', [AdminController::class, 'manageUsers'])->name('admin.manage.users');
+        // Users management - Updated to use UserManagementController
+        Route::get('/manage-users', [App\Http\Controllers\UserManagementController::class, 'index'])->name('admin.manage.users');
+        Route::post('/manage-users', [App\Http\Controllers\UserManagementController::class, 'store'])->name('admin.manage.store');
+        Route::get('/manage-users/{user}', [App\Http\Controllers\UserManagementController::class, 'show'])->name('admin.manage.show');
+        Route::post('/manage-users/{user}', [App\Http\Controllers\UserManagementController::class, 'update'])->name('admin.manage.update');
+        Route::delete('/manage-users/{user}', [App\Http\Controllers\UserManagementController::class, 'destroy'])->name('admin.manage.destroy');
+        
+        // Additional user management endpoints
+        Route::get('/manage-users/stats', [App\Http\Controllers\UserManagementController::class, 'getStats'])->name('admin.manage.stats');
+        Route::post('/manage-users/bulk-action', [App\Http\Controllers\UserManagementController::class, 'bulkAction'])->name('admin.manage.bulk');
+        Route::get('/manage-users/export', [App\Http\Controllers\UserManagementController::class, 'export'])->name('admin.manage.export');
+        Route::post('/manage-users/import', [App\Http\Controllers\UserManagementController::class, 'import'])->name('admin.manage.import');
+        Route::get('/manage-users/report', [App\Http\Controllers\UserManagementController::class, 'generateReport'])->name('admin.manage.report');
         
         // Roles & Access Management - Use your custom permission middleware
         Route::middleware(['can:Manage Roles'])->group(function () {
@@ -113,7 +95,40 @@ Route::prefix('admin')->group(function () {
 
     // Enrollments management 
     Route::get('/enrollments', [AdminController::class, 'enrollments'])->name('admin.enrollments');
-});
+    
+    
+        
+        // Individual enrollment actions
+        Route::post('/enrollments/{id}/approve', [AdminController::class, 'approveEnrollment'])->name('enrollments.approve');
+        Route::post('/enrollments/{id}/reject', [AdminController::class, 'rejectEnrollment'])->name('enrollments.reject');
+        Route::delete('/enrollments/{id}', [AdminController::class, 'deleteEnrollment'])->name('enrollments.delete');
+        Route::put('/enrollments/{id}', [AdminController::class, 'updateEnrollment'])->name('enrollments.update');
+        Route::post('/enrollments/{id}/status', [AdminController::class, 'updateEnrollmentStatus'])->name('enrollments.status');
+        Route::get('/enrollments/{id}/view', [AdminController::class, 'viewEnrollment'])->name('enrollments.view');
+        Route::get('/enrollments/{id}/edit', [AdminController::class, 'editEnrollment'])->name('enrollments.edit');
+        
+        // Bulk operations
+        Route::post('/enrollments/bulk/approve', [AdminController::class, 'bulkApprove'])->name('enrollments.bulk.approve');
+        Route::post('/enrollments/bulk/reject', [AdminController::class, 'bulkReject'])->name('enrollments.bulk.reject');
+        Route::post('/enrollments/bulk/delete', [AdminController::class, 'bulkDelete'])->name('enrollments.bulk.delete');
+
+        Route::post('/enrollments/export', [AdminController::class, 'exportSelected'])->name('enrollments.export');
+        Route::post('/enrollments/export-all', [AdminController::class, 'exportAll'])->name('enrollments.export.all');
+        Route::post('/enrollments/send-notification', [AdminController::class, 'sendBulkNotification'])->name('enrollments.notification');
+        Route::post('/enrollments/print', [AdminController::class, 'printEnrollments'])->name('enrollments.print');
+        
+        // Contact Messages Management
+        Route::get('/contact-messages', [ContactController::class, 'adminIndex'])->name('admin.contact.messages');
+        Route::get('/contact-messages/{message}', [ContactController::class, 'show'])->name('admin.contact.show');
+        Route::post('/contact-messages/{message}/status', [ContactController::class, 'updateStatus'])->name('admin.contact.status');
+        Route::delete('/contact-messages/{message}', [ContactController::class, 'destroy'])->name('admin.contact.destroy');
+        Route::post('/contact-messages/bulk-action', [ContactController::class, 'bulkAction'])->name('admin.contact.bulk');
+    });
+
+   
+
+
+// Route::put('/enrollments/{id}', [AdminController::class, 'updateEnrollment'])->name('enrollments.update');
 
 
 // Inside the auth middleware group
@@ -136,33 +151,202 @@ Route::middleware(['auth'])->group(function () {
 });
 
 // Test route to check authentication, roles, and permissions (Spatie)
-Route::get('/test', function () {
-    if (Auth::check()) {
-        $user = Auth::user();
-        $roles = $user->getRoleNames()->toArray();
-        $permissions = $user->getAllPermissions()->pluck('name')->toArray();
+// Route::get('/test', function () {
+//     if (Auth::check()) {
+//         $user = Auth::user();
+//         $roles = $user->getRoleNames()->toArray();
+//         $permissions = $user->getAllPermissions()->pluck('name')->toArray();
         
-        return 'Logged in as: ' . $user->name . 
-               ' (Roles: ' . implode(', ', $roles) . ')' .
-               ' (Permissions: ' . implode(', ', $permissions) . ')';
-    } else {
-        return 'Not logged in';
-    }
-})->name('test');
+//         return 'Logged in as: ' . $user->name . 
+//                ' (Roles: ' . implode(', ', $roles) . ')' .
+//                ' (Permissions: ' . implode(', ', $permissions) . ')';
+//     } else {
+//         return 'Not logged in';
+//     }
+// })->name('test');
 
 
+// Public Teacher Account Generator (no authentication required)
+Route::get('/teacher-generator', [TeacherController::class, 'showGeneratorForm'])
+    ->name('teacher.generator');
+
+Route::post('/teacher-generator', [TeacherController::class, 'generateTeacher'])
+    ->name('generate.teacher');
+
+// Teacher Authentication Routes
+Route::get('/teacher/login', [TeacherController::class, 'showLoginForm'])
+    ->name('teacher.login');
+
+Route::post('/teacher/login', [TeacherController::class, 'login'])
+    ->name('teacher.login.submit');
+
+Route::post('/teacher/logout', [TeacherController::class, 'logout'])
+    ->name('teacher.logout');
+
+// Teacher Dashboard Route (protected)
+Route::get('/teacher', [TeacherController::class, 'index'])
+    ->name('teacher.dashboard')
+    ->middleware(['auth', 'role:teacher']);
+
+// Public Guidance Account Generator (no authentication required)
+Route::get('/guidance-generator', [GuidanceDisciplineController::class, 'showPublicGenerator'])
+    ->name('guidance.generator');
+
+Route::post('/guidance-generator', [GuidanceDisciplineController::class, 'createPublicAccount'])
+    ->name('guidance.generator.submit');
+    
+// Guidance & Discipline Routes
+Route::prefix('guidance')->name('guidance.')->group(function () {
+    
+    // Authentication Routes
+    Route::get('/login', [GuidanceDisciplineController::class, 'showLogin'])
+        ->name('login');
+    
+    Route::post('/login', [GuidanceDisciplineController::class, 'login'])
+        ->name('login.submit');
+    
+    Route::post('/logout', [GuidanceDisciplineController::class, 'logout'])
+        ->name('logout');
+    
+    // Protected Routes (require authentication and guidance staff role)
+    Route::middleware(['auth'])->group(function () {
+        
+        // Dashboard
+        Route::get('/', [GuidanceDisciplineController::class, 'dashboard'])
+            ->name('dashboard');
+        
+        // Account Management Routes
+        Route::get('/create-account', [GuidanceDisciplineController::class, 'showCreateAccount'])
+            ->name('create-account');
+        
+        Route::post('/create-account', [GuidanceDisciplineController::class, 'createAccount'])
+            ->name('create-account.submit');
+        
+        // Student Management Routes
+        Route::prefix('students')->name('students.')->group(function () {
+            Route::get('/', [GuidanceDisciplineController::class, 'studentsIndex'])
+                ->name('index');
+            
+            Route::get('/{student}', [GuidanceDisciplineController::class, 'showStudent'])
+                ->name('show');
+                
+            Route::get('/{student}/info', [GuidanceDisciplineController::class, 'getStudentInfo'])
+                ->name('info');
+        });
+        
+        // Violations Management Routes
+        Route::prefix('violations')->name('violations.')->group(function () {
+            Route::get('/', [GuidanceDisciplineController::class, 'violationsIndex'])
+                ->name('index');
+            
+            Route::post('/', [GuidanceDisciplineController::class, 'storeViolation'])
+                ->name('store');
+            
+            Route::get('/{violation}', [GuidanceDisciplineController::class, 'showViolation'])
+                ->name('show');
+            
+            Route::get('/{violation}/edit', [GuidanceDisciplineController::class, 'editViolation'])
+                ->name('edit');
+            
+            Route::put('/{violation}', [GuidanceDisciplineController::class, 'updateViolation'])
+                ->name('update');
+            
+            Route::delete('/{violation}', [GuidanceDisciplineController::class, 'destroyViolation'])
+                ->name('destroy');
+        });
+        
+        // Counseling Records Routes (to be implemented)
+        Route::prefix('counseling')->name('counseling.')->group(function () {
+            Route::get('/', function () {
+                return view('guidancediscipline.counseling.index');
+            })->name('index');
+            
+            Route::get('/create', function () {
+                return view('guidancediscipline.counseling.create');
+            })->name('create');
+            
+            Route::post('/', function () {
+                // Store counseling record logic
+            })->name('store');
+            
+            Route::get('/{record}/edit', function () {
+                return view('guidancediscipline.counseling.edit');
+            })->name('edit');
+        });
+        
+        // Facial Recognition Routes (to be implemented)
+        Route::prefix('facial-recognition')->name('facial-recognition.')->group(function () {
+            Route::get('/', function () {
+                return view('guidancediscipline.facial-recognition.index');
+            })->name('index');
+            
+            Route::post('/enroll', function () {
+                // Enroll face logic
+            })->name('enroll');
+            
+            Route::post('/recognize', function () {
+                // Face recognition logic
+            })->name('recognize');
+        });
+        
+        // Disciplinary Actions Routes (to be implemented)
+        Route::prefix('disciplinary-actions')->name('disciplinary-actions.')->group(function () {
+            Route::get('/', function () {
+                return view('guidancediscipline.disciplinary-actions.index');
+            })->name('index');
+            
+            Route::get('/create', function () {
+                return view('guidancediscipline.disciplinary-actions.create');
+            })->name('create');
+            
+            Route::post('/', function () {
+                // Store disciplinary action logic
+            })->name('store');
+        });
+        
+        // Analytics & Reports Routes (to be implemented)
+        Route::prefix('reports')->name('reports.')->group(function () {
+            Route::get('/', function () {
+                return view('guidancediscipline.reports.index');
+            })->name('index');
+            
+            Route::get('/violations', function () {
+                return view('guidancediscipline.reports.violations');
+            })->name('violations');
+            
+            Route::get('/counseling', function () {
+                return view('guidancediscipline.reports.counseling');
+            })->name('counseling');
+        });
+        
+        // Settings Routes (to be implemented)
+        Route::prefix('settings')->name('settings.')->group(function () {
+            Route::get('/', function () {
+                return view('guidancediscipline.settings.index');
+            })->name('index');
+            
+            Route::get('/profile', function () {
+                return view('guidancediscipline.settings.profile');
+            })->name('profile');
+            
+            Route::put('/profile', function () {
+                // Update profile logic
+            })->name('profile.update');
+        });
+    });
+});
 
 
-
-
-
-Route::get('/teacher', [TeacherController::class, 'index']);
+// Route::get('/teacher', [TeacherController::class, 'index']);
 // Route::get('/admin', [adminController::class, 'adminindex']);
 // Route::get('/admin/login', [adminController::class, 'adminlogin']);
-Route::get('/student', [StudentController::class, 'index']);
-Route::get('/guidance', [GuidanceDisciplineController::class, 'index']);
+
+
+// Route::get('/guidance', [GuidanceDisciplineController::class, 'index']);
+// Route::get('/guidance/login', [GuidanceDisciplineController::class, 'loginform']);
 
 // Student routes
+Route::get('/student', [StudentController::class, 'index']);
 Route::prefix('student')->name('student.')->group(function () {
     // Student login routes (public)
     Route::get('/login', [StudentController::class, 'showLoginForm'])->name('login');
@@ -170,7 +354,8 @@ Route::prefix('student')->name('student.')->group(function () {
     
     // Protected student routes
     Route::middleware(['auth:student'])->group(function () {
-        Route::get('/dashboard', [StudentController::class, 'index'])->name('dashboard');
+        Route::get('/student', [StudentController::class, 'index'])->name('dashboard');
+        Route::get('/violations', [StudentController::class, 'violations'])->name('violations');
         Route::post('/logout', [StudentController::class, 'logout'])->name('logout');
     });
 });

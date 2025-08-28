@@ -10,6 +10,8 @@ return new class extends Migration
     {
         Schema::create('students', function (Blueprint $table) {
             $table->id();
+            $table->longText('id_photo')->nullable(); // Store image as base64 binary data
+            $table->string('id_photo_mime_type')->nullable(); // Store MIME type (image/jpeg, image/png)
             
             // Link to users table for authentication
             $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('cascade');
@@ -24,10 +26,9 @@ return new class extends Migration
             $table->foreignId('approved_by')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamp('approved_at')->nullable();
             $table->timestamp('enrolled_at')->nullable();
-            $table->string('password');
+           $table->string('password')->nullable(); // Made nullable
             
             // FILE PATHS
-            $table->string('id_photo')->nullable();
             $table->json('documents')->nullable(); // Birth certificate, report cards, etc.
             
             // PERSONAL INFORMATION
@@ -82,7 +83,8 @@ return new class extends Migration
             
             
             // FINANCIAL INFORMATION
-            $table->enum('payment_mode', ['cash', 'installment', 'scholarship', 'voucher'])->default('cash');
+            // $table->enum('payment_mode', ['cash', 'installment', 'scholarship', 'voucher'])->default('cash');
+            $table->enum('payment_mode', ['cash', 'online payment', 'scholarship', 'voucher'])->default('cash');
             $table->boolean('is_paid')->default(false);
             // $table->boolean('is_scholar')->default(false);
             // $table->string('scholarship_type')->nullable();
@@ -96,7 +98,7 @@ return new class extends Migration
             
             // STATUS TRACKING
             $table->boolean('is_active')->default(true);
-            $table->text('remarks')->nullable();
+            // $table->text('remarks')->nullable();
             
             // TIMESTAMPS
             $table->timestamps();
