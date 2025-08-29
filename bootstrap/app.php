@@ -7,6 +7,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
+        api: __DIR__.'/../routes/api.php',   // 👈 make sure API routes file is included
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
@@ -34,7 +35,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // API middleware group
         $middleware->api(append: [
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
-            \Illuminate\Routing\Middleware\ThrottleRequests::class.':api',
+     \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+            'throttle:api',  // 👈 cleaner
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ]);
 
