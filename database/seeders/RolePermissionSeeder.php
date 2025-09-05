@@ -7,9 +7,9 @@ use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use App\Models\User;
 use App\Models\Admin;
-use App\Models\Teacher;
-use App\Models\GuidanceCounsellor;
-use App\Models\DisciplineOfficer;
+// use App\Models\Teacher;
+// use App\Models\GuidanceCounsellor;
+// use App\Models\DisciplineOfficer;
 
 class RolePermissionSeeder extends Seeder
 {
