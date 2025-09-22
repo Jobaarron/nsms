@@ -1,0 +1,310 @@
+ /* Color Palette - Same as Student */
+ :root {
+    --primary-color: #014421;
+    --secondary-color: #D0D8C3;
+    --accent-color: #2d6a3e;
+    --light-green: #e8f5e8;
+    --dark-green: #012d17;
+    --enrollee-accent: #4a7c59; /* Slightly different accent for enrollees */
+  }
+  
+  body {
+    font-family: 'Nunito', sans-serif;
+    background-color: var(--light-green);
+  }
+  
+  /* Sidebar */
+  .sidebar {
+    background-color: var(--secondary-color);
+    min-height: 100vh;
+  }
+  
+  .sidebar .nav-link {
+    color: var(--primary-color);
+    font-weight: 600;
+    padding: 0.75rem 1rem;
+    border-radius: 0.25rem;
+    transition: all 0.3s ease;
+    margin-bottom: 0.25rem;
+  }
+  
+  .sidebar .nav-link:hover {
+    background-color: var(--light-green);
+    color: var(--dark-green);
+    transform: translateX(5px);
+  }
+  
+  .sidebar .nav-link.active {
+    background-color: var(--enrollee-accent);
+    color: #fff;
+    box-shadow: 0 2px 4px rgba(1, 68, 33, 0.2);
+  }
+  
+  .sidebar .nav-link.active:hover {
+    background-color: var(--primary-color);
+    color: #fff;
+    transform: translateX(5px);
+  }
+  
+  /* Section Titles */
+  .section-title {
+    color: var(--primary-color);
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+  
+  /* Summary Cards - Enrollee specific */
+  .card-summary { 
+    color: #fff; 
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+  .card-application { background-color: var(--primary-color); }
+  .card-status { background-color: var(--enrollee-accent); }
+  .card-payment { background-color: var(--accent-color); }
+  .card-schedule { background-color: var(--dark-green); }
+  .card-info { background-color: var(--secondary-color); color: var(--dark-green); }
+  
+  /* Card hover effects */
+  .card {
+    transition: all 0.3s ease;
+  }
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(1, 68, 33, 0.1);
+  }
+  
+  .card-summary:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+  }
+  
+  /* Table Head */
+  .table thead {
+    background-color: var(--primary-color);
+    color: #fff;
+  }
+  .table thead th {
+    border-bottom: 2px solid var(--accent-color);
+    font-weight: 600;
+  }
+  
+  /* Table row hover */
+  .table-hover tbody tr:hover {
+    background-color: var(--light-green);
+    color: var(--dark-green);
+  }
+  
+  /* Buttons */
+  .btn-outline-primary {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+    transition: all 0.3s ease;
+  }
+  .btn-outline-primary:hover {
+    background-color: var(--primary-color);
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(1, 68, 33, 0.2);
+  }
+  .btn-outline-primary:active {
+    transform: translateY(0);
+  }
+  
+  /* Enrollment Status Badges */
+  .badge-status {
+    font-size: 0.85rem;
+    padding: 0.5em 1em;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+  }
+  .badge-status:hover {
+    transform: scale(1.05);
+  }
+  
+  .status-pending { 
+    background-color: #ffc107; 
+    color: #000; 
+  }
+  .status-approved { 
+    background-color: #28a745; 
+    color: #fff; 
+  }
+  .status-rejected { 
+    background-color: #dc3545; 
+    color: #fff; 
+  }
+  .status-enrolled { 
+    background-color: var(--primary-color); 
+    color: #fff; 
+  }
+  .status-cancelled { 
+    background-color: #6c757d; 
+    color: #fff; 
+  }
+  
+  /* Application Progress Steps */
+  .progress-steps {
+    display: flex;
+    justify-content: space-between;
+    margin: 2rem 0;
+    position: relative;
+  }
+  
+  .progress-steps::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: var(--secondary-color);
+    z-index: 1;
+  }
+  
+  .progress-step {
+    background-color: var(--secondary-color);
+    border: 3px solid var(--secondary-color);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 2;
+    transition: all 0.3s ease;
+  }
+  
+  .progress-step.active {
+    background-color: var(--enrollee-accent);
+    border-color: var(--enrollee-accent);
+    color: #fff;
+  }
+  
+  .progress-step.completed {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: #fff;
+  }
+  
+  /* Document Upload Area */
+  .document-upload {
+    border: 2px dashed var(--secondary-color);
+    border-radius: 0.5rem;
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+  
+  .document-upload:hover {
+    border-color: var(--enrollee-accent);
+    background-color: rgba(74, 124, 89, 0.05);
+  }
+  
+  .document-upload.dragover {
+    border-color: var(--primary-color);
+    background-color: var(--light-green);
+  }
+  
+  /* Info Cards */
+  .info-card {
+    background: linear-gradient(135deg, var(--light-green) 0%, rgba(208, 216, 195, 0.3) 100%);
+    border: 1px solid var(--secondary-color);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+  }
+  
+  .info-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(1, 68, 33, 0.1);
+    border-color: var(--enrollee-accent);
+  }
+  
+  /* Timeline */
+  .timeline {
+    position: relative;
+    padding-left: 2rem;
+  }
+  
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 0.75rem;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: var(--secondary-color);
+  }
+  
+  .timeline-item {
+    position: relative;
+    margin-bottom: 2rem;
+  }
+  
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -2.25rem;
+    top: 0.5rem;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: var(--enrollee-accent);
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 2px var(--enrollee-accent);
+  }
+  
+  .timeline-item.completed::before {
+    background-color: var(--primary-color);
+    box-shadow: 0 0 0 2px var(--primary-color);
+  }
+  
+  /* Alert Customizations */
+  .alert-enrollee {
+    background-color: rgba(74, 124, 89, 0.1);
+    border-color: var(--enrollee-accent);
+    color: var(--dark-green);
+  }
+  
+  /* Form Enhancements */
+  .form-control:focus {
+    border-color: var(--enrollee-accent);
+    box-shadow: 0 0 0 0.2rem rgba(74, 124, 89, 0.25);
+  }
+  
+  .form-select:focus {
+    border-color: var(--enrollee-accent);
+    box-shadow: 0 0 0 0.2rem rgba(74, 124, 89, 0.25);
+  }
+  
+  /* Loading States */
+  .loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(1, 68, 33, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+  }
+  
+  .loading-spinner {
+    width: 3rem;
+    height: 3rem;
+    border: 0.3rem solid rgba(255, 255, 255, 0.3);
+    border-top: 0.3rem solid #fff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }

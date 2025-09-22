@@ -17,6 +17,7 @@ export default defineConfig({
                 'resources/css/admin_enrollments.css',
                 'resources/css/manage_users.css',
                 'resources/css/index_student.css',
+                'resources/css/index_enrollee.css',
                 'resources/css/index_guidance.css',
                 'resources/css/index_teacher.css',
                 'resources/js/guidance_student-profile.js',

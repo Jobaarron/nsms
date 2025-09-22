@@ -12,6 +12,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\GuidanceDisciplineController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\EnrolleeController;
 // use Spatie\Permission\Middlewares\RoleMiddleware;
 // use Spatie\Permission\Middlewares\PermissionMiddleware;
 // use App\Http\Controllers\AdminGeneratorController;
@@ -33,6 +34,10 @@ Route::get('/enroll', [EnrollmentController::class, 'create'])
      ->name('enroll.create');
 Route::post('/enroll', [EnrollmentController::class, 'store'])
      ->name('enroll.store');
+
+// API route for fee calculation
+Route::get('/api/fees/calculate/{gradeLevel}', [EnrollmentController::class, 'calculateFees'])
+     ->name('api.fees.calculate');
 
 // Contact form routes
 Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
@@ -128,7 +133,7 @@ Route::prefix('admin')->group(function () {
    
 
 
-// Route::put('/enrollments/{id}', [AdminController::class, 'updateEnrollment'])->name('enrollments.update');
+// First version of routes, keep it here and do not delete. Route::put('/enrollments/{id}', [AdminController::class, 'updateEnrollment'])->name('enrollments.update');
 
 
 // Inside the auth middleware group
@@ -337,6 +342,7 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
 });
 
 
+// First version of routes, keep it here and do not delete.
 // Route::get('/teacher', [TeacherController::class, 'index']);
 // Route::get('/admin', [adminController::class, 'adminindex']);
 // Route::get('/admin/login', [adminController::class, 'adminlogin']);
@@ -357,5 +363,43 @@ Route::prefix('student')->name('student.')->group(function () {
         Route::get('/student', [StudentController::class, 'index'])->name('dashboard');
         Route::get('/violations', [StudentController::class, 'violations'])->name('violations');
         Route::post('/logout', [StudentController::class, 'logout'])->name('logout');
+    });
+});
+
+// Enrollee routes
+Route::prefix('enrollee')->name('enrollee.')->group(function () {
+    // Enrollee login routes (public)
+    Route::get('/login', [EnrolleeController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [EnrolleeController::class, 'login'])->name('login.submit');
+    
+    // Protected enrollee routes
+    Route::middleware(['auth:enrollee'])->group(function () {
+        // Dashboard
+        Route::get('/', [EnrolleeController::class, 'index'])->name('dashboard');
+        
+        // Application management
+        Route::get('/application', [EnrolleeController::class, 'application'])->name('application');
+        
+        // Document management
+        Route::get('/documents', [EnrolleeController::class, 'documents'])->name('documents');
+        Route::post('/documents/upload', [EnrolleeController::class, 'uploadDocument'])->name('documents.upload');
+        Route::delete('/documents/delete', [EnrolleeController::class, 'deleteDocument'])->name('documents.delete');
+        
+        // Payment management
+        Route::get('/payment', [EnrolleeController::class, 'payment'])->name('payment');
+        Route::post('/payment/process', [EnrolleeController::class, 'processPayment'])->name('payment.process');
+        
+        // Schedule management
+        Route::get('/schedule', [EnrolleeController::class, 'schedule'])->name('schedule');
+        Route::put('/schedule', [EnrolleeController::class, 'updateSchedule'])->name('schedule.update');
+        
+        // Profile management (redirects to application page since they're merged)
+        Route::get('/profile', function() {
+            return redirect()->route('enrollee.application');
+        })->name('profile');
+        Route::put('/profile', [EnrolleeController::class, 'updateProfile'])->name('profile.update');
+        
+        // Logout
+        Route::post('/logout', [EnrolleeController::class, 'logout'])->name('logout');
     });
 });

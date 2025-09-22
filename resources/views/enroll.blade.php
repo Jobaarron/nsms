@@ -72,7 +72,7 @@
                                 required
                             >
                                 <option value="">-- Select Type --</option>
-                                <option value="new" {{ old('student_type')=='new' ? 'selected':'' }}>New Student</option>
+                                <option value="new" {{ old('student_type')=='new' ? 'selected':'' }}>New</option>
                                 <option value="transferee" {{ old('student_type')=='transferee' ? 'selected':'' }}>Transferee</option>
                                 <option value="returnee" {{ old('student_type')=='returnee' ? 'selected':'' }}>Returnee</option>
                                 <option value="continuing" {{ old('student_type')=='continuing' ? 'selected':'' }}>Continuing</option>
@@ -564,7 +564,7 @@
                                 <option value="cash" {{ old('payment_mode')=='cash'?'selected':'' }}>Cash</option>
                                 <option value="online payment" {{ old('payment_mode')=='Online Payment'?'selected':'' }}>Online Payment</option>
                                 <option value="installment" {{ old('payment_mode')=='installment'?'selected':'' }}>Installment</option>
-                                <option value="scholarship" {{ old('payment_mode')=='scholarship'?'selected':'' }}>Scholarship</option>
+                                {{-- <option value="scholarship" {{ old('payment_mode')=='scholarship'?'selected':'' }}>Scholarship</option> --}}
                             </select>
                             @error('payment_mode') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>

@@ -6,7 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}"/>
 
 
-  <title>Teacher Dashboard • NSMS</title>
+  <title>Teacher Portal | Nicolites Portal</title>
 
   <!-- Remix Icons -->
   <link href="https://cdn.jsdelivr.net/npm/remixicon@3.4.0/fonts/remixicon.css" rel="stylesheet"/>

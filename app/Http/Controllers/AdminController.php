@@ -13,6 +13,7 @@ use Spatie\Permission\Models\Permission;
 use Illuminate\Support\Facades\DB;
 use App\Models\Admin;
 use App\Models\Student;
+use App\Models\Enrollee;
 use App\Traits\AdminAuthentication;
 use Illuminate\Support\Facades\Log;
 
@@ -396,48 +397,48 @@ public function getUserRoles(User $user)
 
 
     public function enrollments(Request $request)
-{
-    if ($response = $this->checkAdminAuth()) {
-        return $response;
+    {
+        if ($response = $this->checkAdminAuth()) {
+            return $response;
+        }
+
+        $query = Enrollee::query();
+
+        // Apply filters
+        if ($request->filled('status')) {
+            $query->where('enrollment_status', $request->status);
+        }
+
+        if ($request->filled('grade_level')) {
+            $query->where('grade_level_applied', $request->grade_level);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('first_name', 'LIKE', "%{$search}%")
+                  ->orWhere('last_name', 'LIKE', "%{$search}%")
+                  ->orWhere('email', 'LIKE', "%{$search}%")
+                  ->orWhere('lrn', 'LIKE', "%{$search}%");
+            });
+        }
+
+        $enrollments = $query->orderBy('created_at', 'desc')->paginate(15);
+
+        // Get counts for filter cards
+        $pendingCount = Enrollee::where('enrollment_status', 'pending')->count();
+        $approvedCount = Enrollee::where('enrollment_status', 'approved')->count();
+        $rejectedCount = Enrollee::where('enrollment_status', 'rejected')->count();
+        $totalCount = Enrollee::count();
+
+        return view('admin.enrollments', compact(
+            'enrollments',
+            'pendingCount',
+            'approvedCount', 
+            'rejectedCount',
+            'totalCount'
+        ));
     }
-
-    $query = Student::query();
-
-    // Apply filters
-    if ($request->filled('status')) {
-        $query->where('enrollment_status', $request->status);
-    }
-
-    if ($request->filled('grade_level')) {
-        $query->where('grade_level', $request->grade_level);
-    }
-
-    if ($request->filled('search')) {
-        $search = $request->search;
-        $query->where(function($q) use ($search) {
-            $q->where('first_name', 'LIKE', "%{$search}%")
-              ->orWhere('last_name', 'LIKE', "%{$search}%")
-              ->orWhere('email', 'LIKE', "%{$search}%")
-              ->orWhere('lrn', 'LIKE', "%{$search}%");
-        });
-    }
-
-    $enrollments = $query->orderBy('created_at', 'desc')->paginate(15);
-
-    // Get counts for filter cards
-    $pendingCount = Student::where('enrollment_status', 'pending')->count();
-    $approvedCount = Student::where('enrollment_status', 'enrolled')->count();
-    $rejectedCount = Student::where('enrollment_status', 'rejected')->count();
-    $totalCount = Student::count();
-
-    return view('admin.enrollments', compact(
-        'enrollments',
-        'pendingCount',
-        'approvedCount', 
-        'rejectedCount',
-        'totalCount'
-    ));
-}
 
     public function approveEnrollment($id)
     {
@@ -446,44 +447,42 @@ public function getUserRoles(User $user)
                 return $response;
             }
 
-            $student = Student::findOrFail($id);
+            $enrollee = Enrollee::findOrFail($id);
             
-            $updated = $student->update([
-                'enrollment_status' => 'enrolled',
+            $updated = $enrollee->update([
+                'enrollment_status' => 'approved',
                 'approved_at' => now(),
                 'approved_by' => Auth::id(),
-                'status_updated_at' => now(),
-                'status_updated_by' => Auth::id()
             ]);
 
             if ($updated) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Student enrollment approved successfully!'
+                    'message' => 'Enrollment approved successfully!'
                 ]);
             } else {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Failed to update student status.'
+                    'message' => 'Failed to update enrollee status.'
                 ], 500);
             }
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            Log::error('Student not found for approval: ' . $id);
+            Log::error('Enrollee not found for approval: ' . $id);
             return response()->json([
                 'success' => false,
-                'message' => 'Student not found.'
+                'message' => 'Enrollee not found.'
             ], 404);
         } catch (\Exception $e) {
             Log::error('Error approving enrollment: ' . $e->getMessage(), [
-                'student_id' => $id,
+                'enrollee_id' => $id,
                 'user_id' => Auth::id(),
                 'trace' => $e->getTraceAsString()
             ]);
             
             return response()->json([
                 'success' => false,
-                'message' => 'An error occurred while approving the student. Please try again.'
+                'message' => 'An error occurred while approving the enrollment. Please try again.'
             ], 500);
         }
     }
@@ -495,8 +494,8 @@ public function rejectEnrollment($id)
             return $response;
         }
 
-        $student = Student::findOrFail($id);
-        $student->update([
+        $enrollee = Enrollee::findOrFail($id);
+        $enrollee->update([
             'enrollment_status' => 'rejected',
             'rejected_at' => now(),
             'rejected_by' => Auth::id()
@@ -504,19 +503,19 @@ public function rejectEnrollment($id)
 
         return response()->json([
             'success' => true,
-            'message' => 'Student enrollment rejected.'
+            'message' => 'Enrollment rejected.'
         ]);
 
     } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
         return response()->json([
             'success' => false,
-            'message' => 'Student not found.'
+            'message' => 'Enrollee not found.'
         ], 404);
     } catch (\Exception $e) {
         Log::error('Error rejecting enrollment: ' . $e->getMessage());
         return response()->json([
             'success' => false,
-            'message' => 'Error rejecting student: ' . $e->getMessage()
+            'message' => 'Error rejecting enrollment: ' . $e->getMessage()
         ], 500);
     }
 }
@@ -528,24 +527,24 @@ public function deleteEnrollment($id)
             return $response;
         }
 
-        $student = Student::findOrFail($id);
-        $student->delete();
+        $enrollee = Enrollee::findOrFail($id);
+        $enrollee->delete();
 
         return response()->json([
             'success' => true,
-            'message' => 'Student record deleted successfully!'
+            'message' => 'Enrollment record deleted successfully!'
         ]);
 
     } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
         return response()->json([
             'success' => false,
-            'message' => 'Student not found.'
+            'message' => 'Enrollee not found.'
         ], 404);
     } catch (\Exception $e) {
         Log::error('Error deleting enrollment: ' . $e->getMessage());
         return response()->json([
             'success' => false,
-            'message' => 'Error deleting student: ' . $e->getMessage()
+            'message' => 'Error deleting enrollment: ' . $e->getMessage()
         ], 500);
     }
 }
@@ -558,21 +557,21 @@ public function bulkApprove(Request $request)
         }
 
         $request->validate([
-            'student_ids' => 'required|array',
-            'student_ids.*' => 'exists:students,id'
+            'enrollee_ids' => 'required|array',
+            'enrollee_ids.*' => 'exists:enrollees,id'
         ]);
 
-        $studentIds = $request->input('student_ids', []);
+        $enrolleeIds = $request->input('enrollee_ids', []);
         
-        $updated = Student::whereIn('id', $studentIds)->update([
-            'enrollment_status' => 'enrolled',
+        $updated = Enrollee::whereIn('id', $enrolleeIds)->update([
+            'enrollment_status' => 'approved',
             'approved_at' => now(),
             'approved_by' => Auth::id()
         ]);
 
         return response()->json([
             'success' => true,
-            'message' => "{$updated} students approved successfully!"
+            'message' => "{$updated} enrollments approved successfully!"
         ]);
 
     } catch (\Exception $e) {
@@ -592,13 +591,13 @@ public function bulkReject(Request $request)
         }
 
         $request->validate([
-            'student_ids' => 'required|array',
-            'student_ids.*' => 'exists:students,id'
+            'enrollee_ids' => 'required|array',
+            'enrollee_ids.*' => 'exists:enrollees,id'
         ]);
 
-        $studentIds = $request->input('student_ids', []);
+        $enrolleeIds = $request->input('enrollee_ids', []);
         
-        $updated = Student::whereIn('id', $studentIds)->update([
+        $updated = Enrollee::whereIn('id', $enrolleeIds)->update([
             'enrollment_status' => 'rejected',
             'rejected_at' => now(),
             'rejected_by' => Auth::id()
@@ -606,7 +605,7 @@ public function bulkReject(Request $request)
 
         return response()->json([
             'success' => true,
-            'message' => "{$updated} students rejected."
+            'message' => "{$updated} enrollments rejected."
         ]);
 
     } catch (\Exception $e) {
@@ -626,16 +625,16 @@ public function bulkDelete(Request $request)
         }
 
         $request->validate([
-            'student_ids' => 'required|array',
-            'student_ids.*' => 'exists:students,id'
+            'enrollee_ids' => 'required|array',
+            'enrollee_ids.*' => 'exists:enrollees,id'
         ]);
 
-        $studentIds = $request->input('student_ids', []);
-        $deleted = Student::whereIn('id', $studentIds)->delete();
+        $enrolleeIds = $request->input('enrollee_ids', []);
+        $deleted = Enrollee::whereIn('id', $enrolleeIds)->delete();
 
         return response()->json([
             'success' => true,
-            'message' => "{$deleted} student records deleted successfully!"
+            'message' => "{$deleted} enrollment records deleted successfully!"
         ]);
 
     } catch (\Exception $e) {
@@ -653,8 +652,8 @@ public function viewEnrollment($id)
         return $response;
     }
 
-    $student = Student::findOrFail($id);
-    return view('admin.enrollment-details', compact('student'));
+    $enrollee = Enrollee::findOrFail($id);
+    return view('admin.enrollment-details', compact('enrollee'));
 }
 
     
@@ -979,16 +978,16 @@ public function roles()
             return $response;
         }
 
-        $student = Student::findOrFail($id);
-        return view('admin.enrollment-edit', compact('student'));
+        $enrollee = Enrollee::findOrFail($id);
+        return view('admin.enrollment-edit', compact('enrollee'));
 
     } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
         return redirect()->route('admin.enrollments')
-            ->with('error', 'Student not found.');
+            ->with('error', 'Enrollee not found.');
     } catch (\Exception $e) {
         Log::error('Error loading enrollment edit page: ' . $e->getMessage());
         return redirect()->route('admin.enrollments')
-            ->with('error', 'Error loading student information.');
+            ->with('error', 'Error loading enrollee information.');
     }
     }
 
@@ -1001,12 +1000,12 @@ public function updateEnrollmentStatus(Request $request, $id)
     }
 
     $request->validate([
-        'status' => 'required|in:pending,enrolled,rejected',
+        'status' => 'required|in:pending,approved,rejected,enrolled',
         'reason' => 'nullable|string|max:500'
     ]);
 
-    $student = Student::findOrFail($id);
-    $student->update([
+    $enrollee = Enrollee::findOrFail($id);
+    $enrollee->update([
         'enrollment_status' => $request->status,
         'status_reason' => $request->reason,
         'status_updated_at' => now(),
@@ -1015,7 +1014,7 @@ public function updateEnrollmentStatus(Request $request, $id)
 
     return response()->json([
         'success' => true,
-        'message' => 'Student status updated successfully!'
+        'message' => 'Enrollment status updated successfully!'
     ]);
 }
 
@@ -1025,31 +1024,43 @@ public function exportSelected(Request $request)
         return $response;
     }
 
-    $studentIds = $request->input('student_ids', []);
-    $students = Student::whereIn('id', $studentIds)->get();
+    $enrolleeIds = $request->input('enrollee_ids', []);
+    
+    if (empty($enrolleeIds)) {
+        return back()->with('error', 'No enrollees selected for export.');
+    }
 
-    // Create CSV export
-    $filename = 'selected_enrollments_' . date('Y-m-d_H-i-s') . '.csv';
+    $enrollees = Enrollee::whereIn('id', $enrolleeIds)->get();
+    
+    $fileName = 'enrollees-' . date('Y-m-d') . '.csv';
     $headers = [
-        'Content-Type' => 'text/csv',
-        'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        'Content-type'        => 'text/csv',
+        'Content-Disposition' => "attachment; filename=$fileName",
+        'Pragma'              => 'no-cache',
+        'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+        'Expires'             => '0'
     ];
 
-    $callback = function() use ($students) {
+    $callback = function() use ($enrollees) {
         $file = fopen('php://output', 'w');
-        fputcsv($file, ['Name', 'Email', 'Grade Level', 'Status', 'Guardian', 'Contact', 'Applied Date']);
+        
+        // Add CSV headers
+        fputcsv($file, [
+            'Application ID', 'LRN', 'First Name', 'Last Name', 'Grade Level Applied', 'Email', 'Enrollment Status'
+        ]);
 
-        foreach ($students as $student) {
+        foreach ($enrollees as $enrollee) {
             fputcsv($file, [
-                $student->first_name . ' ' . $student->last_name,
-                $student->email,
-                $student->grade_level,
-                $student->enrollment_status,
-                $student->guardian_name,
-                $student->guardian_contact,
-                $student->created_at->format('Y-m-d H:i:s')
+                $enrollee->application_id,
+                $enrollee->lrn,
+                $enrollee->first_name,
+                $enrollee->last_name,
+                $enrollee->grade_level_applied,
+                $enrollee->email,
+                $enrollee->enrollment_status
             ]);
         }
+        
         fclose($file);
     };
 

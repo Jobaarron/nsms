@@ -4,7 +4,7 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
 
-  <title>Student Dashboard • NSMS</title>
+  <title>Student Portal | Nicolites Portal</title>
 
     <!-- Remix Icons -->
     <link 
