@@ -90,7 +90,7 @@ class EnrolleeController extends Controller
             $request->validate([
                 'document_type' => 'required|string',
                 'document_file' => 'required|file|mimes:pdf,jpg,jpeg,png,docx|max:5120', // 5MB max
-                'other_document_type' => 'required_if:document_type,other|string|max:255',
+                'other_document_type' => 'nullable|string|max:255|required_if:document_type,other',
                 'document_notes' => 'nullable|string|max:500'
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {

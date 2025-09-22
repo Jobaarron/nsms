@@ -521,16 +521,38 @@
             closeButtons?.forEach(btn => {
                 btn.addEventListener('click', function() {
                     console.log('Modal close button clicked');
+                    closeModal();
+                });
+            });
+            
+            // Close modal function
+            function closeModal() {
+                if (uploadModal) {
                     uploadModal.style.display = 'none';
                     uploadModal.classList.remove('show');
                     document.body.classList.remove('modal-open');
                     
-                    // Remove backdrop
-                    const backdrop = document.getElementById('modalBackdrop');
-                    if (backdrop) {
-                        backdrop.remove();
-                    }
-                });
+                    // Remove all backdrops
+                    const backdrops = document.querySelectorAll('.modal-backdrop');
+                    backdrops.forEach(backdrop => backdrop.remove());
+                    
+                    // Reset form using the dedicated function
+                    resetModalForm();
+                }
+            }
+            
+            // Close modal when clicking outside
+            uploadModal?.addEventListener('click', function(e) {
+                if (e.target === uploadModal) {
+                    closeModal();
+                }
+            });
+            
+            // Close modal with Escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && uploadModal && uploadModal.classList.contains('show')) {
+                    closeModal();
+                }
             });
             
             // Handle document type selection
@@ -558,9 +580,15 @@
                     // Validate form before submission
                     const documentType = document.getElementById('document_type').value;
                     const documentFile = document.getElementById('document_file').files[0];
+                    const otherDocumentType = document.getElementById('other_document_type').value;
                     
                     if (!documentType) {
                         showAlert('Please select a document type', 'error');
+                        return;
+                    }
+                    
+                    if (documentType === 'other' && !otherDocumentType.trim()) {
+                        showAlert('Please specify the document type', 'error');
                         return;
                     }
                     
@@ -569,7 +597,7 @@
                         return;
                     }
                     
-                    console.log('Form validation passed:', { documentType, fileName: documentFile.name });
+                    console.log('Form validation passed:', { documentType, otherDocumentType, fileName: documentFile.name });
                 
                 const formData = new FormData(this);
                 const submitBtn = this.querySelector('button[type="submit"]');
@@ -697,9 +725,16 @@
                 });
             }
 
-            // Reset form when modal is hidden
+            // Reset form when modal is hidden (Bootstrap event)
             if (uploadModal && uploadForm) {
                 uploadModal.addEventListener('hidden.bs.modal', function() {
+                    resetModalForm();
+                });
+            }
+            
+            // Reset modal form function
+            function resetModalForm() {
+                if (uploadForm) {
                     uploadForm.reset();
                     const submitBtn = uploadForm.querySelector('button[type="submit"]');
                     if (submitBtn) {
@@ -707,21 +742,24 @@
                         submitBtn.disabled = false;
                     }
                 
-                // Remove progress indicator if exists
-                const progressDiv = document.getElementById('uploadProgress');
-                if (progressDiv) {
-                    progressDiv.remove();
+                    // Remove progress indicator if exists
+                    const progressDiv = document.getElementById('uploadProgress');
+                    if (progressDiv) {
+                        progressDiv.remove();
+                    }
+                    
+                    // Hide other type field and file preview
+                    const otherTypeField = document.getElementById('other_type_field');
+                    const filePreview = document.getElementById('filePreview');
+                    
+                    if (otherTypeField) {
+                        otherTypeField.style.display = 'none';
+                        document.getElementById('other_document_type').required = false;
+                    }
+                    if (filePreview) {
+                        filePreview.style.display = 'none';
+                    }
                 }
-                
-                // Hide other type field and file preview
-                if (otherTypeField) {
-                    otherTypeField.style.display = 'none';
-                    document.getElementById('other_document_type').required = false;
-                }
-                if (filePreview) {
-                    filePreview.style.display = 'none';
-                }
-                });
             }
 
             // Add event listeners for document action buttons
