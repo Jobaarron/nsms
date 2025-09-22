@@ -41,7 +41,7 @@
                             class="form-control form-control-lg @error('application_id') is-invalid @enderror"
                             value="{{ old('application_id') }}"
                             required
-                            placeholder="Enter your Applicant ID"
+                            placeholder="Enter your Applicant ID (e.g., 25-001)"
                             autofocus
                         />
                         @error('application_id')
@@ -59,7 +59,7 @@
                             name="password"
                             class="form-control form-control-lg @error('password') is-invalid @enderror"
                             required
-                            placeholder="Enter your password"
+                            placeholder="Enter your password (e.g., 25-001)"
                         />
                         @error('password')
                             <div class="invalid-feedback">{{ $message }}</div>

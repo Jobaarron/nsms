@@ -253,9 +253,8 @@ class Enrollee extends Authenticatable
     public function getPlainPassword()
     {
         if ($this->application_id) {
-            $year = substr(date('Y'), -2);
-            $number = substr($this->application_id, 2);
-            return $year . '-' . $number;
+            // Application ID is already in format 25-001, so return as is
+            return $this->application_id;
         }
         return null;
     }
@@ -271,19 +270,20 @@ class Enrollee extends Authenticatable
                 $shortYear = substr($year, -2); // Get last 2 digits of year (25 for 2025)
                 
                 // Find the last application for this year
-                $lastApplication = static::where('application_id', 'like', "{$shortYear}%")
+                $lastApplication = static::where('application_id', 'like', "{$shortYear}-%")
                     ->orderBy('application_id', 'desc')
                     ->first();
                 
                 if ($lastApplication) {
-                    $lastNumber = (int) substr($lastApplication->application_id, 2);
+                    // Extract number after the hyphen (e.g., "25-001" -> "001")
+                    $lastNumber = (int) substr($lastApplication->application_id, 3);
                     $newNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
                 } else {
                     $newNumber = '001';
                 }
                 
-                // Generate application ID in format: 25001 (25 = year, 001 = sequence)
-                $enrollee->application_id = $shortYear . $newNumber;
+                // Generate application ID in format: 25-001 (25 = year, 001 = sequence)
+                $enrollee->application_id = $shortYear . '-' . $newNumber;
                 
                 // Generate password in format: 25-001 (easy to remember)
                 $enrollee->password = Hash::make($shortYear . '-' . $newNumber);
