@@ -418,65 +418,11 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const paymentMethodSelect = document.getElementById('payment_method');
-            const instructionsDiv = document.getElementById('payment_instructions');
-            const instructionContent = document.getElementById('instruction_content');
-            const referenceField = document.getElementById('reference_field');
-
-            const instructions = {
-                'gcash': `
-                    <ol>
-                        <li>Open your GCash app</li>
-                        <li>Select "Send Money" or "Pay Bills"</li>
-                        <li>Enter the merchant number: <strong>09123456789</strong></li>
-                        <li>Enter the amount: <strong>₱{{ number_format(($enrollee->total_fees_due ?? 0) - $enrollee->total_paid, 2) }}</strong></li>
-                        <li>Add reference: <strong>{{ $enrollee->application_id }}</strong></li>
-                        <li>Complete the transaction and save the reference number</li>
-                    </ol>
-                `,
-                'paymaya': `
-                    <ol>
-                        <li>Open your PayMaya app</li>
-                        <li>Select "Pay" or "Send Money"</li>
-                        <li>Enter the merchant details provided</li>
-                        <li>Enter the amount: <strong>₱{{ number_format(($enrollee->total_fees_due ?? 0) - $enrollee->total_paid, 2) }}</strong></li>
-                        <li>Add reference: <strong>{{ $enrollee->application_id }}</strong></li>
-                        <li>Complete the transaction and save the reference number</li>
-                    </ol>
-                `,
-                'bank_transfer': `
-                    <p><strong>Bank Details:</strong></p>
-                    <ul>
-                        <li>Bank Name: BPI</li>
-                        <li>Account Name: Nicolites School Management System</li>
-                        <li>Account Number: 1234-5678-90</li>
-                        <li>Amount: <strong>₱{{ number_format(($enrollee->total_fees_due ?? 0) - $enrollee->total_paid, 2) }}</strong></li>
-                        <li>Reference: <strong>{{ $enrollee->application_id }}</strong></li>
-                    </ul>
-                `,
-                'over_counter': `
-                    <p>Visit the school's cashier office during business hours:</p>
-                    <ul>
-                        <li>Monday to Friday: 8:00 AM - 5:00 PM</li>
-                        <li>Bring your Application ID: <strong>{{ $enrollee->application_id }}</strong></li>
-                        <li>Amount to pay: <strong>₱{{ number_format(($enrollee->total_fees_due ?? 0) - $enrollee->total_paid, 2) }}</strong></li>
-                    </ul>
-                `
-            };
-
-            paymentMethodSelect.addEventListener('change', function() {
-                const selectedMethod = this.value;
-                
-                if (selectedMethod && instructions[selectedMethod]) {
-                    instructionContent.innerHTML = instructions[selectedMethod];
-                    instructionsDiv.style.display = 'block';
-                    referenceField.style.display = 'block';
-                } else {
-                    instructionsDiv.style.display = 'none';
-                    referenceField.style.display = 'none';
-                }
-            });
-        });
+        // Pass enrollee data to JavaScript
+        window.enrolleeData = {
+            applicationId: '{{ $enrollee->application_id }}',
+            amountDue: '{{ number_format(($enrollee->total_fees_due ?? 0) - $enrollee->total_paid, 2) }}'
+        };
     </script>
+    @vite(['resources/js/enrollee-payment.js'])
 </x-enrollee-layout>

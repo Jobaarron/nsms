@@ -101,14 +101,23 @@ class EnrollmentController extends Controller
             $data['id_photo_mime_type'] = $photo->getMimeType();
         }
 
-        // 3) Store the multiple documents
-        $documentPaths = [];
+        // 3) Store the multiple documents with metadata (consistent with EnrolleeController)
+        $documents = [];
         if ($request->hasFile('documents')) {
             foreach ($request->file('documents') as $doc) {
-                $documentPaths[] = $doc->store('documents', 'public');
+                $path = $doc->store('documents', 'public');
+                $documents[] = [
+                    'type' => strtoupper($doc->getClientOriginalExtension()) ?: 'Unknown',
+                    'filename' => $doc->getClientOriginalName(),
+                    'path' => $path,
+                    'mime_type' => $doc->getMimeType(),
+                    'size' => $doc->getSize(),
+                    'uploaded_at' => now()->toISOString(),
+                    'status' => 'pending'
+                ];
             }
         }
-        $data['documents'] = $documentPaths; // Let Laravel handle the JSON encoding with the array cast
+        $data['documents'] = $documents; // Store as array of objects with metadata
 
         // 4) Map grade_level to grade_level_applied for enrollee
         $data['grade_level_applied'] = $data['grade_level'];

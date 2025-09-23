@@ -118,6 +118,16 @@ class Enrollee extends Authenticatable
     }
 
     /**
+     * Get the unique identifier for the user.
+     *
+     * @return mixed
+     */
+    public function getAuthIdentifier()
+    {
+        return $this->getAttribute($this->getAuthIdentifierName()); // Return application_id for session storage
+    }
+
+    /**
      * Get the column name for the "username".
      *
      * @return string

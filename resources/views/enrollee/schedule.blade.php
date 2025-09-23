@@ -319,7 +319,7 @@
                             <div class="list-group-item d-flex justify-content-between align-items-center px-0">
                                 <span>
                                     <i class="ri-{{ $enrollee->enrollment_status === 'enrolled' ? 'check' : 'time' }}-line me-2 text-{{ $enrollee->enrollment_status === 'enrolled' ? 'success' : 'warning' }}"></i>
-                                    Final Enrollment
+                                    Pre-Registration
                                 </span>
                                 <span class="badge bg-{{ $enrollee->enrollment_status === 'enrolled' ? 'success' : 'warning' }}">
                                     {{ $enrollee->enrollment_status === 'enrolled' ? 'Done' : 'Pending' }}

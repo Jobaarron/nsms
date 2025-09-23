@@ -112,7 +112,13 @@ class EnrolleeController extends Controller
             $path = $file->store('documents', 'public');
             
             // Get existing documents or initialize empty array
-            $documents = is_array($enrollee->documents) ? $enrollee->documents : [];
+            $documents = $enrollee->documents;
+            if (is_string($documents)) {
+                $documents = json_decode($documents, true) ?? [];
+            }
+            if (!is_array($documents)) {
+                $documents = [];
+            }
             
             // Add new document
             $documents[] = [
@@ -321,7 +327,14 @@ class EnrolleeController extends Controller
                 ], 400);
             }
 
-            $documents = is_array($enrollee->documents) ? $enrollee->documents : [];
+            // Handle both array and JSON string formats
+            $documents = $enrollee->documents;
+            if (is_string($documents)) {
+                $documents = json_decode($documents, true) ?? [];
+            }
+            if (!is_array($documents)) {
+                $documents = [];
+            }
             
             if (!isset($documents[$documentIndex])) {
                 return response()->json([
@@ -330,13 +343,20 @@ class EnrolleeController extends Controller
                 ], 404);
             }
 
-            // Get the document path to delete from storage
-            $documentPath = $documents[$documentIndex];
-            if (is_string($documentPath)) {
-                $fullPath = storage_path('app/public/' . $documentPath);
-                if (file_exists($fullPath)) {
-                    unlink($fullPath);
-                }
+            // Get the document to delete from storage
+            $document = $documents[$documentIndex];
+            
+            // Handle both old format (string paths) and new format (arrays with metadata)
+            if (is_string($document)) {
+                // Old format: just the file path
+                $fullPath = storage_path('app/public/' . $document);
+            } else {
+                // New format: array with metadata
+                $fullPath = storage_path('app/public/' . $document['path']);
+            }
+            
+            if (file_exists($fullPath)) {
+                unlink($fullPath);
             }
 
             // Remove document from array
@@ -349,10 +369,7 @@ class EnrolleeController extends Controller
             $enrollee->documents = $documents;
             $enrollee->save();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Document deleted successfully.'
-            ]);
+            return response()->json(['success' => true, 'message' => 'Document deleted successfully']);
 
         } catch (\Exception $e) {
             \Log::error('Document deletion error: ' . $e->getMessage());
@@ -362,5 +379,77 @@ class EnrolleeController extends Controller
                 'message' => 'An error occurred while deleting the document.'
             ], 500);
         }
+    }
+
+    public function viewDocument($index)
+    {
+        $enrollee = auth('enrollee')->user();
+        
+        // Handle both array and JSON string formats
+        $documents = $enrollee->documents;
+        if (is_string($documents)) {
+            $documents = json_decode($documents, true) ?? [];
+        }
+        if (!is_array($documents)) {
+            $documents = [];
+        }
+        
+        if (!$enrollee || !isset($documents[$index])) {
+            abort(404, 'Document not found');
+        }
+        
+        $document = $documents[$index];
+        
+        // Handle both old format (string paths) and new format (arrays with metadata)
+        if (is_string($document)) {
+            // Old format: just the file path
+            $filePath = storage_path('app/public/' . $document);
+        } else {
+            // New format: array with metadata
+            $filePath = storage_path('app/public/' . $document['path']);
+        }
+        
+        if (!file_exists($filePath)) {
+            abort(404, 'File not found');
+        }
+        
+        return response()->file($filePath);
+    }
+
+    public function downloadDocument($index)
+    {
+        $enrollee = auth('enrollee')->user();
+        
+        // Handle both array and JSON string formats
+        $documents = $enrollee->documents;
+        if (is_string($documents)) {
+            $documents = json_decode($documents, true) ?? [];
+        }
+        if (!is_array($documents)) {
+            $documents = [];
+        }
+        
+        if (!$enrollee || !isset($documents[$index])) {
+            abort(404, 'Document not found');
+        }
+        
+        $document = $documents[$index];
+        
+        // Handle both old format (string paths) and new format (arrays with metadata)
+        if (is_string($document)) {
+            // Old format: just the file path
+            $filePath = storage_path('app/public/' . $document);
+            $filename = basename($document); // Extract filename from path
+        } else {
+            // New format: array with metadata
+            $filePath = storage_path('app/public/' . $document['path']);
+            $filename = $document['filename'];
+        }
+        
+        if (!file_exists($filePath)) {
+            abort(404, 'File not found');
+        }
+        
+        return response()->download($filePath, $filename);
     }
 }

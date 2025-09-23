@@ -61,8 +61,8 @@
                             <dd class="col-sm-8">{{ $enrollee->full_name }}</dd>
                             <dt class="col-sm-4">Date of Birth</dt>
                             <dd class="col-sm-8">{{ $enrollee->date_of_birth->format('F d, Y') }} ({{ $enrollee->date_of_birth->age }} years old)</dd>
-                            <dt class="col-sm-4">Place of Birth</dt>
-                            <dd class="col-sm-8">{{ $enrollee->place_of_birth ?? 'Not specified' }}</dd>
+                            {{-- <dt class="col-sm-4">Place of Birth</dt>
+                            <dd class="col-sm-8">{{ $enrollee->place_of_birth ?? 'Not specified' }}</dd> --}}
                             <dt class="col-sm-4">Gender</dt>
                             <dd class="col-sm-8">{{ ucfirst($enrollee->gender) }}</dd>
                             <dt class="col-sm-4">Nationality</dt>
