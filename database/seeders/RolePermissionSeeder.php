@@ -18,145 +18,141 @@ class RolePermissionSeeder extends Seeder
         // Reset cached roles and permissions
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // Create permissions for school management system
+        // Create permissions based on actual views/routes accessible in each layout sidebar
         $permissions = [
-            // Student Management
-            'view students',
-            'create students',
-            'edit students',
-            'delete students',
-            'approve student enrollment',
-            'reject student enrollment',
+            // ADMIN LAYOUT PERMISSIONS (admin-layout.blade.php)
+            'Dashboard',
+            'Roles & Access',
+            'Manage Users',
+            'Manage Enrollments',
+            'Contact Messages',
             
-            // Teacher Management
-            'view teachers',
-            'create teachers',
-            'edit teachers',
-            'delete teachers',
-            'assign teacher subjects',
+            // TEACHER LAYOUT PERMISSIONS (teacher-layout.blade.php)
+            'Teacher Dashboard',
+            'My Classes',
+            'View Students',
+            'Grade Book',
+            'Attendance Management',
+            'Teacher Messages',
             
-            // Academic Management
-            'view grades',
-            'create grades',
-            'edit grades',
-            'delete grades',
-            'view class schedules',
-            'manage class schedules',
+            // GUIDANCE LAYOUT PERMISSIONS (guidance-layout.blade.php)
+            'Guidance Dashboard',
+            'Student Profiles',
+            'Violations Management',
+            'Facial Recognition',
+            'Counseling Services',
+            'Career Advice',
+            'Guidance Analytics',
+            'Guidance Settings',
             
-            // Enrollment Management
-            'view enrollments',
-            'process enrollments',
-            'approve enrollments',
-            'reject enrollments',
+            // STUDENT LAYOUT PERMISSIONS (student-layout.blade.php)
+            'Student Dashboard',
+            'View Violations',
+            'Student Payments',
+            'My Subjects',
+            'Guidance Notes',
+            'Student Profile',
             
-            // Financial Management
-            'view payments',
-            'process payments',
-            'update payment status',
-            'generate financial reports',
+            // ENROLLEE LAYOUT PERMISSIONS (enrollee-layout.blade.php)
+            'Enrollee Dashboard',
+            'My Application',
+            'Documents Management',
+            'Payment Portal',
+            'Schedule View',
             
-            // Guidance Services
-            'view student counseling records',
-            'create counseling records',
-            'edit counseling records',
-            'schedule counseling sessions',
-            'view guidance reports',
-            'create guidance reports',
-            
-            // Discipline Management
-            'view disciplinary records',
-            'create disciplinary records',
-            'edit disciplinary records',
-            'delete disciplinary records',
-            'issue disciplinary actions',
-            'view discipline reports',
-            
-            // System Administration
-            'manage users',
-            'manage roles',
-            'view system settings',
-            'edit system settings',
-            'backup system',
-            'view audit logs',
-            
-            // Reports & Analytics
-            'view reports',
-            'generate reports',
-            'export reports',
-            'view analytics dashboard',
+            // CORE SYSTEM PERMISSIONS (for AdminController compatibility)
+            'View Reports',
+            'View Analytics',
+            'System Settings',
+            'Manage Admins',
+            'Database Management',
+            'Backup & Restore',
+            'Manage Roles',
         ];
 
+        // Create permissions first
         foreach ($permissions as $permission) {
-            Permission::create(['name' => $permission]);
+            Permission::firstOrCreate([
+                'name' => $permission,
+                'guard_name' => 'web'
+            ]);
         }
 
         // Create roles and assign permissions
         
-        // Admin - Full system access
-        $admin = Role::create(['name' => 'admin']);
-        $admin->givePermissionTo([
-            // Student Management
-            'view students', 'create students', 'edit students', 'delete students',
-            'approve student enrollment', 'reject student enrollment',
-            
-            // Teacher Management
-            'view teachers', 'create teachers', 'edit teachers', 'delete teachers',
-            'assign teacher subjects',
-            
-            // Academic Management
-            'view grades', 'create grades', 'edit grades', 'delete grades',
-            'view class schedules', 'manage class schedules',
-            
-            // Enrollment Management
-            'view enrollments', 'process enrollments', 'approve enrollments', 'reject enrollments',
-            
-            // Financial Management
-            'view payments', 'process payments', 'update payment status', 'generate financial reports',
-            
-            // System Administration
-            'manage users', 'manage roles', 'view system settings', 'edit system settings',
-            'backup system', 'view audit logs',
-            
-            // Reports & Analytics
-            'view reports', 'generate reports', 'export reports', 'view analytics dashboard',
+        // ADMIN ROLE - Based on admin-layout.blade.php sidebar navigation
+        $admin = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
+        $admin->syncPermissions([
+            'Dashboard',
+            'Roles & Access',
+            'Manage Users',
+            'Manage Enrollments',
+            'Contact Messages',
+            'View Reports',
+            'View Analytics',
+            'System Settings',
+            'Manage Admins',
+            'Database Management',
+            'Backup & Restore',
+            'Manage Roles',
         ]);
 
-        // Teacher - Academic focused permissions
-        $teacher = Role::create(['name' => 'teacher']);
-        $teacher->givePermissionTo([
-            'view students',
-            'view grades', 'create grades', 'edit grades',
-            'view class schedules',
-            'view enrollments',
-            'view reports',
+        // TEACHER ROLE - Based on teacher-layout.blade.php sidebar navigation  
+        $teacher = Role::firstOrCreate(['name' => 'teacher', 'guard_name' => 'web']);
+        $teacher->syncPermissions([
+            'Teacher Dashboard',
+            'My Classes',
+            'View Students',
+            'Grade Book',
+            'Attendance Management',
+            'Teacher Messages',
         ]);
 
-        // Guidance - Student counseling and welfare
-        $guidance = Role::create(['name' => 'guidance']);
-        $guidance->givePermissionTo([
-            'view students', 'edit students',
-            'view student counseling records', 'create counseling records', 'edit counseling records',
-            'schedule counseling sessions', 'view guidance reports', 'create guidance reports',
-            'view enrollments',
-            'view reports', 'generate reports',
+        // GUIDANCE ROLE - Based on guidance-layout.blade.php sidebar navigation
+        $guidance = Role::firstOrCreate(['name' => 'guidance', 'guard_name' => 'web']);
+        $guidance->syncPermissions([
+            'Guidance Dashboard',
+            'Student Profiles',
+            'Violations Management',
+            'Facial Recognition',
+            'Counseling Services',
+            'Career Advice',
+            'Guidance Analytics',
+            'Guidance Settings',
         ]);
 
-        // Discipline - Student behavior and disciplinary actions
-        $discipline = Role::create(['name' => 'discipline']);
-        $discipline->givePermissionTo([
-            'view students', 'edit students',
-            'view disciplinary records', 'create disciplinary records', 'edit disciplinary records',
-            'delete disciplinary records', 'issue disciplinary actions', 'view discipline reports',
-            'view enrollments',
-            'view reports', 'generate reports',
+        // DISCIPLINE ROLE - Based on guidance-layout.blade.php (shares same layout with guidance)
+        $discipline = Role::firstOrCreate(['name' => 'discipline', 'guard_name' => 'web']);
+        $discipline->syncPermissions([
+            'Guidance Dashboard',
+            'Student Profiles',
+            'Violations Management',
+            'Facial Recognition',
         ]);
 
-        // Student - Limited self-service access
-        $student = Role::create(['name' => 'student']);
-        $student->givePermissionTo([
-            'view grades', // Only their own grades
-            'view class schedules', // Only their own schedule
-            'view payments', // Only their own payment status
+        // Super Admin - Full system access including role management
+        $superAdmin = Role::firstOrCreate(['name' => 'super_admin', 'guard_name' => 'web']);
+        $superAdmin->syncPermissions(Permission::all()); // Give all permissions
+
+        // STUDENT ROLE - Based on student-layout.blade.php sidebar navigation
+        $student = Role::firstOrCreate(['name' => 'student', 'guard_name' => 'web']);
+        $student->syncPermissions([
+            'Student Dashboard',
+            'View Violations',
+            'Student Payments',
+            'My Subjects',
+            'Guidance Notes',
+            'Student Profile',
+        ]);
+
+        // ENROLLEE ROLE - Based on enrollee-layout.blade.php sidebar navigation
+        $enrollee = Role::firstOrCreate(['name' => 'enrollee', 'guard_name' => 'web']);
+        $enrollee->syncPermissions([
+            'Enrollee Dashboard',
+            'My Application',
+            'Documents Management',
+            'Payment Portal',
+            'Schedule View',
         ]);
 
         // CREATE SAMPLE USERS WITH PROPER MODELS
@@ -178,7 +174,8 @@ class RolePermissionSeeder extends Seeder
             'is_active' => true,
         ]);
         
-        $adminUser->assignRole('admin');
+        // Assign both admin and super_admin roles
+        $adminUser->assignRole(['admin', 'super_admin']);
 
         // 2. Create Teacher User with Teacher model
         // $teacherUser = User::create([

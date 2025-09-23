@@ -59,7 +59,7 @@
                             name="password"
                             class="form-control form-control-lg @error('password') is-invalid @enderror"
                             required
-                            placeholder="Enter your password (e.g., 25-001)"
+                            placeholder="Enter your password"
                         />
                         @error('password')
                             <div class="invalid-feedback">{{ $message }}</div>

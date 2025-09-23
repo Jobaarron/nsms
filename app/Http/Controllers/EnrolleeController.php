@@ -452,4 +452,37 @@ class EnrolleeController extends Controller
         
         return response()->download($filePath, $filename);
     }
+
+    /**
+     * Update enrollee password
+     */
+    public function updatePassword(Request $request)
+    {
+        $enrollee = Auth::guard('enrollee')->user();
+        
+        $request->validate([
+            'current_password' => 'required|string',
+            'new_password' => 'required|string|min:8|confirmed',
+        ]);
+
+        try {
+            // Verify current password
+            if (!Hash::check($request->current_password, $enrollee->password)) {
+                return redirect()->back()->withErrors([
+                    'current_password' => 'The current password is incorrect.'
+                ])->withInput();
+            }
+
+            // Update password
+            $enrollee->update([
+                'password' => Hash::make($request->new_password)
+            ]);
+
+            return redirect()->back()->with('success', 'Password updated successfully!');
+            
+        } catch (\Exception $e) {
+            \Log::error('Password update error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to update password. Please try again.');
+        }
+    }
 }

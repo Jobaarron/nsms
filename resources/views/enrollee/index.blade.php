@@ -94,7 +94,32 @@
                     <div class="progress-step {{ in_array($enrollee->enrollment_status, ['pending', 'approved', 'enrolled', 'rejected']) ? 'completed' : '' }}">
                         <i class="ri-file-text-line"></i>
                     </div>
-                    <div class="progress-step {{ in_array($enrollee->enrollment_status, ['approved', 'enrolled']) ? 'completed' : ($enrollee->enrollment_status === 'pending' ? 'active' : '') }}">
+                    @php
+                        // Check if application has been evaluated (documents reviewed)
+                        $documents = is_array($enrollee->documents) ? $enrollee->documents : [];
+                        $hasVerifiedDocs = false;
+                        $hasRejectedDocs = false;
+                        
+                        foreach ($documents as $document) {
+                            if (is_array($document)) {
+                                $status = $document['status'] ?? 'pending';
+                                if (in_array($status, ['verified', 'rejected'])) {
+                                    $hasVerifiedDocs = true;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        // Application is evaluated if:
+                        // 1. Status is approved/enrolled/rejected OR
+                        // 2. At least one document has been reviewed (verified/rejected)
+                        $isEvaluated = in_array($enrollee->enrollment_status, ['approved', 'enrolled', 'rejected']) || $hasVerifiedDocs;
+                        
+                        // Only show as "evaluating" (active) if documents are actually being reviewed
+                        // Don't show active for fresh applications that haven't been touched yet
+                        $isEvaluating = false; // Never show as active until actual evaluation starts
+                    @endphp
+                    <div class="progress-step {{ $isEvaluated ? 'completed' : ($isEvaluating ? 'active' : '') }}">
                         <i class="ri-search-eye-line"></i>
                     </div>
                     <div class="progress-step {{ in_array($enrollee->enrollment_status, ['approved', 'enrolled']) ? 'completed' : '' }}">

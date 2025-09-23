@@ -401,6 +401,9 @@ Route::prefix('enrollee')->name('enrollee.')->group(function () {
         })->name('profile');
         Route::put('/profile', [EnrolleeController::class, 'updateProfile'])->name('profile.update');
         
+        // Password management
+        Route::put('/password/update', [EnrolleeController::class, 'updatePassword'])->name('password.update');
+        
         // Logout
         Route::post('/logout', [EnrolleeController::class, 'logout'])->name('logout');
     });

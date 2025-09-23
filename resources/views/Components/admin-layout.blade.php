@@ -9,7 +9,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf-token" content="{{ csrf_token() }}">
-  <title>Admin Portal | Nicolites Portal/title>
+  <title>Admin Portal | Nicolites Portal</title>
 
   <!-- Remix Icons -->
   <link href="https://cdn.jsdelivr.net/npm/remixicon@3.4.0/fonts/remixicon.css" rel="stylesheet"/>
@@ -36,36 +36,35 @@
           </li>
           <li class="nav-item">
             <a class="nav-link d-flex align-items-center py-3 px-3 rounded" href="{{ route('admin.roles.access') }}">
-                <i class="ri-shield-user-line me-2 fs-5"></i>
-                <span>Roles & Access</span>
+              <i class="ri-shield-user-line me-2 fs-5"></i>
+              <span>Roles & Access</span>
             </a>
-        </li>
           </li>
           <li class="nav-item">
-            <a class="nav-link disabled d-flex align-items-center py-3 px-3 rounded" href="{{ route('admin.manage.users') }}">
-                <i class="ri-user-settings-line me-2 fs-5"></i>
-                <span>Manage Users</span>
+            <a class="nav-link d-flex align-items-center py-3 px-3 rounded" href="{{ route('admin.manage.users') }}">
+              <i class="ri-user-settings-line me-2 fs-5"></i>
+              <span>Manage Users</span>
             </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link d-flex align-items-center py-3 px-3 rounded" href="{{ route('admin.enrollments') }}">
+          </li>
+          <li class="nav-item">
+            <a class="nav-link d-flex align-items-center py-3 px-3 rounded" href="{{ route('admin.enrollments') }}">
               <i class="ri-file-list-line me-2 fs-5"></i>
               <span>Enrollments</span>
-          </a>
-      </li>
-      <li class="nav-item">
-          <a class="nav-link d-flex align-items-center py-3 px-3 rounded {{ request()->routeIs('admin.contact.messages') ? 'active bg-light' : '' }}" href="{{ route('admin.contact.messages') }}">
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link d-flex align-items-center py-3 px-3 rounded {{ request()->routeIs('admin.contact.messages') ? 'active bg-light' : '' }}" href="{{ route('admin.contact.messages') }}">
               <i class="ri-mail-line me-2 fs-5"></i>
               <span>Contact Messages</span>
-          </a>
-      </li>
+            </a>
+          </li>
           <li class="nav-item mt-4">
             <form method="POST" action="{{ route('admin.logout') }}" class="px-3">
-                @csrf
-                <button type="submit" class="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center">
-                    <i class="ri-logout-box-line me-2"></i>
-                    <span>Logout</span>
-                </button>
+              @csrf
+              <button type="submit" class="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center">
+                <i class="ri-logout-box-line me-2"></i>
+                <span>Logout</span>
+              </button>
             </form>
           </li>
         </ul>

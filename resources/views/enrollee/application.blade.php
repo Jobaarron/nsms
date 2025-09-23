@@ -1,4 +1,6 @@
 <x-enrollee-layout>
+    @vite(['resources/js/enrollee-application.js'])
+    
     <div class="py-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1 class="section-title">My Application & Profile</h1>
@@ -9,6 +11,10 @@
                     Data Change Request
                 </button>
                 @endif
+                <button class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+                    <i class="ri-lock-password-line me-1"></i>
+                    Change Password
+                </button>
                 {{-- <span class="badge badge-status status-{{ strtolower($enrollee->enrollment_status) }}">
                     {{ ucfirst($enrollee->enrollment_status) }}
                 </span> --}}
@@ -447,96 +453,193 @@
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form id="dataChangeRequestForm" method="POST" action="{{ route('enrollee.profile.update') }}">
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="ri-information-line me-2"></i>
+                        <strong>Data Change Requests</strong><br>
+                        View and manage your data change requests. You can only submit requests while your application is pending.
+                    </div>
+
+                    @if($enrollee->enrollment_status === 'pending')
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="mb-0">Change Requests</h6>
+                        <button type="button" class="btn btn-primary btn-sm" id="addChangeRequestBtn">
+                            <i class="ri-add-line me-1"></i>
+                            New Request
+                        </button>
+                    </div>
+                    @endif
+
+                    <!-- Data Change Requests Table -->
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 5%">#</th>
+                                    <th style="width: 20%">Change In</th>
+                                    <th style="width: 35%">Details</th>
+                                    <th style="width: 15%">Approved</th>
+                                    <th style="width: 25%">Options/Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @php
+                                    // Sample data - replace with actual data change requests from database
+                                    $changeRequests = $enrollee->change_requests ?? [];
+                                @endphp
+                                
+                                @forelse($changeRequests as $index => $request)
+                                <tr>
+                                    <td>{{ $index + 1 }}</td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ $request['field'] ?? 'N/A' }}</span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">From:</small> {{ $request['old_value'] ?? 'N/A' }}<br>
+                                        <small class="text-muted">To:</small> <strong>{{ $request['new_value'] ?? 'N/A' }}</strong>
+                                    </td>
+                                    <td>
+                                        @php
+                                            $status = $request['status'] ?? 'pending';
+                                            $badgeClass = $status === 'approved' ? 'success' : ($status === 'rejected' ? 'danger' : 'warning');
+                                        @endphp
+                                        <span class="badge bg-{{ $badgeClass }}">
+                                            {{ ucfirst($status) }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-primary" title="View Details">
+                                                <i class="ri-eye-line"></i>
+                                            </button>
+                                            @if($enrollee->enrollment_status === 'pending' && ($request['status'] ?? 'pending') === 'pending')
+                                            <button class="btn btn-outline-warning" title="Edit Request">
+                                                <i class="ri-edit-line"></i>
+                                            </button>
+                                            <button class="btn btn-outline-danger" title="Cancel Request">
+                                                <i class="ri-delete-bin-line"></i>
+                                            </button>
+                                            @endif
+                                        </div>
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="5" class="text-center py-4">
+                                        <div class="text-muted">
+                                            <i class="ri-file-list-3-line fs-1 d-block mb-2"></i>
+                                            <p class="mb-0">List of data change requests</p>
+                                            @if($enrollee->enrollment_status === 'pending')
+                                            <small>Click "New Request" to submit a change request</small>
+                                            @endif
+                                        </div>
+                                    </td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    @if($enrollee->enrollment_status === 'pending')
+                    <button type="button" class="btn btn-primary" id="newRequestBtn">
+                        <i class="ri-add-line me-1"></i>
+                        New Request
+                    </button>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    <!-- Change Password Modal -->
+    <div class="modal fade" id="changePasswordModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="ri-lock-password-line me-2"></i>
+                        Change Password
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="changePasswordForm" method="POST" action="{{ route('enrollee.password.update') }}">
                     @csrf
                     @method('PUT')
                     <div class="modal-body">
-                        <div class="alert alert-warning">
-                            <i class="ri-alert-line me-2"></i>
-                            <strong>Data Change Request</strong><br>
-                            Any changes you submit will be reviewed by school staff before being approved. You can only request changes while your application is pending.
+                        @if(session('success'))
+                        <div class="alert alert-success alert-dismissible fade show">
+                            <i class="ri-check-line me-2"></i>
+                            {{ session('success') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                        @endif
+
+                        @if(session('error'))
+                        <div class="alert alert-danger alert-dismissible fade show">
+                            <i class="ri-error-warning-line me-2"></i>
+                            {{ session('error') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                        @endif
+
+                        <div class="alert alert-info">
+                            <i class="ri-information-line me-2"></i>
+                            <strong>Password Security</strong><br>
+                            Choose a strong password to keep your account secure. Your password should be at least 8 characters long.
                         </div>
 
-                        <!-- Personal Information -->
-                        <h6 class="text-muted mb-3">Personal Information</h6>
-                        <div class="row mb-3">
-                            <div class="col-md-4">
-                                <label for="first_name" class="form-label">First Name</label>
-                                <input type="text" class="form-control" id="first_name" name="first_name" value="{{ $enrollee->first_name }}" required>
-                            </div>
-                            <div class="col-md-4">
-                                <label for="middle_name" class="form-label">Middle Name</label>
-                                <input type="text" class="form-control" id="middle_name" name="middle_name" value="{{ $enrollee->middle_name }}">
-                            </div>
-                            <div class="col-md-4">
-                                <label for="last_name" class="form-label">Last Name</label>
-                                <input type="text" class="form-control" id="last_name" name="last_name" value="{{ $enrollee->last_name }}" required>
-                            </div>
-                        </div>
-
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="contact_number" class="form-label">Contact Number</label>
-                                <input type="text" class="form-control" id="contact_number" name="contact_number" value="{{ $enrollee->contact_number }}">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="religion" class="form-label">Religion</label>
-                                <input type="text" class="form-control" id="religion" name="religion" value="{{ $enrollee->religion }}">
-                            </div>
-                        </div>
-
-                        <!-- Address Information -->
-                        <h6 class="text-muted mb-3 mt-4">Address Information</h6>
                         <div class="mb-3">
-                            <label for="address" class="form-label">Complete Address</label>
-                            <textarea class="form-control" id="address" name="address" rows="2" required>{{ $enrollee->address }}</textarea>
+                            <label for="current_password" class="form-label">Current Password</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control @error('current_password') is-invalid @enderror" id="current_password" name="current_password" required>
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('current_password')">
+                                    <i class="ri-eye-line" id="current_password_icon"></i>
+                                </button>
+                            </div>
+                            @error('current_password')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
 
-                        <div class="row mb-3">
-                            <div class="col-md-4">
-                                <label for="city" class="form-label">City</label>
-                                <input type="text" class="form-control" id="city" name="city" value="{{ $enrollee->city }}" required>
-                            </div>
-                            <div class="col-md-4">
-                                <label for="province" class="form-label">Province</label>
-                                <input type="text" class="form-control" id="province" name="province" value="{{ $enrollee->province }}" required>
-                            </div>
-                            <div class="col-md-4">
-                                <label for="zip_code" class="form-label">ZIP Code</label>
-                                <input type="text" class="form-control" id="zip_code" name="zip_code" value="{{ $enrollee->zip_code }}" required>
-                            </div>
-                        </div>
-
-                        <!-- Guardian Information -->
-                        <h6 class="text-muted mb-3 mt-4">Guardian Information</h6>
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="guardian_name" class="form-label">Guardian Name</label>
-                                <input type="text" class="form-control" id="guardian_name" name="guardian_name" value="{{ $enrollee->guardian_name }}" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="guardian_contact" class="form-label">Guardian Contact</label>
-                                <input type="text" class="form-control" id="guardian_contact" name="guardian_contact" value="{{ $enrollee->guardian_contact }}" required>
-                            </div>
-                        </div>
-
-                        <!-- Medical History -->
-                        <h6 class="text-muted mb-3 mt-4">Medical Information</h6>
                         <div class="mb-3">
-                            <label for="medical_history" class="form-label">Medical History</label>
-                            <textarea class="form-control" id="medical_history" name="medical_history" rows="3" placeholder="Any medical conditions, allergies, or health concerns">{{ $enrollee->medical_history }}</textarea>
+                            <label for="new_password" class="form-label">New Password</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control @error('new_password') is-invalid @enderror" id="new_password" name="new_password" required minlength="8">
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('new_password')">
+                                    <i class="ri-eye-line" id="new_password_icon"></i>
+                                </button>
+                            </div>
+                            <div class="form-text">Password must be at least 8 characters long.</div>
+                            @error('new_password')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="new_password_confirmation" class="form-label">Confirm New Password</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="new_password_confirmation" name="new_password_confirmation" required minlength="8">
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('new_password_confirmation')">
+                                    <i class="ri-eye-line" id="new_password_confirmation_icon"></i>
+                                </button>
+                            </div>
+                            <div class="invalid-feedback"></div>
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                         <button type="submit" class="btn btn-warning">
-                            <i class="ri-send-plane-line me-1"></i>
-                            Submit Request
+                            <i class="ri-save-line me-1"></i>
+                            Update Password
                         </button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
-    @endif
+
+    
 </x-enrollee-layout>
