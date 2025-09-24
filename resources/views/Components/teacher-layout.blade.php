@@ -19,6 +19,7 @@
   <!-- App CSS & JS (includes Bootstrap 5 via Vite) -->
   @vite(['resources/sass/app.scss','resources/js/app.js'])
   @vite(['resources/css/index_teacher.css'])
+  @vite(['resources/css/index_enrollee.css'])
 
   
 </head>

@@ -90,11 +90,41 @@
                             <i class="ri-folder-line me-2"></i>
                             Uploaded Documents
                         </h5>
-                        @if($enrollee->enrollment_status === 'pending' || $enrollee->enrollment_status === 'approved')
+                        @php
+                            // Check if any documents have been rejected (requiring resubmission)
+                            $hasRejectedDocs = false;
+                            $documents = is_array($enrollee->documents) ? $enrollee->documents : [];
+                            foreach ($documents as $document) {
+                                if (is_array($document) && ($document['status'] ?? 'pending') === 'rejected') {
+                                    $hasRejectedDocs = true;
+                                    break;
+                                }
+                            }
+                            
+                            // Allow upload only if:
+                            // 1. Application is pending AND no documents uploaded yet (initial submission)
+                            // 2. Has rejected documents (resubmission required)
+                            // 3. Admin specifically requested additional documents (could be indicated by admin_notes)
+                            $canUpload = ($enrollee->enrollment_status === 'pending' && count($documents) === 0) || 
+                                        $hasRejectedDocs || 
+                                        (str_contains(strtolower($enrollee->admin_notes ?? ''), 'resubmit') || 
+                                         str_contains(strtolower($enrollee->admin_notes ?? ''), 'additional document'));
+                        @endphp
+                        
+                        @if($canUpload)
                         <button class="btn btn-primary btn-sm" id="uploadBtn" data-bs-toggle="modal" data-bs-target="#uploadModal">
                             <i class="ri-upload-line me-1"></i>
-                            Upload Document
+                            @if($hasRejectedDocs)
+                                Resubmit Document
+                            @else
+                                Upload Document
+                            @endif
                         </button>
+                        @elseif($enrollee->enrollment_status === 'pending' && count($documents) > 0)
+                        <span class="badge bg-info">
+                            <i class="ri-time-line me-1"></i>
+                            Under Review
+                        </span>
                         @endif
                     </div>
                     <div class="card-body">
@@ -176,11 +206,16 @@
                             <div class="text-center py-4">
                                 <i class="ri-folder-open-line display-4 text-muted"></i>
                                 <p class="text-muted mt-2">No documents uploaded yet.</p>
-                                @if($enrollee->enrollment_status === 'pending' || $enrollee->enrollment_status === 'approved')
+                                @if($enrollee->enrollment_status === 'pending')
                                 <button class="btn btn-primary" id="uploadFirstBtn" data-bs-toggle="modal" data-bs-target="#uploadModal">
                                     <i class="ri-upload-line me-1"></i>
                                     Upload Your First Document
                                 </button>
+                                @else
+                                <p class="text-muted">
+                                    <i class="ri-information-line me-1"></i>
+                                    Document upload will be available when evaluation requires additional documents.
+                                </p>
                                 @endif
                             </div>
                         @endif

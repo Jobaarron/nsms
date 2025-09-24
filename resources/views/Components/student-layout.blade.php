@@ -28,6 +28,7 @@
   <!-- App CSS (includes Bootstrap 5 via Vite) -->
   @vite('resources/sass/app.scss')
   @vite(['resources/css/index_student.css'])
+  @vite(['resources/css/index_enrollee.css'])
 
   <style>
    
@@ -39,6 +40,12 @@
 
       <!-- SIDEBAR -->
       <nav class="col-12 col-md-2 sidebar d-none d-md-block py-4">
+        <!-- User Info -->
+        <div class="user-info">
+          <div class="user-name">{{ Auth::user()->name }}</div>
+          <div class="user-role">Student</div>
+        </div>
+
         <ul class="nav flex-column">
           <li class="nav-item mb-2">
             <a class="nav-link {{ request()->routeIs('student.dashboard') ? 'active' : '' }}" href="{{ route('student.dashboard') }}">

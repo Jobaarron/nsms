@@ -24,9 +24,10 @@
     rel="stylesheet"
     />
 
-  <!-- App CSS (includes Bootstrap 5 via Vite) -->
+  
   @vite('resources/sass/app.scss')
   @vite(['resources/css/index_enrollee.css'])
+  @vite(['resources/js/app.js'])
 
   <style>
    
@@ -35,9 +36,15 @@
 <body>
   <div class="container-fluid">
     <div class="row">
-
+      
       <!-- SIDEBAR -->
       <nav class="col-12 col-md-2 sidebar d-none d-md-block py-4">
+        <!-- User Info -->
+        <div class="user-info">
+          <div class="user-name">{{ auth('enrollee')->user()->first_name ?? 'Applicant' }} {{ auth('enrollee')->user()->last_name ?? '' }}</div>
+          <div class="user-role">Enrollee</div>
+        </div>
+
         <ul class="nav flex-column">
           <li class="nav-item mb-2">
             <a class="nav-link {{ request()->routeIs('enrollee.dashboard') ? 'active' : '' }}" href="{{ route('enrollee.dashboard') }}">
@@ -62,6 +69,11 @@
           <li class="nav-item mb-2">
             <a class="nav-link {{ request()->routeIs('enrollee.schedule') ? 'active' : '' }}" href="{{ route('enrollee.schedule') }}">
               <i class="ri-calendar-line me-2"></i>Schedule
+            </a>
+          </li>
+          <li class="nav-item mb-2">
+            <a class="nav-link {{ request()->routeIs('enrollee.notices') ? 'active' : '' }}" href="{{ route('enrollee.notices') }}">
+              <i class="ri-notification-line me-2"></i>Notices
             </a>
           </li>
         </ul>
@@ -98,7 +110,7 @@
     </div>
   </div>
 
-  <!-- Bootstrap 5 JavaScript -->
-  @vite(['resources/js/app.js'])
+
+  
 </body>
 </html>

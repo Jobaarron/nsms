@@ -185,8 +185,115 @@
                     </div>
                 </div>
 
+                <!-- APPOINTMENT SCHEDULING -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="ri-calendar-schedule-line me-2"></i>
+                            Schedule an Appointment
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        @if($enrollee->enrollment_status === 'pending')
+                            <div class="alert alert-info mb-3">
+                                <i class="ri-information-line me-2"></i>
+                                <strong>Schedule a consultation</strong> with our admission counselor to discuss your application and requirements.
+                            </div>
+                        @elseif($enrollee->enrollment_status === 'approved')
+                            <div class="alert alert-success mb-3">
+                                <i class="ri-information-line me-2"></i>
+                                <strong>Schedule an enrollment appointment</strong> to complete your registration and receive your class schedule.
+                            </div>
+                        @else
+                            <div class="alert alert-secondary mb-3">
+                                <i class="ri-information-line me-2"></i>
+                                <strong>Appointment scheduling</strong> is available based on your enrollment status.
+                            </div>
+                        @endif
+
+                        <form id="appointmentForm" method="POST" action="{{ route('enrollee.appointment.request') }}">
+                            @csrf
+                            <div class="row">
+                                {{-- <div class="col-md-6 mb-3">
+                                    <label for="appointment_type" class="form-label">Appointment Type</label>
+                                    <select class="form-select @error('appointment_type') is-invalid @enderror" id="appointment_type" name="appointment_type" required>
+                                        <option value="">Select appointment type</option>
+                                        @if($enrollee->enrollment_status === 'pending')
+                                            <option value="consultation">Admission Consultation</option>
+                                            <option value="document_review">Document Review</option>
+                                            <option value="requirements_clarification">Requirements Clarification</option>
+                                        @elseif($enrollee->enrollment_status === 'approved')
+                                            <option value="enrollment">Enrollment Appointment</option>
+                                            <option value="payment_assistance">Payment Assistance</option>
+                                            <option value="schedule_planning">Schedule Planning</option>
+                                        @else
+                                            <option value="general_inquiry">General Inquiry</option>
+                                        @endif
+                                    </select>
+                                    @error('appointment_type')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div> --}}
+                                <div class="col-md-6 mb-3">
+                                    <label for="preferred_date" class="form-label">Preferred Date</label>
+                                    <input type="date" class="form-control @error('preferred_date') is-invalid @enderror" 
+                                           id="preferred_date" name="preferred_date" 
+                                           min="{{ date('Y-m-d', strtotime('+1 day')) }}" 
+                                           max="{{ date('Y-m-d', strtotime('+30 days')) }}" required>
+                                    @error('preferred_date')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="preferred_time" class="form-label">Preferred Time</label>
+                                    <input type="time" class="form-control @error('preferred_time') is-invalid @enderror" 
+                                           id="preferred_time" name="preferred_time" 
+                                           min="08:00" max="17:00" required>
+                                    <div class="form-text">Office hours: 8:00 AM - 5:00 PM</div>
+                                    @error('preferred_time')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                {{-- <div class="col-md-6 mb-3">
+                                    <label for="contact_method" class="form-label">Preferred Contact Method</label>
+                                    <select class="form-select @error('contact_method') is-invalid @enderror" id="contact_method" name="contact_method" required>
+                                        <option value="">Select contact method</option>
+                                        <option value="phone">Phone Call</option>
+                                        <option value="email">Email</option>
+                                        <option value="in_person">In-Person Visit</option>
+                                    </select>
+                                    @error('contact_method')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div> --}}
+                            </div>
+                            <div class="mb-3">
+                                <label for="appointment_notes" class="form-label">Additional Notes (Optional)</label>
+                                <textarea class="form-control @error('appointment_notes') is-invalid @enderror" 
+                                          id="appointment_notes" name="appointment_notes" rows="3" 
+                                          placeholder="Please provide any specific topics you'd like to discuss or questions you have..."></textarea>
+                                @error('appointment_notes')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    <i class="ri-time-line me-1"></i>
+                                    Appointments are typically scheduled within 24-48 hours
+                                </small>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="ri-calendar-check-line me-1"></i>
+                                    Request Appointment
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
                 <!-- IMPORTANT DATES -->
-                <div class="card">
+                {{-- <div class="card">
                     <div class="card-header">
                         <h5 class="mb-0">
                             <i class="ri-calendar-todo-line me-2"></i>
@@ -248,7 +355,7 @@
                             </table>
                         </div>
                     </div>
-                </div>
+                </div> --}}
             </div>
 
             <!-- SIDEBAR -->
@@ -340,15 +447,15 @@
                     <div class="card-body">
                         <p class="text-muted mb-3">For questions about your enrollment schedule:</p>
                         <div class="d-grid gap-2">
-                            <a href="tel:+1234567890" class="btn btn-outline-primary btn-sm">
+                            <a href="tel:+1234567890" class="btn btn-outline-primary btn-sm disabled">
                                 <i class="ri-phone-line me-1"></i>
                                 Call Registrar
                             </a>
-                            <a href="mailto:registrar@nsms.edu" class="btn btn-outline-primary btn-sm">
+                            <a href="mailto:registrar@nsms.edu" class="btn btn-outline-primary btn-sm disabled">
                                 <i class="ri-mail-line me-1"></i>
                                 Email Registrar
                             </a>
-                            <a href="#" class="btn btn-outline-primary btn-sm">
+                            <a href="#" class="btn btn-outline-primary btn-sm disabled">
                                 <i class="ri-map-pin-line me-1"></i>
                                 Visit Office
                             </a>

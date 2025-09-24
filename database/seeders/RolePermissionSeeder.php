@@ -145,9 +145,19 @@ class RolePermissionSeeder extends Seeder
             'Student Profile',
         ]);
 
-        // ENROLLEE ROLE - Based on enrollee-layout.blade.php sidebar navigation
-        $enrollee = Role::firstOrCreate(['name' => 'enrollee', 'guard_name' => 'web']);
-        $enrollee->syncPermissions([
+        // ENROLLEE/APPLICANT ROLE - Based on enrollee-layout.blade.php sidebar navigation
+        // $enrollee = Role::firstOrCreate(['name' => 'enrollee', 'guard_name' => 'web']);
+        // $enrollee->syncPermissions([
+        //     'Enrollee Dashboard',
+        //     'My Application',
+        //     'Documents Management',
+        //     'Payment Portal',
+        //     'Schedule View',
+        // ]);
+
+        // APPLICANT ROLE - Uniform naming for enrollees/applicants
+        $applicant = Role::firstOrCreate(['name' => 'applicant', 'guard_name' => 'web']);
+        $applicant->syncPermissions([
             'Enrollee Dashboard',
             'My Application',
             'Documents Management',
@@ -175,7 +185,7 @@ class RolePermissionSeeder extends Seeder
         ]);
         
         // Assign both admin and super_admin roles
-        $adminUser->assignRole(['admin', 'super_admin']);
+        $adminUser->assignRole(['super_admin', 'admin']);
 
         // 2. Create Teacher User with Teacher model
         // $teacherUser = User::create([

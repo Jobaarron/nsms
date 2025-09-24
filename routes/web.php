@@ -395,6 +395,12 @@ Route::prefix('enrollee')->name('enrollee.')->group(function () {
         Route::get('/schedule', [EnrolleeController::class, 'schedule'])->name('schedule');
         Route::put('/schedule', [EnrolleeController::class, 'updateSchedule'])->name('schedule.update');
         
+        // Appointment management
+        Route::post('/appointment/request', [EnrolleeController::class, 'requestAppointment'])->name('appointment.request');
+        
+        // Notices management
+        Route::get('/notices', [EnrolleeController::class, 'notices'])->name('notices');
+        
         // Profile management (redirects to application page since they're merged)
         Route::get('/profile', function() {
             return redirect()->route('enrollee.application');

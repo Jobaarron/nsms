@@ -19,7 +19,7 @@ class FeesTableSeeder extends Seeder
             // PRESCHOOL FEES (Nursery, Junior Casa, Senior Casa)
             [
                 'name' => 'Entrance Fee',
-                'description' => 'One-time entrance fee for preschool students.',
+                'description' => 'First payment / Upon Enrollment Payment',
                 'amount' => 4500.00,
                 'academic_year' => $academicYear,
                 'applicable_grades' => ['Nursery', 'Junior Casa', 'Senior Casa'],
@@ -32,7 +32,7 @@ class FeesTableSeeder extends Seeder
             ],
             [
                 'name' => 'Miscellaneous Fee',
-                'description' => 'Includes library, activities, and other services for preschool.',
+                'description' => 'Books, Notebooks & School Activities etc',
                 'amount' => 7000.00,
                 'academic_year' => $academicYear,
                 'applicable_grades' => ['Nursery', 'Junior Casa', 'Senior Casa'],
@@ -45,7 +45,7 @@ class FeesTableSeeder extends Seeder
             ],
             [
                 'name' => 'Tuition Fee',
-                'description' => 'Standard tuition fee for preschool students.',
+                'description' => 'Standard tuition fee',
                 'amount' => 10000.00,
                 'academic_year' => $academicYear,
                 'applicable_grades' => ['Nursery', 'Junior Casa', 'Senior Casa'],
@@ -60,7 +60,7 @@ class FeesTableSeeder extends Seeder
             // ELEMENTARY FEES (Grade 1-6)
             [
                 'name' => 'Entrance Fee',
-                'description' => 'One-time entrance fee for elementary students.',
+                'description' => 'First payment / Upon Enrollment Payment',
                 'amount' => 4500.00,
                 'academic_year' => $academicYear,
                 'applicable_grades' => ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
@@ -73,7 +73,7 @@ class FeesTableSeeder extends Seeder
             ],
             [
                 'name' => 'Miscellaneous Fee',
-                'description' => 'Includes library, laboratory, and other services for elementary.',
+                'description' => 'Books, Notebooks & School Activities etc',
                 'amount' => 7000.00,
                 'academic_year' => $academicYear,
                 'applicable_grades' => ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
@@ -86,7 +86,7 @@ class FeesTableSeeder extends Seeder
             ],
             [
                 'name' => 'Tuition Fee',
-                'description' => 'Standard tuition fee for elementary students.',
+                'description' => 'Standard tuition fee.',
                 'amount' => 10000.00,
                 'academic_year' => $academicYear,
                 'applicable_grades' => ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
@@ -101,7 +101,7 @@ class FeesTableSeeder extends Seeder
             // JUNIOR HIGH FEES (Grade 7-10)
             [
                 'name' => 'Entrance Fee',
-                'description' => 'One-time entrance fee for junior high students.',
+                'description' => 'First payment / Upon Enrollment Payment',
                 'amount' => 4500.00,
                 'academic_year' => $academicYear,
                 'applicable_grades' => ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10'],
@@ -114,7 +114,7 @@ class FeesTableSeeder extends Seeder
             ],
             [
                 'name' => 'Miscellaneous Fee',
-                'description' => 'Includes library, laboratory, and other services for junior high.',
+                'description' => 'Books, Notebooks & School Activities etc',
                 'amount' => 7000.00,
                 'academic_year' => $academicYear,
                 'applicable_grades' => ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10'],
@@ -127,7 +127,7 @@ class FeesTableSeeder extends Seeder
             ],
             [
                 'name' => 'Tuition Fee',
-                'description' => 'Standard tuition fee for junior high students.',
+                'description' => 'Standard tuition fee.',
                 'amount' => 10000.00,
                 'academic_year' => $academicYear,
                 'applicable_grades' => ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10'],
@@ -142,8 +142,8 @@ class FeesTableSeeder extends Seeder
             // SENIOR HIGH FEES (Grade 11-12) - Different fee structure
             [
                 'name' => 'Entrance Fee',
-                'description' => 'One-time entrance fee for senior high students.',
-                'amount' => 5500.00,
+                'description' => 'First payment / Upon Enrollment Payment',
+                'amount' => 4500.00,
                 'academic_year' => $academicYear,
                 'applicable_grades' => ['Grade 11', 'Grade 12'],
                 'educational_level' => 'senior_high',
@@ -155,8 +155,8 @@ class FeesTableSeeder extends Seeder
             ],
             [
                 'name' => 'Miscellaneous Fee',
-                'description' => 'Includes library, laboratory, and specialized equipment for senior high.',
-                'amount' => 8500.00,
+                'description' => 'Books, Notebooks & School Activities etc.',
+                'amount' => 7000.00,
                 'academic_year' => $academicYear,
                 'applicable_grades' => ['Grade 11', 'Grade 12'],
                 'educational_level' => 'senior_high',
@@ -168,8 +168,8 @@ class FeesTableSeeder extends Seeder
             ],
             [
                 'name' => 'Tuition Fee',
-                'description' => 'Standard tuition fee for senior high students.',
-                'amount' => 12000.00,
+                'description' => 'Standard tuition fee.',
+                'amount' => 10000.00,
                 'academic_year' => $academicYear,
                 'applicable_grades' => ['Grade 11', 'Grade 12'],
                 'educational_level' => 'senior_high',

@@ -19,16 +19,16 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 });
 
 // Navbar background on scroll
-window.addEventListener('scroll', function() {
-    const navbar = document.querySelector('.navbar');
-    if (window.scrollY > 50) {
-        navbar.style.background = 'rgba(208, 216, 195, 0.98)';
-        navbar.style.boxShadow = '0 2px 20px rgba(1, 68, 33, 0.2)';
-    } else {
-        navbar.style.background = 'rgba(208, 216, 195, 0.95)';
-        navbar.style.boxShadow = '0 2px 20px rgba(1, 68, 33, 0.1)';
-    }
-});
+// window.addEventListener('scroll', function() {
+//     const navbar = document.querySelector('.navbar');
+//     if (window.scrollY > 50) {
+//         navbar.style.background = 'rgba(208, 216, 195, 0.98)';
+//         navbar.style.boxShadow = '0 2px 20px rgba(1, 68, 33, 0.2)';
+//     } else {
+//         navbar.style.background = 'rgba(208, 216, 195, 0.95)';
+//         navbar.style.boxShadow = '0 2px 20px rgba(1, 68, 33, 0.1)';
+//     }
+// });
 
 // Add animation on scroll
 const observerOptions = {

@@ -17,6 +17,7 @@
   
   @vite(['resources/sass/app.scss','resources/js/app.js'])
   @vite(['resources/css/index_admin.css'])
+  @vite(['resources/css/index_enrollee.css'])
  
 </head>
 <body>
@@ -24,6 +25,12 @@
     <div class="row">
       <!-- SIDEBAR -->
       <nav class="col-12 col-md-2 sidebar d-md-block py-4">
+        <!-- User Info -->
+        <div class="user-info">
+          <div class="user-name">{{ Auth::user()->name }}</div>
+          <div class="user-role">{{ ucwords(str_replace('_', ' ', Auth::user()->getRoleNames()->first())) }}</div>
+        </div>
+
         <div class="px-3 mb-4">
           <h5 class="text-uppercase fw-bold text-muted small">Admin Panel</h5>
         </div>

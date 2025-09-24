@@ -19,8 +19,7 @@
     <nav class="navbar navbar-expand-lg fixed-top">
         <div class="container">
             <a class="navbar-brand" href="/">
-                <img src="{{ Vite::asset('resources/assets/images/nms logo.png') }}" alt="logo" class="nav__logo"/>
-                
+                <img src="{{ Vite::asset('resources/assets/images/nms logo.png') }}" alt="logo" class="nav__logo"/>  
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
@@ -132,11 +131,47 @@
             <div class="row">
                 <div class="col-12 text-center">
                     <p class="footer-text mb-0">
-                        © {{ date('Y') }} Nicolites Portal: Student Management System All rights reserved.
+                        © {{ date('Y') }} Nicolites Portal: School Management System All rights reserved.
                     </p>
                 </div>
             </div>
         </div>
     </footer> 
+
+    <script>
+        // Improve dropdown behavior with delay
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropdowns = document.querySelectorAll('.dropdown-elegant');
+            
+            dropdowns.forEach(dropdown => {
+                let timeout;
+                
+                dropdown.addEventListener('mouseenter', function() {
+                    clearTimeout(timeout);
+                    const menu = this.querySelector('.dropdown-menu');
+                    if (menu) {
+                        menu.style.display = 'block';
+                        setTimeout(() => {
+                            menu.style.opacity = '1';
+                            menu.style.transform = 'translateY(0)';
+                        }, 10);
+                    }
+                });
+                
+                dropdown.addEventListener('mouseleave', function() {
+                    const menu = this.querySelector('.dropdown-menu');
+                    if (menu) {
+                        timeout = setTimeout(() => {
+                            menu.style.opacity = '0';
+                            menu.style.transform = 'translateY(-10px)';
+                            setTimeout(() => {
+                                menu.style.display = 'none';
+                            }, 300);
+                        }, 100); // 100ms delay before closing
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 </html>

@@ -30,6 +30,7 @@ export default defineConfig({
                 'resources/js/enroll.js',
                 'resources/js/enrollee-documents.js',
                 'resources/js/enrollee-payment.js',
+                'resources/js/enrollee-notices.js',
                 'resources/js/enrollee-application.js',
                 'resources/js/admin-enrollments.js',
                 'resources/js/admin-role-access.js',
