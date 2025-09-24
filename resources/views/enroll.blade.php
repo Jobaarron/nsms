@@ -7,6 +7,7 @@
                 <div class="text-center mb-4">
                     <i class="ri-user-add-line" style="font-size: 4rem; color: var(--primary-color);"></i>
                     <h2 class="page-header mb-2">Student Enrollment</h2>
+                    <br><br>
                     <p class="text-muted">Please fill out the form below to apply</p>
                 </div>
 

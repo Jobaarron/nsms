@@ -1,22 +1,43 @@
- /* Color Palette - Same as Student */
- :root {
-    --primary-color: #014421;
-    --secondary-color: #D0D8C3;
-    --accent-color: #2d6a3e;
-    --light-green: #e8f5e8;
-    --dark-green: #012d17;
-    --enrollee-accent: #4a7c59; /* Slightly different accent for enrollees */
+ /* Clean Color Palette - Matching Landing Page */
+  :root {
+    --primary-color: #2B7A3B;      /* Rich green from logo shield */
+    --secondary-color: #4CAF50;     /* Lighter green from logo text */
+    --accent-color: #1B5E20;       /* Darker green for emphasis */
+    --light-green: #E8F5E9;        /* Very light green for subtle backgrounds */
+    --dark-green: #0D4F14;         /* Deep green for text */
+    --white: #FFFFFF;              /* Pure white for clean backgrounds */
+    --light-gray: #F8F9FA;         /* Light gray for subtle sections */
+    --border-gray: #E0E0E0;        /* Light border color */
+    --text-gray: #424242;          /* Professional gray for text */
+    --enrollee-accent: #2B7A3B;    /* Primary color for enrollee theme */
   }
   
   body {
     font-family: 'Nunito', sans-serif;
-    background-color: var(--light-green);
+    background-color: var(--white);
+    color: var(--text-gray);
+    line-height: 1.6;
   }
   
   /* Sidebar */
   .sidebar {
-    background-color: var(--secondary-color);
+    background-color: var(--white);
+    border-right: 1px solid var(--border-gray);
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
     min-height: 100vh;
+  }
+
+  /* Sidebar Logo */
+  .sidebar-logo {
+    width: 160px;
+    height: auto;
+    max-width: 100%;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+  }
+
+  .sidebar-logo:hover {
+    transform: scale(1.01);
   }
 
   /* User Info Section */
@@ -86,6 +107,82 @@
     margin-bottom: 1rem;
   }
   
+  /* Progress Steps - Clear Status Indicators */
+  .progress-steps {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    margin: 2rem 0;
+  }
+
+  .progress-steps::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 30px;
+    right: 30px;
+    height: 2px;
+    background: var(--border-gray);
+    z-index: 1;
+    transform: translateY(-50%);
+  }
+
+  .progress-step {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+    border: 3px solid #dee2e6;
+    color: #adb5bd;
+    font-size: 1.5rem;
+    position: relative;
+    z-index: 2;
+    transition: all 0.3s ease;
+    opacity: 0.6;
+  }
+
+  .progress-step.completed {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: var(--white);
+    box-shadow: 0 4px 12px rgba(43, 122, 59, 0.3);
+    opacity: 1;
+  }
+
+  .progress-step.active {
+    background: var(--secondary-color);
+    border-color: var(--secondary-color);
+    color: var(--white);
+    animation: pulse 2s infinite;
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+    opacity: 1;
+  }
+
+  .progress-step.pending {
+    background: #fff3cd;
+    border-color: #ffc107;
+    color: #856404;
+    opacity: 0.8;
+  }
+
+  .progress-step.rejected {
+    background: #f8d7da;
+    border-color: #dc3545;
+    color: #721c24;
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.2);
+    opacity: 1;
+  }
+
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+
   /* Summary Cards - Enrollee specific */
   .card-summary { 
     color: #fff; 

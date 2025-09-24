@@ -39,6 +39,11 @@
       
       <!-- SIDEBAR -->
       <nav class="col-12 col-md-2 sidebar d-none d-md-block py-4">
+        <!-- School Logo -->
+        <div class="text-center mb-3">
+          <img src="{{ Vite::asset('resources/assets/images/nms logo.png') }}" alt="Nicolites Montessori School" class="sidebar-logo">
+        </div>
+        
         <!-- User Info -->
         <div class="user-info">
           <div class="user-name">{{ auth('enrollee')->user()->first_name ?? 'Applicant' }} {{ auth('enrollee')->user()->last_name ?? '' }}</div>

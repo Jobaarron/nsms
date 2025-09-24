@@ -33,62 +33,35 @@
                     {{-- Excluded Button --}}
                     
                     <li class="nav-item dropdown-elegant">
-                        <a href="#" class="btn btn-custom me-2 dropdown-toggle {{ request()->is('enroll*') || request()->is('portal*') || request()->is('login*') ? 'active' : '' }}">
-                            Enrollment
+                        <a href="#" class="btn btn-custom me-2 dropdown-toggle {{ request()->is('student/login*') || request()->is('teacher/login*') || request()->is('guidance/login*') || request()->is('admin/login*') || request()->is('enrollee/login*') ? 'active' : '' }}">
+                            Portal Login
                         </a>
                         <div class="dropdown-menu">
-                            <a href="/enroll" class="dropdown-item {{ request()->is('enroll*') ? 'active' : '' }}">
+                            <a href="/enrollee/login" class="dropdown-item {{ request()->is('enrollee/login*') ? 'active' : '' }}">
                                 <i class="ri-user-add-line"></i>
-                                Student Enrollment
+                                Applicant Portal
                             </a>
-                            {{-- <a href="#" class="dropdown-item #">
-                                <i class="ri-discuss-line"></i>
-                                Enrollment Instruction
+                            <div class="dropdown-divider"></div>
+                            <a href="/student/login" class="dropdown-item {{ request()->is('student/login*') ? 'active' : '' }}">
+                                <i class="ri-graduation-cap-line"></i>
+                                Student Portal
                             </a>
-                            <a href="#" class="dropdown-item #">
-                                <i class="ri-file-paper-line"></i>
-                                Enrollment Requirements
-                            </a> --}}
-                            
-                            {{-- <a href="/portal/parent" class="dropdown-item {{ request()->is('portal/parent*') ? 'active' : '' }}">
-                                <i class="ri-parent-line"></i>
-                                Parent Portal
-                            </a> To be use later or not (draft) --}}
+                            <a href="/teacher/login" class="dropdown-item {{ request()->is('teacher/login*') ? 'active' : '' }}">
+                                <i class="ri-user-star-line"></i>
+                                Teacher Portal
+                            </a>
+                            <a href="/guidance/login" class="dropdown-item {{ request()->is('guidance/login*') ? 'active' : '' }}">
+                                <i class="ri-building-4-line"></i>
+                                Guidance & Discipline Portal
+                            </a>
+                            <a href="/admin/login" class="dropdown-item {{ request()->is('admin/login*') ? 'active' : '' }}">
+                                <i class="ri-admin-line"></i>
+                                Admin Portal
+                            </a>
                         </div>
                     </li>
 
-                    <li class="nav-item dropdown-elegant">
-                        <a href="#" class="btn btn-custom me-2 dropdown-toggle {{  request()->is('portal*') || request()->is('login*') ? 'active' : '' }}">
-                            Portal
-                        </a>
-                        <div class="dropdown-menu">
-                            {{-- <a href="/enroll" class="dropdown-item {{ request()->is('enroll*') ? 'active' : '' }}">
-                                <i class="ri-user-add-line"></i>
-                                Student Enrollment
-                            </a> --}}
-                            <a href="/student/login" class="dropdown-item {{ request()->is('/student/login*') ? 'active' : '' }}">
-                                <i class="ri-graduation-cap-line"></i>
-                                Student
-                            </a>
-                            {{-- <div class="dropdown-divider"></div> --}}
-                            <a href="teacher/login" class="dropdown-item {{ request()->is('teacher/login*') ? 'active' : '' }}">
-                                <i class="ri-user-star-line"></i>
-                                Teacher
-                            </a>
-                            <a href="/guidance/login" class="dropdown-item {{ request()->is('/guidance/login') ? 'active' : '' }}">
-                                <i class="ri-building-4-line"></i>
-                                Guidance & Discipline 
-                            </a>
-                            <a href="/admin/login" class="dropdown-item {{ request()->is('/admin/login') ? 'active' : '' }}">
-                                <i class="ri-admin-line"></i>
-                                Registrar & Administration
-                            </a>
-                            {{-- <a href="/portal/parent" class="dropdown-item {{ request()->is('portal/parent*') ? 'active' : '' }}">
-                                <i class="ri-parent-line"></i>
-                                Parent Portal
-                            </a> To be use later or not (draft) --}}
-                        </div>
-                    </li>
+                    
                     
                 </ul>
             </div>

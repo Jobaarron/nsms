@@ -23,7 +23,7 @@
                 <i class="ri-checkbox-circle-line me-2"></i>
                 <div>
                     <strong>Successfully Enrolled!</strong> 
-                    Welcome to NSMS! You can now access all student features.
+                    Welcome to Nicolites Montessori School! You can now access all student features.
                 </div>
             </div>
         @elseif($enrollee->enrollment_status === 'rejected')

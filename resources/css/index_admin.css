@@ -1,37 +1,50 @@
+/* Clean Color Palette - Matching Landing Page */
 :root {
-  --primary-color: #014421;
-  --secondary-color: #D0D8C3;
-  --accent-color: #2d6a3e;
-  --light-green: #e8f5e8;
-  --dark-green: #012d17;
+  --primary-color: #2B7A3B;      /* Rich green from logo shield */
+  --secondary-color: #4CAF50;     /* Lighter green from logo text */
+  --accent-color: #1B5E20;       /* Darker green for emphasis */
+  --light-green: #E8F5E9;        /* Very light green for subtle backgrounds */
+  --dark-green: #0D4F14;         /* Deep green for text */
+  --white: #FFFFFF;              /* Pure white for clean backgrounds */
+  --light-gray: #F8F9FA;         /* Light gray for subtle sections */
+  --border-gray: #E0E0E0;        /* Light border color */
+  --text-gray: #424242;          /* Professional gray for text */
   
-  /* New color palette */
-  --green-100: #9add9f;  /* Light */
-  --green-200: #83ce89;  /* Medium */
-  --green-300: #78c17d;  /* Dark */
-  
-  /* Complementary colors */
-  --text-dark: #014421;
+  /* Complementary colors for admin */
+  --text-dark: #2B7A3B;
   --text-light: #ffffff;
-  --bg-light: #f5fbf5;
-  --shadow-color: rgba(0, 0, 0, 0.08);
+  --bg-light: #FFFFFF;
+  --shadow-color: rgba(0, 0, 0, 0.05);
 }
 
 body {
   font-family: 'Nunito', sans-serif;
-  background-color: var(--bg-light);
-  color: var(--text-dark);
+  background-color: var(--white);
+  color: var(--text-gray);
   line-height: 1.6;
   letter-spacing: 0.01em;
 }
 
 /* Sidebar Design */
 .sidebar {
-  background-color: white;
-  border-right: 1px solid rgba(120, 193, 125, 0.2);
+  background-color: var(--white);
+  border-right: 1px solid var(--border-gray);
   min-height: 100vh;
   box-shadow: 2px 0 10px var(--shadow-color);
   padding-top: 1rem;
+}
+
+/* Sidebar Logo */
+.sidebar-logo {
+  width: 160px;
+  height: auto;
+  max-width: 100%;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.sidebar-logo:hover {
+  transform: scale(1.01);
 }
 
 /* User Info Section */
@@ -68,7 +81,7 @@ body {
 }
 
 .sidebar .nav-link {
-  color: #495057;
+  color: var(--text-gray);
   transition: all 0.3s ease;
   border-radius: 8px;
   margin: 0.3rem 0.5rem;
@@ -77,16 +90,24 @@ body {
 }
 
 .sidebar .nav-link:hover {
-  background-color: var(--green-100);
-  color: var(--text-dark);
-  transform: translateX(3px);
+  background-color: var(--light-green);
+  color: var(--primary-color);
+  transform: translateX(5px);
+  box-shadow: 0 2px 8px rgba(43, 122, 59, 0.1);
 }
 
 .sidebar .nav-link.active {
-  color: var(--text-dark);
+  color: var(--white);
   font-weight: 600;
-  background-color: var(--green-200);
-  box-shadow: 0 2px 5px var(--shadow-color);
+  background-color: var(--primary-color);
+  box-shadow: 0 2px 4px rgba(43, 122, 59, 0.2);
+}
+
+.sidebar .nav-link.active:hover {
+  background-color: var(--accent-color);
+  color: var(--white);
+  transform: translateX(5px);
+  box-shadow: 0 4px 12px rgba(43, 122, 59, 0.3);
 }
 
 .sidebar .nav-link.active i {

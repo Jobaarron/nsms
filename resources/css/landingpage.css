@@ -553,6 +553,12 @@ body {
     opacity: 0.8;
 }
 
+/* Form Labels - Override for better readability */
+.form-label {
+    color: #000000 !important;
+    font-weight: 600 !important;
+}
+
 /* Footer Styles */
 .footer-section {
     background: var(--primary-color);
