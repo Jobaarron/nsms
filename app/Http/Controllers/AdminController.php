@@ -64,14 +64,14 @@ class AdminController extends Controller
         return view('admin.login');
     }
 
-    public function rolesAccess()
-{
-    $users = User::with('roles')->get();
-    $roles = Role::with(['permissions', 'users'])->get();
-    $permissions = Permission::with('roles')->get();
-    
-    return view('admin.roles_access', compact('users', 'roles', 'permissions'));
-}
+    public function manageUsers()
+    {
+        $users = User::with(['roles', 'admin', 'teacher', 'guidanceDiscipline'])->get();
+        $roles = Role::with(['permissions', 'users'])->get();
+        $permissions = Permission::with('roles')->get();
+        
+        return view('admin.user_management', compact('users', 'roles', 'permissions'));
+    }
 
 // AJAX Methods for Role Management
 public function assignRole(Request $request)
@@ -307,12 +307,7 @@ public function getUserRoles(User $user)
     }
 }
     
- public function manageUsers()
-    {
-        $users = User::with(['roles', 'permissions'])->get();
-        $roles = Role::all();
-        return view('admin.manage_users', compact('users', 'roles'));
-    }
+ 
 
     public function storeUser(Request $request)
     {
@@ -398,263 +393,24 @@ public function getUserRoles(User $user)
 
     public function enrollments(Request $request)
     {
-        if ($response = $this->checkAdminAuth()) {
-            return $response;
-        }
-
-        $query = Enrollee::query();
-
-        // Apply filters
-        if ($request->filled('status')) {
-            $query->where('enrollment_status', $request->status);
-        }
-
-        if ($request->filled('grade_level')) {
-            $query->where('grade_level_applied', $request->grade_level);
-        }
-
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('first_name', 'LIKE', "%{$search}%")
-                  ->orWhere('last_name', 'LIKE', "%{$search}%")
-                  ->orWhere('email', 'LIKE', "%{$search}%")
-                  ->orWhere('lrn', 'LIKE', "%{$search}%");
-            });
-        }
-
-        $enrollments = $query->orderBy('created_at', 'desc')->paginate(15);
-
-        // Get counts for filter cards
-        $pendingCount = Enrollee::where('enrollment_status', 'pending')->count();
-        $approvedCount = Enrollee::where('enrollment_status', 'approved')->count();
-        $rejectedCount = Enrollee::where('enrollment_status', 'rejected')->count();
-        $totalCount = Enrollee::count();
-
-        return view('admin.enrollments', compact(
-            'enrollments',
-            'pendingCount',
-            'approvedCount', 
-            'rejectedCount',
-            'totalCount'
-        ));
-    }
-
-    public function approveEnrollment($id)
-    {
-        try {
-            if ($response = $this->checkAdminAuth()) {
-                return $response;
-            }
-
-            $enrollee = Enrollee::findOrFail($id);
-            
-            $updated = $enrollee->update([
-                'enrollment_status' => 'approved',
-                'approved_at' => now(),
-                'approved_by' => Auth::id(),
-            ]);
-
-            if ($updated) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Enrollment approved successfully!'
-                ]);
-            } else {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to update enrollee status.'
-                ], 500);
-            }
-
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            Log::error('Enrollee not found for approval: ' . $id);
-            return response()->json([
-                'success' => false,
-                'message' => 'Enrollee not found.'
-            ], 404);
-        } catch (\Exception $e) {
-            Log::error('Error approving enrollment: ' . $e->getMessage(), [
-                'enrollee_id' => $id,
-                'user_id' => Auth::id(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'An error occurred while approving the enrollment. Please try again.'
-            ], 500);
-        }
-    }
-
-public function rejectEnrollment($id)
-{
-    try {
-        if ($response = $this->checkAdminAuth()) {
-            return $response;
-        }
-
-        $enrollee = Enrollee::findOrFail($id);
-        $enrollee->update([
-            'enrollment_status' => 'rejected',
-            'rejected_at' => now(),
-            'rejected_by' => Auth::id()
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Enrollment rejected.'
-        ]);
-
-    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Enrollee not found.'
-        ], 404);
-    } catch (\Exception $e) {
-        Log::error('Error rejecting enrollment: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Error rejecting enrollment: ' . $e->getMessage()
-        ], 500);
-    }
-}
-
-public function deleteEnrollment($id)
-{
-    try {
-        if ($response = $this->checkAdminAuth()) {
-            return $response;
-        }
-
-        $enrollee = Enrollee::findOrFail($id);
-        $enrollee->delete();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Enrollment record deleted successfully!'
-        ]);
-
-    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Enrollee not found.'
-        ], 404);
-    } catch (\Exception $e) {
-        Log::error('Error deleting enrollment: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Error deleting enrollment: ' . $e->getMessage()
-        ], 500);
-    }
-}
-
-public function bulkApprove(Request $request)
-{
-    try {
-        if ($response = $this->checkAdminAuth()) {
-            return $response;
-        }
-
-        $request->validate([
-            'enrollee_ids' => 'required|array',
-            'enrollee_ids.*' => 'exists:enrollees,id'
-        ]);
-
-        $enrolleeIds = $request->input('enrollee_ids', []);
         
-        $updated = Enrollee::whereIn('id', $enrolleeIds)->update([
-            'enrollment_status' => 'approved',
-            'approved_at' => now(),
-            'approved_by' => Auth::id()
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => "{$updated} enrollments approved successfully!"
-        ]);
-
-    } catch (\Exception $e) {
-        Log::error('Error in bulk approve: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Bulk approve failed: ' . $e->getMessage()
-        ], 500);
+        return view('admin.enrollments');
     }
-}
+       
+    
 
-public function bulkReject(Request $request)
-{
-    try {
-        if ($response = $this->checkAdminAuth()) {
-            return $response;
-        }
+  
 
-        $request->validate([
-            'enrollee_ids' => 'required|array',
-            'enrollee_ids.*' => 'exists:enrollees,id'
-        ]);
 
-        $enrolleeIds = $request->input('enrollee_ids', []);
-        
-        $updated = Enrollee::whereIn('id', $enrolleeIds)->update([
-            'enrollment_status' => 'rejected',
-            'rejected_at' => now(),
-            'rejected_by' => Auth::id()
-        ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => "{$updated} enrollments rejected."
-        ]);
 
-    } catch (\Exception $e) {
-        Log::error('Error in bulk reject: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Bulk reject failed: ' . $e->getMessage()
-        ], 500);
-    }
-}
 
-public function bulkDelete(Request $request)
-{
-    try {
-        if ($response = $this->checkAdminAuth()) {
-            return $response;
-        }
 
-        $request->validate([
-            'enrollee_ids' => 'required|array',
-            'enrollee_ids.*' => 'exists:enrollees,id'
-        ]);
 
-        $enrolleeIds = $request->input('enrollee_ids', []);
-        $deleted = Enrollee::whereIn('id', $enrolleeIds)->delete();
 
-        return response()->json([
-            'success' => true,
-            'message' => "{$deleted} enrollment records deleted successfully!"
-        ]);
 
-    } catch (\Exception $e) {
-        Log::error('Error in bulk delete: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Bulk delete failed: ' . $e->getMessage()
-        ], 500);
-    }
-}
 
-public function viewEnrollment($id)
-{
-    if ($response = $this->checkAdminAuth()) {
-        return $response;
-    }
 
-    $enrollee = Enrollee::findOrFail($id);
-    return view('admin.enrollment-details', compact('enrollee'));
-}
 
     
     /**
@@ -726,74 +482,10 @@ public function viewEnrollment($id)
 }
     
     
-    // Generate admin user
-    public function generateAdmin(Request $request)
-{
-    $request->validate([
-        'name' => 'required|string|max:255',
-        'email' => 'required|string|email|max:255|unique:users',
-        'password' => 'required|string|min:8|confirmed',
-        'employee_id' => 'nullable|string|unique:admins',
-        'department' => 'nullable|string|max:255',
-        'admin_level' => 'required|in:super_admin,admin,moderator',
-    ]);
-
-    // Check if permission tables exist
-    if (!Schema::hasTable('roles') || !Schema::hasTable('permissions')) {
-        try {
-            Artisan::call('vendor:publish', [
-                '--provider' => 'Spatie\Permission\PermissionServiceProvider',
-                '--tag' => 'migrations'
-            ]);
-            
-            Artisan::call('migrate');
-            
-            if (!Schema::hasTable('roles') || !Schema::hasTable('permissions')) {
-                return back()->with('error', 'Failed to create permission tables. Please run migrations manually.');
-            }
-        } catch (\Exception $e) {
-            return back()->with('error', 'Error running migrations: ' . $e->getMessage());
-        }
-    }
-
-    DB::beginTransaction();
-    
-    try {
-        // Create user first
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-        ]);
-
-        // Create admin record
-        $admin = Admin::create([
-            'user_id' => $user->id,
-            'employee_id' => $request->employee_id,
-            'department' => $request->department,
-            'admin_level' => $request->admin_level,
-            'is_active' => true,
-        ]);
-
-        // Setup roles and permissions with proper model_has_permissions population
-        $this->setupAdminRoleAndPermissions($user, $request->admin_level);
-
-        // Clear permission cache to ensure fresh permissions
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
-
-        DB::commit();
-
-        // Log in the new admin user
-        Auth::login($user);
-
-        return redirect()->route('admin.dashboard')
-            ->with('success', 'Admin user created successfully! You are now logged in as an administrator.');
-
-    } catch (\Exception $e) {
-        DB::rollback();
-        return back()->with('error', 'Error creating admin: ' . $e->getMessage());
-    }
-}
+    // REMOVED: generateAdmin() method
+    // This functionality has been moved to UserManagementController->storeAdmin()
+    // The admin-generator.blade.php view is no longer needed as admin creation
+    // is now handled through the centralized user management system
 
 private function setupAdminRoleAndPermissions(User $user, string $adminLevel)
 {
@@ -932,30 +624,15 @@ private function getPermissionsByLevel(string $level): array
     }
 }
 
-public function showGeneratorForm()
+public function users()
 {
-    // Check if admin role exists
-    $adminRoleExists = Role::where('name', 'admin')->where('guard_name', 'web')->exists();
-    
-    // Check if any admin users exist (only if the role exists)
-    $adminExists = false;
-    if ($adminRoleExists) {
-        $adminExists = User::role('admin')->exists();
+    if ($response = $this->checkAdminAuth()) {
+        return $response;
     }
     
-    return view('admin.admin-generator', compact('adminRoleExists', 'adminExists'));
+    $users = User::with('roles')->get();
+    return view('admin.users.index', compact('users'));
 }
-
-
- public function users()
-    {
-        if ($response = $this->checkAdminAuth()) {
-            return $response;
-        }
-        
-        $users = User::with('roles')->get();
-        return view('admin.users.index', compact('users'));
-    }
 
 public function roles()
 {

@@ -13,6 +13,7 @@ class Teacher extends Model
         'employee_id',
         'department',
         'position',
+        'specialization',
         'hire_date',
         'phone_number',
         'address',

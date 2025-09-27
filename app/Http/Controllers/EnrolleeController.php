@@ -243,11 +243,11 @@ class EnrolleeController extends Controller
     /**
      * Show the enrollee profile
      */
-    public function profile()
-    {
-        $enrollee = Auth::guard('enrollee')->user();
-        return view('enrollee.profile', compact('enrollee'));
-    }
+    // public function profile()
+    // {
+    //     $enrollee = Auth::guard('enrollee')->user();
+    //     return view('enrollee.profile', compact('enrollee'));
+    // }
 
     /**
      * Update enrollee profile

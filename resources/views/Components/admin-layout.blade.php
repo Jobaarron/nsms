@@ -17,7 +17,6 @@
   
   @vite(['resources/sass/app.scss','resources/js/app.js'])
   @vite(['resources/css/index_admin.css'])
-  @vite(['resources/css/index_enrollee.css'])
  
 </head>
 <body>
@@ -41,21 +40,15 @@
         </div>
         <ul class="nav flex-column">
           <li class="nav-item">
-            <a class="nav-link d-flex align-items-center py-3 px-3 rounded {{ request()->routeIs('admin.dashboard') ? 'active bg-light' : '' }}" href="{{ route('admin.dashboard') }}">
+            <a class="nav-link d-flex align-items-center py-3 px-3 rounded" href="{{ route('admin.dashboard') }}">
               <i class="ri-dashboard-line me-2 fs-5"></i>
               <span>Dashboard</span>
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link d-flex align-items-center py-3 px-3 rounded" href="{{ route('admin.roles.access') }}">
-              <i class="ri-shield-user-line me-2 fs-5"></i>
-              <span>Roles & Access</span>
-            </a>
-          </li>
-          <li class="nav-item">
             <a class="nav-link d-flex align-items-center py-3 px-3 rounded" href="{{ route('admin.manage.users') }}">
-              <i class="ri-user-settings-line me-2 fs-5"></i>
-              <span>Manage Users</span>
+              <i class="ri-shield-user-line me-2 fs-5"></i>
+              <span>User Management</span>
             </a>
           </li>
           <li class="nav-item">
@@ -65,7 +58,7 @@
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link d-flex align-items-center py-3 px-3 rounded {{ request()->routeIs('admin.contact.messages') ? 'active bg-light' : '' }}" href="{{ route('admin.contact.messages') }}">
+            <a class="nav-link d-flex align-items-center py-3 px-3 rounded" href="{{ route('admin.contact.messages') }}">
               <i class="ri-mail-line me-2 fs-5"></i>
               <span>Contact Messages</span>
             </a>

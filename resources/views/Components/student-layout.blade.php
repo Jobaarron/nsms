@@ -28,7 +28,6 @@
   <!-- App CSS (includes Bootstrap 5 via Vite) -->
   @vite('resources/sass/app.scss')
   @vite(['resources/css/index_student.css'])
-  @vite(['resources/css/index_enrollee.css'])
 
   <style>
    

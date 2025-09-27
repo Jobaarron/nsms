@@ -110,9 +110,9 @@ body {
   box-shadow: 0 4px 12px rgba(43, 122, 59, 0.3);
 }
 
-.sidebar .nav-link.active i {
-  color: var(--text-dark);
-}
+/* .sidebar .nav-link.active i {
+  color: var(--white);
+} */
 
 .sidebar .nav-link i {
   color: var(--green-300);
@@ -202,20 +202,20 @@ body {
   color: var(--text-dark);
 }
 
-/* SPECIFIC FIX FOR CARD TEXT */
+/* SPECIFIC FIX FOR CARD TEXT - MAKE WHITE FOR READABILITY */
 .card-summary .card-body div {
-  color: var(--text-dark) !important;
+  color: white !important;
 }
 
 .card-summary .card-body div div {
-  color: var(--text-dark) !important;
+  color: white !important;
   font-size: 0.95rem;
   font-weight: 500;
   margin-bottom: 0.2rem;
 }
 
 .card-summary h3 {
-  color: var(--text-dark) !important;
+  color: white !important;
   font-size: 1.8rem;
   font-weight: 700;
   margin-top: 0.3rem;
@@ -346,10 +346,63 @@ body {
   padding: 1.5rem;
 }
 
-/* Main content area */
-main {
-  padding: 2rem;
+/* Main Content Area */
+.main-content {
   background-color: var(--bg-light);
+  min-height: 100vh;
+  padding: 1.5rem;
+}
+
+/* Dashboard Summary Cards */
+.card-summary {
+  color: var(--white);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: none;
+  overflow: hidden;
+  position: relative;
+}
+
+.card-summary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 100px;
+  height: 100px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  transform: translate(30px, -30px);
+}
+
+.card-summary:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.card-primary {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+}
+
+.card-secondary {
+  background: linear-gradient(135deg, var(--secondary-color) 0%, #66BB6A 100%);
+}
+
+.card-success {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+}
+
+.card-info {
+  background: linear-gradient(135deg, #17a2b8 0%, #6f42c1 100%);
+}
+
+.card-warning {
+  background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+  color: var(--dark-green);
+}
+
+.card-danger {
+  background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
 }
 
 /* Custom scrollbar */
@@ -515,7 +568,7 @@ a:focus, button:focus, input:focus, select:focus, textarea:focus {
   border-top: 1px solid rgba(120, 193, 125, 0.2);
 }
 
-/* SPECIFIC FIX FOR ENROLLED LAST YEAR CARD */
+/* SPECIFIC FIX FOR ENROLLED LAST YEAR CARD - LIGHT BACKGROUND NEEDS DARK TEXT */
 .col-6.col-lg-3:nth-child(4) .card-summary {
   background-color: #f5fbf5;
   border-left: 5px solid var(--green-300);
@@ -528,9 +581,9 @@ a:focus, button:focus, input:focus, select:focus, textarea:focus {
   color: var(--text-dark) !important;
 }
 
-/* Make all card summary text visible */
+/* Make all card summary text visible - ICONS WHITE */
 .card-summary .card-body i {
-  color: inherit !important;
+  color: white !important;
 }
 
 /* Override any Bootstrap or other styles that might be causing issues */
@@ -541,4 +594,30 @@ a:focus, button:focus, input:focus, select:focus, textarea:focus {
 
 .card-dark * {
   color: var(--text-dark) !important;
+}
+
+/* FINAL OVERRIDE - ENSURE SUMMARY CARDS HAVE WHITE TEXT ON COLORED BACKGROUNDS */
+.card-primary.card-summary * {
+  color: white !important;
+}
+
+.card-secondary.card-summary * {
+  color: white !important;
+}
+
+.card-success.card-summary * {
+  color: white !important;
+}
+
+.card-info.card-summary * {
+  color: white !important;
+}
+
+.card-danger.card-summary * {
+  color: white !important;
+}
+
+/* Warning cards have light background, so keep dark text */
+.card-warning.card-summary * {
+  color: var(--dark-green) !important;
 }

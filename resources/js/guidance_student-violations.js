@@ -131,12 +131,6 @@ window.viewViolation = function(violationId) {
                 </div>
               ` : ''}
               
-              ${data.evidence ? `
-                <div class="mb-3">
-                  <label class="form-label fw-bold">Evidence:</label>
-                  <p>${data.evidence}</p>
-                </div>
-              ` : ''}
               
               ${data.resolution ? `
                 <div class="mb-3">
@@ -284,10 +278,6 @@ window.editViolation = function(violationId) {
             <textarea class="form-control" id="edit_witnesses" name="witnesses" rows="2">${violation.witnesses ? violation.witnesses.join('\n') : ''}</textarea>
           </div>
           
-          <div class="mb-3">
-            <label for="edit_evidence" class="form-label">Evidence Description</label>
-            <textarea class="form-control" id="edit_evidence" name="evidence" rows="2">${violation.evidence || ''}</textarea>
-          </div>
           
           <div class="mb-3">
             <label for="edit_resolution" class="form-label">Resolution</label>

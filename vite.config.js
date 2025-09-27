@@ -14,7 +14,7 @@ export default defineConfig({
                 'resources/css/index_admin.css',
                 'resources/css/email.css',
                 'resources/css/admin_generator.css',
-                'resources/css/admin_enrollments.css',
+            
                 'resources/css/manage_users.css',
                 'resources/css/index_student.css',
                 'resources/css/index_enrollee.css',
@@ -32,10 +32,11 @@ export default defineConfig({
                 'resources/js/enrollee-payment.js',
                 'resources/js/enrollee-notices.js',
                 'resources/js/enrollee-application.js',
-                'resources/js/admin-enrollments.js',
+                
                 'resources/js/admin-role-access.js',
                 'resources/js/role-modals.js',
                 'resources/js/manage_users.js',
+                'resources/js/user-management.js',
                 
             ],
             refresh: true,

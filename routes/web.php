@@ -13,10 +13,11 @@ use App\Http\Controllers\StudentController;
 use App\Http\Controllers\GuidanceDisciplineController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\EnrolleeController;
+use App\Http\Controllers\UserManagementController;
 // use Spatie\Permission\Middlewares\RoleMiddleware;
 // use Spatie\Permission\Middlewares\PermissionMiddleware;
 // use App\Http\Controllers\AdminGeneratorController;
-// use App\Http\Controllers\AuthController;
+
 
 
 Route::get('/', function () {
@@ -65,36 +66,39 @@ Route::prefix('admin')->group(function () {
         Route::get('/', [AdminController::class, 'index'])->name('admin.dashboard');
         Route::post('/logout', [AdminController::class, 'logout'])->name('admin.logout');
         
-        // Users management - Updated to use UserManagementController
-        Route::get('/manage-users', [App\Http\Controllers\UserManagementController::class, 'index'])->name('admin.manage.users');
-        Route::post('/manage-users', [App\Http\Controllers\UserManagementController::class, 'store'])->name('admin.manage.store');
-        Route::get('/manage-users/{user}', [App\Http\Controllers\UserManagementController::class, 'show'])->name('admin.manage.show');
-        Route::post('/manage-users/{user}', [App\Http\Controllers\UserManagementController::class, 'update'])->name('admin.manage.update');
-        Route::delete('/manage-users/{user}', [App\Http\Controllers\UserManagementController::class, 'destroy'])->name('admin.manage.destroy');
+       
+     
         
-        // Additional user management endpoints
-        Route::get('/manage-users/stats', [App\Http\Controllers\UserManagementController::class, 'getStats'])->name('admin.manage.stats');
-        Route::post('/manage-users/bulk-action', [App\Http\Controllers\UserManagementController::class, 'bulkAction'])->name('admin.manage.bulk');
-        Route::get('/manage-users/export', [App\Http\Controllers\UserManagementController::class, 'export'])->name('admin.manage.export');
-        Route::post('/manage-users/import', [App\Http\Controllers\UserManagementController::class, 'import'])->name('admin.manage.import');
-        Route::get('/manage-users/report', [App\Http\Controllers\UserManagementController::class, 'generateReport'])->name('admin.manage.report');
-        
-        // Roles & Access Management - Use your custom permission middleware
+        // User Management - Use your custom permission middleware
         Route::middleware(['can:Manage Roles'])->group(function () {
-            Route::get('/roles-access', [AdminController::class, 'rolesAccess'])->name('admin.roles.access');
-            
-            // AJAX endpoints for roles & access management
-            Route::post('/roles-access/assign-role', [AdminController::class, 'assignRole'])->name('admin.assign.role');
-            Route::post('/roles-access/remove-role', [AdminController::class, 'removeRole'])->name('admin.remove.role');
+            Route::get('/manage-users', [UserManagementController::class, 'index'])->name('admin.manage.users');
+            Route::post('/assign-role', [AdminController::class, 'assignRole'])->name('admin.assign.role');
+            Route::post('/remove-role', [AdminController::class, 'removeRole'])->name('admin.remove.role');
+            Route::post('/create-role', [AdminController::class, 'createRole'])->name('admin.create.role');
+            Route::put('/roles/{id}', [AdminController::class, 'updateRole'])->name('admin.update.role');
+            Route::delete('/roles/{id}', [AdminController::class, 'deleteRole'])->name('admin.delete.role');
+            Route::post('/create-permission', [AdminController::class, 'createPermission'])->name('admin.create.permission');
+            Route::put('/permissions/{id}', [AdminController::class, 'updatePermission'])->name('admin.update.permission');
+            Route::delete('/permissions/{id}', [AdminController::class, 'deletePermission'])->name('admin.delete.permission');
             Route::get('/users/{user}/roles', [AdminController::class, 'getUserRoles'])->name('admin.user.roles');
             
-            Route::post('/roles-access/create-role', [AdminController::class, 'createRole'])->name('admin.create.role');
-            Route::put('/roles-access/update-role/{id}', [AdminController::class, 'updateRole'])->name('admin.update.role');
-            Route::delete('/roles-access/delete-role/{id}', [AdminController::class, 'deleteRole'])->name('admin.delete.role');
+            // User Management
+            Route::get('/user-management', [UserManagementController::class, 'index'])->name('admin.user.management');
             
-            Route::post('/roles-access/create-permission', [AdminController::class, 'createPermission'])->name('admin.create.permission');
-            Route::put('/roles-access/update-permission/{id}', [AdminController::class, 'updatePermission'])->name('admin.update.permission');
-            Route::delete('/roles-access/delete-permission/{id}', [AdminController::class, 'deletePermission'])->name('admin.delete.permission');
+            // User CRUD operations
+            Route::get('/users/{id}', [UserManagementController::class, 'show'])->name('admin.users.show');
+            Route::put('/users/{id}', [UserManagementController::class, 'update'])->name('admin.users.update');
+            Route::delete('/users/{id}', [UserManagementController::class, 'destroy'])->name('admin.users.destroy');
+            Route::post('/users/admin', [UserManagementController::class, 'storeAdmin'])->name('admin.users.store.admin');
+            Route::post('/users/teacher', [UserManagementController::class, 'storeTeacher'])->name('admin.users.store.teacher');
+            Route::post('/users/guidance', [UserManagementController::class, 'storeGuidance'])->name('admin.users.store.guidance');
+            Route::post('/users/discipline', [UserManagementController::class, 'storeDiscipline'])->name('admin.users.store.discipline');
+            Route::post('/users/guidance-counselor', [UserManagementController::class, 'createGuidanceCounselor'])->name('admin.users.store.guidance_counselor');
+            Route::post('/users/discipline-head', [UserManagementController::class, 'createDisciplineHead'])->name('admin.users.store.discipline_head');
+            Route::post('/users/discipline-officer', [UserManagementController::class, 'createDisciplineOfficer'])->name('admin.users.store.discipline_officer');
+            Route::post('/users/cashier', [UserManagementController::class, 'createCashier'])->name('admin.users.store.cashier');
+            Route::post('/users/faculty-head', [UserManagementController::class, 'createFacultyHead'])->name('admin.users.store.faculty_head');
+            Route::get('/users/stats', [UserManagementController::class, 'getStats'])->name('admin.users.stats');
         });
     });
 
@@ -103,24 +107,7 @@ Route::prefix('admin')->group(function () {
     
     
         
-        // Individual enrollment actions
-        Route::post('/enrollments/{id}/approve', [AdminController::class, 'approveEnrollment'])->name('enrollments.approve');
-        Route::post('/enrollments/{id}/reject', [AdminController::class, 'rejectEnrollment'])->name('enrollments.reject');
-        Route::delete('/enrollments/{id}', [AdminController::class, 'deleteEnrollment'])->name('enrollments.delete');
-        Route::put('/enrollments/{id}', [AdminController::class, 'updateEnrollment'])->name('enrollments.update');
-        Route::post('/enrollments/{id}/status', [AdminController::class, 'updateEnrollmentStatus'])->name('enrollments.status');
-        Route::get('/enrollments/{id}/view', [AdminController::class, 'viewEnrollment'])->name('enrollments.view');
-        Route::get('/enrollments/{id}/edit', [AdminController::class, 'editEnrollment'])->name('enrollments.edit');
         
-        // Bulk operations
-        Route::post('/enrollments/bulk/approve', [AdminController::class, 'bulkApprove'])->name('enrollments.bulk.approve');
-        Route::post('/enrollments/bulk/reject', [AdminController::class, 'bulkReject'])->name('enrollments.bulk.reject');
-        Route::post('/enrollments/bulk/delete', [AdminController::class, 'bulkDelete'])->name('enrollments.bulk.delete');
-
-        Route::post('/enrollments/export', [AdminController::class, 'exportSelected'])->name('enrollments.export');
-        Route::post('/enrollments/export-all', [AdminController::class, 'exportAll'])->name('enrollments.export.all');
-        Route::post('/enrollments/send-notification', [AdminController::class, 'sendBulkNotification'])->name('enrollments.notification');
-        Route::post('/enrollments/print', [AdminController::class, 'printEnrollments'])->name('enrollments.print');
         
         // Contact Messages Management
         Route::get('/contact-messages', [ContactController::class, 'adminIndex'])->name('admin.contact.messages');

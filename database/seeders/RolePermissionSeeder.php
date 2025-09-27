@@ -108,20 +108,61 @@ class RolePermissionSeeder extends Seeder
             'Teacher Messages',
         ]);
 
-        // GUIDANCE ROLE - Based on guidance-layout.blade.php sidebar navigation
-        $guidance = Role::firstOrCreate(['name' => 'guidance', 'guard_name' => 'web']);
-        $guidance->syncPermissions([
+        // GUIDANCE ROLE - REMOVED (duplicate of guidance_counselor)
+        // Generic guidance role removed in favor of specific guidance_counselor role
+
+        // GUIDANCE COUNSELOR ROLE - Specialized guidance role
+        $guidanceCounselor = Role::firstOrCreate(['name' => 'guidance_counselor', 'guard_name' => 'web']);
+        $guidanceCounselor->syncPermissions([
             'Guidance Dashboard',
             'Student Profiles',
-            'Violations Management',
-            'Facial Recognition',
             'Counseling Services',
             'Career Advice',
             'Guidance Analytics',
             'Guidance Settings',
         ]);
 
-        // DISCIPLINE ROLE - Based on guidance-layout.blade.php (shares same layout with guidance)
+        // DISCIPLINE HEAD ROLE - Senior discipline management
+        $disciplineHead = Role::firstOrCreate(['name' => 'discipline_head', 'guard_name' => 'web']);
+        $disciplineHead->syncPermissions([
+            'Guidance Dashboard',
+            'Student Profiles',
+            'Violations Management',
+            'Facial Recognition',
+            'Guidance Analytics',
+            'Guidance Settings',
+        ]);
+
+        // DISCIPLINE OFFICER ROLE - Basic discipline functions
+        $disciplineOfficer = Role::firstOrCreate(['name' => 'discipline_officer', 'guard_name' => 'web']);
+        $disciplineOfficer->syncPermissions([
+            'Guidance Dashboard',
+            'Student Profiles',
+            'Violations Management',
+            'Facial Recognition',
+        ]);
+
+        // CASHIER ROLE - Financial transactions
+        $cashier = Role::firstOrCreate(['name' => 'cashier', 'guard_name' => 'web']);
+        $cashier->syncPermissions([
+            'Dashboard',
+            'Student Payments',
+            'Manage Enrollments',
+        ]);
+
+        // FACULTY HEAD ROLE - Academic leadership
+        $facultyHead = Role::firstOrCreate(['name' => 'faculty_head', 'guard_name' => 'web']);
+        $facultyHead->syncPermissions([
+            'Teacher Dashboard',
+            'My Classes',
+            'View Students',
+            'Grade Book',
+            'Attendance Management',
+            'Teacher Messages',
+            'Guidance Analytics',
+        ]);
+
+        // DISCIPLINE ROLE - Keep for backward compatibility
         $discipline = Role::firstOrCreate(['name' => 'discipline', 'guard_name' => 'web']);
         $discipline->syncPermissions([
             'Guidance Dashboard',
