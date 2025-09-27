@@ -33,6 +33,12 @@ class UserManagementController extends Controller
         $roles = Role::with(['permissions', 'users'])->get();
         $permissions = Permission::with('roles')->get();
         
+        // Add enrollee count to applicant role
+        $applicantRole = $roles->where('name', 'applicant')->first();
+        if ($applicantRole) {
+            $applicantRole->enrollee_count = $enrollees->count();
+        }
+        
         return view('admin.user_management', compact('users', 'enrollees', 'roles', 'permissions'));
     }
 

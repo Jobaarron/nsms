@@ -1,12 +1,14 @@
 @php
-    // Get notices from database (when implemented)
-    // For now, keep empty until registrar/admin sends notices
-    $notices = [];
+    use App\Models\Notice;
+    
+    // Get notices for current enrollee
+    $enrollee = Auth::guard('enrollee')->user();
+    $notices = Notice::getForEnrollee($enrollee->id);
     
     // Calculate statistics
-    $totalNotices = count($notices);
-    $unreadNotices = collect($notices)->where('is_read', false)->count();
-    $urgentNotices = collect($notices)->where('priority', 'urgent')->count();
+    $totalNotices = $notices->count();
+    $unreadNotices = $notices->where('is_read', false)->count();
+    $urgentNotices = $notices->where('priority', 'urgent')->count();
 @endphp
 
 <x-enrollee-layout>
@@ -29,7 +31,7 @@
                     <div class="card-header">
                         <h5 class="mb-0">
                             <i class="ri-notification-line me-2"></i>
-                            All Notices & Announcements
+                            Notice
                         </h5>
                     </div>
                     <div class="card-body">
@@ -37,72 +39,80 @@
                             <table class="table table-hover">
                                 <thead class="table-light">
                                     <tr>
-                                        <th style="width: 5%;">#</th>
-                                        <th style="width: 15%;">Timestamp</th>
-                                        <th style="width: 15%;">User</th>
-                                        <th style="width: 65%;">Details</th>
+                                        <th style="width: 10%;">Priority</th>
+                                        <th style="width: 20%;">Title</th>
+                                        <th style="width: 45%;">Message</th>
+                                        <th style="width: 15%;">Date</th>
+                                        <th style="width: 10%;">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-
-                                    @if(count($notices) > 0)
+                                    @if($notices->count() > 0)
                                         @foreach($notices as $notice)
-                                        <tr class="{{ !$notice['is_read'] ? 'table-warning' : '' }}">
+                                        <tr class="{{ !$notice->is_read ? 'table-warning' : '' }}">
                                             <td>
-                                                <span class="fw-bold">{{ $notice['id'] }}</span>
-                                                @if(!$notice['is_read'])
-                                                    <i class="ri-notification-2-fill text-primary ms-1" title="Unread"></i>
+                                                <span class="badge {{ $notice->priority_badge }}">
+                                                    @if($notice->priority === 'urgent')
+                                                        <i class="ri-error-warning-line me-1"></i>
+                                                    @elseif($notice->priority === 'high')
+                                                        <i class="ri-information-line me-1"></i>
+                                                    @else
+                                                        <i class="ri-notification-line me-1"></i>
+                                                    @endif
+                                                    {{ ucfirst($notice->priority) }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    @if(!$notice->is_read)
+                                                        <i class="ri-notification-2-fill text-primary me-2" title="Unread"></i>
+                                                    @endif
+                                                    <div>
+                                                        <h6 class="mb-0">{{ $notice->title }}</h6>
+                                                        @if($notice->is_global)
+                                                            <small class="text-muted">
+                                                                <i class="ri-global-line me-1"></i>General Notice
+                                                            </small>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <p class="mb-0">{{ $notice->preview_message }}</p>
+                                                @if($notice->createdBy)
+                                                    <small class="text-muted">
+                                                        <i class="ri-user-line me-1"></i>
+                                                        From: {{ $notice->createdBy->name ?? 'Admin' }}
+                                                    </small>
                                                 @endif
                                             </td>
                                             <td>
                                                 <small class="text-muted">
-                                                    {{ $notice['timestamp']->format('M d, Y') }}<br>
-                                                    {{ $notice['timestamp']->format('g:i A') }}
+                                                    {{ $notice->formatted_date }}<br>
+                                                    <span class="text-primary">{{ $notice->time_ago }}</span>
                                                 </small>
                                             </td>
                                             <td>
-                                                <div class="d-flex align-items-center">
-                                                    @if($notice['user_type'] === 'super_admin')
-                                                        <i class="ri-shield-star-line text-danger me-2"></i>
-                                                    @elseif($notice['user_type'] === 'admin')
-                                                        <i class="ri-admin-line text-primary me-2"></i>
-                                                    @elseif($notice['user_type'] === 'registrar')
-                                                        <i class="ri-file-list-line text-success me-2"></i>
-                                                    @endif
-                                                    <div>
-                                                        <small class="fw-semibold">{{ $notice['user'] }}</small><br>
-                                                        <small class="text-muted">{{ ucfirst(str_replace('_', ' ', $notice['user_type'])) }}</small>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div class="d-flex justify-content-between align-items-start">
-                                                    <div class="flex-grow-1">
-                                                        <div class="d-flex align-items-center mb-1">
-                                                            <h6 class="mb-0 me-2">{{ $notice['title'] }}</h6>
-                                                            @if($notice['priority'] === 'urgent')
-                                                                <span class="badge bg-danger">Urgent</span>
-                                                            @elseif($notice['priority'] === 'high')
-                                                                <span class="badge bg-warning">Important</span>
-                                                            @else
-                                                                <span class="badge bg-info">Info</span>
-                                                            @endif
-                                                        </div>
-                                                        <p class="text-muted mb-0 small">{{ $notice['details'] }}</p>
-                                                    </div>
-                                                    <div class="ms-2">
-                                                        <button class="btn btn-sm btn-outline-primary" onclick="markAsRead({{ $notice['id'] }})" title="Mark as Read">
+                                                <div class="btn-group" role="group">
+                                                    <button class="btn btn-sm btn-outline-primary" 
+                                                            onclick="viewNotice({{ $notice->id }})" 
+                                                            title="View Full Notice">
+                                                        <i class="ri-eye-line"></i>
+                                                    </button>
+                                                    @if(!$notice->is_read)
+                                                        <button class="btn btn-sm btn-outline-success" 
+                                                                onclick="markAsRead({{ $notice->id }})" 
+                                                                title="Mark as Read">
                                                             <i class="ri-check-line"></i>
                                                         </button>
-                                                    </div>
+                                                    @endif
                                                 </div>
-                                            </td>
                                         </tr>
                                         @endforeach
                                     @else
                                         <!-- EMPTY STATE -->
                                         <tr>
-                                            <td colspan="4" class="text-center py-5">
+                                            <td colspan="5" class="text-center py-5">
                                                 <div class="text-center">
                                                     <i class="ri-notification-off-line" style="font-size: 4rem; color: #dee2e6;"></i>
                                                     <h5 class="text-muted mt-3 mb-2">No notices yet</h5>
@@ -125,9 +135,9 @@
                         </div>
 
                         <!-- PAGINATION -->
-                        @if(count($notices) > 0)
+                        @if($notices->count() > 0)
                         <div class="d-flex justify-content-between align-items-center mt-3">
-                            <small class="text-muted">Showing {{ count($notices) }} notice(s)</small>
+                            <small class="text-muted">Showing {{ $notices->count() }} notice(s)</small>
                             <nav>
                                 <ul class="pagination pagination-sm mb-0">
                                     <li class="page-item disabled">
@@ -193,6 +203,52 @@
                             </button>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notice View Modal -->
+    <div class="modal fade" id="noticeViewModal" tabindex="-1" aria-labelledby="noticeViewModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="noticeViewModalLabel">
+                        <i class="ri-notification-line me-2"></i>
+                        <span id="notice-modal-title">Notice Details</span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <h6 class="text-muted mb-2">Message:</h6>
+                                <div id="notice-modal-message" class="border rounded p-3 bg-light">
+                                    <!-- Notice message content -->
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Notice Information</h6>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Priority:</strong> <span id="notice-modal-priority" class="badge"></span></p>
+                                    <p><strong>Date:</strong> <span id="notice-modal-date"></span></p>
+                                    <p><strong>From:</strong> <span id="notice-modal-from"></span></p>
+                                    <p><strong>Status:</strong> <span id="notice-modal-status" class="badge"></span></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-success" id="mark-read-btn" onclick="markAsReadFromModal()">
+                        <i class="ri-check-line me-1"></i>Mark as Read
+                    </button>
                 </div>
             </div>
         </div>

@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Admin;
 use App\Models\Student;
 use App\Models\Enrollee;
+use App\Models\Teacher;
+use App\Models\GuidanceDiscipline;
 use App\Traits\AdminAuthentication;
 use Illuminate\Support\Facades\Log;
 
@@ -23,20 +25,66 @@ class AdminController extends Controller
     
     public function index()
     {
-        $totalUsers = User::count();
-        $totalRoles = Role::count();
-
         if ($response = $this->checkAdminAuth()) {
             return $response;
         }
-        $activeUsers = User::where('status', 'active')->count();
-        $recentUsers = User::where('created_at', '>=', now()->subDays(30))->count();
 
-         return view('admin.index', compact(
+        // Comprehensive user statistics from all tables
+        $userStats = [
+            'total_users' => User::count(),
+            'total_enrollees' => Enrollee::count(),
+            'total_students' => Student::count(),
+            'total_teachers' => Teacher::count(),
+            'total_admins' => Admin::count(),
+            'total_guidance' => GuidanceDiscipline::count(),
+            'total_roles' => Role::count(),
+            'total_permissions' => Permission::count()
+        ];
+
+        // Calculate comprehensive total users (all user types)
+        $totalUsers = $userStats['total_users'] + $userStats['total_enrollees'] + $userStats['total_students'];
+        
+        // User status breakdown
+        $userStatusStats = [
+            'active_users' => User::where('status', 'active')->count(),
+            'pending_enrollees' => Enrollee::where('enrollment_status', 'pending')->count(),
+            'approved_enrollees' => Enrollee::where('enrollment_status', 'approved')->count(),
+            'enrolled_students' => Enrollee::where('enrollment_status', 'enrolled')->count(),
+            'recent_applications' => Enrollee::where('created_at', '>=', now()->subDays(30))->count()
+        ];
+
+        // Data visualization data (static for now, ready for charts)
+        $chartData = [
+            'user_types' => [
+                'labels' => ['System Users', 'Enrollees/Applicants', 'Students', 'Teachers', 'Admins', 'Guidance Staff'],
+                'data' => [
+                    $userStats['total_users'],
+                    $userStats['total_enrollees'],
+                    $userStats['total_students'],
+                    $userStats['total_teachers'],
+                    $userStats['total_admins'],
+                    $userStats['total_guidance']
+                ]
+            ],
+            'enrollment_status' => [
+                'labels' => ['Pending', 'Approved', 'Enrolled'],
+                'data' => [
+                    $userStatusStats['pending_enrollees'],
+                    $userStatusStats['approved_enrollees'],
+                    $userStatusStats['enrolled_students']
+                ]
+            ],
+            'monthly_applications' => [
+                'labels' => ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                'data' => [12, 19, 23, 15, 28, 35, 42, 38, 45, 52, 48, 55] // Static data for visualization
+            ]
+        ];
+
+        return view('admin.index', compact(
             'totalUsers',
-            'totalRoles',
-            'activeUsers',
-            'recentUsers'
+            'userStats',
+            'userStatusStats',
+            'chartData'
         ));
     }
     

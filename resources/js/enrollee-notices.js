@@ -1,69 +1,222 @@
+// Enrollee Notices JavaScript
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize notices functionality
     initializeNoticesPage();
 });
 
-function markAsRead(noticeId) {
-    // Find the row and remove unread styling
-    const row = document.querySelector(`tr:has(span:contains('${noticeId}'))`);
-    if (row) {
-        row.classList.remove('table-warning');
-        // Update unread count
-        updateUnreadCount();
+// Global variables
+let currentNoticeId = null;
+
+// Initialize notices functionality
+function initializeNoticesPage() {
+    console.log('Enrollee notices page initialized');
+    
+    // Auto-refresh notices every 2 minutes
+    setInterval(function() {
+        console.log('Auto-checking for new notices...');
+        // In production, this would fetch new notices via AJAX
+    }, 120000);
+}
+
+// View notice in modal
+function viewNotice(noticeId) {
+    currentNoticeId = noticeId;
+    
+    // Fetch notice details
+    fetch(`/enrollee/notices/${noticeId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                populateNoticeModal(data.notice);
+                new bootstrap.Modal(document.getElementById('noticeViewModal')).show();
+                
+                // Mark as read when viewed
+                if (!data.notice.is_read) {
+                    markAsRead(noticeId, false);
+                }
+            } else {
+                showAlert('Error loading notice details', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching notice:', error);
+            showAlert('Error loading notice', 'danger');
+        });
+}
+
+// Populate notice modal with data
+function populateNoticeModal(notice) {
+    document.getElementById('notice-modal-title').textContent = notice.title;
+    document.getElementById('notice-modal-message').innerHTML = notice.message.replace(/\n/g, '<br>');
+    document.getElementById('notice-modal-date').textContent = notice.formatted_date;
+    document.getElementById('notice-modal-from').textContent = notice.created_by_name || 'School Administration';
+    
+    // Set priority badge
+    const priorityBadge = document.getElementById('notice-modal-priority');
+    priorityBadge.textContent = notice.priority.charAt(0).toUpperCase() + notice.priority.slice(1);
+    priorityBadge.className = `badge ${notice.priority_badge}`;
+    
+    // Set status badge
+    const statusBadge = document.getElementById('notice-modal-status');
+    statusBadge.textContent = notice.is_read ? 'Read' : 'Unread';
+    statusBadge.className = `badge ${notice.is_read ? 'bg-success' : 'bg-warning'}`;
+    
+    // Show/hide mark as read button
+    const markReadBtn = document.getElementById('mark-read-btn');
+    if (notice.is_read) {
+        markReadBtn.style.display = 'none';
+    } else {
+        markReadBtn.style.display = 'inline-block';
     }
-    
-    // Here you would typically send an AJAX request to mark as read
-    console.log('Marking notice ' + noticeId + ' as read');
 }
 
-function markAllAsRead() {
-    // Remove all unread styling
-    const unreadRows = document.querySelectorAll('.table-warning');
-    unreadRows.forEach(row => {
-        row.classList.remove('table-warning');
+// Mark single notice as read
+function markAsRead(noticeId, showAlert = true) {
+    fetch(`/enrollee/notices/${noticeId}/mark-read`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update UI
+            updateNoticeRowAsRead(noticeId);
+            updateUnreadCount();
+            
+            if (showAlert) {
+                showAlert('Notice marked as read', 'success');
+            }
+        } else {
+            showAlert(data.message || 'Error marking notice as read', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error marking notice as read:', error);
+        showAlert('Error updating notice status', 'danger');
     });
-    
-    // Update unread count
-    updateUnreadCount();
-    
-    // Here you would typically send an AJAX request to mark all as read
-    console.log('Marking all notices as read');
 }
 
-function refreshNotices() {
-    // Reload the page or fetch new notices via AJAX
-    location.reload();
+// Mark notice as read from modal
+function markAsReadFromModal() {
+    if (currentNoticeId) {
+        markAsRead(currentNoticeId);
+        
+        // Update modal
+        document.getElementById('notice-modal-status').textContent = 'Read';
+        document.getElementById('notice-modal-status').className = 'badge bg-success';
+        document.getElementById('mark-read-btn').style.display = 'none';
+    }
 }
 
+// Mark all notices as read
+function markAllAsRead() {
+    if (confirm('Are you sure you want to mark all notices as read?')) {
+        fetch('/enrollee/notices/mark-all-read', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update all unread rows
+                const unreadRows = document.querySelectorAll('.table-warning');
+                unreadRows.forEach(row => {
+                    row.classList.remove('table-warning');
+                    const markReadBtn = row.querySelector('.btn-outline-success');
+                    if (markReadBtn) {
+                        markReadBtn.remove();
+                    }
+                });
+                
+                updateUnreadCount();
+                showAlert('All notices marked as read', 'success');
+            } else {
+                showAlert(data.message || 'Error marking notices as read', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error marking all notices as read:', error);
+            showAlert('Error updating notices', 'danger');
+        });
+    }
+}
+
+// Update notice row as read
+function updateNoticeRowAsRead(noticeId) {
+    const rows = document.querySelectorAll('tr');
+    rows.forEach(row => {
+        const viewBtn = row.querySelector(`button[onclick="viewNotice(${noticeId})"]`);
+        if (viewBtn) {
+            row.classList.remove('table-warning');
+            
+            // Remove unread indicator
+            const unreadIcon = row.querySelector('.ri-notification-2-fill');
+            if (unreadIcon) {
+                unreadIcon.remove();
+            }
+            
+            // Remove mark as read button
+            const markReadBtn = row.querySelector('.btn-outline-success');
+            if (markReadBtn) {
+                markReadBtn.remove();
+            }
+        }
+    });
+}
+
+// Update unread count in UI
 function updateUnreadCount() {
     const unreadRows = document.querySelectorAll('.table-warning');
     const unreadCount = unreadRows.length;
     
-    // Update badge
-    const badge = document.querySelector('.badge.bg-info');
-    if (badge) {
-        badge.innerHTML = `<i class="ri-notification-line me-1"></i>${unreadCount} Unread`;
+    // Update header badge
+    const headerBadge = document.querySelector('.badge.bg-info');
+    if (headerBadge) {
+        headerBadge.innerHTML = `<i class="ri-notification-line me-1"></i>${unreadCount} Unread`;
     }
     
-    // Update sidebar count
-    const sidebarUnread = document.querySelector('.text-warning').previousElementSibling;
-    if (sidebarUnread) {
-        sidebarUnread.textContent = unreadCount;
+    // Update sidebar statistics
+    const sidebarUnreadElement = document.querySelector('.text-warning').previousElementSibling;
+    if (sidebarUnreadElement) {
+        sidebarUnreadElement.textContent = unreadCount;
     }
 }
 
-function initializeNoticesPage() {
-    // Auto-refresh notices every 30 seconds
-    setInterval(function() {
-        // In a real application, you would fetch new notices via AJAX
-        console.log('Auto-refreshing notices...');
-    }, 30000);
-    
-    // Add any other initialization code here
-    console.log('Notices page initialized');
+// Refresh notices
+function refreshNotices() {
+    location.reload();
 }
 
-// Make functions globally available for onclick handlers
+// Show alert message
+function showAlert(message, type = 'info') {
+    // Create alert element
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // Insert at top of page
+    const container = document.querySelector('.py-4');
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+
+// Make functions globally available
+window.viewNotice = viewNotice;
 window.markAsRead = markAsRead;
+window.markAsReadFromModal = markAsReadFromModal;
 window.markAllAsRead = markAllAsRead;
 window.refreshNotices = refreshNotices;

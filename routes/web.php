@@ -14,6 +14,7 @@ use App\Http\Controllers\GuidanceDisciplineController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\EnrolleeController;
 use App\Http\Controllers\UserManagementController;
+use App\Http\Controllers\AdminEnrollmentController;
 // use Spatie\Permission\Middlewares\RoleMiddleware;
 // use Spatie\Permission\Middlewares\PermissionMiddleware;
 // use App\Http\Controllers\AdminGeneratorController;
@@ -99,23 +100,49 @@ Route::prefix('admin')->group(function () {
             Route::post('/users/cashier', [UserManagementController::class, 'createCashier'])->name('admin.users.store.cashier');
             Route::post('/users/faculty-head', [UserManagementController::class, 'createFacultyHead'])->name('admin.users.store.faculty_head');
             Route::get('/users/stats', [UserManagementController::class, 'getStats'])->name('admin.users.stats');
+            
+            // Enrollments management 
+            Route::get('/enrollments', [AdminEnrollmentController::class, 'index'])->name('admin.enrollments');
+            
+            // Enrollment API routes
+            Route::prefix('enrollments')->name('admin.enrollments.')->group(function () {
+                Route::get('/applications', [AdminEnrollmentController::class, 'getApplications'])->name('applications');
+                Route::get('/applications/{id}', [AdminEnrollmentController::class, 'getApplication'])->name('application');
+                Route::post('/applications/{id}/status', [AdminEnrollmentController::class, 'updateApplicationStatus'])->name('application.status');
+                
+                // Application actions
+                Route::post('/applications/{id}/approve', [AdminEnrollmentController::class, 'approveApplication'])->name('application.approve');
+                Route::post('/applications/{id}/decline', [AdminEnrollmentController::class, 'declineApplication'])->name('application.decline');
+                Route::delete('/applications/{id}', [AdminEnrollmentController::class, 'deleteApplication'])->name('application.delete');
+                
+                // Bulk actions
+                Route::post('/applications/bulk-approve', [AdminEnrollmentController::class, 'bulkApprove'])->name('applications.bulk-approve');
+                Route::post('/applications/bulk-decline', [AdminEnrollmentController::class, 'bulkDecline'])->name('applications.bulk-decline');
+                Route::post('/applications/bulk-delete', [AdminEnrollmentController::class, 'bulkDelete'])->name('applications.bulk-delete');
+                
+                Route::get('/documents', [AdminEnrollmentController::class, 'getDocuments'])->name('documents');
+                Route::get('/applications/{applicationId}/documents', [AdminEnrollmentController::class, 'getApplicationDocuments'])->name('application.documents');
+                Route::get('/documents/{enrolleeId}/{documentIndex}', [AdminEnrollmentController::class, 'getDocument'])->name('document');
+                Route::post('/documents/{enrolleeId}/{documentIndex}/status', [AdminEnrollmentController::class, 'updateDocumentStatus'])->name('document.status');
+                
+                Route::get('/appointments', [AdminEnrollmentController::class, 'getAppointments'])->name('appointments');
+        
+                Route::get('/notices', [AdminEnrollmentController::class, 'getNotices'])->name('notices');
+                Route::post('/notices', [AdminEnrollmentController::class, 'createNotice'])->name('notices.create');
+                Route::post('/notices/bulk', [AdminEnrollmentController::class, 'sendBulkNotices'])->name('notices.bulk');
+                
+                Route::get('/export', [AdminEnrollmentController::class, 'export'])->name('export');
+            });
+            
+            // Contact Messages Management
+            Route::get('/contact-messages', [ContactController::class, 'adminIndex'])->name('admin.contact.messages');
+            Route::get('/contact-messages/{message}', [ContactController::class, 'show'])->name('admin.contact.show');
+            Route::post('/contact-messages/{message}/status', [ContactController::class, 'updateStatus'])->name('admin.contact.status');
+            Route::delete('/contact-messages/{message}', [ContactController::class, 'destroy'])->name('admin.contact.destroy');
+            Route::post('/contact-messages/bulk-action', [ContactController::class, 'bulkAction'])->name('admin.contact.bulk');
         });
     });
-
-    // Enrollments management 
-    Route::get('/enrollments', [AdminController::class, 'enrollments'])->name('admin.enrollments');
-    
-    
-        
-        
-        
-        // Contact Messages Management
-        Route::get('/contact-messages', [ContactController::class, 'adminIndex'])->name('admin.contact.messages');
-        Route::get('/contact-messages/{message}', [ContactController::class, 'show'])->name('admin.contact.show');
-        Route::post('/contact-messages/{message}/status', [ContactController::class, 'updateStatus'])->name('admin.contact.status');
-        Route::delete('/contact-messages/{message}', [ContactController::class, 'destroy'])->name('admin.contact.destroy');
-        Route::post('/contact-messages/bulk-action', [ContactController::class, 'bulkAction'])->name('admin.contact.bulk');
-    });
+});
 
    
 
@@ -387,6 +414,9 @@ Route::prefix('enrollee')->name('enrollee.')->group(function () {
         
         // Notices management
         Route::get('/notices', [EnrolleeController::class, 'notices'])->name('notices');
+        Route::get('/notices/{id}', [EnrolleeController::class, 'getNotice'])->name('notices.get');
+        Route::post('/notices/{id}/mark-read', [EnrolleeController::class, 'markNoticeAsRead'])->name('notices.mark-read');
+        Route::post('/notices/mark-all-read', [EnrolleeController::class, 'markAllNoticesAsRead'])->name('notices.mark-all-read');
         
         // Profile management (redirects to application page since they're merged)
         Route::get('/profile', function() {

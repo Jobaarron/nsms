@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Enrollee;
+use App\Models\Notice;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -536,6 +538,123 @@ class EnrolleeController extends Controller
         } catch (\Exception $e) {
             \Log::error('Appointment request error: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Failed to submit appointment request. Please try again.');
+        }
+    }
+
+    /**
+     * Get single notice details
+     */
+    public function getNotice($id): JsonResponse
+    {
+        try {
+            $enrollee = Auth::guard('enrollee')->user();
+            $notice = Notice::where('id', $id)
+                ->where(function($query) use ($enrollee) {
+                    $query->where('enrollee_id', $enrollee->id)
+                          ->orWhere('is_global', true);
+                })
+                ->with('createdBy')
+                ->first();
+
+            if (!$notice) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Notice not found'
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'notice' => [
+                    'id' => $notice->id,
+                    'title' => $notice->title,
+                    'message' => $notice->message,
+                    'priority' => $notice->priority,
+                    'priority_badge' => $notice->priority_badge,
+                    'is_read' => $notice->is_read,
+                    'formatted_date' => $notice->formatted_date,
+                    'created_by_name' => $notice->createdBy->name ?? 'School Administration'
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error fetching notice: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error loading notice'
+            ], 500);
+        }
+    }
+
+    /**
+     * Mark notice as read
+     */
+    public function markNoticeAsRead($id): JsonResponse
+    {
+        try {
+            $enrollee = Auth::guard('enrollee')->user();
+            $notice = Notice::where('id', $id)
+                ->where(function($query) use ($enrollee) {
+                    $query->where('enrollee_id', $enrollee->id)
+                          ->orWhere('is_global', true);
+                })
+                ->first();
+
+            if (!$notice) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Notice not found'
+                ], 404);
+            }
+
+            if (!$notice->is_read) {
+                $notice->markAsRead();
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Notice marked as read'
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error marking notice as read: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating notice status'
+            ], 500);
+        }
+    }
+
+    /**
+     * Mark all notices as read for current enrollee
+     */
+    public function markAllNoticesAsRead(): JsonResponse
+    {
+        try {
+            $enrollee = Auth::guard('enrollee')->user();
+            
+            // Mark all unread notices for this enrollee
+            Notice::where(function($query) use ($enrollee) {
+                $query->where('enrollee_id', $enrollee->id)
+                      ->orWhere('is_global', true);
+            })
+            ->where('is_read', false)
+            ->update([
+                'is_read' => true,
+                'read_at' => now()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'All notices marked as read'
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error marking all notices as read: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating notices'
+            ], 500);
         }
     }
 }

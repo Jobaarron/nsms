@@ -148,13 +148,13 @@
                                                 </div>
                                                 <div>
                                                     <strong>{{ $enrollee->first_name }} {{ $enrollee->last_name }}</strong>
-                                                    <small class="d-block text-muted">Enrollee</small>
+                                                    <small class="d-block text-muted">Applicant</small>
                                                 </div>
                                             </div>
                                         </td>
                                         <td>{{ $enrollee->email }}</td>
                                         <td>
-                                            <span class="badge bg-warning">enrollee</span>
+                                            <span class="badge bg-warning">applicant</span>
                                         </td>
                                         <td>
                                             <span class="text-muted small">Separate auth system</span>
@@ -205,13 +205,17 @@
                                             @endforelse
                                         </td>
                                         <td>
-                                            <span class="badge bg-info">{{ $role->users->count() }} users</span>
+                                            @if($role->name === 'applicant')
+                                                <span class="badge bg-info">{{ $role->enrollee_count ?? 0 }} users</span>
+                                            @else
+                                                <span class="badge bg-info">{{ $role->users->count() }} users</span>
+                                            @endif
                                         </td>
                                         <td>
                                             <button class="btn btn-sm btn-outline-primary" onclick="openEditRoleModal({{ $role->id }}, '{{ $role->name }}', {{ $role->permissions->pluck('name') }})">
                                                 <i class="ri-edit-line me-1"></i>Edit
                                             </button>
-                                            @if(!in_array($role->name, ['admin', 'super_admin', 'teacher', 'student', 'guidance', 'discipline']))
+                                            @if(!in_array($role->name, ['admin', 'super_admin', 'teacher', 'student', 'guidance', 'discipline', 'applicant']))
                                                 <button class="btn btn-sm btn-outline-danger" onclick="deleteRole({{ $role->id }}, '{{ $role->name }}')">
                                                     <i class="ri-delete-bin-line me-1"></i>Delete
                                                 </button>

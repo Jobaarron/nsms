@@ -43,7 +43,6 @@ class Enrollee extends Authenticatable
         'zip_code',
         'grade_level_applied',
         'strand_applied',
-        'track_applied',
         'student_type',
         'father_name',
         'father_occupation',
@@ -161,6 +160,11 @@ class Enrollee extends Authenticatable
     public function payments()
     {
         return $this->morphMany(Payment::class, 'payable');
+    }
+
+    public function notices()
+    {
+        return $this->hasMany(Notice::class);
     }
 
     // Accessors
