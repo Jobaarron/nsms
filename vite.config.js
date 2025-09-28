@@ -37,6 +37,7 @@ export default defineConfig({
                 'resources/js/user-management.js',
                 'resources/js/admin-enrollment-management.js',
                 'resources/css/admin-enrollment-management.css',
+                'resources/js/enrollee-index.js'
                 
             ],
             refresh: true,

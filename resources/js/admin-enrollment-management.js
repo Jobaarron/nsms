@@ -1,20 +1,15 @@
-// Admin Enrollment Management JavaScript
+// Admin Enrollment Management JavaScript - Bootstrap 5 Compatible
+console.log('Admin Enrollment Management JavaScript: File loaded successfully');
+
+// Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Admin Enrollment Management: DOM loaded, initializing...');
     
     // Check if we're on the enrollments page
     if (window.location.pathname.includes('/admin/enrollments')) {
-        console.log('Admin Enrollment Management: On enrollments page, initializing...');
-        
-        // Initialize the enrollment management system
-        initializeEnrollmentManagement();
-        
-        console.log('Admin Enrollment Management: Loading applications data...');
+        initializeSystem();
         loadApplicationsData();
-        
         setupEventListeners();
-    } else {
-        console.log('Admin Enrollment Management: Not on enrollments page, skipping initialization');
     }
 });
 
@@ -26,37 +21,36 @@ let selectedApplications = [];
 let currentBulkAction = null;
 
 // Initialize the system
-function initializeEnrollmentManagement() {
+function initializeSystem() {
     console.log('Initializing enrollment management system...');
     
-    // Setup Bootstrap 5 tab change handlers
-    const tabElements = document.querySelectorAll('#enrollmentTabs button[data-bs-toggle="tab"]');
-    console.log('Found tab elements:', tabElements.length);
-    
-    tabElements.forEach(tab => {
-        tab.addEventListener('shown.bs.tab', function(event) {
+    // Setup Bootstrap 5 tab navigation
+    const tabTriggerList = [].slice.call(document.querySelectorAll('button[data-bs-toggle="tab"]'));
+    tabTriggerList.map(function (tabTriggerEl) {
+        const tabTrigger = new bootstrap.Tab(tabTriggerEl);
+        
+        tabTriggerEl.addEventListener('shown.bs.tab', function (event) {
             const targetTab = event.target.getAttribute('data-bs-target');
-            console.log('Tab changed to:', targetTab);
+            console.log('Tab switched to:', targetTab);
             
+            // Load appropriate data based on active tab
             switch(targetTab) {
                 case '#applications':
-                    console.log('Loading applications data...');
                     loadApplicationsData();
                     break;
                 case '#documents':
-                    console.log('Loading documents data...');
                     loadDocumentsData();
                     break;
                 case '#appointments':
-                    console.log('Loading appointments data...');
                     loadAppointmentsData();
                     break;
                 case '#notices':
-                    console.log('Loading notices data...');
                     loadNoticesData();
                     break;
             }
         });
+        
+        return tabTrigger;
     });
 }
 
@@ -85,6 +79,9 @@ function setupEventListeners() {
             specificDiv.style.display = 'none';
         }
     });
+    
+    // Setup create notice form
+    setupCreateNoticeForm();
 }
 
 // Load applications data
@@ -222,25 +219,40 @@ function populateApplicationsTable(applications) {
     console.log('Applications table populated successfully');
 }
 
-// View application details
-function viewApplication(applicationId) {
-    currentApplicationId = applicationId;
-    
-    fetch(`/admin/enrollments/applications/${applicationId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                populateApplicationModal(data.application);
-                new bootstrap.Modal(document.getElementById('applicationModal')).show();
-            } else {
-                showAlert('Error loading application details', 'danger');
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching application:', error);
-            showAlert('Error loading application', 'danger');
-        });
+// Get status badge class for styling
+function getStatusBadgeClass(status) {
+    switch(status?.toLowerCase()) {
+        case 'pending':
+            return 'bg-warning text-dark';
+        case 'approved':
+            return 'bg-success';
+        case 'enrolled':
+            return 'bg-primary';
+        case 'rejected':
+            return 'bg-danger';
+        case 'declined':
+            return 'bg-danger';
+        default:
+            return 'bg-secondary';
+    }
 }
+
+// Format date helper function
+function formatDate(dateString) {
+    if (!dateString) return 'N/A';
+    try {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    } catch (error) {
+        return 'Invalid Date';
+    }
+}
+
+// Duplicate viewApplication function removed - using the one at line 1223
 
 // Populate application modal
 function populateApplicationModal(app) {
@@ -252,35 +264,79 @@ function populateApplicationModal(app) {
         }
     };
     
-    safeSet('app-full-name', app.full_name || `${app.first_name || ''} ${app.last_name || ''}`.trim());
-    safeSet('app-dob', formatDate(app.date_of_birth));
-    safeSet('app-gender', app.gender);
+    // Format date helper
+    const formatDate = (dateString) => {
+        if (!dateString) return 'Not provided';
+        try {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        } catch (error) {
+            return 'Invalid date';
+        }
+    };
+    
+    // Personal Information
+    safeSet('app-full-name', app.full_name || app.name);
+    safeSet('app-dob', app.date_of_birth ? formatDate(app.date_of_birth) : 'Not provided');
+    safeSet('app-gender', app.gender ? app.gender.charAt(0).toUpperCase() + app.gender.slice(1) : 'Not provided');
     safeSet('app-email', app.email);
     safeSet('app-contact', app.contact_number);
     safeSet('app-address', app.address);
-    safeSet('app-grade', app.grade_level_applied);
-    safeSet('app-type', app.student_type);
+    safeSet('app-grade', app.grade_level_applied || app.grade_level);
+    safeSet('app-type', app.student_type ? app.student_type.charAt(0).toUpperCase() + app.student_type.slice(1) : 'Not provided');
+    
+    // Guardian Information
     safeSet('app-father', app.father_name);
     safeSet('app-mother', app.mother_name);
     safeSet('app-guardian', app.guardian_name);
     safeSet('app-guardian-contact', app.guardian_contact);
     
+    // Additional fields if they exist in the modal
+    safeSet('app-application-id', app.application_id);
+    safeSet('app-applied-date', app.created_at ? formatDate(app.created_at) : (app.applied_date || 'Not available'));
+    safeSet('app-nationality', app.nationality);
+    safeSet('app-religion', app.religion);
+    safeSet('app-lrn', app.lrn);
+    safeSet('app-strand', app.strand_applied);
+    safeSet('app-track', app.track_applied);
+    safeSet('app-last-school', app.last_school_name);
+    
     // Set ID photo
     const idPhoto = document.getElementById('app-id-photo');
-    if (app.id_photo_data_url) {
-        idPhoto.src = app.id_photo_data_url;
-    } else {
-        idPhoto.src = '/images/default-avatar.png';
+    if (idPhoto) {
+        if (app.id_photo_data_url) {
+            idPhoto.src = app.id_photo_data_url;
+            idPhoto.alt = `ID Photo of ${app.full_name || app.name}`;
+        } else {
+            idPhoto.src = '/images/default-avatar.png';
+            idPhoto.alt = 'Default Avatar';
+        }
     }
     
     // Set current status
     const statusBadge = document.getElementById('app-current-status');
-    statusBadge.textContent = app.enrollment_status;
-    statusBadge.className = `badge bg-${getStatusColor(app.enrollment_status)} fs-6`;
+    if (statusBadge) {
+        const status = app.enrollment_status || app.status || 'pending';
+        statusBadge.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+        statusBadge.className = `badge bg-${getStatusColor(status.toLowerCase())} fs-6`;
+    }
     
-    // Set status select
-    document.getElementById('status-select').value = app.enrollment_status;
-    document.getElementById('status-reason').value = app.status_reason || '';
+    // Set status select if it exists
+    const statusSelect = document.getElementById('status-select');
+    if (statusSelect) {
+        const status = app.enrollment_status || app.status || 'pending';
+        statusSelect.value = status.toLowerCase();
+    }
+    
+    // Clear status reason
+    const statusReason = document.getElementById('status-reason');
+    if (statusReason) {
+        statusReason.value = app.status_reason || '';
+    }
 }
 
 // Update application status
@@ -339,7 +395,12 @@ function viewDocument(applicationId, documentIndex) {
         .then(response => response.json())
         .then(data => {
             populateDocumentModal(data);
-            new bootstrap.Modal(document.getElementById('documentReviewModal')).show();
+            // Use Bootstrap 5 compatible modal initialization
+            const modal = document.getElementById('documentReviewModal');
+            if (modal) {
+                const bootstrapModal = new bootstrap.Modal(modal);
+                bootstrapModal.show();
+            }
         })
         .catch(error => {
             console.error('Error loading document:', error);
@@ -368,10 +429,7 @@ function getAppointmentStatusColor(status) {
     return colors[status] || 'secondary';
 }
 
-function formatDate(dateString) {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString();
-}
+// Duplicate formatDate function removed - using the one at line 244
 
 function formatFileSize(bytes) {
     if (!bytes) return 'N/A';
@@ -452,18 +510,7 @@ function filterAppointments() {
     loadAppointmentsData();
 }
 
-function clearFilters() {
-    const statusFilter = document.getElementById('status-filter');
-    const gradeFilter = document.getElementById('grade-filter');
-    const searchInput = document.getElementById('search-input');
-    
-    if (statusFilter) statusFilter.value = '';
-    if (gradeFilter) gradeFilter.value = '';
-    if (searchInput) searchInput.value = '';
-    
-    loadApplicationsData();
-    showAlert('Filters cleared', 'info');
-}
+// Duplicate clearFilters function removed - using the one at the end of file
 
 function exportEnrollments() {
     window.location.href = '/admin/enrollments/export';
@@ -560,8 +607,28 @@ function viewNotice(noticeId) {
 }
 
 function deleteNotice(noticeId) {
-    if (confirm('Are you sure you want to delete this notice?')) {
-        showAlert('Notice deletion feature coming soon', 'info');
+    if (confirm('Are you sure you want to delete this notice? This action cannot be undone.')) {
+        fetch(`/admin/enrollments/notices/${noticeId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('Notice deleted successfully', 'success');
+                // Reload the page to refresh the notices list
+                window.location.reload();
+            } else {
+                showAlert(data.message || 'Error deleting notice', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error deleting notice:', error);
+            showAlert('Error deleting notice', 'danger');
+        });
     }
 }
 
@@ -597,8 +664,8 @@ function populateAppointmentsTable(appointments) {
                     <button class="btn btn-outline-primary" onclick="viewApplication('${appointment.application_id}')" title="View Application">
                         <i class="ri-eye-line"></i>
                     </button>
-                    <button class="btn btn-outline-info" onclick="scheduleAppointment('${appointment.application_id}')" title="Schedule Appointment">
-                        <i class="ri-calendar-line"></i>
+                    <button class="btn btn-outline-info" onclick="changeAppointment('${appointment.application_id}')" title="Change Appointment">
+                        <i class="ri-calendar-edit-line"></i>
                     </button>
                 </div>
             </td>
@@ -701,8 +768,148 @@ function populateDocumentsModal(documents) {
     });
 }
 
-function populateDocumentModal(document) {
-    console.log('Populating document modal...', document);
+function populateDocumentModal(data) {
+    console.log('Populating document modal...', data);
+    
+    if (!data.success) {
+        showAlert('Error loading document details', 'danger');
+        return;
+    }
+    
+    const documentData = data.document;
+    
+    // Populate document information
+    document.getElementById('doc-app-id').textContent = data.application_id || 'N/A';
+    document.getElementById('doc-student-name').textContent = data.student_name || 'N/A';
+    document.getElementById('doc-type').textContent = documentData.type || 'N/A';
+    document.getElementById('doc-upload-date').textContent = formatDate(documentData.uploaded_at) || 'N/A';
+    document.getElementById('doc-file-size').textContent = formatFileSize(documentData.size) || 'N/A';
+    
+    // Set current status badge
+    const statusElement = document.getElementById('doc-current-status');
+    const status = documentData.status || 'pending';
+    statusElement.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+    statusElement.className = `badge fs-6 ${getStatusBadgeClass(status)}`;
+    
+    // Set status select
+    document.getElementById('doc-status-select').value = status;
+    
+    // Clear previous review notes
+    document.getElementById('doc-review-notes').value = documentData.review_notes || '';
+    
+    // Load document viewer
+    const documentViewer = document.getElementById('document-viewer');
+    const docTitle = document.getElementById('doc-title');
+    
+    docTitle.textContent = `${documentData.type} - ${documentData.filename || 'Document'}`;
+    
+    if (data.document_url) {
+        const fileExtension = documentData.filename ? documentData.filename.split('.').pop().toLowerCase() : '';
+        
+        if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(fileExtension)) {
+            // Display image
+            documentViewer.innerHTML = `
+                <img src="${data.document_url}" class="img-fluid" alt="Document Preview" style="max-height: 500px;">
+            `;
+        } else if (fileExtension === 'pdf') {
+            // Display PDF
+            documentViewer.innerHTML = `
+                <iframe src="${data.document_url}" width="100%" height="500px" frameborder="0">
+                    <p>Your browser does not support PDFs. <a href="${data.document_url}" target="_blank">Download the PDF</a>.</p>
+                </iframe>
+            `;
+        } else {
+            // Display download link for other file types
+            documentViewer.innerHTML = `
+                <div class="text-center py-5">
+                    <i class="ri-file-line fs-1 text-muted mb-3"></i>
+                    <p class="text-muted">Preview not available for this file type.</p>
+                    <a href="${data.document_url}" target="_blank" class="btn btn-primary">
+                        <i class="ri-download-line me-1"></i>Download Document
+                    </a>
+                </div>
+            `;
+        }
+    } else {
+        documentViewer.innerHTML = `
+            <div class="text-center py-5">
+                <i class="ri-file-line fs-1 text-muted mb-3"></i>
+                <p class="text-muted">Document file not found.</p>
+            </div>
+        `;
+    }
+}
+
+// Duplicate formatFileSize function removed - using the one at line 419
+
+// Document review action functions
+function approveDocument() {
+    if (!currentApplicationId || currentDocumentIndex === null) {
+        showAlert('No document selected for approval', 'warning');
+        return;
+    }
+    
+    updateDocumentStatusAction('approved');
+}
+
+function rejectDocument() {
+    if (!currentApplicationId || currentDocumentIndex === null) {
+        showAlert('No document selected for rejection', 'warning');
+        return;
+    }
+    
+    updateDocumentStatusAction('rejected');
+}
+
+function updateDocumentStatus() {
+    if (!currentApplicationId || currentDocumentIndex === null) {
+        showAlert('No document selected for status update', 'warning');
+        return;
+    }
+    
+    const newStatus = document.getElementById('doc-status-select').value;
+    const reviewNotes = document.getElementById('doc-review-notes').value;
+    
+    updateDocumentStatusAction(newStatus, reviewNotes);
+}
+
+function updateDocumentStatusAction(status, notes = '') {
+    const reviewNotes = notes || document.getElementById('doc-review-notes').value;
+    
+    fetch(`/admin/enrollments/documents/${currentApplicationId}/${currentDocumentIndex}/status`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            status: status,
+            review_notes: reviewNotes
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert(`Document ${status} successfully`, 'success');
+            
+            // Update the modal display
+            const statusElement = document.getElementById('doc-current-status');
+            statusElement.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+            statusElement.className = `badge fs-6 ${getStatusBadgeClass(status)}`;
+            
+            // Refresh documents data if we're on documents tab
+            const activeTab = document.querySelector('.nav-link.active');
+            if (activeTab && activeTab.getAttribute('data-bs-target') === '#documents') {
+                loadDocumentsData();
+            }
+        } else {
+            showAlert('Error updating document status: ' + (data.message || 'Unknown error'), 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error updating document status:', error);
+        showAlert('Error updating document status', 'danger');
+    });
 }
 
 function updateSummaryCards(summary = {}) {
@@ -768,13 +975,39 @@ function getSelectedApplications() {
 }
 
 // Approve single application
-function approveApplication(id, applicationId, studentName) {
+function approveApplication(id) {
     currentApplicationId = id;
-    document.getElementById('approve-app-id').textContent = applicationId;
-    document.getElementById('approve-student-name').textContent = studentName;
-    document.getElementById('approve-reason').value = '';
     
-    new bootstrap.Modal(document.getElementById('approveApplicationModal')).show();
+    // Find the application data from the current page
+    const row = document.querySelector(`input[value="${id}"]`).closest('tr');
+    if (!row) {
+        showAlert('Application not found', 'danger');
+        return;
+    }
+    
+    // Extract data from the table row
+    const cells = row.querySelectorAll('td');
+    const applicationId = cells[1].textContent.trim();
+    const studentName = cells[2].textContent.trim();
+    
+    // Check if modal elements exist before setting them
+    const appIdElement = document.getElementById('approve-app-id');
+    const studentNameElement = document.getElementById('approve-student-name');
+    const reasonElement = document.getElementById('approve-reason');
+    
+    if (appIdElement) appIdElement.textContent = applicationId;
+    if (studentNameElement) studentNameElement.textContent = studentName;
+    if (reasonElement) reasonElement.value = '';
+    
+    // Show confirmation dialog instead of modal if modal doesn't exist
+    const modal = document.getElementById('approveApplicationModal');
+    if (modal) {
+        new bootstrap.Modal(modal).show();
+    } else {
+        if (confirm(`Are you sure you want to approve application ${applicationId} for ${studentName}?`)) {
+            confirmApproveApplication();
+        }
+    }
 }
 
 // Confirm approve application
@@ -811,13 +1044,41 @@ function confirmApproveApplication() {
 }
 
 // Decline single application
-function declineApplication(id, applicationId, studentName) {
+function declineApplication(id) {
     currentApplicationId = id;
-    document.getElementById('decline-app-id').textContent = applicationId;
-    document.getElementById('decline-student-name').textContent = studentName;
-    document.getElementById('decline-reason').value = '';
     
-    new bootstrap.Modal(document.getElementById('declineApplicationModal')).show();
+    // Find the application data from the current page
+    const row = document.querySelector(`input[value="${id}"]`).closest('tr');
+    if (!row) {
+        showAlert('Application not found', 'danger');
+        return;
+    }
+    
+    // Extract data from the table row
+    const cells = row.querySelectorAll('td');
+    const applicationId = cells[1].textContent.trim();
+    const studentName = cells[2].textContent.trim();
+    
+    // Check if modal elements exist before setting them
+    const appIdElement = document.getElementById('decline-app-id');
+    const studentNameElement = document.getElementById('decline-student-name');
+    const reasonElement = document.getElementById('decline-reason');
+    
+    if (appIdElement) appIdElement.textContent = applicationId;
+    if (studentNameElement) studentNameElement.textContent = studentName;
+    if (reasonElement) reasonElement.value = '';
+    
+    // Show confirmation dialog instead of modal if modal doesn't exist
+    const modal = document.getElementById('declineApplicationModal');
+    if (modal) {
+        new bootstrap.Modal(modal).show();
+    } else {
+        const reason = prompt(`Please provide a reason for declining application ${applicationId} for ${studentName}:`);
+        if (reason !== null && reason.trim() !== '') {
+            // Simulate the decline with reason
+            updateApplicationStatus('declined', reason);
+        }
+    }
 }
 
 // Confirm decline application
@@ -860,12 +1121,37 @@ function confirmDeclineApplication() {
 }
 
 // Delete single application
-function deleteApplication(id, applicationId, studentName) {
+function deleteApplication(id) {
     currentApplicationId = id;
-    document.getElementById('delete-app-id').textContent = applicationId;
-    document.getElementById('delete-student-name').textContent = studentName;
     
-    new bootstrap.Modal(document.getElementById('deleteApplicationModal')).show();
+    // Find the application data from the current page
+    const row = document.querySelector(`input[value="${id}"]`).closest('tr');
+    if (!row) {
+        showAlert('Application not found', 'danger');
+        return;
+    }
+    
+    // Extract data from the table row
+    const cells = row.querySelectorAll('td');
+    const applicationId = cells[1].textContent.trim();
+    const studentName = cells[2].textContent.trim();
+    
+    // Check if modal elements exist before setting them
+    const appIdElement = document.getElementById('delete-app-id');
+    const studentNameElement = document.getElementById('delete-student-name');
+    
+    if (appIdElement) appIdElement.textContent = applicationId;
+    if (studentNameElement) studentNameElement.textContent = studentName;
+    
+    // Show confirmation dialog instead of modal if modal doesn't exist
+    const modal = document.getElementById('deleteApplicationModal');
+    if (modal) {
+        new bootstrap.Modal(modal).show();
+    } else {
+        if (confirm(`Are you sure you want to delete application ${applicationId} for ${studentName}? This action cannot be undone.`)) {
+            confirmDeleteApplication();
+        }
+    }
 }
 
 // Confirm delete application
@@ -1033,24 +1319,117 @@ function exportSelected() {
     window.location.href = `/admin/enrollments/export?${params.toString()}`;
 }
 
+// View application details
+function viewApplication(applicationId) {
+    currentApplicationId = applicationId;
+    
+    // Show loading state
+    showLoading();
+    
+    // Fetch complete application data from server
+    fetch(`/admin/enrollments/applications/${applicationId}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success && data.application) {
+                populateApplicationModal(data.application);
+                const modal = new bootstrap.Modal(document.getElementById('applicationDetailsModal'));
+                modal.show();
+            } else {
+                showAlert(data.message || 'Failed to load application details', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching application:', error);
+            
+            // Fallback: Extract basic data from table row if server fetch fails
+            const row = document.querySelector(`input[value="${applicationId}"]`).closest('tr');
+            if (row) {
+                const cells = row.querySelectorAll('td');
+                const applicationData = {
+                    id: applicationId,
+                    application_id: cells[1].textContent.trim(),
+                    full_name: cells[2].textContent.trim(),
+                    grade_level_applied: cells[3].textContent.trim(),
+                    email: cells[4].textContent.trim(),
+                    enrollment_status: cells[5].querySelector('.badge').textContent.trim(),
+                    created_at: cells[6].textContent.trim()
+                };
+                
+                populateApplicationModal(applicationData);
+                const modal = new bootstrap.Modal(document.getElementById('applicationDetailsModal'));
+                modal.show();
+                
+                showAlert('Showing limited data from table view. Full details unavailable.', 'warning');
+            } else {
+                showAlert('Application not found', 'danger');
+            }
+        })
+        .finally(() => {
+            hideLoading();
+        });
+}
+
 // View documents for an application
 function viewDocuments(applicationId) {
     currentApplicationId = applicationId;
     
-    fetch(`/admin/enrollments/applications/${applicationId}/documents`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                populateDocumentsModal(data.documents);
-                new bootstrap.Modal(document.getElementById('documentsModal')).show();
-            } else {
-                showAlert('Error loading documents', 'danger');
+    // Get the application row to extract application ID
+    const row = document.querySelector(`input[value="${applicationId}"]`).closest('tr');
+    if (!row) {
+        showAlert('Application not found', 'danger');
+        return;
+    }
+    
+    const cells = row.querySelectorAll('td');
+    const appId = cells[1].textContent.trim(); // Application ID from table
+    
+    // Switch to documents tab and show documents for this application
+    const documentsTab = document.querySelector('button[data-bs-target="#documents"]');
+    if (documentsTab) {
+        const tab = new bootstrap.Tab(documentsTab);
+        tab.show();
+        
+        // Filter documents for this specific application
+        setTimeout(() => {
+            const documentsTable = document.querySelector('#documents-table tbody');
+            if (documentsTable) {
+                const rows = documentsTable.querySelectorAll('tr');
+                let foundDocuments = false;
+                
+                rows.forEach(row => {
+                    const appIdCell = row.querySelector('td:first-child');
+                    if (appIdCell) {
+                        const rowAppId = appIdCell.textContent.trim();
+                        
+                        if (rowAppId === appId) {
+                            row.style.backgroundColor = '#fff3cd';
+                            row.style.border = '2px solid #ffc107';
+                            if (!foundDocuments) {
+                                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                foundDocuments = true;
+                            }
+                        } else {
+                            row.style.backgroundColor = '';
+                            row.style.border = '';
+                        }
+                    }
+                });
+                
+                if (foundDocuments) {
+                    showAlert(`Showing documents for Application ID: ${appId}`, 'success');
+                } else {
+                    showAlert(`No documents found for Application ID: ${appId}`, 'warning');
+                }
             }
-        })
-        .catch(error => {
-            console.error('Error loading documents:', error);
-            showAlert('Error loading documents', 'danger');
-        });
+        }, 300);
+    } else {
+        showAlert('Documents tab not found', 'danger');
+    }
 }
 
 // Open bulk notice modal
@@ -1062,13 +1441,23 @@ function openBulkNoticeModal() {
     }
     
     document.getElementById('bulk-notice-count').textContent = selectedApplications.length;
-    new bootstrap.Modal(document.getElementById('bulkNoticeModal')).show();
+    // Use Bootstrap 5 compatible modal initialization
+    const modal = document.getElementById('bulkNoticeModal');
+    if (modal) {
+        const bootstrapModal = new bootstrap.Modal(modal);
+        bootstrapModal.show();
+    }
 }
 
 // Open create notice modal
 function openCreateNoticeModal() {
     document.getElementById('create-notice-form').reset();
-    new bootstrap.Modal(document.getElementById('createNoticeModal')).show();
+    // Use Bootstrap 5 compatible modal initialization
+    const modal = document.getElementById('createNoticeModal');
+    if (modal) {
+        const bootstrapModal = new bootstrap.Modal(modal);
+        bootstrapModal.show();
+    }
 }
 
 // Send notice to individual applicant
@@ -1077,57 +1466,7 @@ function sendNoticeToApplicant(applicationId) {
     showAlert('Individual notice feature coming soon', 'info');
 }
 
-// Refresh data function
-function refreshData() {
-    // Get current active tab
-    const activeTab = document.querySelector('.nav-link.active');
-    const activeTabId = activeTab ? activeTab.getAttribute('data-bs-target') : '#applications';
-    
-    // Reload data based on active tab
-    switch(activeTabId) {
-        case '#applications':
-            loadApplicationsData();
-            break;
-        case '#documents':
-            loadDocumentsData();
-            break;
-        case '#appointments':
-            loadAppointmentsData();
-            break;
-        case '#notices':
-            loadNoticesData();
-            break;
-        default:
-            loadApplicationsData();
-    }
-    
-    showAlert('Data refreshed successfully', 'success');
-}
-
-// Export data function
-function exportData() {
-    // Get current active tab
-    const activeTab = document.querySelector('.nav-link.active');
-    const activeTabId = activeTab ? activeTab.getAttribute('data-bs-target') : '#applications';
-    
-    // Export based on active tab
-    switch(activeTabId) {
-        case '#applications':
-            window.location.href = '/admin/enrollments/export';
-            break;
-        case '#documents':
-            showAlert('Document export feature coming soon', 'info');
-            break;
-        case '#appointments':
-            showAlert('Appointment export feature coming soon', 'info');
-            break;
-        case '#notices':
-            showAlert('Notice export feature coming soon', 'info');
-            break;
-        default:
-            window.location.href = '/admin/enrollments/export';
-    }
-}
+// Duplicate functions removed - using the ones at the end of file
 
 
 // Duplicate viewDocument function removed - using the one at line 275
@@ -1174,7 +1513,7 @@ function sendBulkNotice() {
 }
 
 // Handle create notice form submission
-document.addEventListener('DOMContentLoaded', function() {
+function setupCreateNoticeForm() {
     const createNoticeForm = document.getElementById('create-notice-form');
     if (createNoticeForm) {
         createNoticeForm.addEventListener('submit', function(e) {
@@ -1195,10 +1534,12 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 if (data.success) {
                     showAlert('Notice created successfully', 'success');
-                    bootstrap.Modal.getInstance(document.getElementById('createNoticeModal')).hide();
-                    loadNoticesData();
+                    document.getElementById('create-notice-form').reset();
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('createNoticeModal'));
+                    if (modal) modal.hide();
                 } else {
-                    showAlert(data.message || 'Error creating notice', 'danger');
+                    showAlert('Error creating notice: ' + (data.message || 'Unknown error'), 'danger');
                 }
             })
             .catch(error => {
@@ -1220,49 +1561,171 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-});
+}
 
-// Schedule appointment for an application
-function scheduleAppointment(applicationId) {
+// Change appointment for an application
+function changeAppointment(applicationId) {
     currentApplicationId = applicationId;
-    // This would open a modal to schedule an appointment
-    showAlert('Appointment scheduling feature coming soon', 'info');
+    
+    // Fetch current appointment details
+    fetch(`/admin/enrollments/applications/${applicationId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const application = data.application;
+                
+                // Show appointment change modal with current details
+                document.getElementById('change-app-id').textContent = application.application_id;
+                document.getElementById('change-student-name').textContent = application.full_name || 'N/A';
+                document.getElementById('current-schedule').textContent = application.preferred_schedule || 'Not set';
+                document.getElementById('current-enrollment-date').textContent = formatDate(application.enrollment_date) || 'Not set';
+                
+                // Clear form fields
+                document.getElementById('new-preferred-schedule').value = '';
+                document.getElementById('new-enrollment-date').value = '';
+                document.getElementById('appointment-notes').value = '';
+                
+                // Show modal
+                const modal = document.getElementById('changeAppointmentModal');
+                if (modal) {
+                    const bootstrapModal = new bootstrap.Modal(modal);
+                    bootstrapModal.show();
+                }
+            } else {
+                showAlert('Error loading application details', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading application:', error);
+            showAlert('Error loading application details', 'danger');
+        });
 }
 
-// Document approval functions
-function approveDocument(enrolleeId, documentIndex) {
-    updateDocumentStatus(enrolleeId, documentIndex, 'approved');
-}
-
-function rejectDocument(enrolleeId, documentIndex) {
-    updateDocumentStatus(enrolleeId, documentIndex, 'rejected');
-}
-
-function updateDocumentStatus(enrolleeId, documentIndex, status) {
-    fetch(`/admin/enrollments/documents/${enrolleeId}/${documentIndex}/status`, {
+// Confirm appointment change
+function confirmAppointmentChange() {
+    if (!currentApplicationId) {
+        showAlert('No application selected', 'warning');
+        return;
+    }
+    
+    const newSchedule = document.getElementById('new-preferred-schedule').value;
+    const newEnrollmentDate = document.getElementById('new-enrollment-date').value;
+    const notes = document.getElementById('appointment-notes').value;
+    
+    if (!newSchedule && !newEnrollmentDate) {
+        showAlert('Please set at least one new appointment detail', 'warning');
+        return;
+    }
+    
+    const updateData = {};
+    if (newSchedule) updateData.preferred_schedule = newSchedule;
+    if (newEnrollmentDate) updateData.enrollment_date = newEnrollmentDate;
+    if (notes) updateData.admin_notes = notes;
+    
+    fetch(`/admin/enrollments/applications/${currentApplicationId}/appointment`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
         },
-        body: JSON.stringify({ status: status })
+        body: JSON.stringify(updateData)
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            showAlert(`Document ${status} successfully`, 'success');
-            loadDocumentsData();
+            showAlert('Appointment updated successfully', 'success');
+            
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('changeAppointmentModal'));
+            if (modal) modal.hide();
+            
+            // Refresh appointments data if we're on appointments tab
+            const activeTab = document.querySelector('.nav-link.active');
+            if (activeTab && activeTab.getAttribute('data-bs-target') === '#appointments') {
+                loadAppointmentsData();
+            }
         } else {
-            showAlert(data.message || `Error ${status} document`, 'danger');
+            showAlert('Error updating appointment: ' + (data.message || 'Unknown error'), 'danger');
         }
     })
     .catch(error => {
-        console.error('Error updating document status:', error);
-        showAlert('Error updating document status', 'danger');
+        console.error('Error updating appointment:', error);
+        showAlert('Error updating appointment', 'danger');
     });
 }
 
-// Make all functions globally available for onclick handlers
+// Duplicate document approval functions removed - using the ones earlier in the file
+
+// Duplicate updateDocumentStatus function removed - using the one earlier in the file
+
+// Window assignments moved to end of file after all functions are defined
+
+// Essential functions for onclick handlers
+function refreshData() {
+    console.log('Refreshing data...');
+    const activeTab = document.querySelector('.nav-link.active, button[data-bs-toggle="tab"].active');
+    const activeTabId = activeTab ? activeTab.getAttribute('data-bs-target') : '#applications';
+    
+    switch(activeTabId) {
+        case '#applications':
+            loadApplicationsData();
+            break;
+        case '#documents':
+            loadDocumentsData();
+            break;
+        case '#appointments':
+            loadAppointmentsData();
+            break;
+        case '#notices':
+            loadNoticesData();
+            break;
+        default:
+            loadApplicationsData();
+    }
+    
+    showAlert('Data refreshed successfully', 'success');
+}
+
+function clearFilters() {
+    console.log('Clearing filters...');
+    const statusFilter = document.getElementById('status-filter');
+    const gradeFilter = document.getElementById('grade-filter');
+    const searchInput = document.getElementById('search-input');
+    
+    if (statusFilter) statusFilter.value = '';
+    if (gradeFilter) gradeFilter.value = '';
+    if (searchInput) searchInput.value = '';
+    
+    loadApplicationsData();
+    showAlert('Filters cleared', 'info');
+}
+
+function exportData() {
+    console.log('Exporting data...');
+    const activeTab = document.querySelector('.nav-link.active, button[data-bs-toggle="tab"].active');
+    const activeTabId = activeTab ? activeTab.getAttribute('data-bs-target') : '#applications';
+    
+    switch(activeTabId) {
+        case '#applications':
+            window.location.href = '/admin/enrollments/export';
+            break;
+        case '#documents':
+            showAlert('Document export feature coming soon', 'info');
+            break;
+        case '#appointments':
+            showAlert('Appointment export feature coming soon', 'info');
+            break;
+        case '#notices':
+            showAlert('Notice export feature coming soon', 'info');
+            break;
+        default:
+            window.location.href = '/admin/enrollments/export';
+    }
+}
+
+// Functions will be exposed at the end of file
+
+// Make all functions globally available for onclick handlers - FINAL ASSIGNMENTS
 window.viewApplication = viewApplication;
 window.viewDocuments = viewDocuments;
 window.approveApplication = approveApplication;
@@ -1271,6 +1734,7 @@ window.deleteApplication = deleteApplication;
 window.confirmApproveApplication = confirmApproveApplication;
 window.confirmDeclineApplication = confirmDeclineApplication;
 window.confirmDeleteApplication = confirmDeleteApplication;
+window.updateApplicationStatus = updateApplicationStatus;
 window.bulkApprove = bulkApprove;
 window.bulkDecline = bulkDecline;
 window.bulkDelete = bulkDelete;
@@ -1281,17 +1745,31 @@ window.updateSelectionCount = updateSelectionCount;
 window.sendNoticeToApplicant = sendNoticeToApplicant;
 window.openBulkNoticeModal = openBulkNoticeModal;
 window.openCreateNoticeModal = openCreateNoticeModal;
-window.scheduleAppointment = scheduleAppointment;
+window.changeAppointment = changeAppointment;
+window.confirmAppointmentChange = confirmAppointmentChange;
 window.approveDocument = approveDocument;
 window.rejectDocument = rejectDocument;
+window.updateDocumentStatus = updateDocumentStatus;
 window.viewDocumentFile = viewDocumentFile;
 window.sendBulkNotice = sendBulkNotice;
 window.viewNotice = viewNotice;
 window.deleteNotice = deleteNotice;
-window.clearFilters = clearFilters;
 window.viewDocument = viewDocument;
-window.refreshData = refreshData;
-window.exportData = exportData;
-window.sendNoticeToApplicant = sendNoticeToApplicant;
 window.getSelectedApplications = getSelectedApplications;
 window.exportEnrollments = exportEnrollments;
+
+// Essential functions - ensure they override any previous assignments
+window.refreshData = refreshData;
+window.clearFilters = clearFilters;
+window.exportData = exportData;
+
+// Debug function availability
+console.log('All functions exposed to window:', {
+    refreshData: typeof window.refreshData,
+    clearFilters: typeof window.clearFilters,
+    exportData: typeof window.exportData,
+    openCreateNoticeModal: typeof window.openCreateNoticeModal,
+    openBulkNoticeModal: typeof window.openBulkNoticeModal,
+    approveDocument: typeof window.approveDocument,
+    viewApplication: typeof window.viewApplication
+});

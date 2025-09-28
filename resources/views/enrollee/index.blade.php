@@ -1,4 +1,13 @@
 <x-enrollee-layout>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    @vite(['resources/js/enrollee-index.js'])
     <div class="py-4">
         <h1 class="section-title">Welcome, {{ $enrollee->first_name ?? 'Enrollee' }}</h1>
         
@@ -134,6 +143,17 @@
             </div>
         </div>
 
+        <!-- DEBUG INFO (Remove this after checking) -->
+        {{-- <div class="alert alert-info">
+            <strong>Debug Payment Info:</strong><br>
+            payment_date: {{ $enrollee->payment_date ?? 'NULL' }}<br>
+            payment_completed_at: {{ $enrollee->payment_completed_at ?? 'NULL' }}<br>
+            is_paid: {{ $enrollee->is_paid ? 'TRUE' : 'FALSE' }}<br>
+            enrollment_fee: {{ $enrollee->enrollment_fee ?? 'NULL' }}<br>
+            total_paid: {{ $enrollee->total_paid ?? 'NULL' }}<br>
+            payment_reference: {{ $enrollee->payment_reference ?? 'NULL' }}
+        </div> --}}
+
         <!-- APPLICATION TIMELINE -->
         <h4 class="section-title">Application Timeline</h4>
         <div class="card mb-5">
@@ -161,17 +181,17 @@
                     </div>
                     @endif
                     
-                    @if($enrollee->payment_date)
+                    @if($enrollee->payment_date || $enrollee->payment_completed_at || $enrollee->is_paid)
                     <div class="timeline-item completed">
                         <div class="d-flex justify-content-between align-items-start">
                             <div>
                                 <h6 class="mb-1">Payment Completed</h6>
-                                <p class="text-muted mb-0">Enrollment fee of ₱{{ number_format($enrollee->enrollment_fee, 2) }} has been paid.</p>
+                                <p class="text-muted mb-0">Enrollment fee of ₱{{ number_format($enrollee->enrollment_fee ?? $enrollee->total_paid ?? 4500, 2) }} has been paid.</p>
                                 @if($enrollee->payment_reference)
                                     <small class="text-muted">Reference: {{ $enrollee->payment_reference }}</small>
                                 @endif
                             </div>
-                            <small class="text-muted">{{ $enrollee->payment_date->format('M d, Y') }}</small>
+                            <small class="text-muted">{{ ($enrollee->payment_date ?? $enrollee->payment_completed_at ?? $enrollee->updated_at)->format('M d, Y') }}</small>
                         </div>
                     </div>
                     @endif
@@ -184,6 +204,33 @@
                                 <p class="text-muted mb-0">Welcome to NSMS! Your enrollment is now complete.</p>
                             </div>
                             <small class="text-muted">{{ $enrollee->enrolled_at->format('M d, Y') }}</small>
+                        </div>
+                    </div>
+                    @endif
+                    
+                    @if(($enrollee->payment_date || $enrollee->payment_completed_at || $enrollee->is_paid) && !$enrollee->student_id)
+                    <div class="timeline-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1 text-primary">Ready for Pre-Registration</h6>
+                                <p class="text-muted mb-0">Entrance fee paid! Complete your pre-registration to access student portal and subjects.</p>
+                            </div>
+                            <button type="button" class="btn btn-primary" onclick="preRegisterStudent()" id="preRegisterBtn">
+                                <i class="ri-user-add-line me-2"></i>Pre-Register Now
+                            </button>
+                        </div>
+                    </div>
+                    @endif
+                    
+                    @if($enrollee->student_id)
+                    <div class="timeline-item completed">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1">Pre-Registration Complete</h6>
+                                <p class="text-muted mb-0">Student ID: <strong>{{ $enrollee->student_id }}</strong></p>
+                                <small class="text-success">You can now access the student portal with your credentials.</small>
+                            </div>
+                            <small class="text-muted">{{ $enrollee->updated_at->format('M d, Y') }}</small>
                         </div>
                     </div>
                     @endif
@@ -229,4 +276,138 @@
             </div>
         </div>
     </div>
+
+    <script>
+        // Pre-register student function
+        function preRegisterStudent() {
+            const btn = document.getElementById('preRegisterBtn');
+            
+            // Show confirmation modal
+            if (!confirm('Are you ready to complete your pre-registration? This will create your student account and generate your Student ID.')) {
+                return;
+            }
+            
+            // Disable button and show loading
+            btn.disabled = true;
+            btn.innerHTML = '<i class="ri-loader-4-line me-2 spinner-border spinner-border-sm"></i>Processing...';
+            
+            // Make AJAX request to pre-register
+            fetch('/enrollee/pre-register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success message with credentials
+                    showCredentialsModal(data.student_id, data.password);
+                    
+                    // Reload page to show updated timeline after modal is closed
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 5000);
+                } else {
+                    // Show error message
+                    alert(data.message || 'Pre-registration failed. Please try again.');
+                    
+                    // Re-enable button
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="ri-user-add-line me-2"></i>Pre-Register Now';
+                }
+            })
+            .catch(error => {
+                console.error('Pre-registration error:', error);
+                alert('An error occurred during pre-registration. Please try again.');
+                
+                // Re-enable button
+                btn.disabled = false;
+                btn.innerHTML = '<i class="ri-user-add-line me-2"></i>Pre-Register Now';
+            });
+        }
+
+        // Show credentials modal
+        function showCredentialsModal(studentId, password) {
+            // Create modal HTML
+            const modalHtml = `
+                <div class="modal fade" id="credentialsModal" tabindex="-1" aria-labelledby="credentialsModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header bg-success text-white">
+                                <h5 class="modal-title" id="credentialsModalLabel">
+                                    <i class="ri-check-circle-line me-2"></i>Pre-registration Successful!
+                                </h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body text-center">
+                                <div class="mb-4">
+                                    <i class="ri-user-add-line text-success" style="font-size: 3rem;"></i>
+                                </div>
+                                <h6 class="mb-3">Your Student Account Has Been Created!</h6>
+                                <div class="alert alert-info">
+                                    <div class="row">
+                                        <div class="col-12 mb-2">
+                                            <strong>Student ID:</strong>
+                                            <div class="input-group mt-1">
+                                                <input type="text" class="form-control text-center fw-bold" value="${studentId}" readonly id="studentIdField">
+                                                <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('studentIdField')">
+                                                    <i class="ri-file-copy-line"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <strong>Password:</strong>
+                                            <div class="input-group mt-1">
+                                                <input type="text" class="form-control text-center fw-bold" value="${password}" readonly id="passwordField">
+                                                <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('passwordField')">
+                                                    <i class="ri-file-copy-line"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="alert alert-warning">
+                                    <small><i class="ri-information-line me-1"></i>Please save these credentials safely. You can change your password after logging into the student portal.</small>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                                    <i class="ri-check-line me-1"></i>Got It!
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Remove existing modal if any
+            const existingModal = document.getElementById('credentialsModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            // Add modal to body
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('credentialsModal'));
+            modal.show();
+        }
+
+        // Copy to clipboard function
+        function copyToClipboard(fieldId) {
+            const field = document.getElementById(fieldId);
+            field.select();
+            field.setSelectionRange(0, 99999); // For mobile devices
+            
+            try {
+                document.execCommand('copy');
+                alert('Copied to clipboard!');
+            } catch (err) {
+                alert('Failed to copy to clipboard');
+            }
+        }
+    </script>
 </x-enrollee-layout>

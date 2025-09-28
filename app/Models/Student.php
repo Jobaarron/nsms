@@ -16,15 +16,18 @@ class Student extends Authenticatable
 
     protected $fillable = [
         'user_id',
+        'enrollee_id',
         'student_id',
         'lrn',
         'password',
         'id_photo',
         'id_photo_mime_type',
+        'id_photo_data_url',
         'first_name',
         'middle_name',
         'last_name',
         'suffix',
+        'full_name',
         'date_of_birth',
         'place_of_birth',
         'gender',
@@ -40,6 +43,10 @@ class Student extends Authenticatable
         'strand',
         'track',
         'section',
+        'student_type',
+        'enrollment_status',
+        'academic_year',
+        'documents',
         'father_name',
         'father_occupation',
         'father_contact',
@@ -51,13 +58,16 @@ class Student extends Authenticatable
         'last_school_type',
         'last_school_name',
         'medical_history',
+        'pre_registered_at',
         'is_active',
     ];
 
 
     protected $casts = [
         'date_of_birth' => 'date',
-        'is_active' => 'boolean'
+        'pre_registered_at' => 'datetime',
+        'is_active' => 'boolean',
+        'documents' => 'array'
     ];
 
     protected $hidden = [
@@ -70,6 +80,16 @@ class Student extends Authenticatable
     ];
     
     protected $guard_name = 'student';
+    
+    /**
+     * Get the name of the unique identifier for the user.
+     *
+     * @return string
+     */
+    public function getAuthIdentifierName()
+    {
+        return 'student_id';
+    }
     
     protected function casts(): array
     {

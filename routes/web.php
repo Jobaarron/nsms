@@ -123,13 +123,17 @@ Route::prefix('admin')->group(function () {
                 Route::get('/documents', [AdminEnrollmentController::class, 'getDocuments'])->name('documents');
                 Route::get('/applications/{applicationId}/documents', [AdminEnrollmentController::class, 'getApplicationDocuments'])->name('application.documents');
                 Route::get('/documents/{enrolleeId}/{documentIndex}', [AdminEnrollmentController::class, 'getDocument'])->name('document');
+                Route::get('/documents/{enrolleeId}/{documentIndex}/view', [AdminEnrollmentController::class, 'viewDocument'])->name('document.view');
+                Route::get('/documents/{enrolleeId}/{documentIndex}/download', [AdminEnrollmentController::class, 'downloadDocument'])->name('document.download');
                 Route::post('/documents/{enrolleeId}/{documentIndex}/status', [AdminEnrollmentController::class, 'updateDocumentStatus'])->name('document.status');
                 
                 Route::get('/appointments', [AdminEnrollmentController::class, 'getAppointments'])->name('appointments');
+                Route::post('/applications/{applicationId}/appointment', [AdminEnrollmentController::class, 'updateAppointment'])->name('application.appointment');
         
                 Route::get('/notices', [AdminEnrollmentController::class, 'getNotices'])->name('notices');
                 Route::post('/notices', [AdminEnrollmentController::class, 'createNotice'])->name('notices.create');
                 Route::post('/notices/bulk', [AdminEnrollmentController::class, 'sendBulkNotices'])->name('notices.bulk');
+                Route::delete('/notices/{noticeId}', [AdminEnrollmentController::class, 'deleteNotice'])->name('notices.delete');
                 
                 Route::get('/export', [AdminEnrollmentController::class, 'export'])->name('export');
             });
@@ -427,7 +431,11 @@ Route::prefix('enrollee')->name('enrollee.')->group(function () {
         // Password management
         Route::put('/password/update', [EnrolleeController::class, 'updatePassword'])->name('password.update');
         
+        // Pre-registration
+        Route::post('/pre-register', [EnrolleeController::class, 'preRegister'])->name('pre-register');
+        
         // Logout
         Route::post('/logout', [EnrolleeController::class, 'logout'])->name('logout');
     });
 });
+

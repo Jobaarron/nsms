@@ -657,4 +657,129 @@ class EnrolleeController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Pre-register enrollee as student
+     */
+    public function preRegister(Request $request): JsonResponse
+    {
+        try {
+            $enrollee = Auth::guard('enrollee')->user();
+            
+            \Log::info('Pre-registration attempt', [
+                'enrollee_id' => $enrollee->id,
+                'payment_date' => $enrollee->payment_date,
+                'payment_completed_at' => $enrollee->payment_completed_at,
+                'is_paid' => $enrollee->is_paid,
+                'student_id' => $enrollee->student_id
+            ]);
+            
+            // Check if already pre-registered
+            if ($enrollee->student_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You have already completed pre-registration.'
+                ], 400);
+            }
+            
+            // Check if payment is completed (re-enabled after fixing database issues)
+            if (!$enrollee->payment_date && !$enrollee->payment_completed_at && !$enrollee->is_paid) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You must have completed entrance fee payment to pre-register.'
+                ], 400);
+            }
+            
+            // Generate student ID (format: NS-25001)
+            $latestStudent = \App\Models\Student::orderBy('id', 'desc')->first();
+            $nextNumber = $latestStudent ? (intval(substr($latestStudent->student_id, 3)) + 1) : 25001;
+            $studentId = 'NS-' . str_pad($nextNumber, 5, '0', STR_PAD_LEFT);
+            
+            // Generate password (format: 25-001 based on application_id)
+            $appIdNumber = str_replace('25', '', $enrollee->application_id);
+            $password = '25-' . str_pad($appIdNumber, 3, '0', STR_PAD_LEFT);
+            
+            // Create student record with all available fields
+            try {
+                $fullName = trim($enrollee->first_name . ' ' . ($enrollee->middle_name ? $enrollee->middle_name . ' ' : '') . $enrollee->last_name . ($enrollee->suffix ? ' ' . $enrollee->suffix : ''));
+                
+                $student = \App\Models\Student::create([
+                    'enrollee_id' => $enrollee->id,
+                    'student_id' => $studentId,
+                    'password' => Hash::make($password),
+                    'lrn' => $enrollee->lrn,
+                    'first_name' => $enrollee->first_name,
+                    'middle_name' => $enrollee->middle_name,
+                    'last_name' => $enrollee->last_name,
+                    'suffix' => $enrollee->suffix,
+                    'full_name' => $fullName,
+                    'date_of_birth' => $enrollee->date_of_birth,
+                    'place_of_birth' => $enrollee->place_of_birth,
+                    'gender' => $enrollee->gender,
+                    'nationality' => $enrollee->nationality,
+                    'religion' => $enrollee->religion,
+                    'contact_number' => $enrollee->contact_number,
+                    'email' => $enrollee->email,
+                    'address' => $enrollee->address,
+                    'city' => $enrollee->city,
+                    'province' => $enrollee->province,
+                    'zip_code' => $enrollee->zip_code,
+                    'grade_level' => $enrollee->grade_level_applied,
+                    'strand' => $enrollee->strand_applied,
+                    'track' => $enrollee->track_applied,
+                    'student_type' => $enrollee->student_type,
+                    'enrollment_status' => 'pre_registered',
+                    'academic_year' => $enrollee->academic_year,
+                    'documents' => $enrollee->documents,
+                    'id_photo_data_url' => $enrollee->id_photo_data_url,
+                    'father_name' => $enrollee->father_name,
+                    'father_occupation' => $enrollee->father_occupation,
+                    'father_contact' => $enrollee->father_contact,
+                    'mother_name' => $enrollee->mother_name,
+                    'mother_occupation' => $enrollee->mother_occupation,
+                    'mother_contact' => $enrollee->mother_contact,
+                    'guardian_name' => $enrollee->guardian_name,
+                    'guardian_contact' => $enrollee->guardian_contact,
+                    'last_school_type' => $enrollee->last_school_type,
+                    'last_school_name' => $enrollee->last_school_name,
+                    'medical_history' => $enrollee->medical_history,
+                    'pre_registered_at' => now(),
+                    'is_active' => true
+                ]);
+            
+            } catch (\Exception $studentError) {
+                \Log::error('Error creating student record: ' . $studentError->getMessage());
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error creating student record: ' . $studentError->getMessage()
+                ], 500);
+            }
+            
+            // Update enrollee with student_id
+            $enrollee->update([
+                'student_id' => $studentId,
+                'pre_registered_at' => now()
+            ]);
+            
+            \Log::info('Enrollee pre-registered as student', [
+                'enrollee_id' => $enrollee->id,
+                'student_id' => $studentId,
+                'application_id' => $enrollee->application_id
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Pre-registration completed successfully!',
+                'student_id' => $studentId,
+                'password' => $password // Send password for user reference
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Error during pre-registration: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred during pre-registration. Please try again.'
+            ], 500);
+        }
+    }
 }

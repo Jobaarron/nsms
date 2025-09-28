@@ -16,9 +16,91 @@ class AdminEnrollmentController extends Controller
     /**
      * Display the enrollment management dashboard
      */
-    public function index()
+    public function index(Request $request)
     {
-        return view('admin.enrollments');
+        // Get filter parameters
+        $status = $request->get('status');
+        $gradeLevel = $request->get('grade_level');
+        $search = $request->get('search');
+        
+        // Build query for applications
+        $applicationsQuery = Enrollee::query();
+        
+        // Apply filters
+        if ($status) {
+            $applicationsQuery->where('enrollment_status', $status);
+        }
+        
+        if ($gradeLevel) {
+            $applicationsQuery->where('grade_level_applied', $gradeLevel);
+        }
+        
+        if ($search) {
+            $applicationsQuery->where(function($q) use ($search) {
+                $q->where('first_name', 'like', "%{$search}%")
+                  ->orWhere('last_name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('application_id', 'like', "%{$search}%");
+            });
+        }
+        
+        // Get applications with pagination
+        $applications = $applicationsQuery->orderBy('created_at', 'desc')->paginate(50);
+        
+        // Get summary statistics
+        $totalApplications = Enrollee::count();
+        $pendingApplications = Enrollee::where('enrollment_status', 'pending')->count();
+        $approvedApplications = Enrollee::where('enrollment_status', 'approved')->count();
+        $scheduledAppointments = Enrollee::whereNotNull('preferred_schedule')->count();
+        
+        // Get documents data
+        $documentsData = Enrollee::whereNotNull('documents')
+            ->where('documents', '!=', '[]')
+            ->get()
+            ->map(function ($enrollee) {
+                $documents = is_array($enrollee->documents) ? $enrollee->documents : json_decode($enrollee->documents, true) ?? [];
+                return [
+                    'enrollee' => $enrollee,
+                    'documents' => $documents,
+                    'document_count' => count($documents)
+                ];
+            });
+        
+        // Get appointments data
+        $appointments = Enrollee::whereNotNull('preferred_schedule')
+            ->orWhereNotNull('enrollment_date')
+            ->get()
+            ->map(function ($enrollee) {
+                $status = 'pending';
+                if ($enrollee->enrollment_status === 'approved') {
+                    $status = 'completed';
+                } elseif ($enrollee->preferred_schedule) {
+                    $status = 'scheduled';
+                }
+                
+                return [
+                    'enrollee' => $enrollee,
+                    'status' => $status,
+                    'scheduled_date' => $enrollee->preferred_schedule ?? $enrollee->enrollment_date
+                ];
+            });
+        
+        // Get notices data
+        $notices = Notice::orderBy('created_at', 'desc')->paginate(20);
+        
+        return view('admin.enrollments', compact(
+            'applications',
+            'totalApplications',
+            'pendingApplications', 
+            'approvedApplications',
+            'scheduledAppointments',
+            'documentsData',
+            'appointments',
+            'notices',
+            'status',
+            'gradeLevel',
+            'search'
+        ));
     }
 
     /**
@@ -94,7 +176,11 @@ class AdminEnrollmentController extends Controller
     public function getApplication($id): JsonResponse
     {
         try {
-            $application = Enrollee::where('application_id', $id)->firstOrFail();
+            // Try to find by database ID first, then by application_id
+            $application = Enrollee::where('id', $id)->first();
+            if (!$application) {
+                $application = Enrollee::where('application_id', $id)->firstOrFail();
+            }
             
             return response()->json([
                 'success' => true,
@@ -132,7 +218,13 @@ class AdminEnrollmentController extends Controller
                     'status_reason' => $application->status_reason,
                     'application_date' => $application->application_date,
                     'id_photo_data_url' => $application->id_photo_data_url,
-                    'documents' => $application->documents
+                    'documents' => $application->documents,
+                    'nationality' => $application->nationality,
+                    'religion' => $application->religion,
+                    'lrn' => $application->lrn,
+                    'track_applied' => $application->track_applied,
+                    'created_at' => $application->created_at,
+                    'updated_at' => $application->updated_at
                 ]
             ]);
 
@@ -478,6 +570,68 @@ class AdminEnrollmentController extends Controller
     }
 
     /**
+     * Update appointment details for an application
+     */
+    public function updateAppointment(Request $request, $applicationId): JsonResponse
+    {
+        try {
+            $enrollee = Enrollee::where('application_id', $applicationId)->firstOrFail();
+            
+            $validatedData = $request->validate([
+                'preferred_schedule' => 'nullable|date',
+                'enrollment_date' => 'nullable|date',
+                'admin_notes' => 'nullable|string|max:1000'
+            ]);
+            
+            // Update appointment fields
+            if (isset($validatedData['preferred_schedule'])) {
+                $enrollee->preferred_schedule = $validatedData['preferred_schedule'];
+            }
+            
+            if (isset($validatedData['enrollment_date'])) {
+                $enrollee->enrollment_date = $validatedData['enrollment_date'];
+            }
+            
+            if (isset($validatedData['admin_notes'])) {
+                $enrollee->admin_notes = $validatedData['admin_notes'];
+            }
+            
+            $enrollee->save();
+            
+            // Create a notice for the enrollee about the appointment change
+            if (isset($validatedData['preferred_schedule']) || isset($validatedData['enrollment_date'])) {
+                $message = 'Your appointment details have been updated by the admin.';
+                if (isset($validatedData['preferred_schedule'])) {
+                    $message .= ' New preferred schedule: ' . date('M d, Y g:i A', strtotime($validatedData['preferred_schedule']));
+                }
+                if (isset($validatedData['enrollment_date'])) {
+                    $message .= ' New enrollment date: ' . date('M d, Y', strtotime($validatedData['enrollment_date']));
+                }
+                
+                Notice::create([
+                    'enrollee_id' => $enrollee->id,
+                    'title' => 'Appointment Updated',
+                    'message' => $message,
+                    'priority' => 'normal',
+                    'type' => 'appointment'
+                ]);
+            }
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Appointment updated successfully'
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error updating appointment: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating appointment'
+            ], 500);
+        }
+    }
+
+    /**
      * Create notice for status change
      */
     private function createStatusChangeNotice($application, $oldStatus, $newStatus, $reason = null)
@@ -536,7 +690,11 @@ class AdminEnrollmentController extends Controller
                 'reason' => 'nullable|string|max:500'
             ]);
 
-            $application = Enrollee::where('application_id', $id)->firstOrFail();
+            // Try to find by database ID first, then by application_id
+            $application = Enrollee::where('id', $id)->first();
+            if (!$application) {
+                $application = Enrollee::where('application_id', $id)->firstOrFail();
+            }
             
             $application->update([
                 'enrollment_status' => 'approved',
@@ -578,7 +736,11 @@ class AdminEnrollmentController extends Controller
                 'reason' => 'required|string|max:500'
             ]);
 
-            $application = Enrollee::where('application_id', $id)->firstOrFail();
+            // Try to find by database ID first, then by application_id
+            $application = Enrollee::where('id', $id)->first();
+            if (!$application) {
+                $application = Enrollee::where('application_id', $id)->firstOrFail();
+            }
             
             $application->update([
                 'enrollment_status' => 'rejected',
@@ -617,7 +779,11 @@ class AdminEnrollmentController extends Controller
     public function deleteApplication($id): JsonResponse
     {
         try {
-            $application = Enrollee::where('application_id', $id)->firstOrFail();
+            // Try to find by database ID first, then by application_id
+            $application = Enrollee::where('id', $id)->first();
+            if (!$application) {
+                $application = Enrollee::where('application_id', $id)->firstOrFail();
+            }
             $applicationId = $application->application_id;
             
             // Delete associated notices
@@ -966,7 +1132,120 @@ class AdminEnrollmentController extends Controller
             Log::error('Error sending bulk notices: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Error sending bulk notices'
+                'message' => 'Error sending notices: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * View document file (same as enrollee functionality)
+     */
+    public function viewDocument($enrolleeId, $index)
+    {
+        try {
+            $enrollee = Enrollee::findOrFail($enrolleeId);
+            
+            // Handle both array and JSON string formats
+            $documents = $enrollee->documents;
+            if (is_string($documents)) {
+                $documents = json_decode($documents, true) ?? [];
+            }
+            if (!is_array($documents)) {
+                $documents = [];
+            }
+            
+            if (!isset($documents[$index])) {
+                abort(404, 'Document not found');
+            }
+            
+            $document = $documents[$index];
+            
+            // Handle both old format (string paths) and new format (arrays with metadata)
+            if (is_string($document)) {
+                // Old format: just the file path
+                $filePath = storage_path('app/public/' . $document);
+            } else {
+                // New format: array with metadata
+                $filePath = storage_path('app/public/' . $document['path']);
+            }
+            
+            if (!file_exists($filePath)) {
+                abort(404, 'File not found');
+            }
+            
+            return response()->file($filePath);
+            
+        } catch (\Exception $e) {
+            Log::error('Error viewing document: ' . $e->getMessage());
+            abort(404, 'Document not found');
+        }
+    }
+
+    /**
+     * Download document file
+     */
+    public function downloadDocument($enrolleeId, $index)
+    {
+        try {
+            $enrollee = Enrollee::findOrFail($enrolleeId);
+            
+            // Handle both array and JSON string formats
+            $documents = $enrollee->documents;
+            if (is_string($documents)) {
+                $documents = json_decode($documents, true) ?? [];
+            }
+            if (!is_array($documents)) {
+                $documents = [];
+            }
+            
+            if (!isset($documents[$index])) {
+                abort(404, 'Document not found');
+            }
+            
+            $document = $documents[$index];
+            
+            // Handle both old format (string paths) and new format (arrays with metadata)
+            if (is_string($document)) {
+                // Old format: just the file path
+                $filePath = storage_path('app/public/' . $document);
+                $filename = basename($document);
+            } else {
+                // New format: array with metadata
+                $filePath = storage_path('app/public/' . $document['path']);
+                $filename = $document['filename'] ?? basename($document['path']);
+            }
+            
+            if (!file_exists($filePath)) {
+                abort(404, 'File not found');
+            }
+            
+            return response()->download($filePath, $filename);
+            
+        } catch (\Exception $e) {
+            Log::error('Error downloading document: ' . $e->getMessage());
+            abort(404, 'Document not found');
+        }
+    }
+
+    /**
+     * Delete notice
+     */
+    public function deleteNotice($noticeId)
+    {
+        try {
+            $notice = Notice::findOrFail($noticeId);
+            $notice->delete();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Notice deleted successfully'
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error deleting notice: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error deleting notice: ' . $e->getMessage()
             ], 500);
         }
     }

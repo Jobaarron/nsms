@@ -407,23 +407,31 @@
 
                     <div class="mb-3">
                         <label for="bulk-notice-message" class="form-label">Message</label>
-                        <textarea class="form-control" id="bulk-notice-message" rows="5" required placeholder="Enter your bulk notice message..."></textarea>
+                        <textarea class="form-control" id="bulk-notice-message" rows="4" required placeholder="Enter your notice message here..."></textarea>
                     </div>
 
+                    <!-- Email notification feature commented out for future implementation -->
+                    <!--
                     <div class="mb-3">
                         <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="bulk-notice-email">
-                            <label class="form-check-label" for="bulk-notice-email">
-                                Also send via email
+                            <input class="form-check-input" type="checkbox" id="send-email-notification">
+                            <label class="form-check-label" for="send-email-notification">
+                                Also send email notification
                             </label>
                         </div>
+                    </div>
+                    -->
+
+                    <div class="alert alert-info">
+                        <i class="ri-information-line me-2"></i>
+                        <strong>Notice:</strong> This notice will be sent to selected enrollees/students through the internal notification system only. Email notifications are planned for future implementation.
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-primary" onclick="sendBulkNotice()">
-                    <i class="ri-send-plane-line me-1"></i>Send Bulk Notice
+                    <i class="ri-send-plane-line me-1"></i>Send Internal Notice
                 </button>
             </div>
         </div>
@@ -708,6 +716,91 @@
                     <span class="visually-hidden">Loading...</span>
                 </div>
                 <p class="mb-0">Processing request...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Change Appointment Modal -->
+<div class="modal fade" id="changeAppointmentModal" tabindex="-1" aria-labelledby="changeAppointmentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="changeAppointmentModalLabel">
+                    <i class="ri-calendar-edit-line me-2"></i>Change Appointment
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <h6>Application Details</h6>
+                    <p><strong>Application ID:</strong> <span id="change-app-id"></span></p>
+                    <p><strong>Student Name:</strong> <span id="change-student-name"></span></p>
+                </div>
+                
+                <div class="mb-3">
+                    <h6>Current Appointment Information</h6>
+                    <p><strong>Preferred Schedule:</strong> <span id="current-schedule" class="text-muted"></span></p>
+                    <p><strong>Enrollment Date:</strong> <span id="current-enrollment-date" class="text-muted"></span></p>
+                </div>
+                
+                <hr>
+                
+                <div class="mb-3">
+                    <label for="new-preferred-schedule" class="form-label">New Preferred Schedule</label>
+                    <input type="datetime-local" class="form-control" id="new-preferred-schedule">
+                    <div class="form-text">Set the new preferred appointment time for the applicant</div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="new-enrollment-date" class="form-label">New Enrollment Date</label>
+                    <input type="date" class="form-control" id="new-enrollment-date">
+                    <div class="form-text">Set the new enrollment date</div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="appointment-notes" class="form-label">Notes</label>
+                    <textarea class="form-control" id="appointment-notes" rows="3" placeholder="Add any notes about the appointment change..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="confirmAppointmentChange()">
+                    <i class="ri-save-line me-1"></i>Update Appointment
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Document Viewer Modal -->
+<div class="modal fade" id="documentViewerModal" tabindex="-1" aria-labelledby="documentViewerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="documentViewerModalLabel">
+                    <i class="ri-file-text-line me-2"></i>Document Viewer
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <div class="spinner-border text-primary mb-3" role="status" id="documentLoader">
+                        <span class="visually-hidden">Loading document...</span>
+                    </div>
+                    <div id="documentContent" style="display: none;">
+                        <!-- Document content will be loaded here -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="downloadDocBtn">
+                    <i class="ri-download-line me-1"></i>Download
+                </button>
+                <button type="button" class="btn btn-info" id="openNewTabBtn">
+                    <i class="ri-external-link-line me-1"></i>Open in New Tab
+                </button>
             </div>
         </div>
     </div>

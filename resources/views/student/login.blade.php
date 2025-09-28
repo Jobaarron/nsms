@@ -27,19 +27,20 @@
                     @csrf
                     
                     <div class="mb-3">
-                        <label for="email" class="form-label fw-semibold" style="color: var(--primary-color);">
-                            <i class="ri-mail-line me-2"></i>Email Address
+                        <label for="student_id" class="form-label fw-semibold" style="color: var(--primary-color);">
+                            <i class="ri-user-3-line me-2"></i>Student ID
                         </label>
                         <input
-                            type="email"
-                            id="email"
-                            name="email"
-                            class="form-control form-control-lg @error('email') is-invalid @enderror"
-                            value="{{ old('email') }}"
+                            type="text"
+                            id="student_id"
+                            name="student_id"
+                            class="form-control form-control-lg @error('student_id') is-invalid @enderror"
+                            value="{{ old('student_id') }}"
                             required
-                            placeholder="your.email@example.com"
+                            placeholder="NS-25001"
+                            style="text-transform: uppercase;"
                         />
-                        @error('email')
+                        @error('student_id')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
