@@ -33,11 +33,11 @@ class StudentController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'email' => 'required|email',
+            'student_id' => 'required|string',
             'password' => 'required',
         ]);
 
-        $credentials = $request->only('email', 'password');
+        $credentials = $request->only('student_id', 'password');
 
         if (Auth::guard('student')->attempt($credentials)) {
             $request->session()->regenerate();
@@ -46,8 +46,8 @@ class StudentController extends Controller
         }
 
         return back()->withErrors([
-            'email' => 'The provided credentials do not match our records.',
-        ])->onlyInput('email');
+            'student_id' => 'The provided credentials do not match our records.',
+        ])->onlyInput('student_id');
     }
 
     public function violations()

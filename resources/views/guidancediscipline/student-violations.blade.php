@@ -364,11 +364,6 @@
                         placeholder="Names of witnesses (one per line)"></textarea>
             </div>
             
-            <div class="mb-3">
-              <label for="evidence" class="form-label">Evidence Description</label>
-              <textarea class="form-control" id="evidence" name="evidence" rows="2"
-                        placeholder="Describe any evidence"></textarea>
-            </div>
             
             <div class="mb-3">
               <label for="attachments" class="form-label">Attachments</label>

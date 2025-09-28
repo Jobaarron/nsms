@@ -8,14 +8,14 @@ const baseUrl = document.querySelector('meta[name="base-url"]')?.getAttribute('c
 // Configuration for API endpoints
 const endpoints = {
     userRoles: (userId) => `${baseUrl}/admin/users/${userId}/roles`,
-    assignRole: `${baseUrl}/admin/roles-access/assign-role`,
-    removeRole: `${baseUrl}/admin/roles-access/remove-role`,
-    createRole: `${baseUrl}/admin/roles-access/create-role`,
-    updateRole: (id) => `${baseUrl}/admin/roles-access/update-role/${id}`,
-    deleteRole: (id) => `${baseUrl}/admin/roles-access/delete-role/${id}`,
-    createPermission: `${baseUrl}/admin/roles-access/create-permission`,
-    updatePermission: (id) => `${baseUrl}/admin/roles-access/update-permission/${id}`,
-    deletePermission: (id) => `${baseUrl}/admin/roles-access/delete-permission/${id}`
+    assignRole: `${baseUrl}/admin/assign-role`,
+    removeRole: `${baseUrl}/admin/remove-role`,
+    createRole: `${baseUrl}/admin/create-role`,
+    updateRole: (id) => `${baseUrl}/admin/roles/${id}`,
+    deleteRole: (id) => `${baseUrl}/admin/roles/${id}`,
+    createPermission: `${baseUrl}/admin/create-permission`,
+    updatePermission: (id) => `${baseUrl}/admin/permissions/${id}`,
+    deletePermission: (id) => `${baseUrl}/admin/permissions/${id}`
 };
 
 // Check if role-modals.js utilities are available

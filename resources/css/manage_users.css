@@ -787,6 +787,18 @@
     border-color: #689F38;
 }
 
+/* Ensure all buttons are always visible */
+.btn, .btn-outline-primary, .btn-outline-success, .btn-outline-danger, .btn-outline-info, .btn-outline-warning, .btn-outline-secondary {
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+/* Modal buttons visibility fix */
+.modal .btn {
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
 /* Checkbox Styling */
 .form-check-input:checked {
     background-color: #7CB342;

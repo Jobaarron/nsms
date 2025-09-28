@@ -9,91 +9,30 @@ use App\Models\GuidanceDiscipline;
 use App\Models\User;
 use App\Models\Student;
 use App\Models\Violation;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
 use Illuminate\Support\Facades\Storage;
 
 class GuidanceDisciplineController extends Controller
 {
     public function __construct()
     {
-        // Ensure roles and permissions exist when controller is instantiated
-        $this->ensureRolesAndPermissionsExist();
+        // Role and permission management is handled by RolePermissionSeeder
+        // No need to create roles/permissions here
     }
 
     // PUBLIC METHODS (No authentication required)
 
-    /**
-     * Show public guidance account generator (no login required)
-     */
-    public function showPublicGenerator()
-    {
-        // Check if any guidance roles exist to show appropriate message
-        $guidanceRoleExists = Role::whereIn('name', ['guidance_counselor', 'discipline_officer', 'security_guard'])->exists();
-        $guidanceExists = User::whereHas('roles', function($query) {
-            $query->whereIn('name', ['guidance_counselor', 'discipline_officer', 'security_guard']);
-        })->exists();
+    // REMOVED: showPublicGenerator() method
+    // This functionality has been moved to UserManagementController
+    // The guidancediscipline-generator.blade.php view is no longer needed as guidance/discipline
+    // account creation is now handled through the centralized user management system
 
-        return view('guidancediscipline.guidancediscipline-generator', compact('guidanceRoleExists', 'guidanceExists'));
-    }
-
-    /**
-     * Handle public account creation (no login required)
-     */
-    public function createPublicAccount(Request $request)
-    {
-        $request->validate([
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|min:8|confirmed',
-            'role' => 'required|in:guidance_counselor,discipline_officer,security_guard',
-            'employee_id' => 'required|string|unique:guidance_discipline,employee_id',
-            'phone_number' => 'nullable|string|max:20',
-            'address' => 'nullable|string|max:500',
-            'position' => 'nullable|string|max:255',
-            'hire_date' => 'nullable|date|before_or_equal:today',
-            'qualifications' => 'nullable|string|max:1000',
-            'emergency_contact_name' => 'nullable|string|max:255',
-            'emergency_contact_phone' => 'nullable|string|max:20',
-            'emergency_contact_relationship' => 'nullable|in:spouse,parent,sibling,child,friend,other',
-            'notes' => 'nullable|string|max:1000',
-        ]);
-
-        // Determine department based on role
-        $department = $this->getDepartmentFromRole($request->role);
-
-        // Create user (basic auth info only)
-        $user = User::create([
-            'name' => $request->first_name . ' ' . $request->last_name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-        ]);
-
-        // Create guidance discipline record (detailed staff info)
-        $guidanceRecord = GuidanceDiscipline::create([
-            'user_id' => $user->id,
-            'employee_id' => $request->employee_id,
-            'first_name' => $request->first_name,
-            'last_name' => $request->last_name,
-            'phone_number' => $request->phone_number,
-            'address' => $request->address,
-            'position' => $request->position,
-            'hire_date' => $request->hire_date,
-            'qualifications' => $request->qualifications,
-            'emergency_contact_name' => $request->emergency_contact_name,
-            'emergency_contact_phone' => $request->emergency_contact_phone,
-            'emergency_contact_relationship' => $request->emergency_contact_relationship,
-            'notes' => $request->notes,
-            'department' => $department,
-        ]);
-
-        // Assign role and permissions
-        $this->assignUserRoleAndPermissions($user, $request->role);
-
-        return redirect()->route('guidance.generator')
-            ->with('success', 'Guidance account created successfully for ' . $guidanceRecord->first_name . ' ' . $guidanceRecord->last_name . ' (' . ucwords(str_replace('_', ' ', $request->role)) . '). You can now login to the system.');
-    }
+    // REMOVED: createPublicAccount() method
+    // This functionality has been moved to UserManagementController with specialized methods:
+    // - createGuidanceCounselor()
+    // - createDisciplineOfficer() 
+    // - createDisciplineHead()
+    // The guidancediscipline-generator.blade.php view is no longer needed as account creation
+    // is now handled through the centralized user management system with proper role-based modals
 
     // PROTECTED METHODS (Authentication required)
 
@@ -214,7 +153,7 @@ class GuidanceDisciplineController extends Controller
         ]);
 
         // Determine department based on role
-        $department = $this->getDepartmentFromRole($request->role);
+        $department = in_array($request->role, ['discipline_officer', 'discipline_head']) ? 'discipline' : 'guidance';
 
         // Create user
         $user = User::create([
@@ -237,191 +176,15 @@ class GuidanceDisciplineController extends Controller
             'is_active' => true,
         ]);
 
-        // Assign role and permissions
-        $this->assignUserRoleAndPermissions($user, $request->role);
+        // Assign role (permissions are handled by RolePermissionSeeder)
+        $user->assignRole($request->role);
 
         return redirect()->route('guidance.dashboard')
             ->with('success', 'Account created successfully for ' . $user->first_name . ' ' . $user->last_name . ' (' . ucwords(str_replace('_', ' ', $request->role)) . ')');
     }
 
-    // ... rest of your private methods remain the same
-    
-    /**
-     * Ensure all required roles and permissions exist in the system
-     */
-    private function ensureRolesAndPermissionsExist()
-    {
-        // Create roles if they don't exist
-        $roles = [
-            'guidance_counselor' => 'Guidance Counselor',
-            'discipline_officer' => 'Discipline Officer', 
-            'security_guard' => 'Security Guard'
-        ];
-
-        foreach ($roles as $roleName => $displayName) {
-            Role::firstOrCreate([
-                'name' => $roleName, 
-                'guard_name' => 'web'
-            ]);
-        }
-
-        // Create permissions if they don't exist
-        $permissions = [
-            'view_students',
-            'view_counseling_records',
-            'create_counseling_records',
-            'edit_counseling_records',
-            'view_violations',
-            'create_violations',
-            'edit_violations',
-            'delete_violations',
-            'view_disciplinary_actions',
-            'create_disciplinary_actions',
-            'use_facial_recognition',
-            'create_guidance_accounts',
-        ];
-
-        foreach ($permissions as $permissionName) {
-            Permission::firstOrCreate([
-                'name' => $permissionName,
-                'guard_name' => 'web'
-            ]);
-        }
-
-        // Assign permissions to roles
-        $this->assignPermissionsToRoles();
-    }
-
-    /**
-     * Assign permissions to each role
-     */
-    private function assignPermissionsToRoles()
-    {
-        // Guidance Counselor permissions
-        $guidanceCounselor = Role::findByName('guidance_counselor');
-        $guidancePermissions = [
-            'view_students',
-            'view_counseling_records',
-            'create_counseling_records',
-            'edit_counseling_records',
-            'view_violations',
-            'create_guidance_accounts',
-        ];
-        
-        foreach ($guidancePermissions as $permission) {
-            if (!$guidanceCounselor->hasPermissionTo($permission)) {
-                $guidanceCounselor->givePermissionTo($permission);
-            }
-        }
-
-        // Discipline Officer permissions
-        $disciplineOfficer = Role::findByName('discipline_officer');
-        $disciplinePermissions = [
-            'view_students',
-            'view_violations',
-            'create_violations',
-            'edit_violations',
-            'delete_violations',
-            'view_disciplinary_actions',
-            'create_disciplinary_actions',
-        ];
-        
-        foreach ($disciplinePermissions as $permission) {
-            if (!$disciplineOfficer->hasPermissionTo($permission)) {
-                $disciplineOfficer->givePermissionTo($permission);
-            }
-        }
-
-        // Security Guard permissions
-        $securityGuard = Role::findByName('security_guard');
-        $securityPermissions = [
-            'view_students',
-            'view_violations',
-            'create_violations',
-            'use_facial_recognition',
-        ];
-        
-        foreach ($securityPermissions as $permission) {
-            if (!$securityGuard->hasPermissionTo($permission)) {
-                $securityGuard->givePermissionTo($permission);
-            }
-        }
-    }
-
-    /**
-     * Assign role and permissions to a user
-     */
-    private function assignUserRoleAndPermissions($user, $roleName)
-    {
-        // Assign the role
-        $user->assignRole($roleName);
-
-        // Get role-specific permissions
-        $permissions = $this->getRolePermissions($roleName);
-
-        // Assign permissions directly to user (for better performance)
-        foreach ($permissions as $permissionName) {
-            $permission = Permission::where('name', $permissionName)
-                                   ->where('guard_name', 'web')
-                                   ->first();
-                                   if ($permission && !$user->hasDirectPermission($permission)) {
-                                    $user->givePermissionTo($permission);
-                                }
-                            }
-                    
-                            // Refresh user permissions and roles
-                            $user->load('permissions', 'roles');
-                        }
-                        private function getRolePermissions($roleName)
-                        {
-                            switch ($roleName) {
-                                case 'guidance_counselor':
-                                    return [
-                                        'view_students',
-                                        'view_counseling_records',
-                                        'create_counseling_records',
-                                        'edit_counseling_records',
-                                        'view_violations',
-                                        'create_guidance_accounts',
-                                    ];
-                                case 'discipline_officer':
-                                    return [
-                                        'view_students',
-                                        'view_violations',
-                                        'create_violations',
-                                        'edit_violations',
-                                        'delete_violations',
-                                        'view_disciplinary_actions',
-                                        'create_disciplinary_actions',
-                                    ];
-                                case 'security_guard':
-                                    return [
-                                        'view_students',
-                                        'view_violations',
-                                        'create_violations',
-                                        'use_facial_recognition',
-                                    ];
-                                default:
-                                    return [];
-                            }
-                        }
-                    
-                        /**
-                         * Get department from role
-                         */
-                        private function getDepartmentFromRole($role)
-                        {
-                        switch ($role) {
-                        case 'guidance_counselor':
-                        return 'guidance';
-                        case 'discipline_officer':
-                        return 'discipline';
-                        case 'security_guard':
-                        return 'security';
-                        default:
-                        return 'other';
-                        }
-                        }
+    // All role and permission management is now handled by RolePermissionSeeder
+    // This keeps the controller focused on its core guidance/discipline functionality
 
     // STUDENT MANAGEMENT METHODS
 

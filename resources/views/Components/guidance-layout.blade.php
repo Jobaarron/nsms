@@ -1,11 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <meta name="csrf-token" content="{{ csrf_token() }}"/>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
 
-  <title>Guidance & Discipline • NSMS</title>
+  <title>Guidance & Discipline | Nicolites Portal</title>
 
   <!-- Remix Icons -->
   <link 
@@ -31,6 +36,11 @@
 
       <!-- SIDEBAR -->
       <nav class="col-12 col-md-2 sidebar d-none d-md-block py-4">
+        <!-- School Logo -->
+        <div class="text-center mb-3">
+          <img src="{{ Vite::asset('resources/assets/images/nms logo.png') }}" alt="Nicolites Montessori School" class="sidebar-logo">
+        </div>
+        
         <!-- User Info -->
         <div class="user-info">
           <div class="user-name">{{ Auth::user()->name }}</div>

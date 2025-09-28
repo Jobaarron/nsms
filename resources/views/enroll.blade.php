@@ -7,6 +7,7 @@
                 <div class="text-center mb-4">
                     <i class="ri-user-add-line" style="font-size: 4rem; color: var(--primary-color);"></i>
                     <h2 class="page-header mb-2">Student Enrollment</h2>
+                    <br><br>
                     <p class="text-muted">Please fill out the form below to apply</p>
                 </div>
 
@@ -72,7 +73,7 @@
                                 required
                             >
                                 <option value="">-- Select Type --</option>
-                                <option value="new" {{ old('student_type')=='new' ? 'selected':'' }}>New Student</option>
+                                <option value="new" {{ old('student_type')=='new' ? 'selected':'' }}>New</option>
                                 <option value="transferee" {{ old('student_type')=='transferee' ? 'selected':'' }}>Transferee</option>
                                 <option value="returnee" {{ old('student_type')=='returnee' ? 'selected':'' }}>Returnee</option>
                                 <option value="continuing" {{ old('student_type')=='continuing' ? 'selected':'' }}>Continuing</option>
@@ -325,8 +326,8 @@
                             >
                                 <option value="">-- Select Grade --</option>
                                 <option value="Nursery" {{ old('grade_level')=='Nursery' ? 'selected':'' }}>Nursery</option>
-                                <option value="Kinder 1" {{ old('grade_level')=='Kinder 1' ? 'selected':'' }}>Kinder 1</option>
-                                <option value="Kinder 2" {{ old('grade_level')=='Kinder 2' ? 'selected':'' }}>Kinder 2</option>
+                                <option value="Junior Casa" {{ old('grade_level')=='Junior Casa' ? 'selected':'' }}>Junior Casa</option>
+                                <option value="Senior Casa" {{ old('grade_level')=='Senior Casa' ? 'selected':'' }}>Senior Casa</option>
                                 <option value="Grade 1" {{ old('grade_level')=='Grade 1' ? 'selected':'' }}>Grade 1</option>
                                 <option value="Grade 2" {{ old('grade_level')=='Grade 2' ? 'selected':'' }}>Grade 2</option>
                                 <option value="Grade 3" {{ old('grade_level')=='Grade 3' ? 'selected':'' }}>Grade 3</option>
@@ -355,7 +356,6 @@
                                 <option value="STEM" {{ old('strand')=='STEM' ? 'selected':'' }}>STEM</option>
                                 <option value="ABM" {{ old('strand')=='ABM' ? 'selected':'' }}>ABM</option>
                                 <option value="HUMSS" {{ old('strand')=='HUMSS' ? 'selected':'' }}>HUMSS</option>
-                                <option value="GAS" {{ old('strand')=='GAS' ? 'selected':'' }}>GAS</option>
                                 <option value="TVL-ICT" {{ old('strand')=='TVL-ICT' ? 'selected':'' }}>TVL-ICT</option>
                                 <option value="TVL-HE" {{ old('strand')=='TVL-HE' ? 'selected':'' }}>TVL-HE</option>
                             </select>
@@ -564,8 +564,8 @@
                                 <option value="">-- Select Mode --</option>
                                 <option value="cash" {{ old('payment_mode')=='cash'?'selected':'' }}>Cash</option>
                                 <option value="online payment" {{ old('payment_mode')=='Online Payment'?'selected':'' }}>Online Payment</option>
-                                {{-- <option value="installment" {{ old('payment_mode')=='installment'?'selected':'' }}>Installment</option>
-                                <option value="scholarship" {{ old('payment_mode')=='scholarship'?'selected':'' }}>Scholarship</option> --}}
+                                <option value="installment" {{ old('payment_mode')=='installment'?'selected':'' }}>Installment</option>
+                                {{-- <option value="scholarship" {{ old('payment_mode')=='scholarship'?'selected':'' }}>Scholarship</option> --}}
                             </select>
                             @error('payment_mode') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>

@@ -8,8 +8,7 @@ use Spatie\Permission\Models\Permission;
 use App\Models\User;
 use App\Models\Admin;
 use App\Models\Teacher;
-use App\Models\GuidanceCounsellor;
-use App\Models\DisciplineOfficer;
+use App\Models\GuidanceDiscipline;
 
 class RolePermissionSeeder extends Seeder
 {
@@ -18,145 +17,192 @@ class RolePermissionSeeder extends Seeder
         // Reset cached roles and permissions
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // Create permissions for school management system
+        // Create permissions based on actual views/routes accessible in each layout sidebar
         $permissions = [
-            // Student Management
-            'view students',
-            'create students',
-            'edit students',
-            'delete students',
-            'approve student enrollment',
-            'reject student enrollment',
+            // ADMIN LAYOUT PERMISSIONS (admin-layout.blade.php)
+            'Dashboard',
+            'Roles & Access',
+            'Manage Users',
+            'Manage Enrollments',
+            'Contact Messages',
             
-            // Teacher Management
-            'view teachers',
-            'create teachers',
-            'edit teachers',
-            'delete teachers',
-            'assign teacher subjects',
+            // TEACHER LAYOUT PERMISSIONS (teacher-layout.blade.php)
+            'Teacher Dashboard',
+            'My Classes',
+            'View Students',
+            'Grade Book',
+            'Attendance Management',
+            'Teacher Messages',
             
-            // Academic Management
-            'view grades',
-            'create grades',
-            'edit grades',
-            'delete grades',
-            'view class schedules',
-            'manage class schedules',
+            // GUIDANCE LAYOUT PERMISSIONS (guidance-layout.blade.php)
+            'Guidance Dashboard',
+            'Student Profiles',
+            'Violations Management',
+            'Facial Recognition',
+            'Counseling Services',
+            'Career Advice',
+            'Guidance Analytics',
+            'Guidance Settings',
             
-            // Enrollment Management
-            'view enrollments',
-            'process enrollments',
-            'approve enrollments',
-            'reject enrollments',
+            // STUDENT LAYOUT PERMISSIONS (student-layout.blade.php)
+            'Student Dashboard',
+            'View Violations',
+            'Student Payments',
+            'My Subjects',
+            'Guidance Notes',
+            'Student Profile',
             
-            // Financial Management
-            'view payments',
-            'process payments',
-            'update payment status',
-            'generate financial reports',
+            // ENROLLEE LAYOUT PERMISSIONS (enrollee-layout.blade.php)
+            'Enrollee Dashboard',
+            'My Application',
+            'Documents Management',
+            'Payment Portal',
+            'Schedule View',
             
-            // Guidance Services
-            'view student counseling records',
-            'create counseling records',
-            'edit counseling records',
-            'schedule counseling sessions',
-            'view guidance reports',
-            'create guidance reports',
-            
-            // Discipline Management
-            'view disciplinary records',
-            'create disciplinary records',
-            'edit disciplinary records',
-            'delete disciplinary records',
-            'issue disciplinary actions',
-            'view discipline reports',
-            
-            // System Administration
-            'manage users',
-            'manage roles',
-            'view system settings',
-            'edit system settings',
-            'backup system',
-            'view audit logs',
-            
-            // Reports & Analytics
-            'view reports',
-            'generate reports',
-            'export reports',
-            'view analytics dashboard',
+            // CORE SYSTEM PERMISSIONS (for AdminController compatibility)
+            'View Reports',
+            'View Analytics',
+            'System Settings',
+            'Manage Admins',
+            'Database Management',
+            'Backup & Restore',
+            'Manage Roles',
         ];
 
+        // Create permissions first
         foreach ($permissions as $permission) {
-            Permission::create(['name' => $permission]);
+            Permission::firstOrCreate([
+                'name' => $permission,
+                'guard_name' => 'web'
+            ]);
         }
 
         // Create roles and assign permissions
         
-        // Admin - Full system access
-        $admin = Role::create(['name' => 'admin']);
-        $admin->givePermissionTo([
-            // Student Management
-            'view students', 'create students', 'edit students', 'delete students',
-            'approve student enrollment', 'reject student enrollment',
-            
-            // Teacher Management
-            'view teachers', 'create teachers', 'edit teachers', 'delete teachers',
-            'assign teacher subjects',
-            
-            // Academic Management
-            'view grades', 'create grades', 'edit grades', 'delete grades',
-            'view class schedules', 'manage class schedules',
-            
-            // Enrollment Management
-            'view enrollments', 'process enrollments', 'approve enrollments', 'reject enrollments',
-            
-            // Financial Management
-            'view payments', 'process payments', 'update payment status', 'generate financial reports',
-            
-            // System Administration
-            'manage users', 'manage roles', 'view system settings', 'edit system settings',
-            'backup system', 'view audit logs',
-            
-            // Reports & Analytics
-            'view reports', 'generate reports', 'export reports', 'view analytics dashboard',
+        // ADMIN ROLE - Based on admin-layout.blade.php sidebar navigation
+        $admin = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
+        $admin->syncPermissions([
+            'Dashboard',
+            'Roles & Access',
+            'Manage Users',
+            'Manage Enrollments',
+            'Contact Messages',
+            'View Reports',
+            'View Analytics',
+            'System Settings',
+            'Manage Admins',
+            'Database Management',
+            'Backup & Restore',
+            'Manage Roles',
         ]);
 
-        // Teacher - Academic focused permissions
-        $teacher = Role::create(['name' => 'teacher']);
-        $teacher->givePermissionTo([
-            'view students',
-            'view grades', 'create grades', 'edit grades',
-            'view class schedules',
-            'view enrollments',
-            'view reports',
+        // TEACHER ROLE - Based on teacher-layout.blade.php sidebar navigation  
+        $teacher = Role::firstOrCreate(['name' => 'teacher', 'guard_name' => 'web']);
+        $teacher->syncPermissions([
+            'Teacher Dashboard',
+            'My Classes',
+            'View Students',
+            'Grade Book',
+            'Attendance Management',
+            'Teacher Messages',
         ]);
 
-        // Guidance - Student counseling and welfare
-        $guidance = Role::create(['name' => 'guidance']);
-        $guidance->givePermissionTo([
-            'view students', 'edit students',
-            'view student counseling records', 'create counseling records', 'edit counseling records',
-            'schedule counseling sessions', 'view guidance reports', 'create guidance reports',
-            'view enrollments',
-            'view reports', 'generate reports',
+        // GUIDANCE ROLE - REMOVED (duplicate of guidance_counselor)
+        // Generic guidance role removed in favor of specific guidance_counselor role
+
+        // GUIDANCE COUNSELOR ROLE - Specialized guidance role
+        $guidanceCounselor = Role::firstOrCreate(['name' => 'guidance_counselor', 'guard_name' => 'web']);
+        $guidanceCounselor->syncPermissions([
+            'Guidance Dashboard',
+            'Student Profiles',
+            'Counseling Services',
+            'Career Advice',
+            'Guidance Analytics',
+            'Guidance Settings',
         ]);
 
-        // Discipline - Student behavior and disciplinary actions
-        $discipline = Role::create(['name' => 'discipline']);
-        $discipline->givePermissionTo([
-            'view students', 'edit students',
-            'view disciplinary records', 'create disciplinary records', 'edit disciplinary records',
-            'delete disciplinary records', 'issue disciplinary actions', 'view discipline reports',
-            'view enrollments',
-            'view reports', 'generate reports',
+        // DISCIPLINE HEAD ROLE - Senior discipline management
+        $disciplineHead = Role::firstOrCreate(['name' => 'discipline_head', 'guard_name' => 'web']);
+        $disciplineHead->syncPermissions([
+            'Guidance Dashboard',
+            'Student Profiles',
+            'Violations Management',
+            'Facial Recognition',
+            'Guidance Analytics',
+            'Guidance Settings',
         ]);
 
-        // Student - Limited self-service access
-        $student = Role::create(['name' => 'student']);
-        $student->givePermissionTo([
-            'view grades', // Only their own grades
-            'view class schedules', // Only their own schedule
-            'view payments', // Only their own payment status
+        // DISCIPLINE OFFICER ROLE - Basic discipline functions
+        $disciplineOfficer = Role::firstOrCreate(['name' => 'discipline_officer', 'guard_name' => 'web']);
+        $disciplineOfficer->syncPermissions([
+            'Guidance Dashboard',
+            'Student Profiles',
+            'Violations Management',
+            'Facial Recognition',
+        ]);
+
+        // CASHIER ROLE - Financial transactions
+        $cashier = Role::firstOrCreate(['name' => 'cashier', 'guard_name' => 'web']);
+        $cashier->syncPermissions([
+            'Dashboard',
+            'Student Payments',
+            'Manage Enrollments',
+        ]);
+
+        // FACULTY HEAD ROLE - Academic leadership
+        $facultyHead = Role::firstOrCreate(['name' => 'faculty_head', 'guard_name' => 'web']);
+        $facultyHead->syncPermissions([
+            'Teacher Dashboard',
+            'My Classes',
+            'View Students',
+            'Grade Book',
+            'Attendance Management',
+            'Teacher Messages',
+            'Guidance Analytics',
+        ]);
+
+        // DISCIPLINE ROLE - Keep for backward compatibility
+        $discipline = Role::firstOrCreate(['name' => 'discipline', 'guard_name' => 'web']);
+        $discipline->syncPermissions([
+            'Guidance Dashboard',
+            'Student Profiles',
+            'Violations Management',
+            'Facial Recognition',
+        ]);
+
+        // Super Admin - Full system access including role management
+        $superAdmin = Role::firstOrCreate(['name' => 'super_admin', 'guard_name' => 'web']);
+        $superAdmin->syncPermissions(Permission::all()); // Give all permissions
+
+        // STUDENT ROLE - Based on student-layout.blade.php sidebar navigation
+        $student = Role::firstOrCreate(['name' => 'student', 'guard_name' => 'web']);
+        $student->syncPermissions([
+            'Student Dashboard',
+            'View Violations',
+            'Student Payments',
+            'My Subjects',
+            'Guidance Notes',
+            'Student Profile',
+        ]);
+
+        // ENROLLEE/APPLICANT ROLE - Based on enrollee-layout.blade.php sidebar navigation
+        // $enrollee = Role::firstOrCreate(['name' => 'enrollee', 'guard_name' => 'web']);
+        // $enrollee->syncPermissions([
+        //     'Enrollee Dashboard',
+        //     'My Application',
+        //     'Documents Management',
+        //     'Payment Portal',
+        //     'Schedule View',
+        // ]);
+
+        // APPLICANT ROLE - Uniform naming for enrollees/applicants
+        $applicant = Role::firstOrCreate(['name' => 'applicant', 'guard_name' => 'web']);
+        $applicant->syncPermissions([
+            'Enrollee Dashboard',
+            'My Application',
+            'Documents Management',
+            'Payment Portal',
+            'Schedule View',
         ]);
 
         // CREATE SAMPLE USERS WITH PROPER MODELS
@@ -178,94 +224,122 @@ class RolePermissionSeeder extends Seeder
             'is_active' => true,
         ]);
         
-        $adminUser->assignRole('admin');
+        // Assign both admin and super_admin roles
+        $adminUser->assignRole(['super_admin', 'admin']);
 
-        // 2. Create Teacher User with Teacher model
-        // $teacherUser = User::create([
-        //     'name' => 'Sample Teacher',
-        //     'email' => 'teacher@nicolites.edu',
-        //     'password' => bcrypt('teacher123'),
-        // ]);
+        // 2. Create Guidance Counselor User
+        $guidanceUser = User::create([
+            'name' => 'Maria Santos',
+            'email' => 'guidance@nicolites.edu',
+            'password' => bcrypt('guidance123'),
+        ]);
+        
+        // Create GuidanceDiscipline record for Guidance Counselor
+        GuidanceDiscipline::create([
+            'user_id' => $guidanceUser->id,
+            'employee_id' => 'GDC001',
+            'first_name' => 'Maria',
+            'last_name' => 'Santos',
+            'phone_number' => '09123456789',
+            'address' => '123 Guidance Street, Quezon City',
+            'position' => 'Guidance Counselor',
+            'specialization' => 'Educational Psychology',
+            'type' => 'guidance',
+            'hire_date' => '2023-01-15',
+            'qualifications' => 'Master of Arts in Guidance and Counseling',
+            'emergency_contact_name' => 'Juan Santos',
+            'emergency_contact_phone' => '09987654321',
+            'emergency_contact_relationship' => 'spouse',
+            'notes' => 'Specializes in academic and career counseling',
+            'department' => 'guidance',
+        ]);
+        
+        // Assign guidance counselor role
+        $guidanceUser->assignRole('guidance_counselor');
+
+        // 3. Create Discipline Head User
+        $disciplineHeadUser = User::create([
+            'name' => 'Roberto Cruz',
+            'email' => 'discipline.head@nicolites.edu',
+            'password' => bcrypt('discipline123'),
+        ]);
+        
+        // Create GuidanceDiscipline record for Discipline Head
+        GuidanceDiscipline::create([
+            'user_id' => $disciplineHeadUser->id,
+            'employee_id' => 'DH001',
+            'first_name' => 'Roberto',
+            'last_name' => 'Cruz',
+            'phone_number' => '09234567890',
+            'address' => '456 Discipline Avenue, Manila',
+            'position' => 'Discipline Head',
+            'specialization' => 'Student Discipline Management',
+            'type' => 'discipline',
+            'hire_date' => '2022-06-01',
+            'qualifications' => 'Bachelor of Science in Education, Discipline Management Certificate',
+            'emergency_contact_name' => 'Ana Cruz',
+            'emergency_contact_phone' => '09876543210',
+            'emergency_contact_relationship' => 'spouse',
+            'notes' => 'Head of Student Discipline Department',
+            'department' => 'discipline',
+        ]);
+        
+        // Assign discipline head role
+        $disciplineHeadUser->assignRole('discipline_head');
+
+        // 4. Create Discipline Officer User
+        $disciplineOfficerUser = User::create([
+            'name' => 'Carlos Mendoza',
+            'email' => 'discipline.officer@nicolites.edu',
+            'password' => bcrypt('officer123'),
+        ]);
+        
+        // Create GuidanceDiscipline record for Discipline Officer
+        GuidanceDiscipline::create([
+            'user_id' => $disciplineOfficerUser->id,
+            'employee_id' => 'DO001',
+            'first_name' => 'Carlos',
+            'last_name' => 'Mendoza',
+            'phone_number' => '09345678901',
+            'address' => '789 Officer Lane, Pasig City',
+            'position' => 'Discipline Officer',
+            'specialization' => 'Student Behavior Management',
+            'type' => 'discipline',
+            'hire_date' => '2023-08-15',
+            'qualifications' => 'Bachelor of Arts in Psychology',
+            'emergency_contact_name' => 'Lisa Mendoza',
+            'emergency_contact_phone' => '09765432109',
+            'emergency_contact_relationship' => 'sibling',
+            'notes' => 'Handles student violations and disciplinary actions',
+            'department' => 'discipline',
+        ]);
+        
+        // Assign discipline officer role
+        $disciplineOfficerUser->assignRole('discipline_officer');
+
+        // 5. Create Teacher User
+        $teacherUser = User::create([
+            'name' => 'Jennifer Reyes',
+            'email' => 'teacher@nicolites.edu',
+            'password' => bcrypt('teacher123'),
+        ]);
         
         // Create Teacher record
-        // Teacher::create([
-        //     'user_id' => $teacherUser->id,
-        //     'employee_id' => 'TCH001',
-        //     'department' => 'Mathematics',
-        //     'subject_specialization' => 'Algebra',
-        //     'employment_type' => 'full_time',
-        //     'teacher_level' => 'senior',
-        //     'hire_date' => now()->subYears(3),
-        //     'qualification' => 'Bachelor of Science in Mathematics',
-        //     'years_experience' => 5,
-        //     'subjects_taught' => ['Mathematics', 'Statistics'],
-        //     'class_assignments' => ['Grade 10-A', 'Grade 11-B'],
-        //     'is_active' => true,
-        // ]);
+        Teacher::create([
+            'user_id' => $teacherUser->id,
+            'employee_id' => 'TCH001',
+            'department' => 'Mathematics Department',
+            'position' => 'Senior High School Teacher',
+            'specialization' => 'Mathematics and Statistics',
+            'hire_date' => '2021-03-10',
+            'phone_number' => '09456789012',
+            'address' => '321 Teacher Street, Makati City',
+            'qualifications' => 'Bachelor of Science in Mathematics Education, Master of Arts in Teaching Mathematics',
+            'is_active' => true,
+        ]);
         
-        // $teacherUser->assignRole('teacher');
-
-        // 3. Create Guidance Counsellor User with GuidanceCounsellor model
-        // $guidanceUser = User::create([
-        //     'name' => 'Guidance Counselor',
-        //     'email' => 'guidance@nicolites.edu',
-        //     'password' => bcrypt('guidance123'),
-        // ]);
+        // Assign teacher role
+        $teacherUser->assignRole('teacher');
         
-        // Create Guidance Counsellor record
-        // GuidanceCounsellor::create([
-        //     'user_id' => $guidanceUser->id,
-        //     'employee_id' => 'GC001',
-        //     'license_number' => 'GC-2024-001',
-        //     'counsellor_level' => 'senior',
-        //     'specializations' => ['academic', 'career', 'personal'],
-        //     'grade_levels_assigned' => ['Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
-        //     'office_location' => 'Guidance Office - Building A',
-        //     'available_hours' => [
-        //         'monday' => '08:00-17:00',
-        //         'tuesday' => '08:00-17:00',
-        //         'wednesday' => '08:00-17:00',
-        //         'thursday' => '08:00-17:00',
-        //         'friday' => '08:00-17:00'
-        //     ],
-        //     'max_students_per_day' => 15,
-        //     'hire_date' => now()->subYears(2),
-        //     'qualification' => 'Master of Arts in Guidance and Counseling',
-        //     'certifications' => ['Crisis Intervention', 'Career Counseling'],
-        //     'is_active' => true,
-        // ]);
-        
-        // $guidanceUser->assignRole('guidance');
-
-        // 4. Create Discipline Officer User with DisciplineOfficer model
-        // $disciplineUser = User::create([
-        //     'name' => 'Discipline Officer',
-        //     'email' => 'discipline@nicolites.edu',
-        //     'password' => bcrypt('discipline123'),
-        // ]);
-        
-        // Create Discipline Officer record
-        // DisciplineOfficer::create([
-        //     'user_id' => $disciplineUser->id,
-        //     'employee_id' => 'DO001',
-        //     'officer_level' => 'senior_officer',
-        //     'areas_of_responsibility' => ['attendance', 'behavior', 'uniform', 'safety'],
-        //     'grade_levels_assigned' => ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10'],
-        //     'office_location' => 'Discipline Office - Building B',
-        //     'patrol_schedule' => [
-        //         'morning' => '07:00-08:00',
-        //         'break' => '10:00-10:30',
-        //         'lunch' => '12:00-13:00',
-        //         'afternoon' => '15:00-17:00'
-        //     ],
-        //     'can_suspend' => true,
-        //     'can_expel' => false,
-        //     'hire_date' => now()->subYears(4),
-        //     'qualification' => 'Bachelor of Arts in Psychology',
-        //     'training_certifications' => ['Conflict Resolution', 'Student Safety Management'],
-        //     'is_active' => true,
-        // ]);
-        
-        // $disciplineUser->assignRole('discipline');
     }
 }

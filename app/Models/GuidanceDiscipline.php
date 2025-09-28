@@ -17,6 +17,8 @@ class GuidanceDiscipline extends Model
         'phone_number',
         'address',
         'position',
+        'specialization',
+        'type',
         'hire_date',
         'qualifications',
         'emergency_contact_name',

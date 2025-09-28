@@ -1,90 +1,273 @@
 <x-admin-layout>
-  <x-slot:title>Admin Dashboard</x-slot:title>
+  {{-- <x-slot:title>Admin Dashboard</x-slot:title> --}}
   
   <h1 class="section-title">Admin Dashboard</h1>
 
   <!-- SUMMARY CARDS -->
+  <!-- Comprehensive User Statistics -->
   <div class="row g-3 mb-5">
     <div class="col-6 col-lg-3">
-      <div class="card card-summary card-primary h-100">
-        <div class="card-body d-flex align-items-center">
-          <i class="ri-user-3-line display-6 me-3"></i>
-          <div>
-            <div>Total Users</div>
-            <h3 id="total-users">{{ $totalUsers ?? 0 }}</h3>
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="flex-shrink-0">
+              <i class="ri-user-3-line fs-2 text-primary"></i>
+            </div>
+            <div class="flex-grow-1 ms-3">
+              <div class="fw-bold fs-4">{{ $totalUsers ?? 0 }}</div>
+              <div class="text-muted small">Total Users</div>
+            </div>
           </div>
         </div>
       </div>
     </div>
     <div class="col-6 col-lg-3">
-      <div class="card card-summary card-secondary h-100">
-        <div class="card-body d-flex align-items-center">
-          <i class="ri-shield-user-line display-6 me-3"></i>
-          <div>
-            <div>Roles Defined</div>
-            <h3 id="total-roles">{{ $totalRoles ?? 0 }}</h3>
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="flex-shrink-0">
+              <i class="ri-user-add-line fs-2 text-warning"></i>
+            </div>
+            <div class="flex-grow-1 ms-3">
+              <div class="fw-bold fs-4">{{ $userStats['total_enrollees'] ?? 0 }}</div>
+              <div class="text-muted small">Enrollees/Applicants</div>
+            </div>
           </div>
         </div>
       </div>
     </div>
-    {{-- <div class="col-6 col-lg-3">
-      <div class="card card-summary card-success h-100">
-        <div class="card-body d-flex align-items-center">
-          <i class="ri-book-open-line display-6 me-3"></i>
-          <div>
-            <div>Enrolled This Year</div>
-            <h3>--</h3>
+    <div class="col-6 col-lg-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="flex-shrink-0">
+              <i class="ri-graduation-cap-line fs-2 text-success"></i>
+            </div>
+            <div class="flex-grow-1 ms-3">
+              <div class="fw-bold fs-4">{{ $userStats['total_students'] ?? 0 }}</div>
+              <div class="text-muted small">Students</div>
+            </div>
           </div>
         </div>
       </div>
-    </div>  do not touch also--}}
-    {{-- <div class="col-6 col-lg-3">
-      <div class="card card-summary card-success h-100">
-        <div class="card-body d-flex align-items-center">
-          <i class="ri-book-mark-line display-6 me-3"></i>
-          <div>
-            <div>Enrolled Last Year</div>
-            <h3>--</h3>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="flex-shrink-0">
+              <i class="ri-shield-user-line fs-2 text-info"></i>
+            </div>
+            <div class="flex-grow-1 ms-3">
+              <div class="fw-bold fs-4">{{ $userStats['total_roles'] ?? 0 }}</div>
+              <div class="text-muted small">Roles Defined</div>
+            </div>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detailed Statistics Row -->
+  {{-- <div class="row g-3 mb-5">
+    <div class="col-6 col-lg-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="flex-shrink-0">
+              <i class="ri-user-star-line fs-2 text-danger"></i>
+            </div>
+            <div class="flex-grow-1 ms-3">
+              <div class="fw-bold fs-4">{{ $userStats['total_teachers'] ?? 0 }}</div>
+              <div class="text-muted small">Teachers</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="flex-shrink-0">
+              <i class="ri-admin-line fs-2 text-dark"></i>
+            </div>
+            <div class="flex-grow-1 ms-3">
+              <div class="fw-bold fs-4">{{ $userStats['total_admins'] ?? 0 }}</div>
+              <div class="text-muted small">Administrators</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="flex-shrink-0">
+              <i class="ri-heart-line fs-2 text-secondary"></i>
+            </div>
+            <div class="flex-grow-1 ms-3">
+              <div class="fw-bold fs-4">{{ $userStats['total_guidance'] ?? 0 }}</div>
+              <div class="text-muted small">Guidance Staff</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="flex-shrink-0">
+              <i class="ri-time-line fs-2 text-warning"></i>
+            </div>
+            <div class="flex-grow-1 ms-3">
+              <div class="fw-bold fs-4">{{ $userStatusStats['pending_enrollees'] ?? 0 }}</div>
+              <div class="text-muted small">Pending Applications</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div> --}}
+
+  <!-- Data Visualization Section -->
+  <div class="row g-3 mb-5">
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white">
+          <h5 class="card-title mb-0">
+            <i class="ri-pie-chart-line me-2"></i>User Distribution
+          </h5>
+        </div>
+        <div class="card-body">
+          <canvas id="userTypesChart" width="400" height="200"></canvas>
+        </div>
+      </div>
+    </div>
+    {{-- <div class="col-lg-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white">
+          <h5 class="card-title mb-0">
+            <i class="ri-bar-chart-line me-2"></i>Enrollment Status
+          </h5>
+        </div>
+        <div class="card-body">
+          <canvas id="enrollmentStatusChart" width="400" height="200"></canvas>
         </div>
       </div>
     </div> --}}
   </div>
 
-  <!-- RECENT ENROLLMENTS TABLE -->
-  {{-- <h4 class="section-title">Latest Enrollments</h4>
-  <div class="table-responsive mb-5">
-    <table class="table table-striped align-middle">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Student</th>
-          <th>Program</th>
-          <th>Date</th>
-          <th class="text-center">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>1</td>
-          <td>Jane Doe</td>
-          <td>Junior High</td>
-          <td>2024-07-15</td>
-          <td class="text-center">
-            <button class="btn btn-sm btn-outline-primary me-1">
-              <i class="ri-eye-line"></i>
-            </button>
-            <button class="btn btn-sm btn-outline-warning me-1">
-              <i class="ri-edit-line"></i>
-            </button>
-            <button class="btn btn-sm btn-outline-danger">
-              <i class="ri-delete-bin-line"></i>
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table> --}}
-  </div>
+  <!-- Monthly Applications Chart -->
+  {{-- <div class="row g-3 mb-5">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white">
+          <h5 class="card-title mb-0">
+            <i class="ri-line-chart-line me-2"></i>Monthly Applications Trend (2025)
+          </h5>
+        </div>
+        <div class="card-body">
+          <canvas id="monthlyApplicationsChart" width="800" height="300"></canvas>
+        </div>
+      </div>
+    </div>
+  </div> --}}
+
+  <!-- Chart.js Script -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    // User Types Pie Chart
+    const userTypesCtx = document.getElementById('userTypesChart').getContext('2d');
+    new Chart(userTypesCtx, {
+      type: 'doughnut',
+      data: {
+        labels: {!! json_encode($chartData['user_types']['labels']) !!},
+        datasets: [{
+          data: {!! json_encode($chartData['user_types']['data']) !!},
+          backgroundColor: [
+            '#0d6efd', '#ffc107', '#198754', '#dc3545', '#6c757d', '#20c997'
+          ],
+          borderWidth: 2,
+          borderColor: '#fff'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom'
+          }
+        }
+      }
+    });
+
+    // Enrollment Status Bar Chart
+    const enrollmentStatusCtx = document.getElementById('enrollmentStatusChart').getContext('2d');
+    new Chart(enrollmentStatusCtx, {
+      type: 'bar',
+      data: {
+        labels: {!! json_encode($chartData['enrollment_status']['labels']) !!},
+        datasets: [{
+          label: 'Applications',
+          data: {!! json_encode($chartData['enrollment_status']['data']) !!},
+          backgroundColor: ['#ffc107', '#198754', '#0d6efd'],
+          borderColor: ['#ffc107', '#198754', '#0d6efd'],
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true
+          }
+        },
+        plugins: {
+          legend: {
+            display: false
+          }
+        }
+      }
+    });
+
+    // Monthly Applications Line Chart
+    const monthlyApplicationsCtx = document.getElementById('monthlyApplicationsChart').getContext('2d');
+    new Chart(monthlyApplicationsCtx, {
+      type: 'line',
+      data: {
+        labels: {!! json_encode($chartData['monthly_applications']['labels']) !!},
+        datasets: [{
+          label: 'Applications',
+          data: {!! json_encode($chartData['monthly_applications']['data']) !!},
+          borderColor: '#0d6efd',
+          backgroundColor: 'rgba(13, 110, 253, 0.1)',
+          borderWidth: 3,
+          fill: true,
+          tension: 0.4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true
+          }
+        },
+        plugins: {
+          legend: {
+            display: false
+          }
+        }
+      }
+    });
+  </script>
+
 
   {{-- internal js dahil ayaw gumana ng internal js via resources using vite syntax --}}
   <script>
