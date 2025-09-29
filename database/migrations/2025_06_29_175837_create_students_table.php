@@ -26,7 +26,7 @@ return new class extends Migration
             // DOCUMENTS AND PHOTOS
             $table->longText('id_photo')->nullable(); // Store image as base64 binary data
             $table->string('id_photo_mime_type')->nullable(); // Store MIME type (image/jpeg, image/png)
-            $table->text('id_photo_data_url')->nullable(); // For displaying photos
+            $table->longText('id_photo_data_url')->nullable();// For displaying photos
             $table->json('documents')->nullable(); // Birth certificate, report cards, etc.
             
             // PERSONAL INFORMATION
