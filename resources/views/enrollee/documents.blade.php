@@ -236,7 +236,7 @@
                             $totalDocs = count($documents);
                             
                             // Handle both old format (strings) and new format (arrays) for statistics
-                            $verifiedDocs = 0;
+                            $approvedDocs = 0;
                             $pendingDocs = 0;
                             $rejectedDocs = 0;
                             
@@ -245,10 +245,10 @@
                                     // Old format: all documents are pending
                                     $pendingDocs++;
                                 } else {
-                                    // New format: check actual status
+                                    // New format: check actual status (use 'approved' to match admin system)
                                     $status = $document['status'] ?? 'pending';
-                                    if ($status === 'verified') {
-                                        $verifiedDocs++;
+                                    if ($status === 'approved' || $status === 'verified') {
+                                        $approvedDocs++;
                                     } elseif ($status === 'rejected') {
                                         $rejectedDocs++;
                                     } else {
@@ -267,8 +267,8 @@
                             </div>
                             <div class="col-3">
                                 <div class="info-card">
-                                    <h4 class="text-success">{{ $verifiedDocs }}</h4>
-                                    <small class="text-muted">Verified</small>
+                                    <h4 class="text-success">{{ $approvedDocs }}</h4>
+                                    <small class="text-muted">Approved</small>
                                 </div>
                             </div>
                             <div class="col-3">
@@ -288,9 +288,9 @@
                         @if($totalDocs > 0)
                         <div class="mt-3">
                             <div class="progress">
-                                <div class="progress-bar bg-success" style="width: {{ $totalDocs > 0 ? ($verifiedDocs / $totalDocs) * 100 : 0 }}%"></div>
+                                <div class="progress-bar bg-success" style="width: {{ $totalDocs > 0 ? ($approvedDocs / $totalDocs) * 100 : 0 }}%"></div>
                             </div>
-                            <small class="text-muted">{{ $totalDocs > 0 ? round(($verifiedDocs / $totalDocs) * 100) : 0 }}% of documents verified</small>
+                            <small class="text-muted">{{ $totalDocs > 0 ? round(($approvedDocs / $totalDocs) * 100) : 0 }}% of documents approved</small>
                         </div>
                         @endif
                     </div>

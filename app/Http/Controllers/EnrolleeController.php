@@ -682,8 +682,8 @@ class EnrolleeController extends Controller
                 ], 400);
             }
             
-            // Check if payment is completed (re-enabled after fixing database issues)
-            if (!$enrollee->payment_date && !$enrollee->payment_completed_at && !$enrollee->is_paid) {
+            // Check if payment is completed - updated logic to handle different payment scenarios
+            if (!$enrollee->is_paid && !$enrollee->payment_completed_at) {
                 return response()->json([
                     'success' => false,
                     'message' => 'You must have completed entrance fee payment to pre-register.'
@@ -696,8 +696,8 @@ class EnrolleeController extends Controller
             $studentId = 'NS-' . str_pad($nextNumber, 5, '0', STR_PAD_LEFT);
             
             // Generate password (format: 25-001 based on application_id)
-            $appIdNumber = str_replace('25', '', $enrollee->application_id);
-            $password = '25-' . str_pad($appIdNumber, 3, '0', STR_PAD_LEFT);
+            // Use the same format as enrollment password (application_id is already "25-001")
+            $password = $enrollee->application_id;
             
             // Create student record with all available fields
             try {
@@ -714,9 +714,9 @@ class EnrolleeController extends Controller
                     'suffix' => $enrollee->suffix,
                     'full_name' => $fullName,
                     'date_of_birth' => $enrollee->date_of_birth,
-                    'place_of_birth' => $enrollee->place_of_birth,
+                    'place_of_birth' => $enrollee->place_of_birth ?? 'Not specified',
                     'gender' => $enrollee->gender,
-                    'nationality' => $enrollee->nationality,
+                    'nationality' => $enrollee->nationality ?? 'Filipino',
                     'religion' => $enrollee->religion,
                     'contact_number' => $enrollee->contact_number,
                     'email' => $enrollee->email,
@@ -726,10 +726,10 @@ class EnrolleeController extends Controller
                     'zip_code' => $enrollee->zip_code,
                     'grade_level' => $enrollee->grade_level_applied,
                     'strand' => $enrollee->strand_applied,
-                    'track' => $enrollee->track_applied,
-                    'student_type' => $enrollee->student_type,
+                    'track' => $enrollee->track_applied ?? 'Academic',
+                    'student_type' => $enrollee->student_type ?? 'new',
                     'enrollment_status' => 'pre_registered',
-                    'academic_year' => $enrollee->academic_year,
+                    'academic_year' => $enrollee->academic_year ?? '2024-2025',
                     'documents' => $enrollee->documents,
                     'id_photo_data_url' => $enrollee->id_photo_data_url,
                     'father_name' => $enrollee->father_name,
@@ -742,7 +742,7 @@ class EnrolleeController extends Controller
                     'guardian_contact' => $enrollee->guardian_contact,
                     'last_school_type' => $enrollee->last_school_type,
                     'last_school_name' => $enrollee->last_school_name,
-                    'medical_history' => $enrollee->medical_history,
+                    'medical_history' => $enrollee->medical_history ?? 'None specified',
                     'pre_registered_at' => now(),
                     'is_active' => true
                 ]);
@@ -778,7 +778,7 @@ class EnrolleeController extends Controller
             \Log::error('Error during pre-registration: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'An error occurred during pre-registration. Please try again.'
+                'message' => 'Error during pre-registration: ' . $e->getMessage()
             ], 500);
         }
     }

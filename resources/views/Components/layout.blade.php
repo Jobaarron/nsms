@@ -107,41 +107,5 @@
             </div>
         </div>
     </footer> 
-
-    <script>
-        // Improve dropdown behavior with delay
-        document.addEventListener('DOMContentLoaded', function() {
-            const dropdowns = document.querySelectorAll('.dropdown-elegant');
-            
-            dropdowns.forEach(dropdown => {
-                let timeout;
-                
-                dropdown.addEventListener('mouseenter', function() {
-                    clearTimeout(timeout);
-                    const menu = this.querySelector('.dropdown-menu');
-                    if (menu) {
-                        menu.style.display = 'block';
-                        setTimeout(() => {
-                            menu.style.opacity = '1';
-                            menu.style.transform = 'translateY(0)';
-                        }, 10);
-                    }
-                });
-                
-                dropdown.addEventListener('mouseleave', function() {
-                    const menu = this.querySelector('.dropdown-menu');
-                    if (menu) {
-                        timeout = setTimeout(() => {
-                            menu.style.opacity = '0';
-                            menu.style.transform = 'translateY(-10px)';
-                            setTimeout(() => {
-                                menu.style.display = 'none';
-                            }, 300);
-                        }, 100); // 100ms delay before closing
-                    }
-                });
-            });
-        });
-    </script>
 </body>
 </html>

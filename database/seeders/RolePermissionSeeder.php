@@ -208,135 +208,155 @@ class RolePermissionSeeder extends Seeder
         // CREATE SAMPLE USERS WITH PROPER MODELS
         
         // 1. Create Admin User with Admin model
-        $adminUser = User::create([
-            'name' => 'System Administrator',
-            'email' => 'admin@nicolites.edu',
-            'password' => bcrypt('admin123'),
-        ]);
+        $adminUser = User::firstOrCreate(
+            ['email' => 'admin@nicolites.edu'],
+            [
+                'name' => 'System Administrator',
+                'password' => bcrypt('admin123'),
+            ]
+        );
         
         // Create Admin record
-        Admin::create([
-            'user_id' => $adminUser->id,
-            'employee_id' => 'ADM001',
-            'department' => 'Administration',
-            'position' => 'System Administrator',
-            'admin_level' => 'super_admin',
-            'is_active' => true,
-        ]);
+        Admin::firstOrCreate(
+            ['user_id' => $adminUser->id],
+            [
+                'employee_id' => 'ADM001',
+                'department' => 'Administration',
+                'position' => 'System Administrator',
+                'admin_level' => 'super_admin',
+                'is_active' => true,
+            ]
+        );
         
         // Assign both admin and super_admin roles
         $adminUser->assignRole(['super_admin', 'admin']);
 
         // 2. Create Guidance Counselor User
-        $guidanceUser = User::create([
-            'name' => 'Maria Santos',
-            'email' => 'guidance@nicolites.edu',
-            'password' => bcrypt('guidance123'),
-        ]);
+        $guidanceUser = User::firstOrCreate(
+            ['email' => 'guidance@nicolites.edu'],
+            [
+                'name' => 'Maria Santos',
+                'password' => bcrypt('guidance123'),
+            ]
+        );
         
         // Create GuidanceDiscipline record for Guidance Counselor
-        GuidanceDiscipline::create([
-            'user_id' => $guidanceUser->id,
-            'employee_id' => 'GDC001',
-            'first_name' => 'Maria',
-            'last_name' => 'Santos',
-            'phone_number' => '09123456789',
-            'address' => '123 Guidance Street, Quezon City',
-            'position' => 'Guidance Counselor',
-            'specialization' => 'Educational Psychology',
-            'type' => 'guidance',
-            'hire_date' => '2023-01-15',
-            'qualifications' => 'Master of Arts in Guidance and Counseling',
-            'emergency_contact_name' => 'Juan Santos',
-            'emergency_contact_phone' => '09987654321',
-            'emergency_contact_relationship' => 'spouse',
-            'notes' => 'Specializes in academic and career counseling',
-            'department' => 'guidance',
-        ]);
+        GuidanceDiscipline::firstOrCreate(
+            ['user_id' => $guidanceUser->id],
+            [
+                'employee_id' => 'GDC001',
+                'first_name' => 'Maria',
+                'last_name' => 'Santos',
+                'phone_number' => '09123456789',
+                'address' => '123 Guidance Street, Quezon City',
+                'position' => 'Guidance Counselor',
+                'specialization' => 'Educational Psychology',
+                'type' => 'guidance',
+                'hire_date' => '2023-01-15',
+                'qualifications' => 'Master of Arts in Guidance and Counseling',
+                'emergency_contact_name' => 'Juan Santos',
+                'emergency_contact_phone' => '09987654321',
+                'emergency_contact_relationship' => 'spouse',
+                'notes' => 'Specializes in academic and career counseling',
+                'department' => 'guidance',
+            ]
+        );
         
         // Assign guidance counselor role
         $guidanceUser->assignRole('guidance_counselor');
 
         // 3. Create Discipline Head User
-        $disciplineHeadUser = User::create([
-            'name' => 'Roberto Cruz',
-            'email' => 'discipline.head@nicolites.edu',
-            'password' => bcrypt('discipline123'),
-        ]);
+        $disciplineHeadUser = User::firstOrCreate(
+            ['email' => 'discipline.head@nicolites.edu'],
+            [
+                'name' => 'Roberto Cruz',
+                'password' => bcrypt('discipline123'),
+            ]
+        );
         
         // Create GuidanceDiscipline record for Discipline Head
-        GuidanceDiscipline::create([
-            'user_id' => $disciplineHeadUser->id,
-            'employee_id' => 'DH001',
-            'first_name' => 'Roberto',
-            'last_name' => 'Cruz',
-            'phone_number' => '09234567890',
-            'address' => '456 Discipline Avenue, Manila',
-            'position' => 'Discipline Head',
-            'specialization' => 'Student Discipline Management',
-            'type' => 'discipline',
-            'hire_date' => '2022-06-01',
-            'qualifications' => 'Bachelor of Science in Education, Discipline Management Certificate',
-            'emergency_contact_name' => 'Ana Cruz',
-            'emergency_contact_phone' => '09876543210',
-            'emergency_contact_relationship' => 'spouse',
-            'notes' => 'Head of Student Discipline Department',
-            'department' => 'discipline',
-        ]);
+        GuidanceDiscipline::firstOrCreate(
+            ['user_id' => $disciplineHeadUser->id],
+            [
+                'employee_id' => 'DH001',
+                'first_name' => 'Roberto',
+                'last_name' => 'Cruz',
+                'phone_number' => '09234567890',
+                'address' => '456 Discipline Avenue, Manila',
+                'position' => 'Discipline Head',
+                'specialization' => 'Student Discipline Management',
+                'type' => 'discipline',
+                'hire_date' => '2022-06-01',
+                'qualifications' => 'Bachelor of Science in Education, Discipline Management Certificate',
+                'emergency_contact_name' => 'Ana Cruz',
+                'emergency_contact_phone' => '09876543210',
+                'emergency_contact_relationship' => 'spouse',
+                'notes' => 'Head of Student Discipline Department',
+                'department' => 'discipline',
+            ]
+        );
         
         // Assign discipline head role
         $disciplineHeadUser->assignRole('discipline_head');
 
         // 4. Create Discipline Officer User
-        $disciplineOfficerUser = User::create([
-            'name' => 'Carlos Mendoza',
-            'email' => 'discipline.officer@nicolites.edu',
-            'password' => bcrypt('officer123'),
-        ]);
+        $disciplineOfficerUser = User::firstOrCreate(
+            ['email' => 'discipline.officer@nicolites.edu'],
+            [
+                'name' => 'Carlos Mendoza',
+                'password' => bcrypt('officer123'),
+            ]
+        );
         
         // Create GuidanceDiscipline record for Discipline Officer
-        GuidanceDiscipline::create([
-            'user_id' => $disciplineOfficerUser->id,
-            'employee_id' => 'DO001',
-            'first_name' => 'Carlos',
-            'last_name' => 'Mendoza',
-            'phone_number' => '09345678901',
-            'address' => '789 Officer Lane, Pasig City',
-            'position' => 'Discipline Officer',
-            'specialization' => 'Student Behavior Management',
-            'type' => 'discipline',
-            'hire_date' => '2023-08-15',
-            'qualifications' => 'Bachelor of Arts in Psychology',
-            'emergency_contact_name' => 'Lisa Mendoza',
-            'emergency_contact_phone' => '09765432109',
-            'emergency_contact_relationship' => 'sibling',
-            'notes' => 'Handles student violations and disciplinary actions',
-            'department' => 'discipline',
-        ]);
+        GuidanceDiscipline::firstOrCreate(
+            ['user_id' => $disciplineOfficerUser->id],
+            [
+                'employee_id' => 'DO001',
+                'first_name' => 'Carlos',
+                'last_name' => 'Mendoza',
+                'phone_number' => '09345678901',
+                'address' => '789 Officer Lane, Pasig City',
+                'position' => 'Discipline Officer',
+                'specialization' => 'Student Behavior Management',
+                'type' => 'discipline',
+                'hire_date' => '2023-08-15',
+                'qualifications' => 'Bachelor of Arts in Psychology',
+                'emergency_contact_name' => 'Lisa Mendoza',
+                'emergency_contact_phone' => '09765432109',
+                'emergency_contact_relationship' => 'sibling',
+                'notes' => 'Handles student violations and disciplinary actions',
+                'department' => 'discipline',
+            ]
+        );
         
         // Assign discipline officer role
         $disciplineOfficerUser->assignRole('discipline_officer');
 
         // 5. Create Teacher User
-        $teacherUser = User::create([
-            'name' => 'Jennifer Reyes',
-            'email' => 'teacher@nicolites.edu',
-            'password' => bcrypt('teacher123'),
-        ]);
+        $teacherUser = User::firstOrCreate(
+            ['email' => 'teacher@nicolites.edu'],
+            [
+                'name' => 'Jennifer Reyes',
+                'password' => bcrypt('teacher123'),
+            ]
+        );
         
         // Create Teacher record
-        Teacher::create([
-            'user_id' => $teacherUser->id,
-            'employee_id' => 'TCH001',
-            'department' => 'Mathematics Department',
-            'position' => 'Senior High School Teacher',
-            'specialization' => 'Mathematics and Statistics',
-            'hire_date' => '2021-03-10',
-            'phone_number' => '09456789012',
-            'address' => '321 Teacher Street, Makati City',
-            'qualifications' => 'Bachelor of Science in Mathematics Education, Master of Arts in Teaching Mathematics',
-            'is_active' => true,
-        ]);
+        Teacher::firstOrCreate(
+            ['user_id' => $teacherUser->id],
+            [
+                'employee_id' => 'TCH001',
+                'department' => 'Mathematics Department',
+                'position' => 'Senior High School Teacher',
+                'specialization' => 'Mathematics and Statistics',
+                'hire_date' => '2021-03-10',
+                'phone_number' => '09456789012',
+                'address' => '321 Teacher Street, Makati City',
+                'qualifications' => 'Bachelor of Science in Mathematics Education, Master of Arts in Teaching Mathematics',
+                'is_active' => true,
+            ]
+        );
         
         // Assign teacher role
         $teacherUser->assignRole('teacher');

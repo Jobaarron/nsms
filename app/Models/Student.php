@@ -58,16 +58,26 @@ class Student extends Authenticatable
         'last_school_type',
         'last_school_name',
         'medical_history',
+        'payment_mode',
+        'is_paid',
+        'total_fees_due',
+        'total_paid',
+        'payment_completed_at',
         'pre_registered_at',
         'is_active',
+        'remarks',
     ];
 
 
     protected $casts = [
         'date_of_birth' => 'date',
         'pre_registered_at' => 'datetime',
+        'payment_completed_at' => 'datetime',
         'is_active' => 'boolean',
-        'documents' => 'array'
+        'is_paid' => 'boolean',
+        'documents' => 'array',
+        'total_fees_due' => 'decimal:2',
+        'total_paid' => 'decimal:2'
     ];
 
     protected $hidden = [
@@ -108,7 +118,7 @@ class Student extends Authenticatable
     // Relationship to enrollee record (if student was created from enrollment)
     public function enrollee()
     {
-        return $this->hasOne(Enrollee::class);
+        return $this->belongsTo(Enrollee::class);
     }
 
     public function getFullNameAttribute()
