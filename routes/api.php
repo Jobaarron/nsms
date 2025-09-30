@@ -11,7 +11,7 @@ use App\Http\Controllers\ViolationController;
 use App\Http\Controllers\AuthController;
 
 // -------------------------
-// Login (Mobile)
+// Login (Mobile) - TODO: Create AuthController
 // -------------------------
 Route::post('/login', [AuthController::class, 'apiLogin']);
 Route::post('/logout', [AuthController::class, 'apiLogout'])->middleware('auth:sanctum');

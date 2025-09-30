@@ -4,10 +4,50 @@ axios.defaults.headers.common['X-CSRF-TOKEN'] =
 document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 
+
+
+document.addEventListener('DOMContentLoaded', function() {
+    const dropdowns = document.querySelectorAll('.dropdown-elegant');
+    
+    dropdowns.forEach(dropdown => {
+        let timeout;
+        
+        dropdown.addEventListener('mouseenter', function() {
+            clearTimeout(timeout);
+            const menu = this.querySelector('.dropdown-menu');
+            if (menu) {
+                menu.style.display = 'block';
+                setTimeout(() => {
+                    menu.style.opacity = '1';
+                    menu.style.transform = 'translateY(0)';
+                }, 10);
+            }
+        });
+        
+        dropdown.addEventListener('mouseleave', function() {
+            const menu = this.querySelector('.dropdown-menu');
+            if (menu) {
+                timeout = setTimeout(() => {
+                    menu.style.opacity = '0';
+                    menu.style.transform = 'translateY(-10px)';
+                    setTimeout(() => {
+                        menu.style.display = 'none';
+                    }, 300);
+                }, 100); // 100ms delay before closing
+            }
+        });
+    });
+});
+
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function (e) {
         e.preventDefault();
-        const target = document.querySelector(this.getAttribute('href'));
+        const href = this.getAttribute('href');
+        // Skip if href is just "#" or empty
+        if (href === '#' || !href || href.length <= 1) {
+            return;
+        }
+        const target = document.querySelector(href);
         if (target) {
             const offsetTop = target.offsetTop - 80;
             window.scrollTo({

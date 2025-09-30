@@ -1,12 +1,10 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Auth;
-use App\Http\Controllers\EnrollmentController;
-// use Illuminate\Support\Facades\Mail;
-// use App\Mail\StudentWelcomeMail;
-// use App\Models\Student;
+use Illuminate\Support\Facades\Mail;
+use App\Models\Student;
 use App\Models\User;
+use App\Http\Controllers\EnrollmentController;
 use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\StudentController;
@@ -15,9 +13,7 @@ use App\Http\Controllers\ContactController;
 use App\Http\Controllers\EnrolleeController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\AdminEnrollmentController;
-// use Spatie\Permission\Middlewares\RoleMiddleware;
-// use Spatie\Permission\Middlewares\PermissionMiddleware;
-// use App\Http\Controllers\AdminGeneratorController;
+
 
 
 
@@ -375,14 +371,16 @@ Route::prefix('student')->name('student.')->group(function () {
     // Student login routes (public)
     Route::get('/login', [StudentController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [StudentController::class, 'login'])->name('login.submit');
+ 
     
     // Protected student routes
-    Route::middleware(['auth:student'])->group(function () {
-        Route::get('/student', [StudentController::class, 'index'])->name('dashboard');
+    Route::middleware('auth:student')->group(function () {
+        Route::get('/dashboard', [StudentController::class, 'index'])->name('dashboard');
         Route::get('/violations', [StudentController::class, 'violations'])->name('violations');
         Route::post('/logout', [StudentController::class, 'logout'])->name('logout');
     });
 });
+
 
 // Enrollee routes
 Route::prefix('enrollee')->name('enrollee.')->group(function () {

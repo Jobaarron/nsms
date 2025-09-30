@@ -10,52 +10,49 @@ return new class extends Migration
     {
         Schema::create('students', function (Blueprint $table) {
             $table->id();
-            $table->longText('id_photo')->nullable(); // Store image as base64 binary data
-            $table->string('id_photo_mime_type')->nullable(); // Store MIME type (image/jpeg, image/png)
             
             // Link to users table for authentication
             $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('cascade');
             
             // Student identification
-            $table->string('student_id')->unique()->nullable(); // e.g., STU-2024-001
+            $table->string('student_id')->unique()->nullable(); // e.g., NS-25001
             $table->string('lrn')->unique()->nullable(); // Learner Reference Number
             
-            // ENROLLMENT STATUS AND ACADEMIC INFO - MOVED TO ENROLLEES TABLE // Do not remove
-            // $table->enum('enrollment_status', ['pending', 'approved', 'rejected', 'enrolled', 'dropped', 'graduated'])->default('pending');
-            // $table->string('academic_year')->default('2024-2025');
-            // $table->foreignId('approved_by')->nullable()->constrained('users')->onDelete('set null');
-            // $table->timestamp('approved_at')->nullable();
-            // $table->timestamp('enrolled_at')->nullable();
-            $table->string('password')->nullable(); // Made nullable - for student authentication
+            // ENROLLMENT STATUS AND ACADEMIC INFO
+            $table->enum('enrollment_status', ['pre_registered', 'enrolled', 'dropped', 'graduated'])->default('pre_registered');
+            $table->string('academic_year')->default(date('Y') . '-' . (date('Y') + 1));
+            $table->string('password')->nullable(); // For student authentication
             
-            // FILE PATHS - MOVED TO ENROLLEES TABLE (enrollment documents)
-            // $table->json('documents')->nullable(); // Birth certificate, report cards, etc. - MOVED TO ENROLLEES
+            // DOCUMENTS AND PHOTOS
+            $table->longText('id_photo')->nullable(); // Store image as base64 binary data
+            $table->string('id_photo_mime_type')->nullable(); // Store MIME type (image/jpeg, image/png)
+            $table->longText('id_photo_data_url')->nullable();// For displaying photos
+            $table->json('documents')->nullable(); // Birth certificate, report cards, etc.
             
             // PERSONAL INFORMATION
             $table->string('first_name');
             $table->string('middle_name')->nullable();
             $table->string('last_name');
             $table->string('suffix')->nullable(); // Jr., Sr., III, etc.
+            $table->string('full_name')->nullable(); // Computed full name for quick access
             $table->date('date_of_birth');
             $table->string('place_of_birth')->nullable();
-            $table->enum('gender', ['male', 'female'])->nullable();
-            // $table->enum('civil_status', ['single', 'married', 'widowed', 'separated'])->default('single');
+            $table->enum('gender', ['male', 'female']);
             $table->string('nationality')->default('Filipino');
             $table->string('religion')->nullable();
             $table->string('contact_number')->nullable();
             $table->string('email')->unique()->nullable(); // Make nullable since user_id handles auth
             $table->text('address');
-            // $table->string('barangay')->nullable();
             $table->string('city')->nullable();
             $table->string('province')->nullable();
             $table->string('zip_code')->nullable();
             
             // ACADEMIC INFORMATION
-            $table->string('grade_level'); // Changed from grade_applied
-            $table->string('strand')->nullable(); // For SHS students
-            // $table->string('track')->nullable(); // Academic, TVL, Sports, Arts & Design
+            $table->string('grade_level'); // Current grade level
+            $table->string('strand')->nullable(); // For SHS students, TVL-ICT & HE,ABM,STEM
+            $table->string('track')->nullable(); // Academic, TVL, Sports, Arts & Design
             $table->string('section')->nullable();
-            // $table->enum('student_type', ['new', 'transferee', 'returnee', 'continuing'])->default('new'); // MOVED TO ENROLLEES
+            $table->enum('student_type', ['new', 'transferee', 'returnee', 'continuing'])->default('new');
             
             // GUARDIAN/PARENT INFORMATION
             $table->string('father_name')->nullable();
@@ -73,32 +70,42 @@ return new class extends Migration
             // PREVIOUS SCHOOL INFORMATION
             $table->enum('last_school_type', ['public', 'private'])->nullable();
             $table->string('last_school_name')->nullable();
-            // $table->string('last_school_address')->nullable();
-            // $table->string('last_grade_completed')->nullable();
-            // $table->year('year_graduated')->nullable();
-            // $table->decimal('general_average', 5, 2)->nullable();
+           
             
             // MEDICAL AND HEALTH INFORMATION
             $table->text('medical_history')->nullable();
             
             
-            // FINANCIAL INFORMATION - MOVED TO ENROLLEES TABLE (enrollment payment info) // Do not remove
-            // $table->enum('payment_mode', ['cash', 'installment', 'scholarship', 'voucher'])->default('cash');
-            // $table->enum('payment_mode', ['cash', 'online payment', 'scholarship', 'voucher'])->default('cash'); // MOVED TO ENROLLEES
-            // $table->boolean('is_paid')->default(false); // MOVED TO ENROLLEES
-            // $table->boolean('is_scholar')->default(false);
-            // $table->string('scholarship_type')->nullable();
-            // $table->decimal('scholarship_amount', 10, 2)->nullable();
-            // $table->boolean('is_pwd')->default(false); // Person with Disability
-            // $table->boolean('is_indigenous')->default(false); // Indigenous People
+            $table->enum('payment_mode', ['cash', 'online payment', 'installment'])->nullable(); // Mode of payment selected during enrollment
+            $table->boolean('is_paid')->default(false); // Quick status check - calculated from payments table
+            $table->decimal('total_fees_due', 10, 2)->nullable(); // Total calculated from fees table
+            $table->decimal('total_paid', 10, 2)->default(0); // Total calculated from payments table
+            $table->timestamp('payment_completed_at')->nullable(); // When all required fees were paid
             
             // ENROLLMENT SCHEDULING - MOVED TO ENROLLEES TABLE // Do not remove
             // $table->date('preferred_schedule')->nullable(); // MOVED TO ENROLLEES
             // $table->timestamp('enrollment_date')->nullable(); // MOVED TO ENROLLEES
             
+            // PRE-REGISTRATION TRACKING
+            $table->foreignId('enrollee_id')->nullable()->constrained('enrollees')->onDelete('set null'); // Link back to original enrollee
+            $table->timestamp('pre_registered_at')->nullable(); // When student was pre-registered from enrollee
+            
+            // FUTURE: ACADEMIC PERFORMANCE TRACKING (COMMENTED OUT FOR NOW)
+            // $table->json('enrolled_subjects')->nullable(); // Array of subject IDs student is enrolled in
+            // $table->json('current_grades')->nullable(); // Current grades per subject
+            // $table->decimal('first_quarter_gpa', 3, 2)->nullable(); // 1st quarter GPA
+            // $table->decimal('second_quarter_gpa', 3, 2)->nullable(); // 2nd quarter GPA  
+            // $table->decimal('third_quarter_gpa', 3, 2)->nullable(); // 3rd quarter GPA
+            // $table->decimal('fourth_quarter_gpa', 3, 2)->nullable(); // 4th quarter GPA
+            // $table->decimal('final_gpa', 3, 2)->nullable(); // Final GPA for the year
+            // $table->enum('academic_status', ['regular', 'probation', 'dean_list', 'honor_roll'])->default('regular');
+            // $table->integer('units_enrolled')->nullable(); // Total units enrolled
+            // $table->integer('units_completed')->nullable(); // Units completed
+            // $table->json('grade_history')->nullable(); // Historical grades per academic year
+            
             // STATUS TRACKING
             $table->boolean('is_active')->default(true);
-            // $table->text('remarks')->nullable(); // Do not remove
+            $table->text('remarks')->nullable();
             
             // TIMESTAMPS
             $table->timestamps();
