@@ -144,11 +144,19 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if user is guidance staff (counselor, discipline officer, or security guard)
+     * Check if user is guidance staff
      */
     public function isGuidanceStaff()
     {
-        return $this->hasRole(['guidance_counselor', 'discipline_officer', 'security_guard']);
+        return $this->guidance()->exists() && $this->guidance->is_active;
+    }
+
+    /**
+     * Check if user is discipline staff
+     */
+    public function isDisciplineStaff()
+    {
+        return $this->discipline()->exists() && $this->discipline->is_active;
     }
 
     /**
@@ -156,17 +164,32 @@ class User extends Authenticatable
      */
     public function updateLastLogin()
     {
-        // 
-
+        // Update last login logic can be implemented here
         return;
     }
 
     /**
-     * Get the guidance discipline record for this user
+     * Get the guidance discipline record for this user (legacy)
      */
     public function guidanceDiscipline()
     {
         return $this->hasOne(GuidanceDiscipline::class);
+    }
+
+    /**
+     * Get the discipline record for this user (new system)
+     */
+    public function discipline()
+    {
+        return $this->hasOne(Discipline::class);
+    }
+
+    /**
+     * Get the guidance record for this user (new system)
+     */
+    public function guidance()
+    {
+        return $this->hasOne(Guidance::class);
     }
 
 }
