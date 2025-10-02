@@ -3,7 +3,7 @@
     
     <div class="py-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1 class="section-title">My Application & Profile</h1>
+            <h1 class="section-title">My Application</h1>
             <div class="d-flex align-items-center gap-2">
                 @if($enrollee->enrollment_status === 'pending')
                 <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#dataChangeRequestModal">
@@ -76,7 +76,25 @@
                             <dt class="col-sm-4">Religion</dt>
                             <dd class="col-sm-8">{{ $enrollee->religion ?? 'Not specified' }}</dd>
                             <dt class="col-sm-4">Student Type</dt>
-                            <dd class="col-sm-8">{{ ucfirst($enrollee->student_type) }}</dd>
+                            <dd class="col-sm-8">
+                                <span class="badge 
+                                    @if($enrollee->student_type === 'new') bg-success
+                                    @elseif($enrollee->student_type === 'transferee') bg-info
+                                    @elseif($enrollee->student_type === 'old') bg-primary
+                                    @else bg-secondary
+                                    @endif me-2">
+                                    {{ ucfirst($enrollee->student_type) }}
+                                </span>
+                                {{-- <small class="text-muted">
+                                    @if($enrollee->student_type === 'new')
+                                        First time enrolling in any school
+                                    @elseif($enrollee->student_type === 'transferee')
+                                        Coming from another school
+                                    @elseif($enrollee->student_type === 'old')
+                                        Previously enrolled in this school or returning student
+                                    @endif
+                                </small> --}}
+                            </dd>
                         </dl>
                     </div>
                 </div>
@@ -138,7 +156,25 @@
                             <dd class="col-sm-8">{{ $enrollee->track_applied }}</dd>
                             @endif
                             <dt class="col-sm-4">Student Type</dt>
-                            <dd class="col-sm-8">{{ ucfirst($enrollee->student_type) }}</dd>
+                            <dd class="col-sm-8">
+                                <span class="badge 
+                                    @if($enrollee->student_type === 'new') bg-success
+                                    @elseif($enrollee->student_type === 'transferee') bg-info
+                                    @elseif($enrollee->student_type === 'old') bg-primary
+                                    @else bg-secondary
+                                    @endif me-2">
+                                    {{ ucfirst($enrollee->student_type) }}
+                                </span>
+                                {{-- <small class="text-muted">
+                                    @if($enrollee->student_type === 'new')
+                                        First time enrolling in any school
+                                    @elseif($enrollee->student_type === 'transferee')
+                                        Coming from another school
+                                    @elseif($enrollee->student_type === 'old')
+                                        Previously enrolled in this school or returning student
+                                    @endif
+                                </small> --}}
+                            </dd>
                             @if($enrollee->last_school_name)
                             <dt class="col-sm-4">Last School</dt>
                             <dd class="col-sm-8">{{ $enrollee->last_school_name }} ({{ ucfirst($enrollee->last_school_type) }})</dd>
@@ -270,7 +306,7 @@
                                             <small class="text-muted">{{ Str::limit($documentData['filename'] ?? 'Document ' . ($index + 1), 20) }}</small>
                                         </div>
                                     </div>
-                                    <span class="badge bg-{{ ($documentData['status'] ?? 'pending') === 'verified' ? 'success' : (($documentData['status'] ?? 'pending') === 'rejected' ? 'danger' : 'warning') }} badge-sm">
+                                    <span class="badge bg-{{ ($documentData['status'] ?? 'pending') === 'approved' ? 'success' : (($documentData['status'] ?? 'pending') === 'rejected' ? 'danger' : 'warning') }} badge-sm">
                                         {{ ucfirst($documentData['status'] ?? 'pending') }}
                                     </span>
                                 </div>
@@ -382,12 +418,6 @@
                             @endif
                         </dl>
                         
-                        @if($enrollee->enrollment_status === 'approved' && !$enrollee->is_paid)
-                        <a href="{{ route('enrollee.payment') }}" class="btn btn-primary w-100">
-                            <i class="ri-money-dollar-circle-line me-1"></i>
-                            Make Payment
-                        </a>
-                        @endif
                     </div>
                 </div>
 
@@ -404,10 +434,6 @@
                             <a href="{{ route('enrollee.documents') }}" class="btn btn-outline-primary btn-sm">
                                 <i class="ri-folder-line me-1"></i>
                                 My Documents
-                            </a>
-                            <a href="{{ route('enrollee.payment') }}" class="btn btn-outline-primary btn-sm">
-                                <i class="ri-money-dollar-circle-line me-1"></i>
-                                Payment Portal
                             </a>
                             <a href="{{ route('enrollee.schedule') }}" class="btn btn-outline-primary btn-sm">
                                 <i class="ri-calendar-line me-1"></i>

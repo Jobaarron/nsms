@@ -75,8 +75,7 @@
                                 <option value="">-- Select Type --</option>
                                 <option value="new" {{ old('student_type')=='new' ? 'selected':'' }}>New</option>
                                 <option value="transferee" {{ old('student_type')=='transferee' ? 'selected':'' }}>Transferee</option>
-                                <option value="returnee" {{ old('student_type')=='returnee' ? 'selected':'' }}>Returnee</option>
-                                <option value="continuing" {{ old('student_type')=='continuing' ? 'selected':'' }}>Continuing</option>
+                                <option value="old" {{ old('student_type')=='old' ? 'selected':'' }}>Old</option>
                             </select>
                             @error('student_type') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
@@ -356,10 +355,28 @@
                                 <option value="STEM" {{ old('strand')=='STEM' ? 'selected':'' }}>STEM</option>
                                 <option value="ABM" {{ old('strand')=='ABM' ? 'selected':'' }}>ABM</option>
                                 <option value="HUMSS" {{ old('strand')=='HUMSS' ? 'selected':'' }}>HUMSS</option>
-                                <option value="TVL-ICT" {{ old('strand')=='TVL-ICT' ? 'selected':'' }}>TVL-ICT</option>
-                                <option value="TVL-HE" {{ old('strand')=='TVL-HE' ? 'selected':'' }}>TVL-HE</option>
+                                <option value="TVL" {{ old('strand')=='TVL' ? 'selected':'' }}>TVL</option>
                             </select>
                             @error('strand') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        </div>
+                    </div>
+
+                    <!-- Track Field (for TVL students) -->
+                    <div class="row mb-3" id="track-container" style="display: none;">
+                        <div class="col-md-6">
+                            <label for="track_applied" class="form-label fw-semibold" style="color: var(--primary-color);">
+                                <i class="ri-road-map-line me-2"></i>Track Applied
+                            </label>
+                            <select
+                                id="track_applied"
+                                name="track_applied"
+                                class="form-select form-select-lg @error('track_applied') is-invalid @enderror"
+                            >
+                                <option value="">-- Select Track --</option>
+                                <option value="ICT" {{ old('track_applied')=='ICT' ? 'selected':'' }}>ICT (Information and Communications Technology)</option>
+                                <option value="HE" {{ old('track_applied')=='HE' ? 'selected':'' }}>HE (Home Economics)</option>
+                            </select>
+                            @error('track_applied') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                     </div>
 
@@ -591,4 +608,5 @@
             </div>
         </div>
     </div> 
+
 </x-layout>

@@ -6,8 +6,11 @@ use App\Models\Enrollee;
 use App\Models\Notice;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\EnrolleeCredentialsMail;
+use App\Mail\StudentCredentialsMail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
@@ -95,7 +98,7 @@ class EnrolleeController extends Controller
                 'other_document_type' => 'nullable|string|max:255|required_if:document_type,other',
                 'document_notes' => 'nullable|string|max:500'
             ]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
@@ -161,47 +164,6 @@ class EnrolleeController extends Controller
         }
     }
 
-    /**
-     * Show the enrollee payment information
-     */
-    public function payment()
-    {
-        $enrollee = Auth::guard('enrollee')->user();
-        return view('enrollee.payment', compact('enrollee'));
-    }
-
-    /**
-     * Process payment information
-     */
-    public function processPayment(Request $request)
-    {
-        $enrollee = Auth::guard('enrollee')->user();
-        
-        // Only allow payment for approved applications
-        if ($enrollee->enrollment_status !== 'approved' || $enrollee->is_paid) {
-            return redirect()->back()->with('error', 'Payment is not available for your current status.');
-        }
-
-        $request->validate([
-            'payment_method' => 'required|string|in:gcash,paymaya,bank_transfer,over_counter',
-            'amount' => 'required|numeric|min:0',
-            'payment_reference' => 'required|string|max:255'
-        ]);
-
-        try {
-            $enrollee->update([
-                'payment_mode' => $request->payment_method,
-                'payment_reference' => $request->payment_reference,
-                'payment_date' => now(),
-                // Note: is_paid should be updated by admin after verification
-            ]);
-            
-            return redirect()->back()->with('success', 'Payment information submitted successfully! Please wait for verification.');
-            
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Failed to process payment information. Please try again.');
-        }
-    }
 
     /**
      * Show the enrollee schedule
@@ -668,9 +630,8 @@ class EnrolleeController extends Controller
             
             \Log::info('Pre-registration attempt', [
                 'enrollee_id' => $enrollee->id,
-                'payment_date' => $enrollee->payment_date,
-                'payment_completed_at' => $enrollee->payment_completed_at,
-                'is_paid' => $enrollee->is_paid,
+                'application_id' => $enrollee->application_id,
+                'enrollment_status' => $enrollee->enrollment_status,
                 'student_id' => $enrollee->student_id
             ]);
             
@@ -682,11 +643,11 @@ class EnrolleeController extends Controller
                 ], 400);
             }
             
-            // Check if payment is completed - updated logic to handle different payment scenarios
-            if (!$enrollee->is_paid && !$enrollee->payment_completed_at) {
+            // Check if application is approved - updated logic for new workflow
+            if ($enrollee->enrollment_status !== 'approved') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'You must have completed entrance fee payment to pre-register.'
+                    'message' => 'Your application must be approved before you can pre-register.'
                 ], 400);
             }
             
@@ -760,6 +721,18 @@ class EnrolleeController extends Controller
                 'student_id' => $studentId,
                 'pre_registered_at' => now()
             ]);
+            
+            // Send student credentials email
+            try {
+                Mail::to($enrollee->email)->send(new StudentCredentialsMail($student, $studentId, $password));
+                \Log::info('Student credentials email sent', [
+                    'student_id' => $studentId,
+                    'email' => $enrollee->email
+                ]);
+            } catch (\Exception $emailError) {
+                \Log::error('Failed to send student credentials email: ' . $emailError->getMessage());
+                // Don't fail the pre-registration if email fails
+            }
             
             \Log::info('Enrollee pre-registered as student', [
                 'enrollee_id' => $enrollee->id,

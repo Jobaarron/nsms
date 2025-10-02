@@ -28,25 +28,10 @@ function preRegisterStudent() {
     .then(data => {
         if (data.success) {
             // Show success message with credentials
-            const message = `
-                <div class="text-center">
-                    <h5 class="text-success mb-3">Pre-registration Successful!</h5>
-                    <div class="alert alert-info">
-                        <strong>Your Student Credentials:</strong><br>
-                        <strong>Student ID:</strong> ${data.student_id}<br>
-                        <strong>Password:</strong> ${data.password}<br>
-                        <small class="text-muted">Please save these credentials. You can change your password after logging in.</small>
-                    </div>
-                </div>
-            `;
-            
-            // Show modal with credentials
             showCredentialsModal(data.student_id, data.password);
             
-            // Reload page to show updated timeline after modal is closed
-            setTimeout(() => {
-                window.location.reload();
-            }, 5000);
+            // Update the timeline immediately without page reload
+            updateTimelineAfterPreRegistration(data.student_id);
         } else {
             // Show error message
             showAlert(data.message || 'Pre-registration failed. Please try again.', 'danger');
@@ -179,6 +164,36 @@ function showAlert(message, type = 'info') {
     }, 5000);
 }
 
+// Update timeline after pre-registration
+function updateTimelineAfterPreRegistration(studentId) {
+    // Find the pre-register timeline item and replace it
+    const preRegisterItem = document.querySelector('#preRegisterBtn')?.closest('.timeline-item');
+    if (preRegisterItem) {
+        // Create the completed timeline item
+        const completedItem = document.createElement('div');
+        completedItem.className = 'timeline-item completed';
+        completedItem.innerHTML = `
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h6 class="mb-1">Pre-Registration Complete</h6>
+                    <p class="text-muted mb-0">Student ID: <strong>${studentId}</strong></p>
+                    <small class="text-success">You can now access the student portal for enrollment and payment processing.</small>
+                    <div class="mt-2">
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="showCredentialsModal('${studentId}', 'password')">
+                            <i class="ri-key-line me-1"></i>View Credentials
+                        </button>
+                    </div>
+                </div>
+                <small class="text-muted">Just now</small>
+            </div>
+        `;
+        
+        // Replace the pre-register item with the completed item
+        preRegisterItem.parentNode.replaceChild(completedItem, preRegisterItem);
+    }
+}
+
 // Make functions globally available
 window.preRegisterStudent = preRegisterStudent;
 window.copyToClipboard = copyToClipboard;
+window.updateTimelineAfterPreRegistration = updateTimelineAfterPreRegistration;

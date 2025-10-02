@@ -4,9 +4,9 @@
         <div class="col-lg-6 col-md-8">
             <div class="content-card p-5">
                 <div class="text-center mb-4">
-                    <i class="ri-user-line" style="font-size: 4rem; color: var(--primary-color);"></i>
-                    <h2 class="page-header mb-2">Student Login</h2>
-                    <p class="text-muted">Login to access your student dashboard</p>
+                    <i class="ri-building-line" style="font-size: 4rem; color: var(--primary-color);"></i>
+                    <h2 class="page-header mb-2">Registrar Login</h2>
+                    <p class="text-muted">Login to access the registrar portal</p>
                 </div>
 
                 @if(session('error'))
@@ -23,24 +23,24 @@
                     </div>
                 @endif
 
-                <form method="POST" action="{{ route('student.login.submit') }}">
+                <form method="POST" action="{{ route('registrar.login') }}">
                     @csrf
                     
-                    <div class="mb-3">
-                        <label for="student_id" class="form-label fw-semibold" style="color: var(--primary-color);">
-                            <i class="ri-user-3-line me-2"></i>Student ID
+                    <div class="mb-4">
+                        <label for="email" class="form-label fw-semibold" style="color: var(--primary-color);">
+                            <i class="ri-mail-line me-2"></i>Email Address
                         </label>
                         <input
-                            type="text"
-                            id="student_id"
-                            name="student_id"
-                            class="form-control form-control-lg @error('student_id') is-invalid @enderror"
-                            value="{{ old('student_id') }}"
+                            type="email"
+                            id="email"
+                            name="email"
+                            class="form-control form-control-lg @error('email') is-invalid @enderror"
+                            value="{{ old('email') }}"
                             required
-                            placeholder="NS-25001"
-                            style="text-transform: uppercase;"
+                            placeholder="Enter your email address"
+                            autocomplete="email"
                         />
-                        @error('student_id')
+                        @error('email')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
@@ -57,6 +57,7 @@
                                 class="form-control form-control-lg @error('password') is-invalid @enderror"
                                 required
                                 placeholder="Enter your password"
+                                autocomplete="current-password"
                                 style="padding-right: 3rem;"
                             />
                             <button type="button" class="btn btn-link position-absolute end-0 top-50 translate-middle-y me-2" onclick="togglePassword('password')" style="border: none; background: none; color: var(--primary-color);">
@@ -78,12 +79,13 @@
                     </button>
                 </form>
 
-                <div class="text-center">
-                    <p class="text-muted">
-                        Don't have an account? 
-                        <a href="{{ route('enroll.create') }}" style="color: var(--primary-color);">Enroll now</a>
-                    </p>
-                </div>
+                {{-- <div class="text-center mt-4">
+                    <small class="text-muted">
+                        <i class="ri-information-line me-1"></i>
+                        For Registrar & Administration only
+                    </small>
+                </div> --}}
+                
             </div>
         </div>
     </div>
@@ -101,5 +103,16 @@
                 eyeIcon.className = 'ri-eye-line';
             }
         }
+
+        // Auto-hide alerts after 5 seconds
+        document.addEventListener('DOMContentLoaded', function() {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                setTimeout(() => {
+                    alert.style.opacity = '0';
+                    setTimeout(() => alert.remove(), 300);
+                }, 5000);
+            });
+        });
     </script>
 </x-layout>
