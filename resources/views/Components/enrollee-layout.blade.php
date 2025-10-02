@@ -66,11 +66,11 @@
               <i class="ri-folder-line me-2"></i>Documents
             </a>
           </li>
-          <li class="nav-item mb-2">
+          {{-- <li class="nav-item mb-2">
             <a class="nav-link {{ request()->routeIs('enrollee.schedule') ? 'active' : '' }}" href="{{ route('enrollee.schedule') }}">
               <i class="ri-calendar-line me-2"></i>Schedule
             </a>
-          </li>
+          </li> --}}
           <li class="nav-item mb-2">
             <a class="nav-link {{ request()->routeIs('enrollee.notices') ? 'active' : '' }}" href="{{ route('enrollee.notices') }}">
               <i class="ri-notification-line me-2"></i>Notices

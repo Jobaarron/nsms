@@ -383,26 +383,28 @@
                 </div>
 
                 <!-- PAYMENT INFORMATION -->
-                <div class="card mb-4">
-                    <div class="card-header">
+                {{-- <div class="card mb-4"> --}}
+                    {{-- <div class="card-header">
                         <h5 class="mb-0">
                             <i class="ri-money-dollar-circle-line me-2"></i>
                             Payment Information
                         </h5>
-                    </div>
-                    <div class="card-body">
-                        <dl class="row">
+                    </div> --}}
+                    {{-- <div class="card-body">
+                        <dl class="row"> --}}
+                            {{-- PAYMENT MODE DISPLAY - COMMENTED OUT FOR FUTURE STUDENT PORTAL IMPLEMENTATION
                             <dt class="col-6">Payment Mode</dt>
                             <dd class="col-6">{{ ucfirst($enrollee->payment_mode) }}</dd>
-                            <dt class="col-6">Enrollment Fee</dt>
+                            --}}
+                            {{-- <dt class="col-6">Enrollment Fee</dt>
                             <dd class="col-6">
                                 @if($enrollee->enrollment_fee)
                                     ₱{{ number_format($enrollee->enrollment_fee, 2) }}
                                 @else
                                     TBD
                                 @endif
-                            </dd>
-                            <dt class="col-6">Payment Status</dt>
+                            </dd> --}}
+                            {{-- <dt class="col-6">Payment Status</dt>
                             <dd class="col-6">
                                 <span class="badge {{ $enrollee->is_paid ? 'bg-success' : 'bg-warning' }}">
                                     {{ $enrollee->is_paid ? 'Paid' : 'Pending' }}
@@ -416,13 +418,13 @@
                             <dt class="col-6">Reference</dt>
                             <dd class="col-6">{{ $enrollee->payment_reference }}</dd>
                             @endif
-                        </dl>
+                        </dl> --}}
                         
-                    </div>
+                    {{-- </div> --}}
                 </div>
 
                 <!-- QUICK ACTIONS -->
-                <div class="card mb-4">
+                {{-- <div class="card mb-4">
                     <div class="card-header">
                         <h5 class="mb-0">
                             <i class="ri-settings-line me-2"></i>
@@ -447,7 +449,7 @@
                             @endif
                         </div>
                     </div>
-                </div>
+                </div> --}}
 
                 @if($enrollee->admin_notes)
                 <!-- ADMIN NOTES -->

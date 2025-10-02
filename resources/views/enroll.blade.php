@@ -568,6 +568,7 @@
 
                     <!-- Payment & Schedule -->
                     <div class="row mb-4">
+                        {{-- PAYMENT MODE SECTION - COMMENTED OUT FOR FUTURE STUDENT PORTAL IMPLEMENTATION
                         <div class="col-md-6">
                             <label for="payment_mode" class="form-label fw-semibold" style="color: var(--primary-color);">
                                 Mode of Payment
@@ -576,16 +577,15 @@
                                 id="payment_mode"
                                 name="payment_mode"
                                 class="form-select form-select-lg @error('payment_mode') is-invalid @enderror"
-                                required
                             >
                                 <option value="">-- Select Mode --</option>
                                 <option value="cash" {{ old('payment_mode')=='cash'?'selected':'' }}>Cash</option>
                                 <option value="online payment" {{ old('payment_mode')=='Online Payment'?'selected':'' }}>Online Payment</option>
                                 <option value="installment" {{ old('payment_mode')=='installment'?'selected':'' }}>Installment</option>
                                 {{-- <option value="scholarship" {{ old('payment_mode')=='scholarship'?'selected':'' }}>Scholarship</option> --}}
-                            </select>
+                            {{-- </select>
                             @error('payment_mode') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                        </div>
+                        </div> --}}
                         <div class="col-md-6">
                             <label for="preferred_schedule" class="form-label fw-semibold" style="color: var(--primary-color);">
                                 Preferred Schedule

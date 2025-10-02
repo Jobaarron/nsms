@@ -85,8 +85,10 @@
                             <dd class="col-sm-8">{{ $enrollee->grade_level_applied }}{{ $enrollee->strand_applied ? ' - ' . $enrollee->strand_applied : '' }}</dd>
                             <dt class="col-sm-4">Academic Year</dt>
                             <dd class="col-sm-8">{{ $enrollee->academic_year }}</dd>
+                            {{-- PAYMENT MODE DISPLAY - COMMENTED OUT FOR FUTURE STUDENT PORTAL IMPLEMENTATION
                             <dt class="col-sm-4">Payment Mode</dt>
                             <dd class="col-sm-8">{{ ucfirst($enrollee->payment_mode) }}</dd>
+                            --}}
                             
                             <dt class="col-sm-4"><strong>Entrance Fee</strong></dt>
                             <dd class="col-sm-8">
@@ -123,6 +125,7 @@
                         </h5>
                     </div>
                     <div class="card-body">
+                        {{-- PAYMENT MODE SELECTION - COMMENTED OUT FOR FUTURE STUDENT PORTAL IMPLEMENTATION
                         <!-- PAYMENT MODE SELECTION -->
                         <div class="alert alert-warning mb-4">
                             <i class="ri-information-line me-2"></i>
@@ -172,6 +175,7 @@
                                             </div>
                                         </div>
                                     </div>
+                        --}}
                                 </div>
                             </div>
                             
@@ -258,7 +262,9 @@
                         @endif
                         
                         <div class="text-muted small">
+                            {{-- PAYMENT MODE DISPLAY - COMMENTED OUT FOR FUTURE STUDENT PORTAL IMPLEMENTATION
                             <p class="mb-1"><strong>Payment Mode:</strong> {{ ucfirst($enrollee->payment_mode) }}</p>
+                            --}}
                             @if($enrollee->payment_date)
                                 <p class="mb-0"><strong>Paid on:</strong> {{ $enrollee->payment_date->format('M d, Y') }}</p>
                             @endif
@@ -394,6 +400,7 @@
                                         Entrance Fee: ₱{{ number_format($breakdown['entrance'] ?? 0, 2) }}
                                     </div>
                                     
+                                    {{-- INSTALLMENT LOGIC - COMMENTED OUT FOR FUTURE STUDENT PORTAL IMPLEMENTATION
                                     @if($enrollee->payment_mode === 'installment')
                                         <div class="mb-2 p-2 border rounded">
                                             <strong class="text-primary">1st Quarter:</strong><br>
@@ -417,6 +424,7 @@
                                             Remaining: ₱{{ number_format($breakdown['tuition'] + $breakdown['miscellaneous'], 2) }}
                                         </div>
                                     @endif
+                                    --}}
                                 </div>
                             </div>
                         </div>
@@ -434,7 +442,7 @@
                     <div class="card-body">
                         <div class="alert alert-info">
                             <i class="ri-information-line me-2"></i>
-                            <strong>After enrollment approval:</strong> Additional fees (tuition, miscellaneous) will be handled through the student portal with your chosen payment mode.
+                            <strong>After enrollment approval:</strong> Additional fees (tuition, miscellaneous) will be handled through the student portal where you can choose your payment mode.
                         </div>
                         
                         @php
