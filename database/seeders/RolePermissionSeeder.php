@@ -59,6 +59,12 @@ class RolePermissionSeeder extends Seeder
             'Payment Portal',
             'Schedule View',
             
+            // REGISTRAR LAYOUT PERMISSIONS (registrar-layout.blade.php)
+            'Registrar Dashboard',
+            'Applications',
+            'Approved',
+            'Reports',
+            
             // CORE SYSTEM PERMISSIONS (for AdminController compatibility)
             'View Reports',
             'View Analytics',
@@ -76,6 +82,7 @@ class RolePermissionSeeder extends Seeder
                 'guard_name' => 'web'
             ]);
         }
+
 
         // Create roles and assign permissions
         
@@ -159,6 +166,17 @@ class RolePermissionSeeder extends Seeder
             'Attendance Management',
             'Teacher Messages',
             'Guidance Analytics',
+        ]);
+
+        // REGISTRAR ROLE - Based on registrar-layout.blade.php sidebar navigation
+        $registrar = Role::firstOrCreate(['name' => 'registrar', 'guard_name' => 'web']);
+        $registrar->syncPermissions([
+            'Dashboard',
+            'Applications',
+            'Approved',
+            'Reports',
+            'View Reports',
+            'Manage Enrollments',
         ]);
 
         // DISCIPLINE ROLE - Keep for backward compatibility
@@ -360,6 +378,72 @@ class RolePermissionSeeder extends Seeder
         
         // Assign teacher role
         $teacherUser->assignRole('teacher');
+
+        // 6. Create Registrar User for Testing
+        $registrarUser = \App\Models\Registrar::firstOrCreate(
+            ['email' => 'registrar@nicolites.edu'],
+            [
+                'employee_id' => 'REG-25001',
+                'first_name' => 'Maria',
+                'middle_name' => 'Santos',
+                'last_name' => 'Cruz',
+                'suffix' => null,
+                'email' => 'registrar@nicolites.edu',
+                'password' => bcrypt('registrar123'),
+                'contact_number' => '09123456789',
+                'date_of_birth' => '1985-06-15',
+                'gender' => 'female',
+                'address' => '123 Registrar Avenue, Quezon City',
+                'city' => 'Quezon City',
+                'province' => 'Metro Manila',
+                'zip_code' => '1100',
+                'position' => 'Senior Registrar',
+                'department' => 'Registrar Office',
+                'hire_date' => '2020-01-15',
+                'employment_status' => 'active',
+                'qualifications' => 'Bachelor of Science in Education, Master in Educational Management',
+                'emergency_contact_name' => 'Juan Cruz',
+                'emergency_contact_phone' => '09987654321',
+                'emergency_contact_relationship' => 'Spouse',
+                'notes' => 'Senior registrar with 5+ years experience',
+            ]
+        );
+        
+        // Assign registrar role (using web guard since Registrar model defaults to web guard)
+        $registrarUser->assignRole('registrar');
+
+        // Create Assistant Registrar for additional testing
+        $assistantRegistrarUser = \App\Models\Registrar::firstOrCreate(
+            ['email' => 'assistant.registrar@nicolites.edu'],
+            [
+                'employee_id' => 'REG-25002',
+                'first_name' => 'Ana',
+                'middle_name' => 'Dela',
+                'last_name' => 'Rosa',
+                'suffix' => null,
+                'email' => 'assistant.registrar@nicolites.edu',
+                'password' => bcrypt('assistant123'),
+                'contact_number' => '09234567890',
+                'date_of_birth' => '1990-03-20',
+                'gender' => 'female',
+                'address' => '456 Assistant Street, Manila City',
+                'city' => 'Manila',
+                'province' => 'Metro Manila',
+                'zip_code' => '1000',
+                'position' => 'Assistant Registrar',
+                'department' => 'Registrar Office',
+                'hire_date' => '2022-08-01',
+                'employment_status' => 'active',
+                'qualifications' => 'Bachelor of Science in Information Systems',
+                'emergency_contact_name' => 'Pedro Dela Rosa',
+                'emergency_contact_phone' => '09876543210',
+                'emergency_contact_relationship' => 'Father',
+                'notes' => 'Assistant registrar handling document processing',
+            ]
+        );
+        
+        // Assign registrar role (using web guard since Registrar model defaults to web guard)
+        $assistantRegistrarUser->assignRole('registrar');
         
     }
 }

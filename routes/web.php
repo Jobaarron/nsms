@@ -2,17 +2,21 @@
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
 use App\Models\Student;
 use App\Models\User;
 use App\Http\Controllers\EnrollmentController;
 use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\StudentController;
-use App\Http\Controllers\GuidanceDisciplineController;
-use App\Http\Controllers\ContactController;
 use App\Http\Controllers\EnrolleeController;
+use App\Http\Controllers\GuidanceController;
+use App\Http\Controllers\RegistrarController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\AdminEnrollmentController;
+use App\Http\Controllers\GuidanceDisciplineController;
+use App\Http\Controllers\ContactController;
 
 
 
@@ -403,10 +407,6 @@ Route::prefix('enrollee')->name('enrollee.')->group(function () {
         Route::get('/documents/view/{index}', [EnrolleeController::class, 'viewDocument'])->name('documents.view');
         Route::get('/documents/download/{index}', [EnrolleeController::class, 'downloadDocument'])->name('documents.download');
         
-        // Payment management
-        Route::get('/payment', [EnrolleeController::class, 'payment'])->name('payment');
-        Route::post('/payment/process', [EnrolleeController::class, 'processPayment'])->name('payment.process');
-        
         // Schedule management
         Route::get('/schedule', [EnrolleeController::class, 'schedule'])->name('schedule');
         Route::put('/schedule', [EnrolleeController::class, 'updateSchedule'])->name('schedule.update');
@@ -434,6 +434,102 @@ Route::prefix('enrollee')->name('enrollee.')->group(function () {
         
         // Logout
         Route::post('/logout', [EnrolleeController::class, 'logout'])->name('logout');
+    });
+});
+
+// Registrar Authentication Routes
+Route::prefix('registrar')->name('registrar.')->group(function () {
+    // Test route (temporary)
+    Route::get('/test', function() {
+        return 'Registrar routes are working!';
+    });
+    
+    // Login routes (guest only)
+    Route::get('/login', function() {
+        // Check if user is already authenticated as registrar
+        if (Auth::guard('registrar')->check()) {
+            return redirect()->route('registrar.dashboard');
+        }
+        return view('registrar.login');
+    })->name('login')->middleware('guest:registrar');
+        
+    Route::post('/login', function(Request $request) {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|string',
+        ]);
+
+        $credentials = $request->only(['email', 'password']);
+        $remember = $request->boolean('remember');
+
+        if (Auth::guard('registrar')->attempt($credentials, $remember)) {
+            $request->session()->regenerate();
+            return redirect()->intended(route('registrar.dashboard'));
+        }
+
+        return back()->withErrors([
+            'email' => 'The provided credentials do not match our records.',
+        ]);
+    })->middleware('guest:registrar');
+    
+    // Protected routes (authenticated registrar only)
+    Route::middleware(['auth:registrar'])->group(function () {
+        // Dashboard
+        Route::get('/', [RegistrarController::class, 'dashboard'])->name('dashboard');
+        
+        // Applications management
+        Route::get('/applications', [RegistrarController::class, 'applications'])->name('applications');
+        Route::get('/applications/{id}', [RegistrarController::class, 'getApplication'])->name('applications.get');
+        Route::post('/applications/{id}/approve', [RegistrarController::class, 'approveApplication'])->name('applications.approve');
+        Route::post('/applications/{id}/decline', [RegistrarController::class, 'declineApplication'])->name('applications.decline');
+        
+        // Document management
+        Route::get('/applications/{id}/documents', [RegistrarController::class, 'getApplicationDocuments'])->name('applications.documents');
+        Route::post('/applications/{id}/documents/status', [RegistrarController::class, 'updateDocumentStatus'])->name('applications.documents.status');
+        Route::get('/documents/view/{path}', [RegistrarController::class, 'serveDocument'])->name('documents.serve')->where('path', '.*');
+        
+        // Appointment management
+        Route::post('/applications/{id}/appointment', [RegistrarController::class, 'scheduleAppointment'])->name('applications.appointment');
+        Route::post('/applications/{id}/schedule', [RegistrarController::class, 'scheduleAppointment'])->name('applications.schedule');
+        
+        // Notice management
+        Route::post('/applications/{id}/notice', [RegistrarController::class, 'sendNotice'])->name('applications.notice');
+        
+        // Bulk operations
+        Route::post('/applications/bulk-approve', [RegistrarController::class, 'bulkApprove'])->name('applications.bulk-approve');
+        Route::post('/applications/bulk-decline', [RegistrarController::class, 'bulkDecline'])->name('applications.bulk-decline');
+        
+        // Approved applications
+        Route::get('/approved', [RegistrarController::class, 'approved'])->name('approved');
+        Route::post('/applications/{id}/generate-credentials', [RegistrarController::class, 'generateStudentCredentials'])->name('applications.generate-credentials');
+        
+        // Appointments, Notices, and Documents data
+        Route::get('/appointments', [RegistrarController::class, 'getAppointments'])->name('appointments.get');
+        Route::get('/notices', [RegistrarController::class, 'getNotices'])->name('notices.get');
+        Route::get('/documents', [RegistrarController::class, 'getAllDocuments'])->name('documents.get');
+        
+        // Appointment management
+        Route::post('/appointments/{id}/approve', [RegistrarController::class, 'approveAppointment'])->name('appointments.approve');
+        Route::post('/appointments/{id}/reject', [RegistrarController::class, 'rejectAppointment'])->name('appointments.reject');
+        Route::post('/appointments/{id}/schedule', [RegistrarController::class, 'updateAppointmentSchedule'])->name('appointments.schedule');
+        
+        // Notice management
+        Route::post('/notices/create', [RegistrarController::class, 'createNotice'])->name('notices.create');
+        Route::put('/notices/{id}/update', [RegistrarController::class, 'updateNotice'])->name('notices.update');
+        Route::post('/notices/bulk', [RegistrarController::class, 'sendBulkNotice'])->name('notices.bulk');
+        Route::get('/notices/{id}', [RegistrarController::class, 'getNotice'])->name('notices.get.single');
+        Route::get('/recipients/preview', [RegistrarController::class, 'previewRecipients'])->name('recipients.preview');
+        
+        // Reports
+        Route::get('/reports', [RegistrarController::class, 'reports'])->name('reports');
+        
+        // Logout
+        Route::post('/logout', function(Request $request) {
+            Auth::guard('registrar')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+            return redirect()->route('registrar.login');
+        })->name('logout');
     });
 });
 

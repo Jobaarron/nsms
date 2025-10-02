@@ -129,6 +129,9 @@ class EnrollmentController extends Controller
             unset($data['strand']);
         }
 
+        // 5.5) Handle track_applied for TVL students
+        // track_applied field is already properly named and will be included in the data
+
         // 6) Set enrollment defaults
         $data['enrollment_status'] = 'pending';
         $data['academic_year'] = date('Y') . '-' . (date('Y') + 1);

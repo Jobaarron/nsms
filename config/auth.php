@@ -50,6 +50,11 @@ return [
             'driver' => 'session',
             'provider' => 'enrollees',
         ],
+        
+        'registrar' => [
+            'driver' => 'session',
+            'provider' => 'registrars',
+        ],
     ],
 
     /*
@@ -83,6 +88,11 @@ return [
         'enrollees' => [
             'driver' => 'eloquent',
             'model' => App\Models\Enrollee::class,
+        ],
+
+        'registrars' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Registrar::class,
         ],
 
         // 'users' => [

@@ -21,7 +21,7 @@ class EnrollStudentRequest extends FormRequest
 
             // Enrollee Info
             'lrn'                => 'nullable|string|max:12|unique:enrollees,lrn',
-            'student_type'       => 'required|in:new,transferee,returnee,continuing',
+            'student_type'       => 'required|in:new,transferee,old',
 
             // Name fields
             'first_name'         => 'required|string|max:50',
@@ -51,6 +51,12 @@ class EnrollStudentRequest extends FormRequest
                 'required_if:grade_level,Grade 11,Grade 12',
                 'string',
                 'max:50',
+            ],
+            'track_applied'      => [
+                'nullable',
+                'required_if:strand,TVL',
+                'in:ICT,HE',
+                'string',
             ],
 
             // Parent/Guardian Info

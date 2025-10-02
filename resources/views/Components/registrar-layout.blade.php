@@ -10,7 +10,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf-token" content="{{ csrf_token() }}">
 
-  <title>Applicant Portal | Nicolites Portal</title>
+  <title>Registrar Portal | Nicolites Portal</title>
 
     <!-- Remix Icons -->
     <link 
@@ -26,12 +26,9 @@
 
   
   @vite('resources/sass/app.scss')
-  @vite(['resources/css/index_enrollee.css'])
+  @vite(['resources/css/index_registrar.css'])
   @vite(['resources/js/app.js'])
 
-  <style>
-   
-  </style>
 </head>
 <body>
   <div class="container-fluid">
@@ -46,41 +43,36 @@
         
         <!-- User Info -->
         <div class="user-info">
-          <div class="user-name">{{ auth('enrollee')->user()->first_name ?? 'Applicant' }} {{ auth('enrollee')->user()->last_name ?? '' }}</div>
-          <div class="user-role">Applicant</div>
+          <div class="user-name">{{ auth('registrar')->user()->name ?? 'Registrar' }}</div>
+          <div class="user-role">Registrar</div>
         </div>
 
         <ul class="nav flex-column">
           <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('enrollee.dashboard') ? 'active' : '' }}" href="{{ route('enrollee.dashboard') }}">
+            <a class="nav-link {{ request()->routeIs('registrar.dashboard') ? 'active' : '' }}" href="{{ route('registrar.dashboard') }}">
               <i class="ri-dashboard-line me-2"></i>Dashboard
             </a>
           </li>
           <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('enrollee.application') ? 'active' : '' }}" href="{{ route('enrollee.application') }}">
-              <i class="ri-file-text-line me-2"></i>My Application
+            <a class="nav-link {{ request()->routeIs('registrar.applications') ? 'active' : '' }}" href="{{ route('registrar.applications') }}">
+              <i class="ri-file-list-line me-2"></i>Applications
             </a>
           </li>
-          <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('enrollee.documents') ? 'active' : '' }}" href="{{ route('enrollee.documents') }}">
-              <i class="ri-folder-line me-2"></i>Documents
+          {{-- <li class="nav-item mb-2">
+            <a class="nav-link {{ request()->routeIs('registrar.approved') ? 'active' : '' }}" href="{{ route('registrar.approved') }}">
+              <i class="ri-check-line me-2"></i>Approved
             </a>
-          </li>
-          <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('enrollee.schedule') ? 'active' : '' }}" href="{{ route('enrollee.schedule') }}">
-              <i class="ri-calendar-line me-2"></i>Schedule
+          </li> --}}
+          {{-- <li class="nav-item mb-2">
+            <a class="nav-link {{ request()->routeIs('registrar.reports') ? 'active' : '' }}" href="{{ route('registrar.reports') }}">
+              <i class="ri-bar-chart-line me-2"></i>Reports
             </a>
-          </li>
-          <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('enrollee.notices') ? 'active' : '' }}" href="{{ route('enrollee.notices') }}">
-              <i class="ri-notification-line me-2"></i>Notices
-            </a>
-          </li>
+          </li> --}}
         </ul>
         
         <!-- LOGOUT SECTION -->
         <div class="mt-auto pt-3">
-          <form action="{{ route('enrollee.logout') }}" method="POST">
+          <form action="{{ route('registrar.logout') }}" method="POST">
             @csrf
             <button type="submit" class="nav-link text-danger border-0 bg-transparent w-100 text-start d-flex align-items-center" style="font-weight: 600;">
               <i class="ri-logout-circle-line me-2"></i>Logout
@@ -93,23 +85,22 @@
       <main class="col-12 col-md-10 ms-sm-auto px-md-4">
         <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
           <h1 class="h2 section-title">
-            <i class="ri-graduation-cap-line me-2"></i>
-            Applicant Portal
+            <i class="ri-building-line me-2"></i>
+            Registrar Portal
           </h1>
-          {{-- <div class="btn-toolbar mb-2 mb-md-0">
+          <div class="btn-toolbar mb-2 mb-md-0">
             <div class="btn-group me-2">
-              <span class="badge badge-status status-{{ strtolower(auth('enrollee')->user()->enrollment_status ?? 'pending') }}">
-                {{ ucfirst(auth('enrollee')->user()->enrollment_status ?? 'Pending') }}
+              <span class="badge bg-primary">
+                {{ now()->format('M d, Y') }}
               </span>
             </div>
-          </div> --}}
+          </div>
         </div>
 
         {{ $slot }}
       </main>
     </div>
   </div>
-
 
   
 </body>

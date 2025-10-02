@@ -49,10 +49,10 @@ return new class extends Migration
             
             // ACADEMIC INFORMATION
             $table->string('grade_level'); // Current grade level
-            $table->string('strand')->nullable(); // For SHS students, TVL-ICT & HE,ABM,STEM
-            $table->string('track')->nullable(); // Academic, TVL, Sports, Arts & Design
+            $table->string('strand')->nullable(); // For SHS students, STEM, ABM, HUMSS, TVL
+            $table->string('track')->nullable(); // For TVL students, ICT or HE
             $table->string('section')->nullable();
-            $table->enum('student_type', ['new', 'transferee', 'returnee', 'continuing'])->default('new');
+            $table->enum('student_type', ['new', 'transferee', 'old'])->default('new');
             
             // GUARDIAN/PARENT INFORMATION
             $table->string('father_name')->nullable();

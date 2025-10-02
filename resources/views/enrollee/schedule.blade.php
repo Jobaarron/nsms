@@ -2,26 +2,26 @@
     <div class="py-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1 class="section-title">Enrollment Schedule</h1>
-            <div>
+            {{-- <div>
                 @if($enrollee->preferred_schedule)
                 <span class="badge bg-info">
                     Preferred: {{ $enrollee->preferred_schedule->format('M d, Y') }}
                 </span>
                 @endif
-            </div>
+            </div> --}}
         </div>
 
         <div class="row">
             <div class="col-lg-8">
                 <!-- ENROLLMENT SCHEDULE STATUS -->
                 <div class="card mb-4">
-                    <div class="card-header">
+                    {{-- <div class="card-header">
                         <h5 class="mb-0">
                             <i class="ri-calendar-check-line me-2"></i>
                             Schedule Status
                         </h5>
-                    </div>
-                    <div class="card-body">
+                    </div> --}}
+                    {{-- <div class="card-body">
                         @if($enrollee->enrollment_status === 'enrolled')
                             <div class="alert alert-success d-flex align-items-center">
                                 <i class="ri-checkbox-circle-line me-2"></i>
@@ -63,7 +63,7 @@
                                 </div>
                             </div>
                         @endif
-                    </div>
+                    </div> --}}
                 </div>
 
                 <!-- PREFERRED SCHEDULE -->
@@ -85,28 +85,60 @@
                                 </p>
                             </div>
                             <div class="col-md-6">
-                                <h6 class="text-muted">Status</h6>
+                                <h6 class="text-muted">Schedule Status</h6>
                                 <p>
+                                    @php
+                                        $appointmentStatus = $enrollee->appointment_status ?? 'pending';
+                                    @endphp
+                                    
                                     @if($enrollee->enrollment_date)
                                         <span class="badge bg-success">
                                             <i class="ri-check-line me-1"></i>
                                             Confirmed for {{ $enrollee->enrollment_date->format('M d, Y') }}
                                         </span>
+                                    @elseif($appointmentStatus === 'approved')
+                                        <span class="badge bg-success">
+                                            <i class="ri-calendar-check-line me-1"></i>
+                                            Schedule Approved by Registrar
+                                        </span>
+                                    @elseif($appointmentStatus === 'rejected')
+                                        <span class="badge bg-danger">
+                                            <i class="ri-calendar-close-line me-1"></i>
+                                            Schedule Rejected
+                                        </span>
+                                    @elseif($appointmentStatus === 'completed')
+                                        <span class="badge bg-info">
+                                            <i class="ri-calendar-event-line me-1"></i>
+                                            Appointment Completed
+                                        </span>
                                     @else
                                         <span class="badge bg-warning">
                                             <i class="ri-time-line me-1"></i>
-                                            Pending Confirmation
+                                            Pending Registrar Review
                                         </span>
                                     @endif
                                 </p>
+                                
+                                @if($enrollee->appointment_notes)
+                                    <div class="mt-2">
+                                        <small class="text-muted">
+                                            <i class="ri-message-3-line me-1"></i>
+                                            <strong>Registrar Notes:</strong> {{ $enrollee->appointment_notes }}
+                                        </small>
+                                    </div>
+                                @endif
                             </div>
                         </div>
                         
-                        @if($enrollee->enrollment_status === 'pending' && !$enrollee->enrollment_date)
+                        @if(in_array($appointmentStatus, ['pending', 'rejected']) && !$enrollee->enrollment_date)
                         <div class="mt-3">
                             <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#rescheduleModal">
                                 <i class="ri-calendar-event-line me-1"></i>
-                                Request Reschedule
+                                @if($appointmentStatus === 'rejected')
+                                    Request New Schedule
+                                @else
+                                    Request Schedule Change
+                                @endif
                             </button>
                         </div>
                         @endif
@@ -115,7 +147,7 @@
                 @endif
 
                 <!-- ENROLLMENT TIMELINE -->
-                <div class="card mb-4">
+                {{-- <div class="card mb-4">
                     <div class="card-header">
                         <h5 class="mb-0">
                             <i class="ri-time-line me-2"></i>
@@ -183,7 +215,7 @@
                             @endif
                         </div>
                     </div>
-                </div>
+                </div> --}}
 
                 <!-- APPOINTMENT SCHEDULING -->
                 <div class="card mb-4">
@@ -361,7 +393,7 @@
             <!-- SIDEBAR -->
             <div class="col-lg-4">
                 <!-- QUICK INFO -->
-                <div class="card mb-4">
+                {{-- <div class="card mb-4">
                     <div class="card-header">
                         <h5 class="mb-0">
                             <i class="ri-information-line me-2"></i>
@@ -384,10 +416,10 @@
                             <dd class="col-6">{{ ucfirst($enrollee->student_type) }}</dd>
                         </dl>
                     </div>
-                </div>
+                </div> --}}
 
                 <!-- ENROLLMENT REQUIREMENTS -->
-                <div class="card mb-4">
+                {{-- <div class="card mb-4">
                     <div class="card-header">
                         <h5 class="mb-0">
                             <i class="ri-task-line me-2"></i>
@@ -434,10 +466,10 @@
                             </div>
                         </div>
                     </div>
-                </div>
+                </div> --}}
 
                 <!-- CONTACT INFORMATION -->
-                <div class="card">
+                {{-- <div class="card">
                     <div class="card-header">
                         <h5 class="mb-0">
                             <i class="ri-customer-service-line me-2"></i>
@@ -468,13 +500,13 @@
                             Saturday: 8:00 AM - 12:00 PM
                         </small>
                     </div>
-                </div>
+                </div> --}}
             </div>
         </div>
     </div>
 
     <!-- Reschedule Modal -->
-    @if($enrollee->enrollment_status === 'pending' && !$enrollee->enrollment_date)
+    @if(in_array($enrollee->appointment_status ?? 'pending', ['pending', 'rejected']) && !$enrollee->enrollment_date)
     <div class="modal fade" id="rescheduleModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -491,7 +523,12 @@
                     <div class="modal-body">
                         <div class="alert alert-info">
                             <i class="ri-information-line me-2"></i>
-                            You can request to change your preferred enrollment schedule. The new schedule is subject to availability and approval.
+                            @php $appointmentStatus = $enrollee->appointment_status ?? 'pending'; @endphp
+                            @if($appointmentStatus === 'rejected')
+                                Your previous schedule request was rejected by the registrar. You can submit a new schedule request with a different date.
+                            @else
+                                You can request to change your preferred enrollment schedule. The new schedule will be reviewed by the registrar.
+                            @endif
                         </div>
 
                         <div class="mb-3">

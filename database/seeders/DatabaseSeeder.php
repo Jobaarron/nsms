@@ -25,7 +25,9 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             RolePermissionSeeder::class,
+            RegistrarSeeder::class,
             FeesTableSeeder::class,
+            SubjectSeeder::class,
             // TestStudentSeeder::class, // Added test student data for login testing
             // EnrolleeSeeder::class, // Added enrollee test data
         ]);

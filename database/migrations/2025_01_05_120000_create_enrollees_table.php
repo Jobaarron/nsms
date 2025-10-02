@@ -52,8 +52,9 @@ return new class extends Migration
             
             // ACADEMIC INFORMATION APPLIED FOR
             $table->string('grade_level_applied'); // Grade level they're applying for
-            $table->string('strand_applied')->nullable(); // For SHS students, TVL-ICT & HE,ABM,STEM
-            $table->enum('student_type', ['new', 'transferee', 'returnee', 'continuing'])->default('new');
+            $table->string('strand_applied')->nullable(); // For SHS students, STEM, ABM, HUMSS, TVL
+            $table->string('track_applied')->nullable(); // For TVL students, ICT or HE
+            $table->enum('student_type', ['new', 'transferee', 'old'])->default('new');
             
             // GUARDIAN/PARENT INFORMATION
             $table->string('father_name')->nullable();

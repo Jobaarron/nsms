@@ -13,7 +13,7 @@ use Carbon\Carbon;
 class ViolationController extends Controller
 {
     /**
-     * Display a listing of violations.
+     * Display a listing of violations. | React Native Controller
      */
     public function index()
     {
