@@ -9,6 +9,8 @@ use App\Models\User;
 use App\Models\Admin;
 use App\Models\Teacher;
 use App\Models\GuidanceDiscipline;
+use App\Models\Discipline;
+use App\Models\Guidance;
 
 class RolePermissionSeeder extends Seeder
 {
@@ -36,13 +38,21 @@ class RolePermissionSeeder extends Seeder
             
             // GUIDANCE LAYOUT PERMISSIONS (guidance-layout.blade.php)
             'Guidance Dashboard',
-            'Student Profiles',
-            'Violations Management',
-            'Facial Recognition',
-            'Counseling Services',
-            'Career Advice',
+            'Case Meetings',
+            'Counseling Sessions',
+            'House Visits',
+            'Case Summaries',
+            'Forward to President',
             'Guidance Analytics',
             'Guidance Settings',
+            
+            // DISCIPLINE LAYOUT PERMISSIONS (discipline-layout.blade.php)
+            'Discipline Dashboard',
+            'Student Profiles',
+            'Violations Management',
+            'Incident Reports',
+            'Discipline Analytics',
+            'Discipline Settings',
             
             // STUDENT LAYOUT PERMISSIONS (student-layout.blade.php)
             'Student Dashboard',
@@ -121,31 +131,63 @@ class RolePermissionSeeder extends Seeder
         $guidanceCounselor = Role::firstOrCreate(['name' => 'guidance_counselor', 'guard_name' => 'web']);
         $guidanceCounselor->syncPermissions([
             'Guidance Dashboard',
-            'Student Profiles',
-            'Counseling Services',
-            'Career Advice',
+            'Case Meetings',
+            'Counseling Sessions',
+            'House Visits',
+            'Case Summaries',
+            'Forward to President',
             'Guidance Analytics',
             'Guidance Settings',
+        ]);
+
+        // HEAD COUNSELOR ROLE - Senior guidance management
+        $headCounselor = Role::firstOrCreate(['name' => 'head_counselor', 'guard_name' => 'web']);
+        $headCounselor->syncPermissions([
+            'Guidance Dashboard',
+            'Case Meetings',
+            'Counseling Sessions',
+            'House Visits',
+            'Case Summaries',
+            'Forward to President',
+            'Guidance Analytics',
+            'Guidance Settings',
+        ]);
+
+        // CAREER COUNSELOR ROLE - Career-focused guidance
+        $careerCounselor = Role::firstOrCreate(['name' => 'career_counselor', 'guard_name' => 'web']);
+        $careerCounselor->syncPermissions([
+            'Guidance Dashboard',
+            'Counseling Sessions',
+            'Case Summaries',
+            'Guidance Analytics',
         ]);
 
         // DISCIPLINE HEAD ROLE - Senior discipline management
         $disciplineHead = Role::firstOrCreate(['name' => 'discipline_head', 'guard_name' => 'web']);
         $disciplineHead->syncPermissions([
-            'Guidance Dashboard',
+            'Discipline Dashboard',
             'Student Profiles',
             'Violations Management',
-            'Facial Recognition',
-            'Guidance Analytics',
-            'Guidance Settings',
+            'Incident Reports',
+            'Discipline Analytics',
+            'Discipline Settings',
         ]);
 
         // DISCIPLINE OFFICER ROLE - Basic discipline functions
         $disciplineOfficer = Role::firstOrCreate(['name' => 'discipline_officer', 'guard_name' => 'web']);
         $disciplineOfficer->syncPermissions([
-            'Guidance Dashboard',
+            'Discipline Dashboard',
             'Student Profiles',
             'Violations Management',
-            'Facial Recognition',
+            'Incident Reports',
+        ]);
+
+        // SECURITY GUARD ROLE - Security and basic discipline
+        $securityGuard = Role::firstOrCreate(['name' => 'security_guard', 'guard_name' => 'web']);
+        $securityGuard->syncPermissions([
+            'Discipline Dashboard',
+            'Student Profiles',
+            'Violations Management',
         ]);
 
         // CASHIER ROLE - Financial transactions
@@ -444,6 +486,138 @@ class RolePermissionSeeder extends Seeder
         
         // Assign registrar role (using web guard since Registrar model defaults to web guard)
         $assistantRegistrarUser->assignRole('registrar');
+
+        // 7. Create NEW Discipline Head User (separate system)
+        $newDisciplineHeadUser = User::firstOrCreate(
+            ['email' => 'discipline.head.new@nicolites.edu'],
+            [
+                'name' => 'Michael Torres',
+                'password' => bcrypt('discipline2024'),
+            ]
+        );
+        
+        // Create Discipline record for new system
+        Discipline::firstOrCreate(
+            ['user_id' => $newDisciplineHeadUser->id],
+            [
+                'employee_id' => 'DIS001',
+                'first_name' => 'Michael',
+                'last_name' => 'Torres',
+                'phone_number' => '09123456789',
+                'address' => '123 Discipline Street, Quezon City',
+                'position' => 'Discipline Head',
+                'specialization' => 'discipline_head',
+                'hire_date' => '2023-01-15',
+                'qualifications' => 'Master of Arts in Educational Management',
+                'emergency_contact_name' => 'Sarah Torres',
+                'emergency_contact_phone' => '09987654321',
+                'emergency_contact_relationship' => 'spouse',
+                'notes' => 'Head of Discipline Department',
+                'is_active' => true,
+            ]
+        );
+        
+        // Assign discipline head role
+        $newDisciplineHeadUser->assignRole('discipline_head');
+
+        // 8. Create NEW Discipline Officer User (separate system)
+        $newDisciplineOfficerUser = User::firstOrCreate(
+            ['email' => 'discipline.officer.new@nicolites.edu'],
+            [
+                'name' => 'James Rodriguez',
+                'password' => bcrypt('officer2024'),
+            ]
+        );
+        
+        // Create Discipline record for new system
+        Discipline::firstOrCreate(
+            ['user_id' => $newDisciplineOfficerUser->id],
+            [
+                'employee_id' => 'DIS002',
+                'first_name' => 'James',
+                'last_name' => 'Rodriguez',
+                'phone_number' => '09234567890',
+                'address' => '456 Officer Avenue, Manila',
+                'position' => 'Discipline Officer',
+                'specialization' => 'discipline_officer',
+                'hire_date' => '2023-08-01',
+                'qualifications' => 'Bachelor of Science in Psychology',
+                'emergency_contact_name' => 'Maria Rodriguez',
+                'emergency_contact_phone' => '09876543210',
+                'emergency_contact_relationship' => 'spouse',
+                'notes' => 'Handles student violations and disciplinary actions',
+                'is_active' => true,
+            ]
+        );
+        
+        // Assign discipline officer role
+        $newDisciplineOfficerUser->assignRole('discipline_officer');
+
+        // 9. Create NEW Guidance Counselor User (separate system)
+        $newGuidanceCounselorUser = User::firstOrCreate(
+            ['email' => 'guidance.counselor.new@nicolites.edu'],
+            [
+                'name' => 'Patricia Santos',
+                'password' => bcrypt('guidance2024'),
+            ]
+        );
+        
+        // Create Guidance record for new system
+        Guidance::firstOrCreate(
+            ['user_id' => $newGuidanceCounselorUser->id],
+            [
+                'employee_id' => 'GUI001',
+                'first_name' => 'Patricia',
+                'last_name' => 'Santos',
+                'phone_number' => '09345678901',
+                'address' => '789 Guidance Lane, Pasig City',
+                'position' => 'Guidance Counselor',
+                'specialization' => 'guidance_counselor',
+                'hire_date' => '2023-03-01',
+                'qualifications' => 'Master of Arts in Guidance and Counseling',
+                'emergency_contact_name' => 'Roberto Santos',
+                'emergency_contact_phone' => '09765432109',
+                'emergency_contact_relationship' => 'spouse',
+                'notes' => 'Specializes in academic and career counseling',
+                'is_active' => true,
+            ]
+        );
+        
+        // Assign guidance counselor role
+        $newGuidanceCounselorUser->assignRole('guidance_counselor');
+
+        // 10. Create Head Counselor User (separate system)
+        $headCounselorUser = User::firstOrCreate(
+            ['email' => 'head.counselor@nicolites.edu'],
+            [
+                'name' => 'Dr. Elena Villanueva',
+                'password' => bcrypt('headcounselor2024'),
+            ]
+        );
+        
+        // Create Guidance record for new system
+        Guidance::firstOrCreate(
+            ['user_id' => $headCounselorUser->id],
+            [
+                'employee_id' => 'GUI002',
+                'first_name' => 'Elena',
+                'last_name' => 'Villanueva',
+                'phone_number' => '09456789012',
+                'address' => '321 Counselor Street, Makati City',
+                'position' => 'Head Counselor',
+                'specialization' => 'head_counselor',
+                'hire_date' => '2022-01-15',
+                'qualifications' => 'Doctor of Philosophy in Counseling Psychology',
+                'emergency_contact_name' => 'Carlos Villanueva',
+                'emergency_contact_phone' => '09654321098',
+                'emergency_contact_relationship' => 'spouse',
+                'notes' => 'Head of Guidance and Counseling Department',
+                'is_active' => true,
+            ]
+        );
+        
+        // Assign head counselor role
+        $headCounselorUser->assignRole('head_counselor');
         
     }
 }

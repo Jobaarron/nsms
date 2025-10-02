@@ -195,7 +195,7 @@
                         </div>
 
                         <!-- Quick Actions -->
-                        <div class="card">
+                        {{-- <div class="card">
                             <div class="card-header" style="background-color: var(--light-green); color: var(--dark-green);">
                                 <h6 class="mb-0"><i class="ri-settings-line me-2"></i>Quick Actions</h6>
                             </div>
@@ -215,7 +215,7 @@
                                     </button>
                                 </div>
                             </div>
-                        </div>
+                        </div> --}}
                     </div>
                 </div>
             </div>

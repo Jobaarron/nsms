@@ -23,7 +23,7 @@
         <tr>
             <td style="background-color: #014421; color: white; padding: 40px 30px; text-align: center;" class="mobile-padding">
                 <h1 style="font-size: 32px; font-weight: 700; margin: 0; color: white;" class="mobile-title">
-                    🎓 Welcome to Nicolites School!
+                    🎓 Welcome to Nicolites Montessori School!
                 </h1>
                 <p style="font-size: 18px; margin: 10px 0 0 0; color: #d0d8c3;" class="mobile-font">
                     Student Portal Access
@@ -38,7 +38,7 @@
                 <!-- Welcome Message -->
                 <p style="font-size: 18px; color: #012d17; margin-bottom: 30px; line-height: 1.6;" class="mobile-font">
                     Congratulations, {{ $student->first_name }}!<br>
-                    Your enrollment has been approved and your student account has been successfully created. You are now officially a student of Nicolites School!
+                    Your application has been approved and your student account has been successfully created!
                 </p>
 
                 <!-- Enrollment Status -->
@@ -46,7 +46,7 @@
                     <tr>
                         <td style="padding: 25px;">
                             <div style="font-size: 20px; font-weight: 600; color: #2e7d32; margin-bottom: 15px;">
-                                ✅ Enrollment Status: <span style="color: #4caf50;">APPROVED & ENROLLED</span>
+                                ✅ Applicant Status: <span style="color: #4caf50;">APPROVED</span>
                             </div>
                             <p style="margin: 0; color: #2e7d32; font-size: 15px;">
                                 Welcome to {{ $student->grade_level }}{{ $student->strand ? ' - ' . $student->strand : '' }}{{ $student->track ? ' (' . $student->track . ')' : '' }} for Academic Year {{ $student->academic_year }}.
@@ -133,24 +133,7 @@
                     </tr>
                 </table>
 
-                <!-- What's Available -->
-                <table width="100%" border="0" cellpadding="0" cellspacing="0" style="background-color: #e8f5e8; border: 1px solid #4caf50; border-radius: 8px; border-left: 4px solid #2e7d32; margin: 25px 0;">
-                    <tr>
-                        <td style="padding: 25px;">
-                            <div style="font-size: 18px; font-weight: 600; color: #2e7d32; margin-bottom: 15px;">
-                                🎯 Available in Student Portal
-                            </div>
-                            <ul style="margin: 0; padding-left: 20px; color: #2e7d32;">
-                                <li style="margin-bottom: 8px;">View your class schedule and subjects</li>
-                                <li style="margin-bottom: 8px;">Check grades and academic progress</li>
-                                <li style="margin-bottom: 8px;">Access student payments and fees</li>
-                                <li style="margin-bottom: 8px;">View guidance notes and counseling records</li>
-                                <li style="margin-bottom: 8px;">Update your profile information</li>
-                                <li>Communicate with teachers and school administration</li>
-                            </ul>
-                        </td>
-                    </tr>
-                </table>
+                
 
                 <!-- Support Message -->
                 <p style="color: #2d6a3e; font-size: 15px; margin: 30px 0 0 0; padding-top: 20px; border-top: 1px solid #d0d8c3;">
@@ -164,10 +147,10 @@
         <tr>
             <td style="background-color: #012d17; color: white; padding: 30px; text-align: center;" class="mobile-padding">
                 <div style="font-size: 20px; font-weight: 700; margin-bottom: 10px; color: #d0d8c3;">
-                    Nicolites School
+                    Nicolites Montessori
                 </div>
                 <p style="color: #d0d8c3; margin: 0 0 20px 0; font-size: 14px;">
-                    Student Management System
+                    Nicolites Portal: School Management System
                 </p>
                 <div style="border-top: 1px solid #d0d8c3; margin: 20px 0; opacity: 0.3;"></div>
                 <p style="color: #d0d8c3; margin: 0; font-size: 14px;">

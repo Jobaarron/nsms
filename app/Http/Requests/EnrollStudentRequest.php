@@ -75,7 +75,7 @@ class EnrollStudentRequest extends FormRequest
 
             // Medical & Payment
             'medical_history'    => 'nullable|string|max:1000',
-            'payment_mode'       => 'required|in:cash,online payment,installment',
+            'payment_mode'       => 'nullable|in:cash,online payment,installment', // Made optional - will be handled in student portal
             'preferred_schedule' => 'nullable|date|after_or_equal:today',
         ];
     }

@@ -51,7 +51,7 @@
                                 <i class="ri-graduation-cap-line"></i>
                                 Student Portal
                             </a>
-                            <a href="/student/login" class="dropdown-item {{ request()->is('registrar/login*') ? 'active' : '' }}">
+                            <a href="/registrar/login" class="dropdown-item {{ request()->is('registrar/login*') ? 'active' : '' }}">
                                 <i class="ri-building-line"></i>
                                 Registrar Portal
                             </a>

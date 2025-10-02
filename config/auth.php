@@ -55,6 +55,16 @@ return [
             'driver' => 'session',
             'provider' => 'registrars',
         ],
+        
+        'discipline' => [
+            'driver' => 'session',
+            'provider' => 'disciplines',
+        ],
+        
+        'guidance' => [
+            'driver' => 'session',
+            'provider' => 'guidances',
+        ],
     ],
 
     /*
@@ -93,6 +103,16 @@ return [
         'registrars' => [
             'driver' => 'eloquent',
             'model' => App\Models\Registrar::class,
+        ],
+
+        'disciplines' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Discipline::class,
+        ],
+
+        'guidances' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Guidance::class,
         ],
 
         // 'users' => [

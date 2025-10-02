@@ -42,7 +42,13 @@ export default defineConfig({
                 'resources/js/enrollee-index.js',
                 'resources/js/registrar-applications.js',
                 'resources/js/registrar-approved.js',
-                'resources/js/registrar-reports.js'
+                'resources/js/registrar-reports.js',
+                'resources/css/index_discipline.css',
+                'resources/js/discipline_violations.js',
+                'resources/js/discipline_student-profile.js',
+                'resources/css/index_guidance.css',
+                'resources/js/guidance_case-meetings.js',
+                'resources/js/guidance_counseling-sessions.js'
                 
             ],
             refresh: true,
