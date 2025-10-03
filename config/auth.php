@@ -65,6 +65,11 @@ return [
             'driver' => 'session',
             'provider' => 'guidances',
         ],
+        
+        'cashier' => [
+            'driver' => 'session',
+            'provider' => 'cashiers',
+        ],
     ],
 
     /*
@@ -113,6 +118,11 @@ return [
         'guidances' => [
             'driver' => 'eloquent',
             'model' => App\Models\Guidance::class,
+        ],
+
+        'cashiers' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Cashier::class,
         ],
 
         // 'users' => [

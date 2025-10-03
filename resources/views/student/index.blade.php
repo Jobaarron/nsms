@@ -1,239 +1,279 @@
 <x-student-layout>
-      <main class="col-12 col-md-10 px-4 py-4">
-        <h1 class="section-title">Welcome, {{ $student->first_name ?? 'Student' }}</h1>
-        @if(!$student->canAccessFeatures())
-            <div class="alert alert-warning d-flex align-items-center mb-4">
-                <i class="ri-alert-line me-2"></i>
-                <div>
-                    <strong>Payment Required!</strong> 
-                    You need to complete your payment to access all features. Current status: <strong>{{ $student->paymentStatus }}</strong>
+    @push('styles')
+        @vite('resources/css/index_student.css')
+    @endpush
+
+    <!-- Page Header -->
+    <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="section-title mb-1">Student Dashboard</h2>
+                        <p class="text-muted mb-0">Welcome back, {{ $student->full_name ?? ($student->first_name . ' ' . $student->last_name) }}</p>
+                    </div>
+                    <div class="text-end">
+                        <small class="text-muted">Student ID: <strong>{{ $student->student_id }}</strong></small><br>
+                        <small class="text-muted">Academic Year: <strong>{{ $student->academic_year ?? '2024-2025' }}</strong></small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enrollment Status Alert -->
+        @if($student->enrollment_status === 'pre_registered')
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="alert alert-warning border-0 shadow-sm">
+                        <div class="d-flex align-items-center">
+                            <i class="ri-information-line fs-4 me-3"></i>
+                            <div class="flex-grow-1">
+                                <h6 class="alert-heading mb-1">Complete Your Enrollment</h6>
+                                <p class="mb-2">You have successfully pre-registered! Please complete your enrollment by selecting subjects and payment method.</p>
+                                <button class="btn btn-warning btn-sm" onclick="window.location.href='{{ route('student.enrollment') }}'">
+                                    <i class="ri-arrow-right-line me-1"></i>Continue Enrollment
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @elseif($student->enrollment_status === 'enrolled')
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="alert alert-success border-0 shadow-sm">
+                        <div class="d-flex align-items-center">
+                            <i class="ri-check-line fs-4 me-3"></i>
+                            <div>
+                                <h6 class="alert-heading mb-1">Enrollment Complete</h6>
+                                <p class="mb-0">You are successfully enrolled for Academic Year {{ $student->academic_year ?? '2024-2025' }}.</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         @endif
 
-        <!-- SUMMARY CARDS -->
-        <div class="row g-3 mb-5">
-          <div class="col-6 col-lg-3">
-            <div class="card card-summary card-paid h-100">
-              <div class="card-body d-flex align-items-center">
-                <i class="ri-checkbox-circle-line display-6 me-3"></i>
-                <div>
-                  <div>Payment Status</div>
-                  <h3>{{ $student->paymentStatus }}</h3>
+        <!-- Summary Cards -->
+        <div class="row mb-4">
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="card border-0 shadow-sm card-summary card-paid h-100">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="flex-shrink-0 me-3">
+                            <i class="ri-money-dollar-circle-line fs-2"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h3 class="fw-bold fs-4 mb-0">₱{{ number_format($student->total_paid ?? 0, 2) }}</h3>
+                            <small class="text-white-50">Total Paid</small>
+                        </div>
+                    </div>
                 </div>
-              </div>
             </div>
-          </div>
-          <div class="col-6 col-lg-3">
-            <div class="card card-summary card-credits h-100">
-              <div class="card-body d-flex align-items-center">
-                <i class="ri-bar-chart-line display-6 me-3"></i>
-                <div>
-                  <div>To be use soon</div>
-                  <h3>Value</h3>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="card border-0 shadow-sm card-summary card-credits h-100">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="flex-shrink-0 me-3">
+                            <i class="ri-money-dollar-box-line fs-2"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h3 class="fw-bold fs-4 mb-0">₱{{ number_format(($student->total_fees_due ?? 0) - ($student->total_paid ?? 0), 2) }}</h3>
+                            <small class="text-white-50">Balance Due</small>
+                        </div>
+                    </div>
                 </div>
-              </div>
             </div>
-          </div>
-          <div class="col-6 col-lg-3">
-            <div class="card card-summary card-subjects h-100">
-              <div class="card-body d-flex align-items-center">
-                <i class="ri-book-2-line display-6 me-3"></i>
-                <div>
-                  <div>Active Subjects</div>
-                  <h3>2</h3>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="card border-0 shadow-sm card-summary card-subjects h-100">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="flex-shrink-0 me-3">
+                            <i class="ri-book-line fs-2"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            @php
+                                $subjects = \App\Models\Subject::getSubjectsForStudent(
+                                    $student->grade_level,
+                                    $student->strand,
+                                    $student->track
+                                );
+                            @endphp
+                            <h3 class="fw-bold fs-4 mb-0">{{ $subjects->count() }}</h3>
+                            <small class="text-white-50">Subjects</small>
+                        </div>
+                    </div>
                 </div>
-              </div>
             </div>
-          </div>
-          <div class="col-6 col-lg-3">
-            <div class="card card-summary card-gpa h-100">
-              <div class="card-body d-flex align-items-center">
-                <i class="ri-star-line display-6 me-3"></i>
-                <div>
-                  <div>To be use soon</div>
-                  <h3>Value</h3>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="card border-0 shadow-sm card-summary card-gpa h-100">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="flex-shrink-0 me-3">
+                            <i class="ri-graduation-cap-line fs-2"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h3 class="fw-bold fs-4 mb-0">{{ $student->grade_level }}</h3>
+                            <small class="opacity-75">Grade Level</small>
+                        </div>
+                    </div>
                 </div>
-              </div>
             </div>
-          </div>
         </div>
 
-        <!-- PAYMENT HISTORY -->
-        <h4 class="section-title">Payment History</h4>
-        <div class="table-responsive mb-5">
-          <table class="table table-striped">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Amount</th>
-                <th>Type</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Jul 01, 2024</td>
-                <td>$1,200.00</td>
-                <td>Tuition</td>
-                <td><span class="badge bg-success">Paid</span></td>
-              </tr>
-              <tr>
-                <td>Jan 15, 2024</td>
-                <td>$1,200.00</td>
-                <td>Tuition</td>
-                <td><span class="badge bg-success">Paid</span></td>
-              </tr>
-            </tbody>
-          </table>
+        <!-- Main Content -->
+        <div class="row">
+            <!-- Left Column -->
+            <div class="col-lg-8">
+                <!-- Quick Actions -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white border-0 pb-0">
+                        <h5 class="card-title mb-0">Quick Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            @if($student->enrollment_status === 'pre_registered')
+                                <div class="col-md-4">
+                                    <a href="{{ route('student.enrollment') }}" class="btn btn-outline-primary w-100 py-3">
+                                        <i class="ri-user-add-line fs-4 d-block mb-2"></i>
+                                        Complete Enrollment
+                                    </a>
+                                </div>
+                            @endif
+                            <div class="col-md-4">
+                                <a href="{{ route('student.subjects') }}" class="btn btn-outline-primary w-100 py-3">
+                                    <i class="ri-book-open-line fs-4 d-block mb-2"></i>
+                                    View Subjects
+                                </a>
+                            </div>
+                            <div class="col-md-4">
+                                <a href="{{ route('student.payments') }}" class="btn btn-outline-primary w-100 py-3">
+                                    <i class="ri-bill-line fs-4 d-block mb-2"></i>
+                                    Payment History
+                                </a>
+                            </div>
+                            <div class="col-md-4">
+                                <a href="{{ route('student.face-registration') }}" class="btn btn-outline-primary w-100 py-3">
+                                    <i class="ri-camera-line fs-4 d-block mb-2"></i>
+                                    Face Registration
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Academic Information -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white border-0 pb-0">
+                        <h5 class="card-title mb-0">Academic Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label text-muted small">Grade Level</label>
+                                    <div class="fw-semibold">{{ $student->grade_level }}</div>
+                                </div>
+                                @if($student->strand)
+                                    <div class="mb-3">
+                                        <label class="form-label text-muted small">Strand</label>
+                                        <div class="fw-semibold">{{ $student->strand }}</div>
+                                    </div>
+                                @endif
+                                @if($student->track)
+                                    <div class="mb-3">
+                                        <label class="form-label text-muted small">Track</label>
+                                        <div class="fw-semibold">{{ $student->track }}</div>
+                                    </div>
+                                @endif
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label text-muted small">Student Type</label>
+                                    <div class="fw-semibold text-capitalize">{{ $student->student_type ?? 'New' }}</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label text-muted small">Section</label>
+                                    <div class="fw-semibold">{{ $student->section ?? 'To be assigned' }}</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label text-muted small">Academic Year</label>
+                                    <div class="fw-semibold">{{ $student->academic_year ?? '2024-2025' }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="col-lg-4">
+                <!-- Student Profile Card -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body text-center">
+                        @if($student->id_photo_data_url)
+                            <img src="{{ $student->id_photo_data_url }}" alt="Student Photo" class="rounded-circle mb-3" style="width: 100px; height: 100px; object-fit: cover;">
+                        @else
+                            <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mb-3 mx-auto" style="width: 100px; height: 100px;">
+                                <i class="ri-user-line fs-1 text-muted"></i>
+                            </div>
+                        @endif
+                        <h6 class="fw-bold mb-1">{{ $student->full_name ?? ($student->first_name . ' ' . $student->last_name) }}</h6>
+                        <p class="text-muted small mb-2">{{ $student->student_id }}</p>
+                        <span class="badge bg-{{ $student->enrollment_status === 'enrolled' ? 'success' : 'warning' }} mb-3">
+                            {{ ucfirst(str_replace('_', ' ', $student->enrollment_status)) }}
+                        </span>
+                        <div class="text-start">
+                            <small class="text-muted d-block">Email: {{ $student->email }}</small>
+                            <small class="text-muted d-block">Contact: {{ $student->contact_number }}</small>
+                            @if($student->lrn)
+                                <small class="text-muted d-block">LRN: {{ $student->lrn }}</small>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Enrollment Progress -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white border-0 pb-0">
+                        <h6 class="card-title mb-0">Enrollment Progress</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="timeline">
+                            <div class="timeline-item {{ $student->pre_registered_at ? 'completed' : '' }}">
+                                <h6 class="mb-1 {{ $student->pre_registered_at ? 'text-success' : 'text-muted' }}">
+                                    <i class="ri-check-line me-1"></i>Pre-Registration
+                                </h6>
+                                <small class="text-muted">
+                                    {{ $student->pre_registered_at ? $student->pre_registered_at->format('M d, Y') : 'Pending' }}
+                                </small>
+                            </div>
+                            <div class="timeline-item {{ $student->enrollment_status === 'enrolled' ? 'completed' : ($student->enrollment_status === 'pre_registered' ? 'active' : '') }}">
+                                <h6 class="mb-1 {{ $student->enrollment_status === 'enrolled' ? 'text-success' : ($student->enrollment_status === 'pre_registered' ? 'text-primary' : 'text-muted') }}">
+                                    <i class="ri-user-add-line me-1"></i>Complete Enrollment
+                                </h6>
+                                <small class="text-muted">
+                                    {{ $student->enrollment_status === 'enrolled' ? 'Completed' : ($student->enrollment_status === 'pre_registered' ? 'In Progress' : 'Pending') }}
+                                </small>
+                            </div>
+                            <div class="timeline-item {{ $student->is_paid ? 'completed' : '' }}">
+                                <h6 class="mb-1 {{ $student->is_paid ? 'text-success' : 'text-muted' }}">
+                                    <i class="ri-money-dollar-circle-line me-1"></i>Payment
+                                </h6>
+                                <small class="text-muted">
+                                    {{ $student->is_paid ? 'Paid' : 'Pending Payment' }}
+                                </small>
+                            </div>
+                            <div class="timeline-item {{ $student->section ? 'completed' : '' }}">
+                                <h6 class="mb-1 {{ $student->section ? 'text-success' : 'text-muted' }}">
+                                    <i class="ri-group-line me-1"></i>Section Assignment
+                                </h6>
+                                <small class="text-muted">
+                                    {{ $student->section ?? 'To be assigned' }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <!-- ACTIVE SUBJECTS -->
-        <h4 class="section-title">My Subjects</h4>
-        <div class="table-responsive mb-5">
-          <table class="table table-hover align-middle">
-            <thead>
-              <tr>
-                <th>Code</th>
-                <th>Subject</th>
-                <th>Instructor</th>
-                <th>Schedule</th>
-                <th>Room</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>BIO101</td>
-                <td>Biology 101</td>
-                <td>Dr. Smith</td>
-                <td>Mon/Wed 9:00–10:30</td>
-                <td>Room 202</td>
-              </tr>
-              <tr>
-                <td>ENG201</td>
-                <td>English Lit</td>
-                <td>Prof. Lee</td>
-                <td>Tue/Thu 11:00–12:30</td>
-                <td>Room 105</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- GUIDANCE & DISCIPLINE -->
-        {{-- <h4 class="section-title">Guidance & Discipline</h4>
-        <div class="row mb-5">
-          <div class="col-md-6">
-            <h6 class="fw-bold">Guidance Notes</h6>
-            <ul class="list-group">
-              <li class="list-group-item">
-                <strong>Jun 20:</strong> Met with counselor regarding course load.
-              </li>
-              <li class="list-group-item">
-                <strong>May 05:</strong> Guidance on academic planning.
-              </li>
-            </ul>
-          </div>
-          <div class="col-md-6">
-            <h6 class="fw-bold">Discipline Records</h6>
-            <ul class="list-group">
-              <li class="list-group-item">
-                <strong>Feb 14:</strong> Late to class 
-                <span class="badge bg-warning text-dark float-end">Minor</span>
-              </li>
-              <li class="list-group-item">
-                <strong>Jan 22:</strong> Unexcused absence 
-                <span class="badge bg-danger float-end">Major</span>
-              </li>
-            </ul>
-          </div>
-        </div> --}}
-
-        <!-- PROFILE -->
-        <h4 class="section-title">My Profile</h4>
-        <div class="card mb-5">
-          <div class="card-body">
-            <dl class="row">
-              <dt class="col-sm-3">LRN</dt>
-              <dd class="col-sm-9">{{ $student->student_id ?? $student->lrn ?? 'STU-' . str_pad($student->id, 6, '0', STR_PAD_LEFT) }}</dd>
-              <dt class="col-sm-3">Name</dt>
-              <dd class="col-sm-9">{{ $student->full_name }}</dd>
-              {{-- <dt class="col-sm-3">Student Type</dt>
-              <dd class="col-sm-9">{{ ucfirst($student->student_type) }}</dd> --}}
-              <dt class="col-sm-3">Grade Level</dt>
-              <dd class="col-sm-9">{{ $student->grade_level }}{{ $student->strand ? ' - ' . $student->strand : '' }}</dd>
-              <dt class="col-sm-3">Email</dt>
-              <dd class="col-sm-9">{{ $student->email }}</dd>
-              <dt class="col-sm-3">Contact Number</dt>
-              <dd class="col-sm-9">{{ $student->contact_number ?? 'Not provided' }}</dd>
-              <dt class="col-sm-3">Address</dt>
-              <dd class="col-sm-9">{{ $student->address }}, {{ $student->city }}, {{ $student->province }} {{ $student->zip_code }}</dd>
-              <dt class="col-sm-3">Guardian</dt>
-              <dd class="col-sm-9">{{ $student->guardian_name }} ({{ $student->guardian_contact }})</dd>
-              <dt class="col-sm-3">Enrollment Status</dt>
-              <dd class="col-sm-9">
-                <span class="badge bg-{{ $student->enrollment_status === 'enrolled' ? 'success' : ($student->enrollment_status === 'pending' ? 'warning' : 'secondary') }}">
-                  {{ ucfirst($student->enrollment_status) }}
-                </span>
-              </dd>
-              <dt class="col-sm-3">Payment Mode</dt>
-              <dd class="col-sm-9">{{ ucfirst($student->payment_mode) }}</dd>
-            </dl>
-            @if($student->canAccessFeatures())
-              <button class="btn btn-outline-primary">
-                <i class="ri-edit-line me-1"></i>Edit Profile
-              </button>
-            @else
-              <button class="btn btn-outline-secondary" disabled title="Payment required to edit profile">
-                <i class="ri-edit-line me-1"></i>Edit Profile
-                <span class="badge bg-warning text-dark ms-2">Pay First</span>
-              </button>
-            @endif
-          </div>
-        </div>
-
-        <!-- QUICK ACTIONS -->
-        <h4 class="section-title">Quick Actions</h4>
-        <div class="row g-3">
-          <div class="col-md-4">
-            @if($student->canAccessFeatures())
-              <button class="btn btn-outline-primary w-100 py-3">
-                <i class="ri-wallet-line me-2"></i>Make Payment
-              </button>
-            @else
-              <button class="btn btn-outline-secondary w-100 py-3" disabled title="Payment required to access this feature">
-                <i class="ri-wallet-line me-2"></i>Make Payment
-                <span class="badge bg-warning text-dark ms-2">Pay First</span>
-              </button>
-            @endif
-          </div>
-          <div class="col-md-4">
-            @if($student->canAccessFeatures())
-              <button class="btn btn-outline-primary w-100 py-3">
-                <i class="ri-calendar-line me-2"></i>View Schedule
-              </button>
-            @else
-              <button class="btn btn-outline-secondary w-100 py-3" disabled title="Payment required to access this feature">
-                <i class="ri-calendar-line me-2"></i>View Schedule
-                <span class="badge bg-warning text-dark ms-2">Pay First</span>
-              </button>
-            @endif
-          </div>
-          <div class="col-md-4">
-            @if($student->canAccessFeatures())
-              <button class="btn btn-outline-primary w-100 py-3">
-                <i class="ri-chat-1-line me-2"></i>Message Counselor
-              </button>
-            @else
-              <button class="btn btn-outline-secondary w-100 py-3" disabled title="Payment required to access this feature">
-                <i class="ri-chat-1-line me-2"></i>Message Counselor
-                <span class="badge bg-warning text-dark ms-2">Pay First</span>
-              </button>
-            @endif
-          </div>
-        </div>
-      </main>
-    </div>
-  </div>
-
+    @push('scripts')
+        @vite('resources/js/student-dashboard.js')
+    @endpush
 </x-student-layout>
