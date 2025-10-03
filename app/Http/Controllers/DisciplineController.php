@@ -212,6 +212,12 @@ class DisciplineController extends Controller
             'status' => 'nullable|in:pending,investigating,resolved,dismissed',
         ]);
 
+        // Automatically calculate sanction based on severity and major_category
+        $sanctionDetails = $this->calculateSanction($validatedData['student_id'], $validatedData['severity'], $validatedData['major_category'] ?? null);
+        if ($sanctionDetails) {
+            $validatedData['sanction'] = $sanctionDetails['sanction'];
+        }
+
         // Get current user's discipline record
         $user = Auth::user();
         $disciplineRecord = $user->discipline;
@@ -488,5 +494,66 @@ class DisciplineController extends Controller
     {
         $student = Student::findOrFail($id);
         return response()->json($student);
+    }
+
+    /**
+     * Calculate sanction based on student's violation history, severity, and major category
+     */
+    private function calculateSanction($studentId, $severity, $majorCategory = null)
+    {
+        // Fetch student's previous violations
+        $violations = \App\Models\Violation::where('student_id', $studentId)->get();
+
+        $minorCount = 0;
+        $majorCount = 0;
+        $majorByCategory = [1 => 0, 2 => 0, 3 => 0];
+
+        foreach ($violations as $violation) {
+            if ($violation->severity === 'minor') {
+                $minorCount++;
+            } elseif ($violation->severity === 'major') {
+                $majorCount++;
+                if ($violation->major_category && isset($majorByCategory[$violation->major_category])) {
+                    $majorByCategory[$violation->major_category]++;
+                }
+            }
+        }
+
+        // Add current violation counts
+        if ($severity === 'minor') {
+            $minorCount++;
+        } elseif ($severity === 'major') {
+            $majorCount++;
+            if ($majorCategory && isset($majorByCategory[$majorCategory])) {
+                $majorByCategory[$majorCategory]++;
+            }
+        }
+
+        // Determine sanction based on counts and policy
+        if ($severity === 'minor') {
+            switch ($minorCount) {
+                case 1:
+                    return ['sanction' => 'Verbal reprimand / warning'];
+                case 2:
+                    return ['sanction' => 'Written warning'];
+                case 3:
+                    return ['sanction' => 'One step lower in the Deportment Grade'];
+                default:
+                    return ['sanction' => 'One step lower in the Deportment Grade'];
+            }
+        } elseif ($severity === 'major') {
+            switch ($majorCount) {
+                case 1:
+                    return ['sanction' => 'One step lower in the Deportment Grade, Community Service'];
+                case 2:
+                    return ['sanction' => 'Needs Improvement in Deportment, 3-5 days suspension, Community Service'];
+                case 3:
+                    return ['sanction' => 'Needs Improvement in Deportment, Dismissal or Expulsion'];
+                default:
+                    return ['sanction' => 'Needs Improvement in Deportment, Dismissal or Expulsion'];
+            }
+        }
+
+        return null;
     }
 }

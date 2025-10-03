@@ -11,6 +11,7 @@ class Sanction extends Model
         'violation_id',
         'severity',
         'category',
+        'major_category',
         'sanction',
         'deportment_grade_action',
         'suspension',
