@@ -16,7 +16,7 @@ use App\Http\Controllers\RegistrarController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\AdminEnrollmentController;
 use App\Http\Controllers\ContactController;
-
+use App\Http\Controllers\DisciplineController;
 
 
 
@@ -229,10 +229,13 @@ Route::prefix('discipline')->name('discipline.')->group(function () {
         Route::prefix('students')->name('students.')->group(function () {
             Route::get('/', [App\Http\Controllers\DisciplineController::class, 'studentsIndex'])
                 ->name('index');
-            
+
+            Route::get('/search', [App\Http\Controllers\DisciplineController::class, 'searchStudents'])
+                ->name('search');
+
             Route::get('/{student}', [App\Http\Controllers\DisciplineController::class, 'showStudent'])
                 ->name('show');
-                
+
             Route::get('/{student}/info', [App\Http\Controllers\DisciplineController::class, 'getStudentInfo'])
                 ->name('info');
         });
@@ -241,19 +244,22 @@ Route::prefix('discipline')->name('discipline.')->group(function () {
         Route::prefix('violations')->name('violations.')->group(function () {
             Route::get('/', [App\Http\Controllers\DisciplineController::class, 'violationsIndex'])
                 ->name('index');
-            
+
+            Route::get('/summary', [App\Http\Controllers\DisciplineController::class, 'violationsSummary'])
+                ->name('summary');
+
             Route::post('/', [App\Http\Controllers\DisciplineController::class, 'storeViolation'])
                 ->name('store');
-            
+
             Route::get('/{violation}', [App\Http\Controllers\DisciplineController::class, 'showViolation'])
                 ->name('show');
-            
+
             Route::get('/{violation}/edit', [App\Http\Controllers\DisciplineController::class, 'editViolation'])
                 ->name('edit');
-            
+
             Route::put('/{violation}', [App\Http\Controllers\DisciplineController::class, 'updateViolation'])
                 ->name('update');
-            
+
             Route::delete('/{violation}', [App\Http\Controllers\DisciplineController::class, 'destroyViolation'])
                 ->name('destroy');
         });

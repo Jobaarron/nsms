@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Violation extends Model
 {
+    protected $table = 'student_violations';
+
     protected $fillable = [
         'student_id',
         'reported_by',
@@ -14,12 +16,9 @@ class Violation extends Model
         'title',
         'description',
         'severity',
+        'major_category',
         'violation_date',
         'violation_time',
-        'location',
-        'witnesses',
-        'evidence',
-        'attachments',
         'status',
         'resolution',
         'resolved_by',
@@ -29,14 +28,13 @@ class Violation extends Model
         'parent_notified',
         'parent_notification_date',
         'notes',
+        'sanction',
     ];
 
     protected $casts = [
         'violation_date' => 'date',
         'resolved_at' => 'date',
         'parent_notification_date' => 'date',
-        'witnesses' => 'array',
-        'attachments' => 'array',
         'parent_notified' => 'boolean',
     ];
 
@@ -53,7 +51,7 @@ class Violation extends Model
      */
     public function reportedBy(): BelongsTo
     {
-        return $this->belongsTo(GuidanceDiscipline::class, 'reported_by');
+        return $this->belongsTo(Discipline::class, 'reported_by');
     }
 
     /**
@@ -61,7 +59,15 @@ class Violation extends Model
      */
     public function resolvedBy(): BelongsTo
     {
-        return $this->belongsTo(GuidanceDiscipline::class, 'resolved_by');
+        return $this->belongsTo(Discipline::class, 'resolved_by');
+    }
+
+    /**
+     * Get the sanctions related to this violation.
+     */
+    public function sanctions()
+    {
+        return $this->hasMany(Sanction::class);
     }
 
     /**

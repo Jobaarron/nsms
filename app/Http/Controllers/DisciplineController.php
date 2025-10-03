@@ -9,6 +9,7 @@ use App\Models\Discipline;
 use App\Models\User;
 use App\Models\Student;
 use App\Models\Violation;
+use App\Models\ViolationList;
 use Illuminate\Support\Facades\Storage;
 
 class DisciplineController extends Controller
@@ -45,6 +46,18 @@ class DisciplineController extends Controller
                 Auth::login($user);
                 $user->updateLastLogin(); // Update last login timestamp
                 session(['discipline_user' => true]); // Mark as discipline user
+
+                // Create discipline record if not exists
+                if (!$user->discipline) {
+                    Discipline::create([
+                        'user_id' => $user->id,
+                        'first_name' => $user->first_name ?? $user->name ?? 'Unknown',
+                        'last_name' => $user->last_name ?? '',
+                        'is_active' => true,
+                        'specialization' => 'discipline_officer',
+                    ]);
+                }
+
                 return redirect()->route('discipline.dashboard');
             } else {
                 return back()->withErrors(['email' => 'You do not have permission to access this system.']);
@@ -75,6 +88,14 @@ class DisciplineController extends Controller
         $violationsToday = Violation::whereDate('violation_date', now()->toDateString())->count();
         $majorViolations = Violation::where('severity', 'major')->count();
         $severeViolations = Violation::where('severity', 'severe')->count();
+
+        // Get weekly violations (last 7 days)
+        $weeklyViolations = Violation::with(['student', 'reportedBy'])
+            ->where('violation_date', '>=', now()->subDays(7))
+            ->orderBy('violation_date', 'desc')
+            ->orderBy('violation_time', 'desc')
+            ->limit(10)
+            ->get();
         
         $stats = [
             'total_students' => $totalStudents,
@@ -84,9 +105,10 @@ class DisciplineController extends Controller
             'violations_today' => $violationsToday,
             'major_violations' => $majorViolations,
             'severe_violations' => $severeViolations,
+            'weekly_violations' => $weeklyViolations->count(),
         ];
 
-        return view('discipline.index', compact('stats'));
+        return view('discipline.index', compact('stats', 'weeklyViolations'));
     }
 
     // Logout
@@ -168,24 +190,38 @@ class DisciplineController extends Controller
      */
     public function storeViolation(Request $request)
     {
+        // Check if user is authenticated
+        if (!Auth::check()) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You must be logged in to report violations.'
+                ], 401);
+            }
+            return redirect()->route('discipline.login');
+        }
+
         $validatedData = $request->validate([
             'student_id' => 'required|exists:students,id',
-            'violation_type' => 'required|string|in:late,uniform,misconduct,academic,other',
             'title' => 'required|string|max:255',
-            'description' => 'required|string',
+            'description' => 'nullable|string',
             'severity' => 'required|in:minor,major,severe',
+            'major_category' => 'nullable|string',
             'violation_date' => 'required|date',
             'violation_time' => 'nullable',
-            'location' => 'nullable|string|max:255',
-            'witnesses' => 'nullable|string',
-            'evidence' => 'nullable|string',
-            'attachments.*' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:2048',
+            'status' => 'nullable|in:pending,investigating,resolved,dismissed',
         ]);
 
         // Get current user's discipline record
         $user = Auth::user();
-        $disciplineRecord = $user->discipline ?? $user->guidanceDiscipline ?? null;
-        if (!$disciplineRecord) {
+        $disciplineRecord = $user->discipline;
+        if (!$disciplineRecord || !$disciplineRecord->is_active) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You do not have permission to report violations.'
+                ], 403);
+            }
             return back()->withErrors(['error' => 'You do not have permission to report violations.']);
         }
         
@@ -199,36 +235,66 @@ class DisciplineController extends Controller
             }
         }
 
-        // Process witnesses
-        if ($request->witnesses) {
-            $witnesses = array_filter(explode("\n", $request->witnesses));
-            $validatedData['witnesses'] = $witnesses;
-        }
 
-        // Handle file uploads
-        if ($request->hasFile('attachments')) {
-            $attachments = [];
-            foreach ($request->file('attachments') as $file) {
-                $path = $file->store('violations', 'public');
-                $attachments[] = $path;
-            }
-            $validatedData['attachments'] = $attachments;
-        }
 
         $validatedData['reported_by'] = $disciplineRecord->id;
 
-        $violation = Violation::create($validatedData);
-
-        if ($request->wantsJson() || $request->ajax()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Violation reported successfully.',
-                'violation' => $violation->load(['student', 'reportedBy'])
+        try {
+            \Log::info('Starting violation creation', [
+                'validatedData' => $validatedData,
+                'user_id' => Auth::id(),
+                'discipline_record_id' => $disciplineRecord->id ?? null
             ]);
-        }
 
-        return redirect()->route('discipline.violations.index')
-            ->with('success', 'Violation reported successfully.');
+            $violation = Violation::create($validatedData);
+
+            \Log::info('Violation created successfully', [
+                'violation_id' => $violation->id,
+                'student_id' => $violation->student_id
+            ]);
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Violation reported successfully.',
+                    'violation' => $violation->load(['student', 'reportedBy', 'sanctions'])
+                ]);
+            }
+
+            return redirect()->route('discipline.violations.index')
+                ->with('success', 'Violation reported successfully.');
+        } catch (\Illuminate\Database\QueryException $e) {
+            \Log::error('Database error during violation creation: ' . $e->getMessage(), [
+                'validatedData' => $validatedData,
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'error_code' => $e->getCode()
+            ]);
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Database error: ' . $e->getMessage()
+                ], 500);
+            }
+
+            return back()->withErrors(['error' => 'Database error: ' . $e->getMessage()]);
+        } catch (\Exception $e) {
+            \Log::error('Violation creation error: ' . $e->getMessage(), [
+                'validatedData' => $validatedData,
+                'request' => $request->all(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to create violation: ' . $e->getMessage()
+                ], 500);
+            }
+
+            return back()->withErrors(['error' => 'Failed to create violation: ' . $e->getMessage()]);
+        }
     }
 
     /**
@@ -263,22 +329,17 @@ class DisciplineController extends Controller
         try {
             $validatedData = $request->validate([
                 'student_id' => 'required|exists:students,id',
-                'violation_type' => 'required|string|in:late,uniform,misconduct,academic,other',
                 'title' => 'required|string|max:255',
-                'description' => 'required|string',
+                'description' => 'nullable|string',
                 'severity' => 'required|in:minor,major,severe',
                 'violation_date' => 'required|date',
                 'violation_time' => 'nullable',
-                'location' => 'nullable|string|max:255',
-                'witnesses' => 'nullable',
-                'evidence' => 'nullable|string',
                 'status' => 'required|in:pending,investigating,resolved,dismissed',
                 'resolution' => 'nullable|string',
                 'student_statement' => 'nullable|string',
                 'disciplinary_action' => 'nullable|string',
                 'parent_notified' => 'nullable|boolean',
                 'notes' => 'nullable|string',
-                'attachments.*' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:2048',
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             if ($request->wantsJson() || $request->ajax()) {
@@ -301,29 +362,15 @@ class DisciplineController extends Controller
             }
         }
 
-        // Process witnesses
-        if ($request->witnesses) {
-            $witnesses = array_filter(explode("\n", $request->witnesses));
-            $validatedData['witnesses'] = $witnesses;
-        }
 
-        // Handle file uploads
-        if ($request->hasFile('attachments')) {
-            $attachments = $violation->attachments ?: [];
-            foreach ($request->file('attachments') as $file) {
-                $path = $file->store('violations', 'public');
-                $attachments[] = $path;
-            }
-            $validatedData['attachments'] = $attachments;
-        }
 
         // If status is being changed to resolved, set resolved_by and resolved_at
         if ($validatedData['status'] === 'resolved' && $violation->status !== 'resolved') {
             $user = Auth::user();
             if ($user) {
-                // Try to get discipline record or fallback to guidance discipline record
-                $disciplineRecord = $user->discipline ?? $user->guidanceDiscipline ?? null;
-                if ($disciplineRecord) {
+                // Get discipline record
+                $disciplineRecord = $user->discipline;
+                if ($disciplineRecord && $disciplineRecord->is_active) {
                     $validatedData['resolved_by'] = $disciplineRecord->id;
                 } else {
                     // Fallback: use user ID if no discipline record
@@ -353,13 +400,6 @@ class DisciplineController extends Controller
     public function destroyViolation(Request $request, Violation $violation)
     {
         try {
-            // Delete associated files
-            if ($violation->attachments) {
-                foreach ($violation->attachments as $attachment) {
-                    Storage::disk('public')->delete($attachment);
-                }
-            }
-
             $violationId = $violation->id;
             $violation->delete();
 
@@ -380,9 +420,73 @@ class DisciplineController extends Controller
                     'message' => 'Failed to delete violation.'
                 ], 500);
             }
-            
+
             return redirect()->route('discipline.violations.index')
                 ->with('error', 'Failed to delete violation.');
         }
+    }
+
+
+
+    /**
+     * Get violations summary for sanction system
+     */
+    public function violationsSummary()
+    {
+        try {
+            $violations = Violation::select('student_id', 'severity', 'major_category')->get();
+
+            $violationList = Violation::with(['student', 'reportedBy', 'resolvedBy'])->get();
+
+            $violationOptions = [
+                'minor' => ViolationList::where('severity', 'minor')->pluck('title')->toArray(),
+                'major' => [
+                    'Category 1' => ViolationList::where('severity', 'major')->where('category', '1')->pluck('title')->toArray(),
+                    'Category 2' => ViolationList::where('severity', 'major')->where('category', '2')->pluck('title')->toArray(),
+                    'Category 3' => ViolationList::where('severity', 'major')->where('category', '3')->pluck('title')->toArray(),
+                ]
+            ];
+
+            return response()->json([
+                'violations' => $violations,
+                'list' => $violationList,
+                'options' => $violationOptions,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching violations summary: ' . $e->getMessage());
+
+            return response()->json([
+                'error' => 'Failed to fetch violations summary',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Search students for AJAX requests
+     */
+    public function searchStudents(Request $request)
+    {
+        $query = $request->input('q', '');
+
+        $students = Student::query()
+            ->where(function ($q) use ($query) {
+                $q->where('first_name', 'like', "%{$query}%")
+                  ->orWhere('last_name', 'like', "%{$query}%")
+                  ->orWhere('student_id', 'like', "%{$query}%");
+            })
+            ->limit(10)
+            ->get(['id', 'first_name', 'last_name', 'student_id', 'grade_level', 'section']);
+
+        return response()->json($students);
+    }
+
+    /**
+     * Get student info for sanction overview
+     */
+    public function getStudent($id)
+    {
+        $student = Student::findOrFail($id);
+        return response()->json($student);
     }
 }

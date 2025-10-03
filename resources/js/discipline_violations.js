@@ -1,4 +1,892 @@
+// Global functions for CRUD operations (must be in global scope)
+
+// Global debounce function
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
+window.offenseOptions = {
+    minor: [
+        "Not wearing of prescribed uniform and Improper wearing of school ID",
+        "Unauthorized use of cellphones and other electronic gadgets inside the classroom",
+        "Wearing earrings (for male students) and multiple earrings (for female students)",
+        "Not sporting the prescribed haircut",
+        "Unauthorized use of electronic gadgets inside the classroom",
+        "Loitering inside the school"
+    ],
+    major: {
+        "Category 1": [
+            "Borrowing, lending, and tampering of school ID",
+            "Disrespect to school logo",
+            "Unauthorized use of school forms",
+            "Loitering inside the campus",
+            "Littering inside the campus",
+            "Eating outside the classroom during class hours",
+            "Non-observance of Clean As You Go policy",
+            "Using profane and indecent language",
+            "Bringing pornographic materials and browsing pornographic sites",
+            "Smoking, e-cigarettes and similar acts",
+            "Participating in any form of gambling",
+            "Threatening fellow students",
+            "Leaving the school without a valid gate pass",
+            "Making an alarming fake bomb or fire threat or joke",
+            "Any offense analogous to the above"
+        ],
+        "Category 2": [
+            "Disrespecting the Philippine flag and other national / institutional symbols",
+            "Vandalism inside the campus",
+            "Engaging in immodest act such as public display of affection",
+            "Bringing intoxicating drinks or alcoholic beverages",
+            "Cheating during examination / acting as accomplice",
+            "Tampering with test scores",
+            "Cutting classes",
+            "Gross scandalous behavior inside/outside the campus",
+            "Act that malign the good name and reputation of the school",
+            "Withholding information during formal investigation",
+            "Habitual disregard to school policies",
+            "Any offense analogous to the above"
+        ],
+        "Category 3": [
+            "Bullying including physical, emotional and cyberbullying",
+            "Forging the signature of parents/guardian in school documents",
+            "Forging the signature of teachers or persons in authority",
+            "Assaulting or showing disrespect to teachers or persons in authority",
+            "Disrespectful or abusive behavior towards any faculty member",
+            "Possession, pushing, use of dangerous drugs, deadly weapons or explosives",
+            "Recruiting or engaging in pseudo fraternities / gangs",
+            "Engaging in fight and assaulting fellow students",
+            "Hazing, extortion and engaging in pre-marital sex",
+            "Deception of school authorities",
+            "Stealing school or others' personal property",
+            "Any offense analogous to the above"
+        ]
+    }
+};
+
+// Automatic Sanction Management System
+window.SanctionSystem = {
+    // Student violation tracking
+    studentViolations: new Map(),
+    
+    // Initialize from server data
+    initFromServer(violationsData = []) {
+        this.studentViolations.clear();
+        violationsData.forEach(violation => {
+            this.addViolationToHistory(
+                violation.student_id, 
+                violation.severity, 
+                violation.category
+            );
+        });
+    },
+    
+    // Add violation to student history
+    addViolationToHistory(studentId, severity, category) {
+        if (!this.studentViolations.has(studentId)) {
+            this.studentViolations.set(studentId, {
+                minorCount: 0,
+                majorCount: 0,
+                majorByCategory: { 1: 0, 2: 0, 3: 0 },
+                allViolations: []
+            });
+        }
+        
+        const studentRecord = this.studentViolations.get(studentId);
+        const violationRecord = {
+            severity,
+            category,
+            date: new Date().toISOString(),
+            sanction: null
+        };
+        
+        if (severity === 'minor') {
+            studentRecord.minorCount++;
+        } else if (severity === 'major') {
+            studentRecord.majorCount++;
+            if (category) {
+                studentRecord.majorByCategory[category] = 
+                    (studentRecord.majorByCategory[category] || 0) + 1;
+            }
+        }
+        
+        studentRecord.allViolations.push(violationRecord);
+        return studentRecord;
+    },
+    
+    // Calculate automatic sanction based on policy
+    calculateAutomaticSanction(studentId, severity, category) {
+        const studentRecord = this.addViolationToHistory(studentId, severity, category);
+        
+        if (severity === 'minor') {
+            return this.calculateMinorSanction(studentRecord.minorCount);
+        } else if (severity === 'major') {
+            return this.calculateMajorSanction(studentRecord.majorCount, category);
+        }
+        
+        return null;
+    },
+    
+    // Minor offense sanctions (from policy 2.6.1)
+    calculateMinorSanction(offenseCount) {
+        switch(offenseCount) {
+            case 1:
+                return {
+                    sanction: "Verbal reprimand / warning",
+                    deportmentGrade: "No change",
+                    suspension: "None",
+                    notes: "First minor offense"
+                };
+            case 2:
+                return {
+                    sanction: "Written warning", 
+                    deportmentGrade: "No change",
+                    suspension: "None",
+                    notes: "Second minor offense"
+                };
+            case 3:
+                return {
+                    sanction: "One step lower in Deportment Grade",
+                    deportmentGrade: "Lowered by one step",
+                    suspension: "None", 
+                    notes: "Third minor offense - cumulative sanction"
+                };
+            default:
+                return {
+                    sanction: "One step lower in Deportment Grade",
+                    deportmentGrade: "Lowered by one step", 
+                    suspension: "None",
+                    notes: `Repeat minor offense (${offenseCount} total)`
+                };
+        }
+    },
+    
+    // Major offense sanctions (from policy 2.6.2)
+    calculateMajorSanction(offenseCount, category) {
+        const categoryText = category ? `Category ${category}` : "Major";
+        
+        switch(offenseCount) {
+            case 1:
+                return {
+                    sanction: "One step lower in Deportment Grade, CS",
+                    deportmentGrade: "Lowered by one step",
+                    suspension: "None",
+                    notes: `First ${categoryText} offense - Community Service required`
+                };
+            case 2:
+                let suspensionDays = "3-5 days";
+                if (category === 3) suspensionDays = "5-7 days";
+                
+                return {
+                    sanction: "NI in Deportment, " + suspensionDays + " suspension, CS",
+                    deportmentGrade: "Needs Improvement (NI)",
+                    suspension: suspensionDays,
+                    notes: `Second ${categoryText} offense - escalating sanctions`
+                };
+            case 3:
+                return {
+                    sanction: "NI in Deportment, Dismissal or Expulsion",
+                    deportmentGrade: "Needs Improvement (NI)", 
+                    suspension: "Dismissal/Expulsion",
+                    notes: `Third ${categoryText} offense - maximum sanction`
+                };
+            default:
+                return {
+                    sanction: "NI in Deportment, Dismissal or Expulsion",
+                    deportmentGrade: "Needs Improvement (NI)",
+                    suspension: "Dismissal/Expulsion", 
+                    notes: `Multiple ${categoryText} offenses (${offenseCount} total) - disciplinary hearing required`
+                };
+        }
+    },
+    
+    // Get student violation summary
+    getStudentSummary(studentId) {
+        if (!this.studentViolations.has(studentId)) {
+            return {
+                minorCount: 0,
+                majorCount: 0,
+                totalCount: 0,
+                currentSanction: "No violations"
+            };
+        }
+        
+        const record = this.studentViolations.get(studentId);
+        return {
+            minorCount: record.minorCount,
+            majorCount: record.majorCount,
+            majorByCategory: {...record.majorByCategory},
+            totalCount: record.minorCount + record.majorCount,
+            allViolations: [...record.allViolations]
+        };
+    },
+    
+    // Reset student violations (for administrative purposes)
+    resetStudentRecord(studentId) {
+        this.studentViolations.delete(studentId);
+    }
+};
+
+// Enhanced violation form submission
+function setupEnhancedViolationSubmission() {
+    const violationForm = document.getElementById('recordViolationForm');
+    if (!violationForm) return;
+
+    violationForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        if (!window.selectedStudents || window.selectedStudents.length === 0) {
+            alert('Please select at least one student for the violation.');
+            return;
+        }
+
+        const submitBtn = document.querySelector('#recordViolationModal button[type="submit"]');
+        const originalText = submitBtn.textContent;
+
+        // Show loading state
+        submitBtn.textContent = 'Submitting...';
+        submitBtn.disabled = true;
+
+        try {
+            const title = getViolationTitle();
+            const severity = window.titleToSeverityMap[title]?.severity || 'minor';
+            const category = window.titleToSeverityMap[title]?.category || null;
+
+            // Process each student
+            const results = [];
+            for (const student of window.selectedStudents) {
+                const formData = new FormData();
+                formData.append('student_id', student.id);
+                formData.append('title', title);
+                formData.append('violation_date', document.getElementById('violationDate').value);
+                formData.append('violation_time', document.getElementById('violationTime').value);
+                formData.append('severity', severity);
+                formData.append('major_category', category);
+                formData.append('status', 'pending');
+
+                const csrfTokenEl = document.querySelector('meta[name="csrf-token"]');
+                const response = await fetch('/discipline/violations', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfTokenEl.getAttribute('content'),
+                        'Accept': 'application/json'
+                    },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                if (!data.success) {
+                    throw new Error(data.message || 'Submission failed');
+                }
+
+                results.push({
+                    student: student.name,
+                    data: data
+                });
+            }
+
+            alert(`Violation recorded successfully for ${window.selectedStudents.length} student(s)!`);
+
+            // Close modal and refresh
+            const modal = bootstrap.Modal.getInstance(document.getElementById('recordViolationModal'));
+            if (modal) modal.hide();
+            window.location.reload();
+
+        } catch (err) {
+            console.error('Violation submission error:', err);
+            alert('Error submitting violation: ' + err.message);
+        } finally {
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+        }
+    });
+}
+
+
+
+// Enhanced student sanction overview
+function loadStudentSanctionOverview(studentId) {
+    const summary = window.SanctionSystem.getStudentSummary(studentId);
+    const card = document.getElementById('sanctionOverviewCard');
+    const content = document.getElementById('sanctionOverviewContent');
+    
+    if (!card || !content) return;
+    
+    if (summary.totalCount === 0) {
+        card.style.display = 'none';
+        return;
+    }
+    
+    card.style.display = 'block';
+    
+    content.innerHTML = `
+        <div class="row text-center mb-3">
+            <div class="col-md-3">
+                <div class="border rounded p-2">
+                    <div class="h5 mb-1 text-primary">${summary.totalCount}</div>
+                    <small class="text-muted">Total Violations</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="border rounded p-2">
+                    <div class="h5 mb-1 text-warning">${summary.minorCount}</div>
+                    <small class="text-muted">Minor Offenses</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="border rounded p-2">
+                    <div class="h5 mb-1 text-danger">${summary.majorCount}</div>
+                    <small class="text-muted">Major Offenses</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="border rounded p-2">
+                    <div class="h6 mb-1">${getCurrentSanction(summary)}</div>
+                    <small class="text-muted">Current Status</small>
+                </div>
+            </div>
+        </div>
+        
+        ${summary.majorCount > 0 ? `
+            <div class="mb-3">
+                <h6>Major Offenses by Category:</h6>
+                <div class="d-flex gap-2">
+                    ${Object.entries(summary.majorByCategory).map(([cat, count]) => 
+                        count > 0 ? `<span class="badge bg-danger">Category ${cat}: ${count}</span>` : ''
+                    ).join('')}
+                </div>
+            </div>
+        ` : ''}
+        
+        <div class="alert alert-warning">
+            <small>
+                <strong>Next Offense Consequences:</strong><br>
+                ${getNextSanctionWarning(summary)}
+            </small>
+        </div>
+    `;
+}
+
+function getCurrentSanction(summary) {
+    if (summary.majorCount >= 3) return 'Dismissal/Expulsion';
+    if (summary.majorCount === 2) return 'Suspension + NI Grade';
+    if (summary.majorCount === 1) return 'Grade Reduction + CS';
+    if (summary.minorCount >= 3) return 'Grade Reduction';
+    if (summary.minorCount === 2) return 'Written Warning';
+    if (summary.minorCount === 1) return 'Verbal Warning';
+    return 'Clear Record';
+}
+
+function getNextSanctionWarning(summary) {
+    if (summary.majorCount >= 2) return 'Next major offense may result in dismissal or expulsion';
+    if (summary.majorCount === 1) return 'Next major offense: suspension and NI grade';
+    if (summary.minorCount >= 2) return 'Next minor offense: reduction in deportment grade';
+    return 'Maintain clear record';
+}
+
+window.editViolation = function(violationId) {
+    console.log('🚀 editViolation called with id:', violationId);
+
+    // Show loading state immediately
+    const modalBody = document.getElementById('editViolationModalBody');
+    if (modalBody) {
+        modalBody.innerHTML = `
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Loading violation data for ID: ${violationId}...</p>
+            </div>
+        `;
+    }
+
+    // Show modal immediately
+    try {
+        window.ModalManager.show('editViolationModal');
+        console.log('✅ Modal shown successfully');
+    } catch (modalError) {
+        console.error('❌ Modal error:', modalError);
+    }
+
+    // Fetch violation data for editing
+    console.log('📡 Making API call to:', `/discipline/violations/${violationId}/edit`);
+
+    fetch(`/discipline/violations/${violationId}/edit`)
+        .then(response => {
+            console.log('📡 Response received:', {
+                status: response.status,
+                statusText: response.statusText,
+                ok: response.ok,
+                url: response.url
+            });
+
+            if (!response.ok) {
+                // Handle HTTP errors (404, 500, etc.)
+                if (response.status === 404) {
+                    throw new Error(`Violation not found (404). Check if the ID ${violationId} exists.`);
+                } else if (response.status === 500) {
+                    throw new Error('Server error (500). Please check the server logs.');
+                } else {
+                    throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
+                }
+            }
+            
+            // Check if response is JSON
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                throw new Error('Server returned non-JSON response');
+            }
+            
+            return response.json();
+        })
+        .then(data => {
+            console.log('✅ Data received:', data);
+            
+            if (!data) {
+                throw new Error('No data received from server');
+            }
+            
+            if (!data.violation) {
+                throw new Error('No violation data in response');
+            }
+
+            const violation = data.violation;
+            const students = data.students || [];
+
+            console.log('📝 Violation data:', violation);
+            console.log('👥 Students data:', students);
+
+            // Update form action
+            const form = document.getElementById('editViolationForm');
+            if (!form) {
+                throw new Error('Edit form not found');
+            }
+            form.action = `/discipline/violations/${violationId}`;
+
+            // Use the same structure as viewViolation but with editable inputs
+            const canChangeStudent = data.can_change_student !== false;
+            const studentSelectDisabled = canChangeStudent ? '' : 'disabled';
+            const studentSelectHelp = canChangeStudent ? '' : '<small class="text-muted">Student cannot be changed as they have existing violation records.</small>';
+
+            // Populate modal body
+            modalBody.innerHTML = `
+    <div class="row">
+        <!-- Left Column: Student Info & Basic Violation Details -->
+        <div class="col-lg-6">
+            <h6 class="mb-3">Student Information</h6>
+            <div class="row g-2">
+                <div class="col-12">
+                    <label class="form-label fw-bold small">Student Name</label>
+                    <select class="form-select form-select-sm" id="edit_student_id" name="student_id" required disabled>
+                        ${students.length > 0 ? students.map(student => `
+                            <option value="${student.id}" ${student.id == (violation.student ? violation.student.id : violation.student_id) ? 'selected' : ''}>
+                                ${student.first_name} ${student.last_name} (${student.student_id || 'No ID'})
+                            </option>
+                        `).join('') : '<option value="">No students available</option>'}
+                    </select>
+                    <small class="text-muted">Student cannot be changed.</small>
+                </div>
+            </div>
+
+            <h6 class="mt-3 mb-3">Violation Details</h6>
+            <div class="mb-2">
+                <label class="form-label fw-bold small">Title</label>
+                <input type="text" class="form-control form-control-sm" id="edit_title" name="title" value="${violation.title || ''}" required>
+            </div>
+            <div class="col-12">
+    <label class="form-label fw-bold small">Status</label>
+    <select class="form-select form-select-sm" id="edit_status" name="status" required disabled>
+        <option value="pending" ${violation.status === 'pending' ? 'selected' : ''}>Pending</option>
+        <option value="in progress" ${violation.status === 'in progress' ? 'selected' : ''}>In Progress</option>
+        <option value="resolved" ${violation.status === 'resolved' ? 'selected' : ''}>Resolved</option>
+    </select>
+    <small class="text-muted">Status cannot be changed.</small>
+</div>
+            </div>
+            <div class="row g-2">
+                <div class="col-6">
+                    <label class="form-label fw-bold small">Date</label>
+                    <input type="date" class="form-control form-control-sm" id="edit_violation_date" name="violation_date" value="${violation.violation_date ? (violation.violation_date.includes('T') ? violation.violation_date.split('T')[0] : violation.violation_date) : ''}" required>
+                </div>
+                <div class="col-6">
+                    <label class="form-label fw-bold small">Time</label>
+                    <input type="time" class="form-control form-control-sm" id="edit_violation_time" name="violation_time" value="${violation.violation_time ? (violation.violation_time.length > 5 ? violation.violation_time.substring(0, 5) : violation.violation_time) : ''}">
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Investigation & Resolution Details -->
+        <div class="col-lg-6">
+            <div class="mb-3">
+                <label class="form-label fw-bold small">Student Statement</label>
+                <textarea class="form-control form-control-sm" id="edit_student_statement" name="student_statement" rows="3">${violation.student_statement || ''}</textarea>
+            </div>
+
+            <h6 class="mt-3 mb-3">Resolution Details</h6>
+            <div class="mb-2" id="edit_resolution_wrapper" style="display: ${(violation.status === 'resolved' || violation.status === 'dismissed') ? 'block' : 'none'};">
+                <label class="form-label fw-bold small">Resolution</label>
+                <textarea class="form-control form-control-sm" id="edit_resolution" name="resolution" rows="2">${violation.resolution || ''}</textarea>
+            </div>
+            <div class="mb-2">
+                <label class="form-label fw-bold small">Disciplinary Action</label>
+                <textarea class="form-control form-control-sm" id="edit_disciplinary_action" name="disciplinary_action" rows="2">${violation.disciplinary_action || ''}</textarea>
+            </div>
+            <div class="mb-2">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="edit_parent_notified" name="parent_notified" value="1" ${violation.parent_notified ? 'checked' : ''}>
+                    <label class="form-check-label fw-bold small" for="edit_parent_notified">
+                        Parent/Guardian Notified
+                    </label>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold small">Additional Notes</label>
+                <textarea class="form-control form-control-sm" id="edit_notes" name="notes" rows="3">${violation.notes || ''}</textarea>
+            </div>
+        </div>
+    </div>
+`;
+
+
+            console.log('✅ Modal populated successfully');
+
+            // Add event listeners for dynamic form behavior
+            const editStatusSelect = document.getElementById('edit_status');
+            const editResolutionWrapper = document.getElementById('edit_resolution_wrapper');
+
+            if (editStatusSelect) {
+                editStatusSelect.addEventListener('change', function() {
+                    if (editResolutionWrapper) {
+                        editResolutionWrapper.style.display = (this.value === 'resolved' || this.value === 'dismissed') ? 'block' : 'none';
+                    }
+                });
+            }
+
+            // Add form submission handler
+            const currentViolationId = violationId;
+            form.onsubmit = async function(e) {
+                e.preventDefault();
+                console.log('📤 Form submission started');
+
+                const formData = new FormData(form);
+            const submitBtn = document.querySelector('#editViolationModal button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+
+                // Add CSRF token and method spoofing
+                formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+                formData.append('_method', 'PUT');
+
+                // Handle checkbox explicitly
+                const parentNotifiedCheckbox = form.querySelector('#edit_parent_notified');
+                if (parentNotifiedCheckbox) {
+                    formData.set('parent_notified', parentNotifiedCheckbox.checked ? '1' : '0');
+                }
+
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="ri-loader-line me-2 spinner-border spinner-border-sm"></i>Updating...';
+
+                try {
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        }
+                    });
+
+                    console.log('📡 Update response status:', response.status);
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        let errorMsg = 'Update failed with status: ' + response.status;
+                        if (errorData.errors) {
+                            errorMsg += '\n\nValidation errors:';
+                            Object.keys(errorData.errors).forEach(field => {
+                                errorMsg += '\n- ' + field + ': ' + errorData.errors[field].join(', ');
+                            });
+                        }
+                        if (errorData.message) {
+                            errorMsg += '\n\nMessage: ' + errorData.message;
+                        }
+                        throw new Error(errorMsg);
+                    }
+
+                    const data = await response.json();
+                    if (data.success) {
+                        console.log('✅ Update successful:', data);
+                        window.ModalManager.hide('editViolationModal');
+
+                        // Show success message
+                        const alertDiv = document.createElement('div');
+                        alertDiv.className = 'alert alert-success alert-dismissible fade show';
+                        alertDiv.innerHTML = `
+                            <strong>Success!</strong> ${data.message}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        `;
+
+                        const mainContent = document.querySelector('main');
+                        mainContent.insertBefore(alertDiv, mainContent.firstChild);
+
+                        // Auto-dismiss after 3 seconds
+                        setTimeout(() => {
+                            if (alertDiv.parentNode) {
+                                alertDiv.remove();
+                            }
+                        }, 3000);
+
+                        // Update the row in the table instead of full reload
+                        if (typeof updateViolationRow === 'function') {
+                            updateViolationRow(currentViolationId, data.violation);
+                        } else {
+                            console.warn('updateViolationRow function not found, reloading page');
+                            window.location.reload();
+                        }
+                    } else {
+                        throw new Error(data.message || 'Update failed');
+                    }
+                } catch (error) {
+                    console.error('❌ Form submission error:', error);
+
+                    // Show error message
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+                    alertDiv.innerHTML = `
+                        <strong>Error!</strong> ${error.message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    `;
+
+                    modalBody.insertBefore(alertDiv, modalBody.firstChild);
+
+                    // Auto-dismiss after 5 seconds
+                    setTimeout(() => {
+                        if (alertDiv.parentNode) {
+                            alertDiv.remove();
+                        }
+                    }, 5000);
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }
+            };
+        })
+        .catch(error => {
+            console.error('❌ Fetch error:', error);
+            
+            // Show detailed error in modal
+            if (modalBody) {
+                modalBody.innerHTML = `
+                    <div class="alert alert-danger">
+                        <h6>Error Loading Violation</h6>
+                        <p><strong>${error.message}</strong></p>
+                        <p>URL: <code>/discipline/violations/${violationId}/edit</code></p>
+                        <div class="mt-3">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="window.ModalManager.hide('editViolationModal')">
+                                Close
+                            </button>
+                            <button class="btn btn-sm btn-primary" onclick="window.editViolation(${violationId})">
+                                Retry
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            alert('Failed to load violation: ' + error.message);
+        });
+};
+console.log('editViolation function defined on window:', typeof window.editViolation);
+
+// Helper function to get violation title
+function getViolationTitle() {
+    const violationTitleSelect = document.getElementById('violationTitle');
+    const customInput = document.getElementById('customOffenseText');
+
+    if (!violationTitleSelect) {
+        throw new Error('Violation title element is missing.');
+    }
+
+    if (violationTitleSelect.value === 'custom' && customInput && customInput.value.trim()) {
+        return customInput.value.trim();
+    }
+    return violationTitleSelect.value;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+        // Initialize sanction system when page loads
+    fetch('/discipline/violations/summary')
+        .then(response => response.json())
+        .then(data => {
+            window.SanctionSystem.initFromServer(data.violations);
+        })
+        .catch(error => {
+            console.error('Error loading violation summary:', error);
+        });
+
+    // Create reverse mapping: title -> {severity, category}
+    window.titleToSeverityMap = {};
+    window.offenseOptions.minor.forEach(title => {
+        window.titleToSeverityMap[title] = { severity: 'minor', category: null };
+    });
+    Object.keys(window.offenseOptions.major).forEach(category => {
+        window.offenseOptions.major[category].forEach(title => {
+            window.titleToSeverityMap[title] = { severity: 'major', category: category };
+        });
+    });
+
+    const violationTitleSelect = document.getElementById('violationTitle');
+
+    // Handle title selection and custom offense input
+    if (violationTitleSelect) {
+        violationTitleSelect.addEventListener('change', function() {
+            const selectedTitle = this.value;
+
+            // Automatically determine severity and category if title is predefined
+            if (selectedTitle && selectedTitle !== 'custom' && window.titleToSeverityMap[selectedTitle]) {
+                // Re-select the current title
+                this.value = selectedTitle;
+            }
+
+            // Handle custom offense input
+            const existingCustomInput = document.querySelector('#customOffenseInput');
+            if (selectedTitle === 'custom') {
+                if (!existingCustomInput) {
+                    // Create custom input field
+                    const inputGroup = document.createElement('div');
+                    inputGroup.className = 'input-group mt-2';
+                    inputGroup.id = 'customOffenseInput';
+                    inputGroup.innerHTML = `
+                        <input type="text" class="form-control" id="customOffenseText" placeholder="Enter custom offense...">
+                        <button type="button" class="btn btn-outline-secondary" onclick="useCustomOffense()">Use</button>
+                    `;
+                    violationTitleSelect.parentNode.appendChild(inputGroup);
+                }
+            } else if (existingCustomInput) {
+                existingCustomInput.remove();
+            }
+
+            // Change submit button text and behavior based on severity
+            const submitBtn = document.querySelector('#recordViolationModal button[type="submit"]');
+            const studentSearchInput = document.getElementById('violationStudentSearch');
+            if (submitBtn) {
+                const severity = window.titleToSeverityMap[selectedTitle]?.severity;
+                if (severity === 'major') {
+                    // Automatically show incident form for major violations
+                    showIncidentForm();
+                    // Disable student search input for major violations
+                    if (studentSearchInput) {
+                        studentSearchInput.disabled = true;
+                    }
+                } else {
+                    // For minor violations, close incident form if open and show violation form
+                    window.ModalManager.hide('incidentFormModal');
+                    submitBtn.textContent = 'Submit Violation';
+                    submitBtn.type = 'submit';
+                    submitBtn.onclick = null;
+                    // Enable student search input for minor violations
+                    if (studentSearchInput) {
+                        studentSearchInput.disabled = false;
+                    }
+                }
+            }
+        });
+    }
+
+    // Function to populate all offenses into the title dropdown
+    function populateAllOffenses() {
+        if (!violationTitleSelect) return;
+
+        // Clear current options
+        violationTitleSelect.innerHTML = '<option value="">-- Select Offense --</option>';
+
+        // Add minor offenses
+        window.offenseOptions.minor.forEach(offense => {
+            const option = document.createElement('option');
+            option.value = offense;
+            option.textContent = offense;
+            violationTitleSelect.appendChild(option);
+        });
+
+        // Add major offenses from all categories
+        Object.keys(window.offenseOptions.major).forEach(category => {
+            window.offenseOptions.major[category].forEach(offense => {
+                const option = document.createElement('option');
+                option.value = offense;
+                option.textContent = offense;
+                violationTitleSelect.appendChild(option);
+            });
+        });
+
+        // Add custom option
+        const customOption = document.createElement('option');
+        customOption.value = 'custom';
+        customOption.textContent = '-- Custom Offense --';
+        violationTitleSelect.appendChild(customOption);
+    }
+
+    // Set student info when modal is shown
+    const violationModal = document.getElementById('recordViolationModal');
+    if (violationModal) {
+        violationModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const studentId = button ? button.getAttribute('data-student-id') : null;
+
+            // Reset student search fields
+            const studentSearchInput = document.getElementById('violationStudentSearch');
+            const studentSuggestions = document.getElementById('studentSuggestions');
+            const selectedStudentsContainer = document.getElementById('selectedStudentsContainer');
+
+            if (studentSearchInput) studentSearchInput.value = '';
+            if (studentSuggestions) studentSuggestions.style.display = 'none';
+            if (selectedStudentsContainer) selectedStudentsContainer.innerHTML = '';
+
+            // Initialize selected students array
+            window.selectedStudents = [];
+
+            // If student ID provided, add it to selected students
+            if (studentId) {
+                // Fetch student details and add to selected
+                fetch(`/discipline/students/${studentId}`)
+                    .then(response => response.json())
+                    .then(student => {
+                        window.selectedStudents.push({
+                            id: student.id,
+                            name: `${student.first_name} ${student.last_name} (${student.student_id || 'No ID'})`
+                        });
+                        updateSelectedStudentsDisplay();
+                        // Load sanction overview for the student
+                        loadStudentSanctionOverview(student.id);
+                    })
+                    .catch(error => console.error('Error fetching student:', error));
+            }
+
+            // Reset form
+
+            // Populate all offenses in the title dropdown
+            populateAllOffenses();
+
+            // Remove custom input if exists
+            const customInput = document.getElementById('customOffenseInput');
+            if (customInput) customInput.remove();
+        });
+    }
+
+    // Enhanced form submission handler with automatic sanctions
+    setupEnhancedViolationSubmission();
+
+
+
     // Initialize modal event listeners
     setTimeout(function() {
       initializeModalEventListeners();
@@ -7,21 +895,25 @@ document.addEventListener('DOMContentLoaded', function() {
     function initializeModalEventListeners() {
       // Add close button functionality to all modals
       document.querySelectorAll('.modal').forEach(modal => {
-        const closeButtons = modal.querySelectorAll('[data-bs-dismiss="modal"], .btn-close');
-        closeButtons.forEach(button => {
-          button.addEventListener('click', function() {
-            hideModal(modal.id);
+        if (modal) {
+          const closeButtons = modal.querySelectorAll('[data-bs-dismiss="modal"], .btn-close');
+          closeButtons.forEach(button => {
+            if (button) {
+              button.addEventListener('click', function() {
+                hideModal(modal.id);
+              });
+            }
           });
-        });
-        
-        // Close on backdrop click
-        modal.addEventListener('click', function(e) {
-          if (e.target === modal) {
-            hideModal(modal.id);
-          }
-        });
+
+          // Close on backdrop click
+          modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+              hideModal(modal.id);
+            }
+          });
+        }
       });
-      
+
       // Global ESC key listener
       document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
@@ -31,49 +923,194 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     // Search and filter functionality
     const searchInput = document.getElementById('searchInput');
-    const statusFilter = document.getElementById('statusFilter');
-    const severityFilter = document.getElementById('severityFilter');
-    const typeFilter = document.getElementById('typeFilter');
     const dateFilter = document.getElementById('dateFilter');
-    
+
     function filterTable() {
       const searchTerm = searchInput.value.toLowerCase();
-      const statusValue = statusFilter.value;
-      const severityValue = severityFilter.value;
-      const typeValue = typeFilter.value;
       const dateValue = dateFilter.value;
       const rows = document.querySelectorAll('#violationsTable tbody tr');
-      
+
       rows.forEach(row => {
-        if (row.cells.length < 8) return; // Skip empty rows
-        
-        const student = row.cells[1].textContent.toLowerCase();
-        const violation = row.cells[2].textContent.toLowerCase();
-        const type = row.cells[3].textContent.toLowerCase();
-        const severity = row.cells[4].textContent.toLowerCase();
-        const date = row.cells[5].textContent;
-        const status = row.cells[6].textContent.toLowerCase();
-        
+        if (row.cells.length < 5 || !row.cells[0] || !row.cells[1] || !row.cells[2]) return; // Skip empty or malformed rows
+
+        const student = row.cells[0].textContent.toLowerCase();
+        const violation = row.cells[1].textContent.toLowerCase();
+        const date = row.cells[2].textContent.trim();
+
         const matchesSearch = student.includes(searchTerm) || violation.includes(searchTerm);
-        const matchesStatus = !statusValue || status.includes(statusValue);
-        const matchesSeverity = !severityValue || severity.includes(severityValue);
-        const matchesType = !typeValue || type.includes(typeValue);
-        const matchesDate = !dateValue || date.includes(new Date(dateValue).toLocaleDateString());
-        
-        row.style.display = matchesSearch && matchesStatus && matchesSeverity && matchesType && matchesDate ? '' : 'none';
+
+        // Date filtering: convert filter date to same format as table (M d, Y)
+        let matchesDate = true;
+        if (dateValue) {
+          const filterDate = new Date(dateValue);
+          const formattedFilterDate = filterDate.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          }); // Keep comma to match "Jan 15, 2024"
+          matchesDate = date.includes(formattedFilterDate);
+        }
+
+        row.style.display = matchesSearch && matchesDate ? '' : 'none';
       });
     }
-    
-    [searchInput, statusFilter, severityFilter, typeFilter, dateFilter].forEach(element => {
-      element.addEventListener('input', filterTable);
-      element.addEventListener('change', filterTable);
+
+    [searchInput, dateFilter].forEach(element => {
+      if (element) {
+        element.addEventListener('input', filterTable);
+        element.addEventListener('change', filterTable);
+      }
     });
+
+    // Student search functionality for violation modal
+    const studentSearchInput = document.getElementById('violationStudentSearch');
+    const studentSuggestions = document.getElementById('studentSuggestions');
+    const selectedStudentsContainer = document.getElementById('selectedStudentsContainer');
+
+    let searchTimeout;
+    let currentFocus = -1;
+
+
+    function searchStudents(query) {
+      if (query.length < 2) {
+        studentSuggestions.style.display = 'none';
+        return;
+      }
+
+      fetch(`/discipline/students/search?q=${encodeURIComponent(query)}`)
+        .then(response => response.json())
+        .then(students => {
+          displaySuggestions(students);
+        })
+        .catch(error => {
+          console.error('Error searching students:', error);
+          studentSuggestions.style.display = 'none';
+        });
+    }
+
+    function displaySuggestions(students) {
+      if (students.length === 0) {
+        studentSuggestions.style.display = 'none';
+        return;
+      }
+
+      const suggestionsHtml = students.map(student => `
+        <div class="suggestion-item" data-student-id="${student.id}" data-student-name="${student.first_name} ${student.last_name} (${student.student_id || 'No ID'})">
+          <div class="suggestion-name">${student.first_name} ${student.last_name}</div>
+          <div class="suggestion-details">ID: ${student.student_id || 'No ID'} | Grade: ${student.grade_level || 'N/A'} | Section: ${student.section || 'N/A'}</div>
+        </div>
+      `).join('');
+
+      studentSuggestions.innerHTML = suggestionsHtml;
+      studentSuggestions.style.display = 'block';
+      currentFocus = -1;
+    }
+
+    function selectStudent(studentId, studentName) {
+      if (!window.selectedStudents.some(s => s.id === studentId)) {
+        window.selectedStudents.push({ id: studentId, name: studentName });
+        updateSelectedStudentsDisplay();
+        // Load sanction overview for the selected student
+        loadStudentSanctionOverview(studentId);
+      }
+      studentSearchInput.value = '';
+      studentSuggestions.style.display = 'none';
+      currentFocus = -1;
+    }
+
+    function updateSelectedStudentsDisplay() {
+      selectedStudentsContainer.innerHTML = window.selectedStudents.map(student => `
+        <div class="badge bg-primary me-2 mb-2 d-inline-flex align-items-center">
+          ${student.name}
+          <button type="button" class="btn-close btn-close-white ms-2" onclick="removeSelectedStudent(${student.id})" style="font-size: 0.6em;"></button>
+        </div>
+      `).join('');
+    }
+
+    window.removeSelectedStudent = function(studentId) {
+      const index = window.selectedStudents.findIndex(s => s.id === studentId);
+      if (index > -1) {
+        window.selectedStudents.splice(index, 1);
+        updateSelectedStudentsDisplay();
+        // Update sanction overview
+        if (window.selectedStudents.length > 0) {
+          loadStudentSanctionOverview(window.selectedStudents[0].id);
+        } else {
+          const card = document.getElementById('sanctionOverviewCard');
+          if (card) card.style.display = 'none';
+        }
+      }
+    };
+
+    const debouncedSearch = debounce(searchStudents, 300);
+
+    if (studentSearchInput) {
+      studentSearchInput.addEventListener('input', function(e) {
+        const query = e.target.value.trim();
+        debouncedSearch(query);
+      });
+
+      studentSearchInput.addEventListener('keydown', function(e) {
+        const items = studentSuggestions.querySelectorAll('.suggestion-item');
+
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          currentFocus = currentFocus < items.length - 1 ? currentFocus + 1 : 0;
+          updateFocus(items);
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          currentFocus = currentFocus > 0 ? currentFocus - 1 : items.length - 1;
+          updateFocus(items);
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          if (currentFocus >= 0 && items[currentFocus]) {
+            const item = items[currentFocus];
+            const studentId = item.getAttribute('data-student-id');
+            const studentName = item.getAttribute('data-student-name');
+            selectStudent(studentId, studentName);
+          }
+        } else if (e.key === 'Escape') {
+          studentSuggestions.style.display = 'none';
+          currentFocus = -1;
+        }
+      });
+
+      // Click outside to close suggestions
+      document.addEventListener('click', function(e) {
+        if (!studentSearchInput.contains(e.target) && !studentSuggestions.contains(e.target)) {
+          studentSuggestions.style.display = 'none';
+          currentFocus = -1;
+        }
+      });
+    }
+
+    if (studentSuggestions) {
+      studentSuggestions.addEventListener('click', function(e) {
+        const item = e.target.closest('.suggestion-item');
+        if (item) {
+          const studentId = item.getAttribute('data-student-id');
+          const studentName = item.getAttribute('data-student-name');
+          selectStudent(studentId, studentName);
+        }
+      });
+    }
+
+    function updateFocus(items) {
+      // Remove previous focus
+      items.forEach(item => item.classList.remove('active'));
+
+      // Add focus to current item
+      if (items[currentFocus]) {
+        items[currentFocus].classList.add('active');
+        items[currentFocus].scrollIntoView({ block: 'nearest' });
+      }
+    }
   });
 
 // Global functions for CRUD operations (must be in global scope)
 window.viewViolation = function(violationId) {
     // Fetch violation data from server
-    fetch(`/guidance/violations/${violationId}`)
+    fetch(`/discipline/violations/${violationId}`)
       .then(response => response.json())
       .then(data => {
         document.getElementById('viewViolationModalBody').innerHTML = `
@@ -92,14 +1129,6 @@ window.viewViolation = function(violationId) {
               <h6 class="mt-3">Violation Details</h6>
               <table class="table table-sm">
                 <tbody>
-                  <tr><td><strong>Type:</strong></td><td>
-                    <span class="badge bg-secondary">${data.violation_type ? data.violation_type.charAt(0).toUpperCase() + data.violation_type.slice(1) : 'N/A'}</span>
-                  </td></tr>
-                  <tr><td><strong>Severity:</strong></td><td>
-                    <span class="badge bg-${data.severity === 'minor' ? 'success' : (data.severity === 'major' ? 'warning' : 'danger')}">
-                      ${data.severity ? data.severity.charAt(0).toUpperCase() + data.severity.slice(1) : 'N/A'}
-                    </span>
-                  </td></tr>
                   <tr><td><strong>Status:</strong></td><td>
                     <span class="badge bg-${data.status === 'pending' ? 'warning' : (data.status === 'resolved' ? 'success' : 'info')}">
                       ${data.status ? data.status.charAt(0).toUpperCase() + data.status.slice(1) : 'N/A'}
@@ -107,29 +1136,11 @@ window.viewViolation = function(violationId) {
                   </td></tr>
                   <tr><td><strong>Date:</strong></td><td>${new Date(data.violation_date).toLocaleDateString()}</td></tr>
                   <tr><td><strong>Time:</strong></td><td>${data.violation_time ? (data.violation_time.length > 5 ? data.violation_time.substring(0, 5) : data.violation_time) : 'N/A'}</td></tr>
-                  <tr><td><strong>Location:</strong></td><td>${data.location || 'N/A'}</td></tr>
                 </tbody>
               </table>
             </div>
             <div class="col-md-6">
-              <h6>Violation Information</h6>
-              <div class="mb-3">
-                <label class="form-label fw-bold">Title:</label>
-                <p>${data.title}</p>
-              </div>
-              <div class="mb-3">
-                <label class="form-label fw-bold">Description:</label>
-                <p>${data.description}</p>
-              </div>
-              
-              ${data.witnesses && data.witnesses.length > 0 ? `
-                <div class="mb-3">
-                  <label class="form-label fw-bold">Witnesses:</label>
-                  <ul class="list-unstyled">
-                    ${data.witnesses.map(witness => `<li>• ${witness}</li>`).join('')}
-                  </ul>
-                </div>
-              ` : ''}
+
               
               
               ${data.resolution ? `
@@ -184,244 +1195,7 @@ window.viewViolation = function(violationId) {
       });
   }
 
-window.editViolation = function(violationId) {
-    // Fetch violation data for editing
-    fetch(`/guidance/violations/${violationId}/edit`)
-      .then(response => response.json())
-      .then(data => {
-        const violation = data.violation;
-        const students = data.students;
-        
-        document.getElementById('editViolationForm').action = `/guidance/violations/${violationId}`;
-        
-        document.getElementById('editViolationModalBody').innerHTML = `
-          <div class="row">
-            <div class="col-md-6">
-              <div class="mb-3">
-                <label for="edit_student_id" class="form-label">Student <span class="text-danger">*</span></label>
-                <select class="form-select" id="edit_student_id" name="student_id" required>
-                  ${students.map(student => `
-                    <option value="${student.id}" ${student.id === violation.student_id ? 'selected' : ''}>
-                      ${student.first_name} ${student.last_name} (${student.student_id || 'No ID'})
-                    </option>
-                  `).join('')}
-                </select>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="mb-3">
-                <label for="edit_violation_type" class="form-label">Violation Type <span class="text-danger">*</span></label>
-                <select class="form-select" id="edit_violation_type" name="violation_type" required>
-                  <option value="late" ${violation.violation_type === 'late' ? 'selected' : ''}>Late Arrival</option>
-                  <option value="uniform" ${violation.violation_type === 'uniform' ? 'selected' : ''}>Uniform Violation</option>
-                  <option value="misconduct" ${violation.violation_type === 'misconduct' ? 'selected' : ''}>Misconduct</option>
-                  <option value="academic" ${violation.violation_type === 'academic' ? 'selected' : ''}>Academic Dishonesty</option>
-                  <option value="other" ${violation.violation_type === 'other' ? 'selected' : ''}>Other</option>
-                </select>
-              </div>
-            </div>
-          </div>
-          
-          <div class="mb-3">
-            <label for="edit_title" class="form-label">Title <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" id="edit_title" name="title" value="${violation.title}" required>
-          </div>
-          
-          <div class="mb-3">
-            <label for="edit_description" class="form-label">Description <span class="text-danger">*</span></label>
-            <textarea class="form-control" id="edit_description" name="description" rows="3" required>${violation.description}</textarea>
-          </div>
-          
-          <div class="row">
-            <div class="col-md-3">
-              <div class="mb-3">
-                <label for="edit_severity" class="form-label">Severity <span class="text-danger">*</span></label>
-                <select class="form-select" id="edit_severity" name="severity" required>
-                  <option value="minor" ${violation.severity === 'minor' ? 'selected' : ''}>Minor</option>
-                  <option value="major" ${violation.severity === 'major' ? 'selected' : ''}>Major</option>
-                  <option value="severe" ${violation.severity === 'severe' ? 'selected' : ''}>Severe</option>
-                </select>
-              </div>
-            </div>
-            <div class="col-md-3">
-              <div class="mb-3">
-                <label for="edit_violation_date" class="form-label">Date <span class="text-danger">*</span></label>
-                <input type="date" class="form-control" id="edit_violation_date" name="violation_date" value="${violation.violation_date ? (violation.violation_date.includes('T') ? violation.violation_date.split('T')[0] : violation.violation_date) : ''}" required>
-              </div>
-            </div>
-            <div class="col-md-3">
-              <div class="mb-3">
-                <label for="edit_violation_time" class="form-label">Time</label>
-                <input type="time" class="form-control" id="edit_violation_time" name="violation_time" value="${violation.violation_time ? (violation.violation_time.length > 5 ? violation.violation_time.substring(0, 5) : violation.violation_time) : ''}">
-              </div>
-            </div>
-            <div class="col-md-3">
-              <div class="mb-3">
-                <label for="edit_status" class="form-label">Status <span class="text-danger">*</span></label>
-                <select class="form-select" id="edit_status" name="status" required>
-                  <option value="pending" ${violation.status === 'pending' ? 'selected' : ''}>Pending</option>
-                  <option value="investigating" ${violation.status === 'investigating' ? 'selected' : ''}>Investigating</option>
-                  <option value="resolved" ${violation.status === 'resolved' ? 'selected' : ''}>Resolved</option>
-                  <option value="dismissed" ${violation.status === 'dismissed' ? 'selected' : ''}>Dismissed</option>
-                </select>
-              </div>
-            </div>
-          </div>
-          
-          <div class="mb-3">
-            <label for="edit_location" class="form-label">Location</label>
-            <input type="text" class="form-control" id="edit_location" name="location" value="${violation.location || ''}">
-          </div>
-          
-          <div class="mb-3">
-            <label for="edit_witnesses" class="form-label">Witnesses</label>
-            <textarea class="form-control" id="edit_witnesses" name="witnesses" rows="2">${violation.witnesses ? violation.witnesses.join('\n') : ''}</textarea>
-          </div>
-          
-          
-          <div class="mb-3">
-            <label for="edit_resolution" class="form-label">Resolution</label>
-            <textarea class="form-control" id="edit_resolution" name="resolution" rows="2">${violation.resolution || ''}</textarea>
-          </div>
-          
-          <div class="mb-3">
-            <label for="edit_student_statement" class="form-label">Student Statement</label>
-            <textarea class="form-control" id="edit_student_statement" name="student_statement" rows="2">${violation.student_statement || ''}</textarea>
-          </div>
-          
-          <div class="mb-3">
-            <label for="edit_disciplinary_action" class="form-label">Disciplinary Action</label>
-            <textarea class="form-control" id="edit_disciplinary_action" name="disciplinary_action" rows="2">${violation.disciplinary_action || ''}</textarea>
-          </div>
-          
-          <div class="mb-3">
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" id="edit_parent_notified" name="parent_notified" value="1" ${violation.parent_notified ? 'checked' : ''}>
-              <label class="form-check-label" for="edit_parent_notified">
-                Parent/Guardian Notified
-              </label>
-            </div>
-          </div>
-          
-          <div class="mb-3">
-            <label for="edit_notes" class="form-label">Additional Notes</label>
-            <textarea class="form-control" id="edit_notes" name="notes" rows="2">${violation.notes || ''}</textarea>
-          </div>
-        `;
-        
-        showModal('editViolationModal');
-        
-        // Add form submission handler
-        const form = document.getElementById('editViolationForm');
-        const currentViolationId = violationId; // Store violation ID in closure
-        form.onsubmit = function(e) {
-          e.preventDefault();
-          const formData = new FormData(form);
-          const submitBtn = form.querySelector('button[type="submit"]');
-          const originalText = submitBtn.innerHTML;
-          
-          // Add CSRF token and method spoofing
-          formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
-          formData.append('_method', 'PUT');
-          
-          // Handle checkbox explicitly
-          const parentNotifiedCheckbox = form.querySelector('#edit_parent_notified');
-          if (parentNotifiedCheckbox) {
-            formData.set('parent_notified', parentNotifiedCheckbox.checked ? '1' : '0');
-          }
-          
 
-          
-          submitBtn.disabled = true;
-          submitBtn.innerHTML = '<i class="ri-loader-line me-2 spinner-border spinner-border-sm"></i>Updating...';
-          
-          fetch(form.action, {
-            method: 'POST',
-            body: formData,
-            headers: {
-              'X-Requested-With': 'XMLHttpRequest',
-              'Accept': 'application/json'
-            }
-          })
-          .then(response => {
-            if (response.ok) {
-              return response.json();
-            } else {
-              return response.json().then(errorData => {
-                let errorMsg = 'Update failed with status: ' + response.status;
-                if (errorData.errors) {
-                  errorMsg += '\\n\\nValidation errors:';
-                  Object.keys(errorData.errors).forEach(field => {
-                    errorMsg += '\\n- ' + field + ': ' + errorData.errors[field].join(', ');
-                  });
-                }
-                if (errorData.message) {
-                  errorMsg += '\\n\\nMessage: ' + errorData.message;
-                }
-                throw new Error(errorMsg);
-              });
-            }
-          })
-          .then(data => {
-            if (data.success) {
-              hideModal('editViolationModal');
-              
-              // Show success message
-              const alertDiv = document.createElement('div');
-              alertDiv.className = 'alert alert-success alert-dismissible fade show';
-              alertDiv.innerHTML = `
-                <strong>Success!</strong> ${data.message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-              `;
-              
-              const mainContent = document.querySelector('main');
-              mainContent.insertBefore(alertDiv, mainContent.firstChild);
-              
-              // Auto-dismiss after 3 seconds
-              setTimeout(() => {
-                if (alertDiv.parentNode) {
-                  alertDiv.remove();
-                }
-              }, 3000);
-              
-              // Update the row in the table instead of full reload
-              updateViolationRow(currentViolationId, data.violation);
-            } else {
-              throw new Error(data.message || 'Update failed');
-            }
-          })
-          .catch(error => {
-            console.error('Error:', error);
-            
-            // Show error message
-            const alertDiv = document.createElement('div');
-            alertDiv.className = 'alert alert-danger alert-dismissible fade show';
-            alertDiv.innerHTML = `
-              <strong>Error!</strong> ${error.message}
-              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-            
-            const modalBody = document.getElementById('editViolationModalBody');
-            modalBody.insertBefore(alertDiv, modalBody.firstChild);
-            
-            // Auto-dismiss after 5 seconds
-            setTimeout(() => {
-              if (alertDiv.parentNode) {
-                alertDiv.remove();
-              }
-            }, 5000);
-          })
-          .finally(() => {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = originalText;
-          });
-        };
-      })
-      .catch(error => {
-        console.error('Error:', error);
-        alert('Error loading violation for editing');
-      });
-  }
 
 window.deleteViolation = function(violationId) {
     if (confirm('Are you sure you want to delete this violation? This action cannot be undone.')) {
@@ -430,9 +1204,9 @@ window.deleteViolation = function(violationId) {
       const originalHTML = button.innerHTML;
       button.innerHTML = '<i class="ri-loader-line spinner-border spinner-border-sm"></i>';
       button.disabled = true;
-      
+
       // Use AJAX for better UX
-      fetch(`/guidance/violations/${violationId}`, {
+      fetch(`/discipline/violations/${violationId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -462,7 +1236,7 @@ window.deleteViolation = function(violationId) {
               row.remove();
             }
           });
-          
+
           // Show success message
           const alertDiv = document.createElement('div');
           alertDiv.className = 'alert alert-success alert-dismissible fade show';
@@ -470,10 +1244,10 @@ window.deleteViolation = function(violationId) {
             <strong>Success!</strong> ${data.message}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
           `;
-          
+
           const mainContent = document.querySelector('main');
           mainContent.insertBefore(alertDiv, mainContent.firstChild);
-          
+
           // Auto-dismiss after 3 seconds
           setTimeout(() => {
             if (alertDiv.parentNode) {
@@ -486,11 +1260,11 @@ window.deleteViolation = function(violationId) {
       })
       .catch(error => {
         console.error('Error:', error);
-        
+
         // Restore button state
         button.innerHTML = originalHTML;
         button.disabled = false;
-        
+
         // Show error message
         const alertDiv = document.createElement('div');
         alertDiv.className = 'alert alert-danger alert-dismissible fade show';
@@ -498,10 +1272,10 @@ window.deleteViolation = function(violationId) {
           <strong>Error!</strong> Failed to delete violation: ${error.message}
           <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         `;
-        
+
         const mainContent = document.querySelector('main');
         mainContent.insertBefore(alertDiv, mainContent.firstChild);
-        
+
         // Auto dismiss after 5 seconds
         setTimeout(() => {
           if (alertDiv.parentNode) {
@@ -512,6 +1286,9 @@ window.deleteViolation = function(violationId) {
     }
   }
 
+
+
+
 // Helper function to update violation row in table
 window.updateViolationRow = function(violationId, violation) {
     const rows = document.querySelectorAll('#violationsTable tbody tr');
@@ -520,9 +1297,8 @@ window.updateViolationRow = function(violationId, violation) {
       if (idCell && idCell.textContent.includes('#' + violationId)) {
         // Update severity
         const severityCell = row.cells[4];
-        const severityClass = violation.severity === 'minor' ? 'success' : 
-                             (violation.severity === 'major' ? 'warning' : 'danger');
-        severityCell.innerHTML = `<span class="badge bg-${severityClass}">${violation.severity.charAt(0).toUpperCase() + violation.severity.slice(1)}</span>`;
+        const severityClass = violation.severity === 'minor' ? 'success' : 'warning';
+        severityCell.innerHTML = `<span class="badge bg-${severityClass}">${violation.severity === 'minor' ? 'Minor Offense' : 'Major Offense'}</span>`;
         
         // Update status
         const statusCell = row.cells[6];
@@ -531,10 +1307,21 @@ window.updateViolationRow = function(violationId, violation) {
         statusCell.innerHTML = `<span class="badge bg-${statusClass}">${violation.status.charAt(0).toUpperCase() + violation.status.slice(1)}</span>`;
         
         // Update violation info if title changed
-        const violationCell = row.cells[2];
+        const violationCell = row.cells[0];
         const titleElement = violationCell.querySelector('strong');
         if (titleElement) {
           titleElement.textContent = violation.title;
+        }
+
+        // Update student name if changed
+        const studentCell = row.cells[1];
+        if (studentCell && violation.student) {
+          studentCell.innerHTML = `
+            <div>
+              <strong>${violation.student.first_name} ${violation.student.last_name}</strong>
+              <br><small class="text-muted">${violation.student.student_id || 'No ID'}</small>
+            </div>
+          `;
         }
         
         // Add visual feedback
@@ -609,40 +1396,45 @@ window.updateViolationRow = function(violationId, violation) {
     },
     
     showFallback: function(modalId) {
-      const modalElement = document.getElementById(modalId);
-      const backdrop = this.createBackdrop(modalId);
-      
-      modalElement.style.display = 'block';
-      modalElement.classList.add('show');
-      modalElement.setAttribute('aria-hidden', 'false');
-      modalElement.setAttribute('aria-modal', 'true');
-      modalElement.setAttribute('role', 'dialog');
-      
-      document.body.classList.add('modal-open');
-      document.body.appendChild(backdrop);
-      
-      this.activeModals.add(modalId);
-      this.addFallbackEventListeners(modalId);
-      
-      return true;
+        const modalElement = document.getElementById(modalId);
+        const backdrop = this.createBackdrop(modalId);
+
+        modalElement.style.display = 'block';
+        modalElement.style.zIndex = '1050';
+        modalElement.classList.add('show');
+        modalElement.setAttribute('aria-hidden', 'false');
+        modalElement.setAttribute('aria-modal', 'true');
+        modalElement.setAttribute('role', 'dialog');
+
+        document.body.classList.add('modal-open');
+        document.body.appendChild(backdrop);
+
+        this.activeModals.add(modalId);
+        this.addFallbackEventListeners(modalId);
     },
     
     hideFallback: function(modalId) {
       const modalElement = document.getElementById(modalId);
       const backdrop = document.getElementById(modalId + '-backdrop');
-      
+
+      // Move focus to a safe element outside the modal to avoid aria-hidden warning
+      const focusTarget = document.querySelector('main') || document.body;
+      if (document.activeElement && modalElement.contains(document.activeElement)) {
+        focusTarget.focus();
+      }
+
       modalElement.style.display = 'none';
       modalElement.classList.remove('show');
       modalElement.setAttribute('aria-hidden', 'true');
       modalElement.removeAttribute('aria-modal');
       modalElement.removeAttribute('role');
-      
+
       if (backdrop) backdrop.remove();
-      
+
       if (this.activeModals.size <= 1) {
         document.body.classList.remove('modal-open');
       }
-      
+
       this.activeModals.delete(modalId);
       return true;
     },
@@ -694,15 +1486,637 @@ window.updateViolationRow = function(violationId, violation) {
     }
   };
 
+
+// Function to use custom offense
+window.useCustomOffense = function() {
+    const customInput = document.getElementById('customOffenseText');
+    const violationTitleSelect = document.getElementById('violationTitle');
+
+    if (customInput && customInput.value.trim()) {
+        // Create a temporary option with the custom value
+        violationTitleSelect.innerHTML = `<option value="${customInput.value.trim()}" selected>${customInput.value.trim()}</option>`;
+
+        // Remove the custom input field
+        customInput.closest('.input-group').remove();
+    }
+}
+
+// Function to use custom offense in incident form
+window.useIncidentCustomOffense = function() {
+    const customInput = document.getElementById('incidentCustomOffenseText');
+    const violationTitleSelect = document.getElementById('incidentViolation');
+
+    if (customInput && customInput.value.trim()) {
+        // Create a temporary option with the custom value
+        violationTitleSelect.innerHTML = `<option value="${customInput.value.trim()}" selected>${customInput.value.trim()}</option>`;
+
+        // Remove the custom input field
+        customInput.closest('.input-group').remove();
+    }
+}
+
+window.openViolationModal = function(student) {
+    // Add student to selected
+    if (!window.selectedStudents.some(s => s.id === student.id)) {
+        window.selectedStudents.push({
+            id: student.id,
+            name: `${student.first_name} ${student.last_name} (${student.student_id || 'No ID'})`
+        });
+        updateSelectedStudentsDisplay();
+    }
+
+    // Reset form
+    document.getElementById('violationTitle').innerHTML = '<option value="">-- Select Offense --</option>';
+
+    const customInput = document.getElementById('customOffenseInput');
+    if (customInput) customInput.remove();
+
+    // Show modal
+    const modalEl = document.getElementById('recordViolationModal');
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+}
+
+// Helper functions for incident form
+function updateIncidentSelectedStudentsDisplay() {
+    const selectedStudentsContainer = document.getElementById('incidentSelectedStudentsContainer');
+    if (selectedStudentsContainer) {
+        selectedStudentsContainer.innerHTML = window.incidentSelectedStudents.map(student => `
+            <div class="badge bg-primary me-2 mb-2 d-inline-flex align-items-center">
+                ${student.name}
+                <button type="button" class="btn-close btn-close-white ms-2" onclick="removeIncidentSelectedStudent(${student.id})" style="font-size: 0.6em;"></button>
+            </div>
+        `).join('');
+    }
+}
+
+window.removeIncidentSelectedStudent = function(studentId) {
+    const index = window.incidentSelectedStudents.findIndex(s => s.id === studentId);
+    if (index > -1) {
+        window.incidentSelectedStudents.splice(index, 1);
+        updateIncidentSelectedStudentsDisplay();
+    }
+};
+
+function initializeIncidentStudentSearch() {
+    const incidentStudentSearch = document.getElementById('incidentStudentSearch');
+    const incidentStudentSuggestions = document.getElementById('incidentStudentSuggestions');
+
+    let incidentSearchTimeout;
+    let incidentCurrentFocus = -1;
+
+    function incidentSearchStudents(query) {
+        if (query.length < 2) {
+            incidentStudentSuggestions.style.display = 'none';
+            return;
+        }
+
+        fetch(`/discipline/students/search?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(students => {
+                incidentDisplaySuggestions(students);
+            })
+            .catch(error => {
+                console.error('Error searching students:', error);
+                incidentStudentSuggestions.style.display = 'none';
+            });
+    }
+
+    function incidentDisplaySuggestions(students) {
+        if (students.length === 0) {
+            incidentStudentSuggestions.style.display = 'none';
+            return;
+        }
+
+        const suggestionsHtml = students.map(student => `
+            <div class="suggestion-item" data-student-id="${student.id}" data-student-name="${student.first_name} ${student.last_name} (${student.student_id || 'No ID'})">
+                <div class="suggestion-name">${student.first_name} ${student.last_name}</div>
+                <div class="suggestion-details">ID: ${student.student_id || 'No ID'} | Grade: ${student.grade_level || 'N/A'} | Section: ${student.section || 'N/A'}</div>
+            </div>
+        `).join('');
+
+        incidentStudentSuggestions.innerHTML = suggestionsHtml;
+        incidentStudentSuggestions.style.display = 'block';
+        incidentCurrentFocus = -1;
+    }
+
+    function incidentSelectStudent(studentId, studentName) {
+        if (!window.incidentSelectedStudents.some(s => s.id === studentId)) {
+            window.incidentSelectedStudents.push({ id: studentId, name: studentName });
+            updateIncidentSelectedStudentsDisplay();
+        }
+        incidentStudentSearch.value = '';
+        incidentStudentSuggestions.style.display = 'none';
+        incidentCurrentFocus = -1;
+    }
+
+    function incidentUpdateFocus(items) {
+        items.forEach(item => item.classList.remove('active'));
+        if (items[incidentCurrentFocus]) {
+            items[incidentCurrentFocus].classList.add('active');
+            items[incidentCurrentFocus].scrollIntoView({ block: 'nearest' });
+        }
+    }
+
+    const incidentDebouncedSearch = debounce(incidentSearchStudents, 300);
+
+    if (incidentStudentSearch) {
+        incidentStudentSearch.addEventListener('input', function(e) {
+            const query = e.target.value.trim();
+            incidentDebouncedSearch(query);
+        });
+
+        incidentStudentSearch.addEventListener('keydown', function(e) {
+            const items = incidentStudentSuggestions.querySelectorAll('.suggestion-item');
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                incidentCurrentFocus = incidentCurrentFocus < items.length - 1 ? incidentCurrentFocus + 1 : 0;
+                incidentUpdateFocus(items);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                incidentCurrentFocus = incidentCurrentFocus > 0 ? incidentCurrentFocus - 1 : items.length - 1;
+                incidentUpdateFocus(items);
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (incidentCurrentFocus >= 0 && items[incidentCurrentFocus]) {
+                    const item = items[incidentCurrentFocus];
+                    const studentId = item.getAttribute('data-student-id');
+                    const studentName = item.getAttribute('data-student-name');
+                    incidentSelectStudent(studentId, studentName);
+                }
+            } else if (e.key === 'Escape') {
+                incidentStudentSuggestions.style.display = 'none';
+                incidentCurrentFocus = -1;
+            }
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!incidentStudentSearch.contains(e.target) && !incidentStudentSuggestions.contains(e.target)) {
+                incidentStudentSuggestions.style.display = 'none';
+                incidentCurrentFocus = -1;
+            }
+        });
+    }
+
+    if (incidentStudentSuggestions) {
+        incidentStudentSuggestions.addEventListener('click', function(e) {
+            const item = e.target.closest('.suggestion-item');
+            if (item) {
+                const studentId = item.getAttribute('data-student-id');
+                const studentName = item.getAttribute('data-student-name');
+                incidentSelectStudent(studentId, studentName);
+            }
+        });
+    }
+}
+
+function showIncidentForm() {
+    // Get violation data
+    const violationTitle = getViolationTitle();
+    const violationDescription = ''; // No description field in the current form
+
+    // Create modal
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.id = 'incidentFormModal';
+    modal.innerHTML = `
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Incident Form</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="incidentForm">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Offense/Title</label>
+                            <select class="form-select" id="incidentViolation" required>
+                                <!-- Options will be populated by JavaScript -->
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Reported Students</label>
+                            <div class="position-relative">
+                              <input type="text" class="form-control" id="incidentStudentSearch" placeholder="Type student name or ID..." autocomplete="off">
+                              <div id="incidentStudentSuggestions" class="suggestions-list" style="display: none;">
+                                <!-- Suggestions will be populated here -->
+                              </div>
+                            </div>
+                            <div id="incidentSelectedStudentsContainer" class="mt-2">
+                              <!-- Selected students will be added here -->
+                            </div>
+                            <small class="text-muted">Add multiple students involved in the incident</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Reporter</label>
+                            <input type="text" class="form-control" id="incidentReporter" required>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Date</label>
+                                <input type="date" class="form-control" id="incidentDate" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Time</label>
+                                <input type="time" class="form-control" id="incidentTime" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Details</label>
+                            <textarea class="form-control" id="incidentDetails" rows="4" required></textarea>
+                        </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" onclick="generateIncidentForm()">Generate Incident Form</button>
+                    <button type="submit" form="incidentForm" class="btn btn-success">Submit Incident</button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    // Initialize incident selected students from violation form
+    window.incidentSelectedStudents = [...window.selectedStudents];
+
+    // Update display
+    updateIncidentSelectedStudentsDisplay();
+
+    // Initialize student search functionality for incident form
+    initializeIncidentStudentSearch();
+
+    // Populate offense dropdown
+    const incidentViolationSelect = document.getElementById('incidentViolation');
+    if (incidentViolationSelect) {
+        // Clear current options
+        incidentViolationSelect.innerHTML = '<option value="">-- Select Offense --</option>';
+
+        // Add minor offenses
+        window.offenseOptions.minor.forEach(offense => {
+            const option = document.createElement('option');
+            option.value = offense;
+            option.textContent = offense;
+            if (offense === violationTitle) option.selected = true;
+            incidentViolationSelect.appendChild(option);
+        });
+
+        // Add major offenses from all categories
+        Object.keys(window.offenseOptions.major).forEach(category => {
+            window.offenseOptions.major[category].forEach(offense => {
+                const option = document.createElement('option');
+                option.value = offense;
+                option.textContent = offense;
+                if (offense === violationTitle) option.selected = true;
+                incidentViolationSelect.appendChild(option);
+            });
+        });
+
+        // Add custom option
+        const customOption = document.createElement('option');
+        customOption.value = 'custom';
+        customOption.textContent = '-- Custom Offense --';
+        incidentViolationSelect.appendChild(customOption);
+
+        // Add event listener for custom offense and form switching
+        incidentViolationSelect.addEventListener('change', function() {
+            const selectedTitle = this.value;
+
+            // Handle custom offense input
+            const existingCustomInput = document.querySelector('#incidentCustomOffenseInput');
+            if (selectedTitle === 'custom') {
+                if (!existingCustomInput) {
+                    // Create custom input field
+                    const inputGroup = document.createElement('div');
+                    inputGroup.className = 'input-group mt-2';
+                    inputGroup.id = 'incidentCustomOffenseInput';
+                    inputGroup.innerHTML = `
+                        <input type="text" class="form-control" id="incidentCustomOffenseText" placeholder="Enter custom offense...">
+                        <button type="button" class="btn btn-outline-secondary" onclick="useIncidentCustomOffense()">Use</button>
+                    `;
+                    incidentViolationSelect.parentNode.appendChild(inputGroup);
+                }
+            } else if (existingCustomInput) {
+                existingCustomInput.remove();
+            }
+
+            // Handle form switching based on severity
+            const severity = window.titleToSeverityMap[selectedTitle]?.severity;
+            if (severity === 'minor') {
+                // Switch to violation form for minor offenses
+                window.ModalManager.hide('incidentFormModal');
+                // Re-enable and show the violation form
+                const violationModal = document.getElementById('recordViolationModal');
+                if (violationModal) {
+                    // Update the violation title select to match
+                    const violationTitleSelect = document.getElementById('violationTitle');
+                    if (violationTitleSelect) {
+                        violationTitleSelect.value = selectedTitle;
+                        // Trigger change event to update UI
+                        violationTitleSelect.dispatchEvent(new Event('change'));
+                    }
+                    window.ModalManager.show('recordViolationModal');
+                }
+            }
+            // If major, stay in incident form (no action needed)
+        });
+    }
+
+    // Add submit handler
+    const incidentForm = document.getElementById('incidentForm');
+    incidentForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        if (window.incidentSelectedStudents.length === 0) {
+            alert('Please select at least one student for the incident.');
+            return;
+        }
+
+        // Collect incident data
+        const reporter = document.getElementById('incidentReporter').value;
+        const date = document.getElementById('incidentDate').value;
+        const time = document.getElementById('incidentTime').value;
+        const details = document.getElementById('incidentDetails').value;
+
+        const submitBtn = document.querySelector('#incidentFormModal button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = 'Submitting...';
+        submitBtn.disabled = true;
+
+        try {
+            // Submit violation for each selected student
+            const results = [];
+            for (const student of window.incidentSelectedStudents) {
+                const violationForm = document.getElementById('recordViolationForm');
+                const formData = new FormData();
+
+                // Get violation title from incident form
+                const violationTitle = document.getElementById('incidentViolation').value;
+                const severity = window.titleToSeverityMap[violationTitle]?.severity || 'major';
+                const category = window.titleToSeverityMap[violationTitle]?.category || null;
+
+                // Manually append all required fields from the form
+                formData.append('student_id', student.id);
+                formData.append('title', violationTitle);
+                formData.append('description', details.trim());
+                formData.append('severity', severity);
+                formData.append('major_category', category);
+                formData.append('violation_date', date);
+                formData.append('violation_time', time);
+                formData.append('status', 'pending');
+                formData.append('incident_reporter', reporter);
+                formData.append('incident_date', date);
+                formData.append('incident_time', time);
+
+
+
+
+                // Add CSRF
+                const csrfTokenEl = document.querySelector('meta[name="csrf-token"]');
+                if (!violationForm.querySelector('input[name="_token"]')) {
+                    const tokenInput = document.createElement('input');
+                    tokenInput.type = 'hidden';
+                    tokenInput.name = '_token';
+                    tokenInput.value = csrfTokenEl.getAttribute('content');
+                    violationForm.appendChild(tokenInput);
+                }
+
+                // Ensure title is set
+                getViolationTitle();
+
+                const response = await fetch('/discipline/violations', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfTokenEl.getAttribute('content'),
+                        'Accept': 'application/json'
+                    },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const responseText = await response.text();
+                    if (responseText.startsWith('<')) {
+                        throw new Error('Authentication required. Please log in again.');
+                    } else {
+                        throw new Error(`Server error: ${response.status}. ${responseText.substring(0, 200)}`);
+                    }
+                }
+
+                const responseText = await response.text();
+                let data;
+                try {
+                    data = JSON.parse(responseText);
+                } catch (parseError) {
+                    throw new Error(`Server returned invalid JSON. Status: ${response.status}. Response: ${responseText.substring(0, 200)}`);
+                }
+
+                if (!data.success) {
+                    throw new Error(data.message || `Server error: ${response.status}`);
+                }
+
+                results.push(data);
+            }
+
+            alert(`Incident recorded successfully for ${window.incidentSelectedStudents.length} student(s)!`);
+            // Close modals
+            window.ModalManager.hide('incidentFormModal');
+            const modal = bootstrap.Modal.getInstance(document.getElementById('recordViolationModal'));
+            if (modal) modal.hide();
+            // Refresh
+            window.location.reload();
+
+        } catch (err) {
+            console.error('Incident submission error:', err);
+            alert('Error submitting incident: ' + err.message);
+        } finally {
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+        }
+    });
+
+
+
+    // Show modal
+    window.ModalManager.show('incidentFormModal');
+}
+
 // Convenient wrapper functions
 window.showModal = function(modalId) {
-  return window.ModalManager.show(modalId);
+    return window.ModalManager.show(modalId);
 }
 
 window.hideModal = function(modalId) {
-  return window.ModalManager.hide(modalId);
+    return window.ModalManager.hide(modalId);
 }
 
-  // (Functions moved to global scope above)
-  
-  // Functions are now in global scope above
+// Function to generate printable incident form
+window.generateIncidentForm = function() {
+    // Get form data
+    const reporter = document.getElementById('incidentReporter').value;
+    const date = document.getElementById('incidentDate').value;
+    const time = document.getElementById('incidentTime').value;
+    const details = document.getElementById('incidentDetails').value;
+    const violation = document.getElementById('incidentViolation').value;
+
+    // Get selected students
+    const selectedStudentsText = Array.from(document.querySelectorAll('#incidentSelectedStudentsContainer .badge'))
+        .map(badge => badge.textContent.trim())
+        .join(', ');
+
+    // Validate required fields
+    if (!reporter || !date || !time || !details || window.incidentSelectedStudents.length === 0) {
+        alert('Please fill in all required fields before generating the incident form.');
+        return;
+    }
+
+    // Create printable HTML
+    const printWindow = window.open('', '_blank');
+    const printContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Incident Report Form</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    margin: 20px;
+                    line-height: 1.6;
+                }
+                .header {
+                    text-align: center;
+                    border-bottom: 2px solid #000;
+                    padding-bottom: 10px;
+                    margin-bottom: 20px;
+                }
+                .school-name {
+                    font-size: 24px;
+                    font-weight: bold;
+                    margin-bottom: 5px;
+                }
+                .form-title {
+                    font-size: 18px;
+                    font-weight: bold;
+                }
+                .section {
+                    margin-bottom: 20px;
+                }
+                .section-title {
+                    font-weight: bold;
+                    font-size: 14px;
+                    margin-bottom: 8px;
+                    border-bottom: 1px solid #ccc;
+                    padding-bottom: 3px;
+                }
+                .field {
+                    margin-bottom: 10px;
+                }
+                .field-label {
+                    font-weight: bold;
+                    display: inline-block;
+                    min-width: 120px;
+                }
+                .field-value {
+                    display: inline-block;
+                }
+                .signature-section {
+                    margin-top: 40px;
+                    border-top: 1px solid #000;
+                    padding-top: 20px;
+                }
+                .signature-line {
+                    display: inline-block;
+                    width: 200px;
+                    border-bottom: 1px solid #000;
+                    margin-right: 20px;
+                    margin-bottom: 20px;
+                }
+                @media print {
+                    body { margin: 0; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <div class="school-name">Nicolites Montessori School</div>
+                <div class="form-title">INCIDENT REPORT FORM</div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">INCIDENT INFORMATION</div>
+                <div class="field">
+                    <span class="field-label">Date of Incident:</span>
+                    <span class="field-value">${new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                </div>
+                <div class="field">
+                    <span class="field-label">Time of Incident:</span>
+                    <span class="field-value">${time}</span>
+                </div>
+                <div class="field">
+                    <span class="field-label">Reported By:</span>
+                    <span class="field-value">${reporter}</span>
+                </div>
+                <div class="field">
+                    <span class="field-label">Students Involved:</span>
+                    <span class="field-value">${selectedStudentsText}</span>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">INCIDENT DETAILS</div>
+                <div style="margin-top: 10px; padding: 10px; border: 1px solid #ccc; min-height: 100px;">
+                    ${details.replace(/\n/g, '<br>')}
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">VIOLATION INFORMATION</div>
+                <div style="margin-top: 10px; padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9;">
+                    ${violation.replace(/\n/g, '<br>')}
+                </div>
+            </div>
+
+            <div class="signature-section">
+                <div style="margin-bottom: 20px;">
+                    <strong>Prepared by:</strong>
+                </div>
+                <div class="signature-line"></div>
+                <div style="display: inline-block; font-size: 12px; color: #666;">
+                    Signature over Printed Name
+                </div>
+
+                <div style="margin-top: 20px; margin-bottom: 20px;">
+                    <strong>Reviewed by:</strong>
+                </div>
+                <div class="signature-line"></div>
+                <div style="display: inline-block; font-size: 12px; color: #666;">
+                    Guidance Counselor/Discipline Officer
+                </div>
+
+                <div style="margin-top: 20px; margin-bottom: 20px;">
+                    <strong>Approved by:</strong>
+                </div>
+                <div class="signature-line"></div>
+                <div style="display: inline-block; font-size: 12px; color: #666;">
+                    Principal/Discipline Head
+                </div>
+            </div>
+
+            <div style="margin-top: 40px; font-size: 12px; color: #666; text-align: center;">
+                Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}
+            </div>
+        </body>
+        </html>
+    `;
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+
+    // Wait for content to load then priFincnt
+    printWindow.onload = function() {
+        printWindow.print();
+        // Optionally close the print window after printing
+        // printWindow.close();
+    };
+}
