@@ -53,6 +53,7 @@ class RolePermissionSeeder extends Seeder
             'Incident Reports',
             'Discipline Analytics',
             'Discipline Settings',
+            'Facial Recognition',
             
             // STUDENT LAYOUT PERMISSIONS (student-layout.blade.php)
             'Student Dashboard',
