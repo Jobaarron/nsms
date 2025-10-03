@@ -6,8 +6,11 @@ use App\Models\Enrollee;
 use App\Models\Notice;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\EnrolleeCredentialsMail;
+use App\Mail\StudentCredentialsMail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
@@ -95,7 +98,7 @@ class EnrolleeController extends Controller
                 'other_document_type' => 'nullable|string|max:255|required_if:document_type,other',
                 'document_notes' => 'nullable|string|max:500'
             ]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
@@ -161,47 +164,6 @@ class EnrolleeController extends Controller
         }
     }
 
-    /**
-     * Show the enrollee payment information
-     */
-    public function payment()
-    {
-        $enrollee = Auth::guard('enrollee')->user();
-        return view('enrollee.payment', compact('enrollee'));
-    }
-
-    /**
-     * Process payment information
-     */
-    public function processPayment(Request $request)
-    {
-        $enrollee = Auth::guard('enrollee')->user();
-        
-        // Only allow payment for approved applications
-        if ($enrollee->enrollment_status !== 'approved' || $enrollee->is_paid) {
-            return redirect()->back()->with('error', 'Payment is not available for your current status.');
-        }
-
-        $request->validate([
-            'payment_method' => 'required|string|in:gcash,paymaya,bank_transfer,over_counter',
-            'amount' => 'required|numeric|min:0',
-            'payment_reference' => 'required|string|max:255'
-        ]);
-
-        try {
-            $enrollee->update([
-                'payment_mode' => $request->payment_method,
-                'payment_reference' => $request->payment_reference,
-                'payment_date' => now(),
-                // Note: is_paid should be updated by admin after verification
-            ]);
-            
-            return redirect()->back()->with('success', 'Payment information submitted successfully! Please wait for verification.');
-            
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Failed to process payment information. Please try again.');
-        }
-    }
 
     /**
      * Show the enrollee schedule
@@ -668,9 +630,8 @@ class EnrolleeController extends Controller
             
             \Log::info('Pre-registration attempt', [
                 'enrollee_id' => $enrollee->id,
-                'payment_date' => $enrollee->payment_date,
-                'payment_completed_at' => $enrollee->payment_completed_at,
-                'is_paid' => $enrollee->is_paid,
+                'application_id' => $enrollee->application_id,
+                'enrollment_status' => $enrollee->enrollment_status,
                 'student_id' => $enrollee->student_id
             ]);
             
@@ -682,11 +643,11 @@ class EnrolleeController extends Controller
                 ], 400);
             }
             
-            // Check if payment is completed (re-enabled after fixing database issues)
-            if (!$enrollee->payment_date && !$enrollee->payment_completed_at && !$enrollee->is_paid) {
+            // Check if application is approved - updated logic for new workflow
+            if ($enrollee->enrollment_status !== 'approved') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'You must have completed entrance fee payment to pre-register.'
+                    'message' => 'Your application must be approved before you can pre-register.'
                 ], 400);
             }
             
@@ -696,8 +657,8 @@ class EnrolleeController extends Controller
             $studentId = 'NS-' . str_pad($nextNumber, 5, '0', STR_PAD_LEFT);
             
             // Generate password (format: 25-001 based on application_id)
-            $appIdNumber = str_replace('25', '', $enrollee->application_id);
-            $password = '25-' . str_pad($appIdNumber, 3, '0', STR_PAD_LEFT);
+            // Use the same format as enrollment password (application_id is already "25-001")
+            $password = $enrollee->application_id;
             
             // Create student record with all available fields
             try {
@@ -714,9 +675,9 @@ class EnrolleeController extends Controller
                     'suffix' => $enrollee->suffix,
                     'full_name' => $fullName,
                     'date_of_birth' => $enrollee->date_of_birth,
-                    'place_of_birth' => $enrollee->place_of_birth,
+                    'place_of_birth' => $enrollee->place_of_birth ?? 'Not specified',
                     'gender' => $enrollee->gender,
-                    'nationality' => $enrollee->nationality,
+                    'nationality' => $enrollee->nationality ?? 'Filipino',
                     'religion' => $enrollee->religion,
                     'contact_number' => $enrollee->contact_number,
                     'email' => $enrollee->email,
@@ -726,10 +687,10 @@ class EnrolleeController extends Controller
                     'zip_code' => $enrollee->zip_code,
                     'grade_level' => $enrollee->grade_level_applied,
                     'strand' => $enrollee->strand_applied,
-                    'track' => $enrollee->track_applied,
-                    'student_type' => $enrollee->student_type,
+                    'track' => $enrollee->track_applied ?? 'Academic',
+                    'student_type' => $enrollee->student_type ?? 'new',
                     'enrollment_status' => 'pre_registered',
-                    'academic_year' => $enrollee->academic_year,
+                    'academic_year' => $enrollee->academic_year ?? '2024-2025',
                     'documents' => $enrollee->documents,
                     'id_photo_data_url' => $enrollee->id_photo_data_url,
                     'father_name' => $enrollee->father_name,
@@ -742,7 +703,7 @@ class EnrolleeController extends Controller
                     'guardian_contact' => $enrollee->guardian_contact,
                     'last_school_type' => $enrollee->last_school_type,
                     'last_school_name' => $enrollee->last_school_name,
-                    'medical_history' => $enrollee->medical_history,
+                    'medical_history' => $enrollee->medical_history ?? 'None specified',
                     'pre_registered_at' => now(),
                     'is_active' => true
                 ]);
@@ -761,6 +722,18 @@ class EnrolleeController extends Controller
                 'pre_registered_at' => now()
             ]);
             
+            // Send student credentials email
+            try {
+                Mail::to($enrollee->email)->send(new StudentCredentialsMail($student, $studentId, $password));
+                \Log::info('Student credentials email sent', [
+                    'student_id' => $studentId,
+                    'email' => $enrollee->email
+                ]);
+            } catch (\Exception $emailError) {
+                \Log::error('Failed to send student credentials email: ' . $emailError->getMessage());
+                // Don't fail the pre-registration if email fails
+            }
+            
             \Log::info('Enrollee pre-registered as student', [
                 'enrollee_id' => $enrollee->id,
                 'student_id' => $studentId,
@@ -778,7 +751,7 @@ class EnrolleeController extends Controller
             \Log::error('Error during pre-registration: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'An error occurred during pre-registration. Please try again.'
+                'message' => 'Error during pre-registration: ' . $e->getMessage()
             ], 500);
         }
     }

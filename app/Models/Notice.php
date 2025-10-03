@@ -40,11 +40,39 @@ class Notice extends Model
     }
 
     /**
-     * Get the admin user who created the notice
+     * Get the user who created the notice (could be Admin or Registrar)
      */
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * Get the registrar who created the notice
+     */
+    public function createdByRegistrar()
+    {
+        return $this->belongsTo(\App\Models\Registrar::class, 'created_by');
+    }
+
+    /**
+     * Get the creator name regardless of whether it's admin or registrar
+     */
+    public function getCreatorNameAttribute()
+    {
+        // Try registrar first (check if notice was created by a registrar)
+        $registrar = $this->createdByRegistrar;
+        if ($registrar) {
+            return $registrar->name ?? $registrar->email ?? 'Registrar';
+        }
+        
+        // Fall back to admin user
+        $user = $this->createdBy;
+        if ($user) {
+            return $user->name ?? $user->email ?? 'Administrator';
+        }
+        
+        return 'System';
     }
 
     /**

@@ -23,6 +23,14 @@ class Enrollee extends Authenticatable
         'rejected_at',
         'enrolled_at',
         'status_reason',
+        'first_viewed_at',
+        'first_viewed_by',
+        'evaluation_started_at',
+        'evaluation_started_by',
+        'evaluation_completed_at',
+        'evaluation_completed_by',
+        'documents_reviewed_count',
+        'documents_total_count',
         'id_photo',
         'id_photo_mime_type',
         'documents',
@@ -43,6 +51,7 @@ class Enrollee extends Authenticatable
         'zip_code',
         'grade_level_applied',
         'strand_applied',
+        'track_applied',
         'student_type',
         'father_name',
         'father_occupation',
@@ -64,6 +73,8 @@ class Enrollee extends Authenticatable
         'payment_date',
         'payment_reference',
         'preferred_schedule',
+        'appointment_status',
+        'appointment_notes',
         'enrollment_date',
         'application_date',
         'student_id',
@@ -89,6 +100,9 @@ class Enrollee extends Authenticatable
         'approved_at' => 'datetime',
         'rejected_at' => 'datetime',
         'enrolled_at' => 'datetime',
+        'first_viewed_at' => 'datetime',
+        'evaluation_started_at' => 'datetime',
+        'evaluation_completed_at' => 'datetime',
         'payment_date' => 'datetime',
         'payment_completed_at' => 'datetime',
         'preferred_schedule' => 'date',
@@ -156,7 +170,7 @@ class Enrollee extends Authenticatable
 
     public function student()
     {
-        return $this->belongsTo(Student::class);
+        return $this->hasOne(Student::class);
     }
 
     public function payments()
@@ -167,6 +181,22 @@ class Enrollee extends Authenticatable
     public function notices()
     {
         return $this->hasMany(Notice::class);
+    }
+
+    // Evaluation tracking relationships
+    public function firstViewedBy()
+    {
+        return $this->belongsTo(\App\Models\Registrar::class, 'first_viewed_by');
+    }
+
+    public function evaluationStartedBy()
+    {
+        return $this->belongsTo(\App\Models\Registrar::class, 'evaluation_started_by');
+    }
+
+    public function evaluationCompletedBy()
+    {
+        return $this->belongsTo(\App\Models\Registrar::class, 'evaluation_completed_by');
     }
 
     // Accessors
@@ -263,6 +293,52 @@ class Enrollee extends Authenticatable
             'cancelled' => 'secondary',
             default => 'secondary'
         };
+    }
+
+    // Evaluation status helper methods
+    public function hasBeenViewed()
+    {
+        return !is_null($this->first_viewed_at);
+    }
+
+    public function isBeingEvaluated()
+    {
+        return !is_null($this->evaluation_started_at) && is_null($this->evaluation_completed_at);
+    }
+
+    public function hasBeenEvaluated()
+    {
+        return !is_null($this->evaluation_completed_at);
+    }
+
+    public function getDocumentReviewProgress()
+    {
+        if ($this->documents_total_count == 0) {
+            return 0;
+        }
+        return ($this->documents_reviewed_count / $this->documents_total_count) * 100;
+    }
+
+    public function updateDocumentCounts()
+    {
+        $documents = is_array($this->documents) ? $this->documents : [];
+        $total = count($documents);
+        $reviewed = 0;
+
+        foreach ($documents as $document) {
+            if (is_array($document) && isset($document['status'])) {
+                if (in_array($document['status'], ['approved', 'rejected', 'verified'])) {
+                    $reviewed++;
+                }
+            }
+        }
+
+        $this->update([
+            'documents_total_count' => $total,
+            'documents_reviewed_count' => $reviewed
+        ]);
+
+        return ['total' => $total, 'reviewed' => $reviewed];
     }
 
     // Get plain password for email purposes

@@ -85,8 +85,10 @@
                             <dd class="col-sm-8">{{ $enrollee->grade_level_applied }}{{ $enrollee->strand_applied ? ' - ' . $enrollee->strand_applied : '' }}</dd>
                             <dt class="col-sm-4">Academic Year</dt>
                             <dd class="col-sm-8">{{ $enrollee->academic_year }}</dd>
+                            {{-- PAYMENT MODE DISPLAY - COMMENTED OUT FOR FUTURE STUDENT PORTAL IMPLEMENTATION
                             <dt class="col-sm-4">Payment Mode</dt>
                             <dd class="col-sm-8">{{ ucfirst($enrollee->payment_mode) }}</dd>
+                            --}}
                             
                             <dt class="col-sm-4"><strong>Entrance Fee</strong></dt>
                             <dd class="col-sm-8">
@@ -123,6 +125,7 @@
                         </h5>
                     </div>
                     <div class="card-body">
+                        {{-- PAYMENT MODE SELECTION - COMMENTED OUT FOR FUTURE STUDENT PORTAL IMPLEMENTATION
                         <!-- PAYMENT MODE SELECTION -->
                         <div class="alert alert-warning mb-4">
                             <i class="ri-information-line me-2"></i>
@@ -172,6 +175,7 @@
                                             </div>
                                         </div>
                                     </div>
+                        --}}
                                 </div>
                             </div>
                             
@@ -258,7 +262,9 @@
                         @endif
                         
                         <div class="text-muted small">
+                            {{-- PAYMENT MODE DISPLAY - COMMENTED OUT FOR FUTURE STUDENT PORTAL IMPLEMENTATION
                             <p class="mb-1"><strong>Payment Mode:</strong> {{ ucfirst($enrollee->payment_mode) }}</p>
+                            --}}
                             @if($enrollee->payment_date)
                                 <p class="mb-0"><strong>Paid on:</strong> {{ $enrollee->payment_date->format('M d, Y') }}</p>
                             @endif
@@ -266,35 +272,161 @@
                     </div>
                 </div>
 
-                <!-- PAYMENT MODE INFO -->
+                <!-- SUBJECT BREAKDOWN -->
+                @php
+                    $subjects = \App\Models\Subject::getSubjectsForEnrollee($enrollee);
+                    $totalSubjects = $subjects->count();
+                @endphp
+                
                 <div class="card mb-4">
                     <div class="card-header">
                         <h6 class="mb-0">
-                            <i class="ri-information-line me-2"></i>
-                            Payment Mode Guide
+                            <i class="ri-book-line me-2"></i>
+                            Subject Assessment ({{ $enrollee->grade_level_applied }}{{ $enrollee->strand_applied ? ' - ' . $enrollee->strand_applied : '' }}{{ $enrollee->track_applied ? ' (' . $enrollee->track_applied . ')' : '' }})
                         </h6>
                     </div>
                     <div class="card-body">
-                        <div class="mb-3">
-                            <h6 class="text-success">
-                                <i class="ri-money-dollar-circle-line me-1"></i>
-                                Cash Payment
-                            </h6>
-                            <small class="text-muted">Visit the school finance office during business hours to pay in person.</small>
-                        </div>
-                        <div class="mb-3">
-                            <h6 class="text-primary">
-                                <i class="ri-smartphone-line me-1"></i>
-                                Online Payment
-                            </h6>
-                            <small class="text-muted">Use GCash, PayMaya, or bank transfer for instant digital payments.</small>
-                        </div>
-                        <div class="mb-0">
-                            <h6 class="text-warning">
-                                <i class="ri-calendar-check-line me-1"></i>
-                                Installment
-                            </h6>
-                            <small class="text-muted">Pay in multiple installments using cash or online methods.</small>
+                        @if($subjects->count() > 0)
+                            <div class="row">
+                                <div class="col-12">
+                                    <h6 class="text-primary border-bottom pb-2">
+                                        <i class="ri-book-open-line me-1"></i>
+                                        Academic Subjects ({{ $subjects->count() }} subjects)
+                                    </h6>
+                                    <div class="row">
+                                        @foreach($subjects as $subject)
+                                            <div class="col-md-6 mb-2">
+                                                <div class="d-flex align-items-center">
+                                                    <i class="ri-book-line me-2 text-muted"></i>
+                                                    <span class="small">{{ $subject->subject_name }}</span>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-3 p-3 bg-light rounded">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>
+                                        <i class="ri-information-line me-2"></i>
+                                        <strong>Total Academic Subjects:</strong> {{ $totalSubjects }} subjects for {{ $enrollee->grade_level_applied }}
+                                        @if($enrollee->strand_applied)
+                                            - {{ $enrollee->strand_applied }}
+                                            @if($enrollee->track_applied)
+                                                ({{ $enrollee->track_applied }})
+                                            @endif
+                                        @endif
+                                    </span>
+                                    <span class="badge bg-primary">{{ $totalSubjects }} subjects</span>
+                                </div>
+                            </div>
+                        @else
+                            <div class="alert alert-warning">
+                                <i class="ri-alert-line me-2"></i>
+                                <strong>No subjects available</strong><br>
+                                Subjects for your grade level and strand are not yet configured in the system.
+                            </div>
+                        @endif
+                    </div>
+                </div>
+
+                <!-- FEE ASSESSMENT BREAKDOWN -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="ri-calculator-line me-2"></i>
+                            Complete Fee Assessment
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        @php
+                            $feeCalculation = \App\Models\Fee::calculateTotalFeesForGrade($enrollee->grade_level_applied, $enrollee->academic_year);
+                            $breakdown = $feeCalculation['breakdown'] ?? [];
+                            $totalFees = $feeCalculation['total'] ?? 0;
+                        @endphp
+                        
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h6 class="text-success mb-3">
+                                    <i class="ri-money-dollar-circle-line me-1"></i>
+                                    Fee Breakdown
+                                </h6>
+                                
+                                @if($breakdown['entrance'] > 0)
+                                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                    <div>
+                                        <span class="fw-semibold">Entrance Fee</span>
+                                        <br><small class="text-muted">One-time application processing fee</small>
+                                    </div>
+                                    <span class="text-success fw-bold">₱{{ number_format($breakdown['entrance'], 2) }}</span>
+                                </div>
+                                @endif
+                                
+                                @if($breakdown['tuition'] > 0)
+                                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                    <div>
+                                        <span class="fw-semibold">Tuition Fee</span>
+                                        <br><small class="text-muted">Academic instruction for {{ $totalSubjects }} subjects</small>
+                                    </div>
+                                    <span class="text-primary fw-bold">₱{{ number_format($breakdown['tuition'], 2) }}</span>
+                                </div>
+                                @endif
+                                
+                                @if($breakdown['miscellaneous'] > 0)
+                                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                    <div>
+                                        <span class="fw-semibold">Miscellaneous Fee</span>
+                                        <br><small class="text-muted">Laboratory, library, activities, and other fees</small>
+                                    </div>
+                                    <span class="text-warning fw-bold">₱{{ number_format($breakdown['miscellaneous'], 2) }}</span>
+                                </div>
+                                @endif
+                                
+                                <div class="d-flex justify-content-between align-items-center py-3 mt-2 bg-light rounded">
+                                    <span class="fw-bold fs-5">Total Annual Fees:</span>
+                                    <span class="fw-bold fs-4 text-danger">₱{{ number_format($totalFees, 2) }}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <h6 class="text-info mb-3">
+                                    <i class="ri-calendar-check-line me-1"></i>
+                                    Payment Schedule
+                                </h6>
+                                
+                                <div class="small">
+                                    <div class="mb-2 p-2 border rounded">
+                                        <strong class="text-success">Upon Enrollment:</strong><br>
+                                        Entrance Fee: ₱{{ number_format($breakdown['entrance'] ?? 0, 2) }}
+                                    </div>
+                                    
+                                    {{-- INSTALLMENT LOGIC - COMMENTED OUT FOR FUTURE STUDENT PORTAL IMPLEMENTATION
+                                    @if($enrollee->payment_mode === 'installment')
+                                        <div class="mb-2 p-2 border rounded">
+                                            <strong class="text-primary">1st Quarter:</strong><br>
+                                            ₱{{ number_format(($breakdown['tuition'] + $breakdown['miscellaneous']) / 4, 2) }}
+                                        </div>
+                                        <div class="mb-2 p-2 border rounded">
+                                            <strong class="text-primary">2nd Quarter:</strong><br>
+                                            ₱{{ number_format(($breakdown['tuition'] + $breakdown['miscellaneous']) / 4, 2) }}
+                                        </div>
+                                        <div class="mb-2 p-2 border rounded">
+                                            <strong class="text-primary">3rd Quarter:</strong><br>
+                                            ₱{{ number_format(($breakdown['tuition'] + $breakdown['miscellaneous']) / 4, 2) }}
+                                        </div>
+                                        <div class="mb-2 p-2 border rounded">
+                                            <strong class="text-primary">4th Quarter:</strong><br>
+                                            ₱{{ number_format(($breakdown['tuition'] + $breakdown['miscellaneous']) / 4, 2) }}
+                                        </div>
+                                    @else
+                                        <div class="mb-2 p-2 border rounded">
+                                            <strong class="text-primary">After Approval:</strong><br>
+                                            Remaining: ₱{{ number_format($breakdown['tuition'] + $breakdown['miscellaneous'], 2) }}
+                                        </div>
+                                    @endif
+                                    --}}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -310,7 +442,7 @@
                     <div class="card-body">
                         <div class="alert alert-info">
                             <i class="ri-information-line me-2"></i>
-                            <strong>After enrollment approval:</strong> Additional fees (tuition, miscellaneous) will be handled through the student portal with your chosen payment mode.
+                            <strong>After enrollment approval:</strong> Additional fees (tuition, miscellaneous) will be handled through the student portal where you can choose your payment mode.
                         </div>
                         
                         @php

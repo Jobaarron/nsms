@@ -79,10 +79,10 @@
                                             </td>
                                             <td>
                                                 <p class="mb-0">{{ $notice->preview_message }}</p>
-                                                @if($notice->createdBy)
+                                                @if($notice->created_by)
                                                     <small class="text-muted">
                                                         <i class="ri-user-line me-1"></i>
-                                                        From: {{ $notice->createdBy->name ?? 'Admin' }}
+                                                        From: {{ $notice->creator_name ?? 'Admin' }}
                                                     </small>
                                                 @endif
                                             </td>

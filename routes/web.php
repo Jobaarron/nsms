@@ -1,23 +1,22 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Auth;
-use App\Http\Controllers\EnrollmentController;
-// use Illuminate\Support\Facades\Mail;
-// use App\Mail\StudentWelcomeMail;
-// use App\Models\Student;
+use Illuminate\Http\Request;
+use App\Models\Student;
 use App\Models\User;
+use App\Http\Controllers\EnrollmentController;
 use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\StudentController;
-use App\Http\Controllers\GuidanceDisciplineController;
-use App\Http\Controllers\ContactController;
 use App\Http\Controllers\EnrolleeController;
+use App\Http\Controllers\GuidanceController;
+use App\Http\Controllers\RegistrarController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\AdminEnrollmentController;
-// use Spatie\Permission\Middlewares\RoleMiddleware;
-// use Spatie\Permission\Middlewares\PermissionMiddleware;
-// use App\Http\Controllers\AdminGeneratorController;
+use App\Http\Controllers\ContactController;
+
 
 
 
@@ -211,150 +210,95 @@ Route::get('/teacher', [TeacherController::class, 'index'])
     ->name('teacher.dashboard')
     ->middleware(['auth', 'role:teacher']);
 
-// Public Guidance Account Generator (no authentication required)
-Route::get('/guidance-generator', [GuidanceDisciplineController::class, 'showPublicGenerator'])
-    ->name('guidance.generator');
 
-Route::post('/guidance-generator', [GuidanceDisciplineController::class, 'createPublicAccount'])
-    ->name('guidance.generator.submit');
+// Discipline Portal Routes
+Route::prefix('discipline')->name('discipline.')->group(function () {
+    // Public routes
+    Route::get('/login', [App\Http\Controllers\DisciplineController::class, 'showLogin'])->name('login');
+    Route::post('/login', [App\Http\Controllers\DisciplineController::class, 'login'])->name('login.submit');
     
-// Guidance & Discipline Routes
-Route::prefix('guidance')->name('guidance.')->group(function () {
-    
-    // Authentication Routes
-    Route::get('/login', [GuidanceDisciplineController::class, 'showLogin'])
-        ->name('login');
-    
-    Route::post('/login', [GuidanceDisciplineController::class, 'login'])
-        ->name('login.submit');
-    
-    Route::post('/logout', [GuidanceDisciplineController::class, 'logout'])
-        ->name('logout');
-    
-    // Protected Routes (require authentication and guidance staff role)
-    Route::middleware(['auth'])->group(function () {
-        
+    // Protected routes
+    Route::middleware(['web'])->group(function () {
         // Dashboard
-        Route::get('/', [GuidanceDisciplineController::class, 'dashboard'])
-            ->name('dashboard');
+        Route::get('/', [App\Http\Controllers\DisciplineController::class, 'dashboard'])->name('dashboard');
         
-        // Account Management Routes
-        Route::get('/create-account', [GuidanceDisciplineController::class, 'showCreateAccount'])
-            ->name('create-account');
-        
-        Route::post('/create-account', [GuidanceDisciplineController::class, 'createAccount'])
-            ->name('create-account.submit');
+        // Logout
+        Route::post('/logout', [App\Http\Controllers\DisciplineController::class, 'logout'])->name('logout');
         
         // Student Management Routes
         Route::prefix('students')->name('students.')->group(function () {
-            Route::get('/', [GuidanceDisciplineController::class, 'studentsIndex'])
+            Route::get('/', [App\Http\Controllers\DisciplineController::class, 'studentsIndex'])
                 ->name('index');
             
-            Route::get('/{student}', [GuidanceDisciplineController::class, 'showStudent'])
+            Route::get('/{student}', [App\Http\Controllers\DisciplineController::class, 'showStudent'])
                 ->name('show');
                 
-            Route::get('/{student}/info', [GuidanceDisciplineController::class, 'getStudentInfo'])
+            Route::get('/{student}/info', [App\Http\Controllers\DisciplineController::class, 'getStudentInfo'])
                 ->name('info');
         });
         
         // Violations Management Routes
         Route::prefix('violations')->name('violations.')->group(function () {
-            Route::get('/', [GuidanceDisciplineController::class, 'violationsIndex'])
+            Route::get('/', [App\Http\Controllers\DisciplineController::class, 'violationsIndex'])
                 ->name('index');
             
-            Route::post('/', [GuidanceDisciplineController::class, 'storeViolation'])
+            Route::post('/', [App\Http\Controllers\DisciplineController::class, 'storeViolation'])
                 ->name('store');
             
-            Route::get('/{violation}', [GuidanceDisciplineController::class, 'showViolation'])
+            Route::get('/{violation}', [App\Http\Controllers\DisciplineController::class, 'showViolation'])
                 ->name('show');
             
-            Route::get('/{violation}/edit', [GuidanceDisciplineController::class, 'editViolation'])
+            Route::get('/{violation}/edit', [App\Http\Controllers\DisciplineController::class, 'editViolation'])
                 ->name('edit');
             
-            Route::put('/{violation}', [GuidanceDisciplineController::class, 'updateViolation'])
+            Route::put('/{violation}', [App\Http\Controllers\DisciplineController::class, 'updateViolation'])
                 ->name('update');
             
-            Route::delete('/{violation}', [GuidanceDisciplineController::class, 'destroyViolation'])
+            Route::delete('/{violation}', [App\Http\Controllers\DisciplineController::class, 'destroyViolation'])
                 ->name('destroy');
         });
+    });
+});
+
+// Guidance Portal Routes
+Route::prefix('guidance')->name('guidance.')->group(function () {
+    // Public routes
+    Route::get('/login', [App\Http\Controllers\GuidanceController::class, 'showLogin'])->name('login');
+    Route::post('/login', [App\Http\Controllers\GuidanceController::class, 'login'])->name('login.submit');
+    
+    // Protected routes
+    Route::middleware(['web'])->group(function () {
+        // Dashboard
+        Route::get('/', [App\Http\Controllers\GuidanceController::class, 'dashboard'])->name('dashboard');
         
-        // Counseling Records Routes (to be implemented)
-        Route::prefix('counseling')->name('counseling.')->group(function () {
-            Route::get('/', function () {
-                return view('guidancediscipline.counseling.index');
-            })->name('index');
+        // Logout
+        Route::post('/logout', [App\Http\Controllers\GuidanceController::class, 'logout'])->name('logout');
+        
+        // Case Meeting Routes
+        Route::prefix('case-meetings')->name('case-meetings.')->group(function () {
+            Route::get('/', [App\Http\Controllers\GuidanceController::class, 'caseMeetingsIndex'])
+                ->name('index');
             
-            Route::get('/create', function () {
-                return view('guidancediscipline.counseling.create');
-            })->name('create');
+            Route::post('/', [App\Http\Controllers\GuidanceController::class, 'scheduleCaseMeeting'])
+                ->name('schedule');
             
-            Route::post('/', function () {
-                // Store counseling record logic
-            })->name('store');
+            Route::post('/{caseMeeting}/summary', [App\Http\Controllers\GuidanceController::class, 'createCaseSummary'])
+                ->name('summary');
             
-            Route::get('/{record}/edit', function () {
-                return view('guidancediscipline.counseling.edit');
-            })->name('edit');
+            Route::post('/{caseMeeting}/forward', [App\Http\Controllers\GuidanceController::class, 'forwardToPresident'])
+                ->name('forward');
         });
         
-        // Facial Recognition Routes (to be implemented)
-        Route::prefix('facial-recognition')->name('facial-recognition.')->group(function () {
-            Route::get('/', function () {
-                return view('guidancediscipline.facial-recognition.index');
-            })->name('index');
+        // Counseling Session Routes
+        Route::prefix('counseling-sessions')->name('counseling-sessions.')->group(function () {
+            Route::get('/', [App\Http\Controllers\GuidanceController::class, 'counselingSessionsIndex'])
+                ->name('index');
             
-            Route::post('/enroll', function () {
-                // Enroll face logic
-            })->name('enroll');
+            Route::post('/', [App\Http\Controllers\GuidanceController::class, 'scheduleCounselingSession'])
+                ->name('schedule');
             
-            Route::post('/recognize', function () {
-                // Face recognition logic
-            })->name('recognize');
-        });
-        
-        // Disciplinary Actions Routes (to be implemented)
-        Route::prefix('disciplinary-actions')->name('disciplinary-actions.')->group(function () {
-            Route::get('/', function () {
-                return view('guidancediscipline.disciplinary-actions.index');
-            })->name('index');
-            
-            Route::get('/create', function () {
-                return view('guidancediscipline.disciplinary-actions.create');
-            })->name('create');
-            
-            Route::post('/', function () {
-                // Store disciplinary action logic
-            })->name('store');
-        });
-        
-        // Analytics & Reports Routes (to be implemented)
-        Route::prefix('reports')->name('reports.')->group(function () {
-            Route::get('/', function () {
-                return view('guidancediscipline.reports.index');
-            })->name('index');
-            
-            Route::get('/violations', function () {
-                return view('guidancediscipline.reports.violations');
-            })->name('violations');
-            
-            Route::get('/counseling', function () {
-                return view('guidancediscipline.reports.counseling');
-            })->name('counseling');
-        });
-        
-        // Settings Routes (to be implemented)
-        Route::prefix('settings')->name('settings.')->group(function () {
-            Route::get('/', function () {
-                return view('guidancediscipline.settings.index');
-            })->name('index');
-            
-            Route::get('/profile', function () {
-                return view('guidancediscipline.settings.profile');
-            })->name('profile');
-            
-            Route::put('/profile', function () {
-                // Update profile logic
-            })->name('profile.update');
+            Route::post('/{counselingSession}/summary', [App\Http\Controllers\GuidanceController::class, 'createCounselingSummary'])
+                ->name('summary');
         });
     });
 });
@@ -366,8 +310,6 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
 // Route::get('/admin/login', [adminController::class, 'adminlogin']);
 
 
-// Route::get('/guidance', [GuidanceDisciplineController::class, 'index']);
-// Route::get('/guidance/login', [GuidanceDisciplineController::class, 'loginform']);
 
 // Student routes
 Route::get('/student', [StudentController::class, 'index']);
@@ -375,14 +317,16 @@ Route::prefix('student')->name('student.')->group(function () {
     // Student login routes (public)
     Route::get('/login', [StudentController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [StudentController::class, 'login'])->name('login.submit');
+ 
     
     // Protected student routes
-    Route::middleware(['auth:student'])->group(function () {
-        Route::get('/student', [StudentController::class, 'index'])->name('dashboard');
+    Route::middleware('auth:student')->group(function () {
+        Route::get('/dashboard', [StudentController::class, 'index'])->name('dashboard');
         Route::get('/violations', [StudentController::class, 'violations'])->name('violations');
         Route::post('/logout', [StudentController::class, 'logout'])->name('logout');
     });
 });
+
 
 // Enrollee routes
 Route::prefix('enrollee')->name('enrollee.')->group(function () {
@@ -404,10 +348,6 @@ Route::prefix('enrollee')->name('enrollee.')->group(function () {
         Route::delete('/documents/delete', [EnrolleeController::class, 'deleteDocument'])->name('documents.delete');
         Route::get('/documents/view/{index}', [EnrolleeController::class, 'viewDocument'])->name('documents.view');
         Route::get('/documents/download/{index}', [EnrolleeController::class, 'downloadDocument'])->name('documents.download');
-        
-        // Payment management
-        Route::get('/payment', [EnrolleeController::class, 'payment'])->name('payment');
-        Route::post('/payment/process', [EnrolleeController::class, 'processPayment'])->name('payment.process');
         
         // Schedule management
         Route::get('/schedule', [EnrolleeController::class, 'schedule'])->name('schedule');
@@ -436,6 +376,102 @@ Route::prefix('enrollee')->name('enrollee.')->group(function () {
         
         // Logout
         Route::post('/logout', [EnrolleeController::class, 'logout'])->name('logout');
+    });
+});
+
+// Registrar Authentication Routes
+Route::prefix('registrar')->name('registrar.')->group(function () {
+    // Test route (temporary)
+    Route::get('/test', function() {
+        return 'Registrar routes are working!';
+    });
+    
+    // Login routes (guest only)
+    Route::get('/login', function() {
+        // Check if user is already authenticated as registrar
+        if (Auth::guard('registrar')->check()) {
+            return redirect()->route('registrar.dashboard');
+        }
+        return view('registrar.login');
+    })->name('login')->middleware('guest:registrar');
+        
+    Route::post('/login', function(Request $request) {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|string',
+        ]);
+
+        $credentials = $request->only(['email', 'password']);
+        $remember = $request->boolean('remember');
+
+        if (Auth::guard('registrar')->attempt($credentials, $remember)) {
+            $request->session()->regenerate();
+            return redirect()->intended(route('registrar.dashboard'));
+        }
+
+        return back()->withErrors([
+            'email' => 'The provided credentials do not match our records.',
+        ]);
+    })->middleware('guest:registrar');
+    
+    // Protected routes (authenticated registrar only)
+    Route::middleware(['auth:registrar'])->group(function () {
+        // Dashboard
+        Route::get('/', [RegistrarController::class, 'dashboard'])->name('dashboard');
+        
+        // Applications management
+        Route::get('/applications', [RegistrarController::class, 'applications'])->name('applications');
+        Route::get('/applications/{id}', [RegistrarController::class, 'getApplication'])->name('applications.get');
+        Route::post('/applications/{id}/approve', [RegistrarController::class, 'approveApplication'])->name('applications.approve');
+        Route::post('/applications/{id}/decline', [RegistrarController::class, 'declineApplication'])->name('applications.decline');
+        
+        // Document management
+        Route::get('/applications/{id}/documents', [RegistrarController::class, 'getApplicationDocuments'])->name('applications.documents');
+        Route::post('/applications/{id}/documents/status', [RegistrarController::class, 'updateDocumentStatus'])->name('applications.documents.status');
+        Route::get('/documents/view/{path}', [RegistrarController::class, 'serveDocument'])->name('documents.serve')->where('path', '.*');
+        
+        // Appointment management
+        Route::post('/applications/{id}/appointment', [RegistrarController::class, 'scheduleAppointment'])->name('applications.appointment');
+        Route::post('/applications/{id}/schedule', [RegistrarController::class, 'scheduleAppointment'])->name('applications.schedule');
+        
+        // Notice management
+        Route::post('/applications/{id}/notice', [RegistrarController::class, 'sendNotice'])->name('applications.notice');
+        
+        // Bulk operations
+        Route::post('/applications/bulk-approve', [RegistrarController::class, 'bulkApprove'])->name('applications.bulk-approve');
+        Route::post('/applications/bulk-decline', [RegistrarController::class, 'bulkDecline'])->name('applications.bulk-decline');
+        
+        // Approved applications
+        Route::get('/approved', [RegistrarController::class, 'approved'])->name('approved');
+        Route::post('/applications/{id}/generate-credentials', [RegistrarController::class, 'generateStudentCredentials'])->name('applications.generate-credentials');
+        
+        // Appointments, Notices, and Documents data
+        Route::get('/appointments', [RegistrarController::class, 'getAppointments'])->name('appointments.get');
+        Route::get('/notices', [RegistrarController::class, 'getNotices'])->name('notices.get');
+        Route::get('/documents', [RegistrarController::class, 'getAllDocuments'])->name('documents.get');
+        
+        // Appointment management
+        Route::post('/appointments/{id}/approve', [RegistrarController::class, 'approveAppointment'])->name('appointments.approve');
+        Route::post('/appointments/{id}/reject', [RegistrarController::class, 'rejectAppointment'])->name('appointments.reject');
+        Route::post('/appointments/{id}/schedule', [RegistrarController::class, 'updateAppointmentSchedule'])->name('appointments.schedule');
+        
+        // Notice management
+        Route::post('/notices/create', [RegistrarController::class, 'createNotice'])->name('notices.create');
+        Route::put('/notices/{id}/update', [RegistrarController::class, 'updateNotice'])->name('notices.update');
+        Route::post('/notices/bulk', [RegistrarController::class, 'sendBulkNotice'])->name('notices.bulk');
+        Route::get('/notices/{id}', [RegistrarController::class, 'getNotice'])->name('notices.get.single');
+        Route::get('/recipients/preview', [RegistrarController::class, 'previewRecipients'])->name('recipients.preview');
+        
+        // Reports
+        Route::get('/reports', [RegistrarController::class, 'reports'])->name('reports');
+        
+        // Logout
+        Route::post('/logout', function(Request $request) {
+            Auth::guard('registrar')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+            return redirect()->route('registrar.login');
+        })->name('logout');
     });
 });
 

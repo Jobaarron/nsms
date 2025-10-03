@@ -3,6 +3,11 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Landing Page | Nicolites Portal</title>
     <!-- Remix Icons -->
@@ -46,18 +51,11 @@
                                 <i class="ri-graduation-cap-line"></i>
                                 Student Portal
                             </a>
-                            <a href="/teacher/login" class="dropdown-item {{ request()->is('teacher/login*') ? 'active' : '' }}">
-                                <i class="ri-user-star-line"></i>
-                                Teacher Portal
+                            <a href="/registrar/login" class="dropdown-item {{ request()->is('registrar/login*') ? 'active' : '' }}">
+                                <i class="ri-building-line"></i>
+                                Registrar Portal
                             </a>
-                            <a href="/guidance/login" class="dropdown-item {{ request()->is('guidance/login*') ? 'active' : '' }}">
-                                <i class="ri-building-4-line"></i>
-                                Guidance & Discipline Portal
-                            </a>
-                            <a href="/admin/login" class="dropdown-item {{ request()->is('admin/login*') ? 'active' : '' }}">
-                                <i class="ri-admin-line"></i>
-                                Admin Portal
-                            </a>
+                          
                         </div>
                     </li>
                 </ul>
@@ -107,41 +105,5 @@
             </div>
         </div>
     </footer> 
-
-    <script>
-        // Improve dropdown behavior with delay
-        document.addEventListener('DOMContentLoaded', function() {
-            const dropdowns = document.querySelectorAll('.dropdown-elegant');
-            
-            dropdowns.forEach(dropdown => {
-                let timeout;
-                
-                dropdown.addEventListener('mouseenter', function() {
-                    clearTimeout(timeout);
-                    const menu = this.querySelector('.dropdown-menu');
-                    if (menu) {
-                        menu.style.display = 'block';
-                        setTimeout(() => {
-                            menu.style.opacity = '1';
-                            menu.style.transform = 'translateY(0)';
-                        }, 10);
-                    }
-                });
-                
-                dropdown.addEventListener('mouseleave', function() {
-                    const menu = this.querySelector('.dropdown-menu');
-                    if (menu) {
-                        timeout = setTimeout(() => {
-                            menu.style.opacity = '0';
-                            menu.style.transform = 'translateY(-10px)';
-                            setTimeout(() => {
-                                menu.style.display = 'none';
-                            }, 300);
-                        }, 100); // 100ms delay before closing
-                    }
-                });
-            });
-        });
-    </script>
 </body>
 </html>

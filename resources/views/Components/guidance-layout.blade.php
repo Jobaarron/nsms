@@ -49,61 +49,37 @@
 
         <ul class="nav flex-column">
           <li class="nav-item mb-2">
-            <a class="nav-link" href="{{ route('guidance.dashboard') }}">
+            <a class="nav-link {{ request()->routeIs('guidance.dashboard') ? 'active' : '' }}" href="{{ route('guidance.dashboard') }}">
               <i class="ri-dashboard-line me-2"></i>Dashboard
             </a>
           </li>
+          
           <li class="nav-item mb-2">
-            <a class="nav-link d-flex justify-content-between align-items-center" href="{{ route('guidance.students.index') }}">
-              <span><i class="ri-user-line me-2"></i>Student Profiles</span>
-              {{-- <small class="badge bg-success text-white">Active</small> --}}
+            <a class="nav-link {{ request()->routeIs('guidance.case-meetings.*') ? 'active' : '' }}" href="{{ route('guidance.case-meetings.index') }}">
+              <i class="ri-calendar-event-line me-2"></i>Case Meetings
             </a>
           </li>
+          
           <li class="nav-item mb-2">
-            <a class="nav-link d-flex justify-content-between align-items-center" href="{{ route('guidance.violations.index') }}">
-              <span><i class="ri-alert-line me-2"></i>Violations</span>
-              {{-- <small class="badge bg-success text-white">Active</small> --}}
+            <a class="nav-link {{ request()->routeIs('guidance.counseling-sessions.*') ? 'active' : '' }}" href="{{ route('guidance.counseling-sessions.index') }}">
+              <i class="ri-heart-pulse-line me-2"></i>Counseling Sessions
             </a>
           </li>
+          
           <li class="nav-item mb-2">
             <span class="nav-link disabled d-flex justify-content-between align-items-center">
-              <span><i class="ri-scan-2-line me-2"></i>Facial Recognition</span>
+              <span><i class="ri-bar-chart-line me-2"></i>Analytics</span>
               <small class="badge bg-light text-dark">Soon</small>
             </span>
           </li>
-          <li class="nav-item mb-2">
-            <span class="nav-link disabled d-flex justify-content-between align-items-center">
-              <span><i class="ri-chat-quote-line me-2"></i>Counseling</span>
-              <small class="badge bg-light text-dark">Soon</small>
-            </span>
-          </li>
-          <li class="nav-item mb-2">
-            <span class="nav-link disabled d-flex justify-content-between align-items-center">
-              <span><i class="ri-briefcase-line me-2"></i>Career Advice</span>
-              <small class="badge bg-light text-dark">Soon</small>
-            </span>
-          </li>
-          <li class="nav-item mb-2">
-            <span class="nav-link disabled d-flex justify-content-between align-items-center">
-              <span><i class="ri-bar-chart-line me-2"></i>Analytics & Reports</span>
-              <small class="badge bg-light text-dark">Soon</small>
-            </span>
-          </li>
+          
           <li class="nav-item mb-2">
             <span class="nav-link disabled d-flex justify-content-between align-items-center">
               <span><i class="ri-settings-3-line me-2"></i>Settings</span>
               <small class="badge bg-light text-dark">Soon</small>
             </span>
           </li>
-
-          {{-- @can('create_guidance_accounts')
-          <li class="nav-item mb-2">
-            <a class="nav-link" href="{{ route('guidance.create-account') }}">
-              <i class="ri-user-add-line me-2"></i>Create Account
-            </a>
-          </li>
-          @endcan --}}
-
+          
           <li class="nav-item mt-3">
             <form method="POST" action="{{ route('guidance.logout') }}">
               @csrf
@@ -114,8 +90,11 @@
           </li>
         </ul>
       </nav>
-    {{ $slot }}
-     
+      
+      <!-- MAIN CONTENT -->
+      <main class="col-12 col-md-10 px-4 py-4">
+        {{ $slot }}
+      </main>
     </div>
   </div>
 </body>

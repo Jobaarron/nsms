@@ -15,7 +15,7 @@ return new class extends Migration
             $table->foreignId('processed_by')->nullable()->constrained('users')->onDelete('set null');
             
             // Enrollee identification
-            $table->string('application_id')->unique(); // e.g., APP-2024-001
+            $table->string('application_id')->unique(); // e.g., 25-001 / Password: 25-001
             $table->string('lrn')->unique()->nullable(); // Learner Reference Number
             
             // ENROLLMENT STATUS AND WORKFLOW
@@ -52,9 +52,9 @@ return new class extends Migration
             
             // ACADEMIC INFORMATION APPLIED FOR
             $table->string('grade_level_applied'); // Grade level they're applying for
-            $table->string('strand_applied')->nullable(); // For SHS students, TVL-ICT & HE,ABM,STEM
-            // $table->string('track_applied')->nullable(); // Academic, TVL, Sports, Arts & Design
-            $table->enum('student_type', ['new', 'transferee', 'returnee', 'continuing'])->default('new');
+            $table->string('strand_applied')->nullable(); // For SHS students, STEM, ABM, HUMSS, TVL
+            $table->string('track_applied')->nullable(); // For TVL students, ICT or HE
+            $table->enum('student_type', ['new', 'transferee', 'old'])->default('new');
             
             // GUARDIAN/PARENT INFORMATION
             $table->string('father_name')->nullable();
@@ -86,12 +86,13 @@ return new class extends Migration
             $table->timestamp('enrollment_date')->nullable();
             $table->timestamp('application_date')->default(now());
             
-            // STUDENT RECORD LINK (after enrollment approval) - Will be added via separate migration
-            $table->unsignedBigInteger('student_id')->nullable();
+            // PRE-REGISTRATION TRACKING
+            $table->string('student_id')->nullable(); // Generated when pre-registered as student (e.g., NS-25001)
+            $table->timestamp('pre_registered_at')->nullable(); // When enrollee pre-registered as student
             
             // STATUS TRACKING
             $table->boolean('is_active')->default(true);
-            $table->text('admin_notes')->nullable(); // Internal notes for admins
+            $table->text('remarks')->nullable();
             
             // TIMESTAMPS
             $table->timestamps();

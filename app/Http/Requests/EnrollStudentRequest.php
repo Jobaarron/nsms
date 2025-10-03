@@ -21,7 +21,7 @@ class EnrollStudentRequest extends FormRequest
 
             // Enrollee Info
             'lrn'                => 'nullable|string|max:12|unique:enrollees,lrn',
-            'student_type'       => 'required|in:new,transferee,returnee,continuing',
+            'student_type'       => 'required|in:new,transferee,old',
 
             // Name fields
             'first_name'         => 'required|string|max:50',
@@ -52,6 +52,12 @@ class EnrollStudentRequest extends FormRequest
                 'string',
                 'max:50',
             ],
+            'track_applied'      => [
+                'nullable',
+                'required_if:strand,TVL',
+                'in:ICT,HE',
+                'string',
+            ],
 
             // Parent/Guardian Info
             'father_name'        => 'nullable|string|max:100',
@@ -69,7 +75,7 @@ class EnrollStudentRequest extends FormRequest
 
             // Medical & Payment
             'medical_history'    => 'nullable|string|max:1000',
-            'payment_mode'       => 'required|in:cash,online payment,installment',
+            'payment_mode'       => 'nullable|in:cash,online payment,installment', // Made optional - will be handled in student portal
             'preferred_schedule' => 'nullable|date|after_or_equal:today',
         ];
     }

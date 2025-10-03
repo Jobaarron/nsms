@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enrollment Application Submitted - Nicolites Portal</title>
+    <title>Enrollment Application Submitted - Nicolites Portal: School Management System</title>
     <style>
         @media only screen and (max-width: 600px) {
             .container { width: 100% !important; }
@@ -26,7 +26,7 @@
                     📝 Enrollment Application Submitted
                 </h1>
                 <p style="font-size: 18px; margin: 10px 0 0 0; color: #d0d8c3;" class="mobile-font">
-                    Nicolites Portal
+                    Nicolites Portal: School Management System
                 </p>
             </td>
         </tr>
@@ -63,7 +63,7 @@
                                 🔐 Your Application Credentials
                             </div>
                             <p style="margin: 0 0 15px 0; color: #2d6a3e; font-size: 15px;">
-                                Use these credentials to track your application status and access the enrollee portal:
+                                Use these credentials to track your application status and access the applicant portal:
                             </p>
                             
                             <!-- Application ID -->
@@ -105,7 +105,7 @@
                     <tr>
                         <td align="center">
                             <a href="{{ url('/enrollee/login') }}" style="display: inline-block; background-color: #014421; color: white; text-decoration: none; padding: 15px 30px; border-radius: 8px; font-weight: 600; font-size: 18px;">
-                                🔗 Access Enrollee Portal
+                                🔗 Access Applicant Portal
                             </a>
                         </td>
                     </tr>
@@ -140,14 +140,14 @@
         <tr>
             <td style="background-color: #012d17; color: white; padding: 30px; text-align: center;" class="mobile-padding">
                 <div style="font-size: 20px; font-weight: 700; margin-bottom: 10px; color: #d0d8c3;">
-                    Nicolites School
+                    Nicolites Montessori
                 </div>
                 <p style="color: #d0d8c3; margin: 0 0 20px 0; font-size: 14px;">
-                    School Management System
+                    Nicolites Portal: School Management System
                 </p>
                 <div style="border-top: 1px solid #d0d8c3; margin: 20px 0; opacity: 0.3;"></div>
                 <p style="color: #d0d8c3; margin: 0; font-size: 14px;">
-                    © 2025 Nicolites School. All rights reserved.
+                    © 2025 Nicolites Montessori School. All rights reserved.
                 </p>
             </td>
         </tr>

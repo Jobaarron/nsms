@@ -10,6 +10,7 @@ export default defineConfig({
                 'resources/css/landingpage.css',
                 'resources/css/enroll.css',
                 'resources/css/login_admin.css',
+                'resources/css/login_registrar.css',
                 'resources/css/roles_access.css',
                 'resources/css/index_admin.css',
                 'resources/css/email.css',
@@ -17,6 +18,7 @@ export default defineConfig({
                 'resources/css/manage_users.css',
                 'resources/css/index_student.css',
                 'resources/css/index_enrollee.css',
+                'resources/css/index_registrar.css',
                 'resources/css/enrollee-documents.css',
                 'resources/css/index_guidance.css',
                 'resources/css/index_teacher.css',
@@ -37,7 +39,16 @@ export default defineConfig({
                 'resources/js/user-management.js',
                 'resources/js/admin-enrollment-management.js',
                 'resources/css/admin-enrollment-management.css',
-                'resources/js/enrollee-index.js'
+                'resources/js/enrollee-index.js',
+                'resources/js/registrar-applications.js',
+                'resources/js/registrar-approved.js',
+                'resources/js/registrar-reports.js',
+                'resources/css/index_discipline.css',
+                'resources/js/discipline_violations.js',
+                'resources/js/discipline_student-profile.js',
+                'resources/css/index_guidance.css',
+                'resources/js/guidance_case-meetings.js',
+                'resources/js/guidance_counseling-sessions.js'
                 
             ],
             refresh: true,

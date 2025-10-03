@@ -47,7 +47,7 @@
         <!-- User Info -->
         <div class="user-info">
           <div class="user-name">{{ auth('enrollee')->user()->first_name ?? 'Applicant' }} {{ auth('enrollee')->user()->last_name ?? '' }}</div>
-          <div class="user-role">Enrollee</div>
+          <div class="user-role">Applicant</div>
         </div>
 
         <ul class="nav flex-column">
@@ -66,16 +66,11 @@
               <i class="ri-folder-line me-2"></i>Documents
             </a>
           </li>
-          <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('enrollee.payment') ? 'active' : '' }}" href="{{ route('enrollee.payment') }}">
-              <i class="ri-money-dollar-circle-line me-2"></i>Payment
-            </a>
-          </li>
-          <li class="nav-item mb-2">
+          {{-- <li class="nav-item mb-2">
             <a class="nav-link {{ request()->routeIs('enrollee.schedule') ? 'active' : '' }}" href="{{ route('enrollee.schedule') }}">
               <i class="ri-calendar-line me-2"></i>Schedule
             </a>
-          </li>
+          </li> --}}
           <li class="nav-item mb-2">
             <a class="nav-link {{ request()->routeIs('enrollee.notices') ? 'active' : '' }}" href="{{ route('enrollee.notices') }}">
               <i class="ri-notification-line me-2"></i>Notices
@@ -99,7 +94,7 @@
         <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
           <h1 class="h2 section-title">
             <i class="ri-graduation-cap-line me-2"></i>
-            Enrollee Portal
+            Applicant Portal
           </h1>
           {{-- <div class="btn-toolbar mb-2 mb-md-0">
             <div class="btn-group me-2">

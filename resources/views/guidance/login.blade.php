@@ -1,0 +1,89 @@
+<x-layout>
+    @vite('resources/css/enroll.css')
+    <div class="row justify-content-center">
+        <div class="col-lg-6 col-md-8">
+            <div class="content-card p-5">
+                <div class="text-center mb-4">
+                    <i class="ri-heart-pulse-line" style="font-size: 4rem; color: var(--primary-color);"></i>
+                    <h2 class="page-header mb-2">Guidance Portal Login</h2>
+                    <p class="text-muted">Login to access the guidance counseling system</p>
+                </div>
+
+                @if(session('error'))
+                    <div class="alert alert-danger">{{ session('error') }}</div>
+                @endif
+
+                @if(session('success'))
+                    <div class="alert alert-success">{{ session('success') }}</div>
+                @endif
+
+                @if($errors->any())
+                    <div class="alert alert-danger">
+                        <ul class="mb-0">
+                            @foreach($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
+                <form method="POST" action="{{ route('guidance.login.submit') }}">
+                    @csrf
+                    
+                    <div class="mb-3">
+                        <label for="email" class="form-label fw-semibold" style="color: var(--primary-color);">
+                            <i class="ri-mail-line me-2"></i>Email Address
+                        </label>
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            class="form-control @error('email') is-invalid @enderror"
+                            value="{{ old('email') }}"
+                            required
+                            placeholder="Enter your email address"
+                            autocomplete="email"
+                        />
+                        @error('email')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="password" class="form-label fw-semibold" style="color: var(--primary-color);">
+                            <i class="ri-lock-line me-2"></i>Password
+                        </label>
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            class="form-control @error('password') is-invalid @enderror"
+                            required
+                            placeholder="Enter your password"
+                            autocomplete="current-password"
+                        />
+                        @error('password')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="remember" name="remember" {{ old('remember') ? 'checked' : '' }}>
+                        <label class="form-check-label" for="remember">Remember Me</label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 mb-3">
+                        <i class="ri-login-box-line me-2"></i>Login to Portal
+                    </button>
+                </form>
+
+                <div class="text-center">
+                    <small class="text-muted">
+                        <i class="ri-information-line me-1"></i>
+                        For guidance counselors only - Contact administrator for assistance
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</x-layout>

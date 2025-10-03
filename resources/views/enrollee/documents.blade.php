@@ -24,19 +24,19 @@
             <div class="col-lg-8">
                 <!-- DOCUMENT REQUIREMENTS -->
                 <div class="card mb-4">
-                    <div class="card-header">
+                    {{-- <div class="card-header">
                         <h5 class="mb-0">
                             <i class="ri-file-list-line me-2"></i>
                             Required Documents
                         </h5>
-                    </div>
-                    <div class="card-body">
+                    </div> --}}
+                    {{-- <div class="card-body">
                         <div class="alert alert-info">
                             <i class="ri-information-line me-2"></i>
                             Please ensure all required documents are submitted for your enrollment application.
-                        </div>
+                        </div> --}}
 
-                        <div class="row">
+                        {{-- <div class="row">
                             <div class="col-md-6">
                                 <h6 class="text-muted mb-3">Primary Documents</h6>
                                 <ul class="list-group list-group-flush">
@@ -57,7 +57,7 @@
                                         <span class="badge bg-danger">Required</span>
                                     </li>
                                 </ul>
-                            </div>
+                            </div> --}}
                             {{-- <div class="col-md-6">
                                 <h6 class="text-muted mb-3">Additional Documents</h6>
                                 <ul class="list-group list-group-flush">
@@ -121,10 +121,10 @@
                             @endif
                         </button>
                         @elseif($enrollee->enrollment_status === 'pending' && count($documents) > 0)
-                        <span class="badge bg-info">
+                        {{-- <span class="badge bg-info">
                             <i class="ri-time-line me-1"></i>
                             Under Review
-                        </span>
+                        </span> --}}
                         @endif
                     </div>
                     <div class="card-body">
@@ -167,7 +167,7 @@
                                             <td>{{ $documentData['filename'] ?? 'Document ' . ($index + 1) }}</td>
                                             <td>{{ isset($documentData['uploaded_at']) ? \Carbon\Carbon::parse($documentData['uploaded_at'])->format('M d, Y') : 'N/A' }}</td>
                                             <td>
-                                                <span class="badge bg-{{ ($documentData['status'] ?? 'pending') === 'verified' ? 'success' : (($documentData['status'] ?? 'pending') === 'rejected' ? 'danger' : 'warning') }}">
+                                                <span class="badge bg-{{ ($documentData['status'] ?? 'pending') === 'approved' ? 'success' : (($documentData['status'] ?? 'pending') === 'rejected' ? 'danger' : 'warning') }}">
                                                     {{ ucfirst($documentData['status'] ?? 'pending') }}
                                                 </span>
                                             </td>
@@ -236,7 +236,7 @@
                             $totalDocs = count($documents);
                             
                             // Handle both old format (strings) and new format (arrays) for statistics
-                            $verifiedDocs = 0;
+                            $approvedDocs = 0;
                             $pendingDocs = 0;
                             $rejectedDocs = 0;
                             
@@ -245,10 +245,10 @@
                                     // Old format: all documents are pending
                                     $pendingDocs++;
                                 } else {
-                                    // New format: check actual status
+                                    // New format: check actual status (use 'approved' to match admin system)
                                     $status = $document['status'] ?? 'pending';
-                                    if ($status === 'verified') {
-                                        $verifiedDocs++;
+                                    if ($status === 'approved' || $status === 'verified') {
+                                        $approvedDocs++;
                                     } elseif ($status === 'rejected') {
                                         $rejectedDocs++;
                                     } else {
@@ -267,8 +267,8 @@
                             </div>
                             <div class="col-3">
                                 <div class="info-card">
-                                    <h4 class="text-success">{{ $verifiedDocs }}</h4>
-                                    <small class="text-muted">Verified</small>
+                                    <h4 class="text-success">{{ $approvedDocs }}</h4>
+                                    <small class="text-muted">Approved</small>
                                 </div>
                             </div>
                             <div class="col-3">
@@ -288,9 +288,9 @@
                         @if($totalDocs > 0)
                         <div class="mt-3">
                             <div class="progress">
-                                <div class="progress-bar bg-success" style="width: {{ $totalDocs > 0 ? ($verifiedDocs / $totalDocs) * 100 : 0 }}%"></div>
+                                <div class="progress-bar bg-success" style="width: {{ $totalDocs > 0 ? ($approvedDocs / $totalDocs) * 100 : 0 }}%"></div>
                             </div>
-                            <small class="text-muted">{{ $totalDocs > 0 ? round(($verifiedDocs / $totalDocs) * 100) : 0 }}% of documents verified</small>
+                            <small class="text-muted">{{ $totalDocs > 0 ? round(($approvedDocs / $totalDocs) * 100) : 0 }}% of documents approved</small>
                         </div>
                         @endif
                     </div>
