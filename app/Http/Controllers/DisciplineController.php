@@ -169,22 +169,58 @@ class DisciplineController extends Controller
      */
     public function violationsIndex()
     {
-        $violations = Violation::with(['student', 'reportedBy', 'resolvedBy'])
+        // Fetch all violations with related models
+        $allViolations = Violation::with(['student', 'reportedBy', 'resolvedBy'])
             ->orderBy('created_at', 'desc')
-            ->paginate(20);
+            ->get();
+
+        // Group violations by student and title to count occurrences
+        $counts = [];
+        foreach ($allViolations as $violation) {
+            $key = $violation->student_id . '|' . $violation->title;
+            $counts[$key] = ($counts[$key] ?? 0) + 1;
+        }
+
+        // Add effective_severity property based on count
+        foreach ($allViolations as $violation) {
+            $key = $violation->student_id . '|' . $violation->title;
+            if (($counts[$key] ?? 0) >= 3) {
+                $violation->effective_severity = 'major';
+            } else {
+                $violation->effective_severity = $violation->severity;
+            }
+        }
+
+        // Filter to only include major effective_severity violations
+        $filtered = $allViolations->filter(function ($violation) {
+            return $violation->effective_severity === 'major';
+        });
+
+        // Paginate filtered results manually
+        $perPage = 20;
+        $page = request()->get('page', 1);
+        $items = $filtered->slice(($page - 1) * $perPage, $perPage)->values();
+
+        $paginated = new \Illuminate\Pagination\LengthAwarePaginator(
+            $items,
+            $filtered->count(),
+            $perPage,
+            $page,
+            ['path' => request()->url(), 'query' => request()->query()]
+        );
 
         $students = Student::select('id', 'first_name', 'last_name', 'student_id')
             ->orderBy('last_name', 'asc')
             ->get();
 
         $stats = [
-            'pending' => Violation::where('status', 'pending')->count(),
-            'investigating' => Violation::where('status', 'investigating')->count(),
-            'resolved' => Violation::where('status', 'resolved')->count(),
-            'severe' => Violation::where('severity', 'severe')->count(),
+            'pending' => $filtered->where('status', 'pending')->count(),
+            'investigating' => $filtered->where('status', 'investigating')->count(),
+            'resolved' => $filtered->where('status', 'resolved')->count(),
+            'severe' => $filtered->where('effective_severity', 'severe')->count(),
         ];
 
-        return view('discipline.violations', compact('violations', 'students', 'stats'));
+        return view('discipline.violations', ['violations' => $paginated, 'students' => $students, 'stats' => $stats]);
     }
 
     /**
@@ -260,6 +296,18 @@ class DisciplineController extends Controller
                 'violation_id' => $violation->id,
                 'student_id' => $violation->student_id
             ]);
+
+            // Check if this makes it a major offense (3 or more same violations)
+            $sameViolationCount = Violation::where('student_id', $validatedData['student_id'])
+                ->where('title', $validatedData['title'])
+                ->count();
+
+            if ($sameViolationCount >= 3) {
+                // Update all same violations to major severity
+                Violation::where('student_id', $validatedData['student_id'])
+                    ->where('title', $validatedData['title'])
+                    ->update(['severity' => 'major']);
+            }
 
             if ($request->wantsJson() || $request->ajax()) {
                 return response()->json([

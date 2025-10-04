@@ -16,6 +16,17 @@
           </div>
         @endif
 
+        @php
+          $escalatedCount = $violations->where('escalated', true)->count();
+        @endphp
+        @if($escalatedCount > 0)
+          <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <i class="ri-alert-line me-2"></i>
+            <strong>Important:</strong> {{ $escalatedCount }} of your minor violation{{ $escalatedCount > 1 ? 's have' : ' has' }} been escalated to major severity due to multiple offenses. This affects your sanctions and disciplinary actions.
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        @endif
+
         <!-- SUMMARY CARDS -->
         <div class="row g-3 mb-5">
           <div class="col-6 col-lg-3">
@@ -35,7 +46,10 @@
                 <i class="ri-information-line display-6 me-3"></i>
                 <div>
                   <div>Minor</div>
-                  <h3>{{ $violations->where('severity', 'minor')->count() }}</h3>
+                  <h3>{{ $violations->where('effective_severity', 'minor')->count() }}</h3>
+                  @if($violations->where('escalated', true)->count() > 0)
+                    <small class="text-muted">({{ $violations->where('severity', 'minor')->where('escalated', false)->count() }} original)</small>
+                  @endif
                 </div>
               </div>
             </div>
@@ -46,7 +60,10 @@
                 <i class="ri-alert-line display-6 me-3"></i>
                 <div>
                   <div>Major</div>
-                  <h3>{{ $violations->where('severity', 'major')->count() }}</h3>
+                  <h3>{{ $violations->where('effective_severity', 'major')->count() }}</h3>
+                  @if($violations->where('escalated', true)->count() > 0)
+                    <small class="text-warning">({{ $violations->where('escalated', true)->count() }} escalated)</small>
+                  @endif
                 </div>
               </div>
             </div>
@@ -68,7 +85,8 @@
           <!-- VIOLATIONS LIST -->
           <h4 class="section-title">Violation Records</h4>
           <div class="row g-3 mb-5">
-            @foreach($violations as $violation)
+          @foreach($violations as $violation)
+            @if($violation->effective_severity === 'major')
               <div class="col-12">
                 <div class="card violation-card violation-{{ $violation->severity }}">
                   <div class="card-body">
@@ -76,9 +94,19 @@
                       <div class="col-md-8">
                         <div class="d-flex justify-content-between align-items-start mb-2">
                           <h6 class="card-title mb-1 fw-bold">{{ $violation->title }}</h6>
-                          <span class="badge badge-violation bg-{{ $violation->severity === 'minor' ? 'success' : ($violation->severity === 'major' ? 'warning' : 'danger') }}">
-                            {{ ucfirst($violation->severity) }}
-                          </span>
+                          <div class="d-flex flex-column align-items-end gap-1">
+                            <span class="badge badge-violation bg-{{ $violation->effective_severity === 'minor' ? 'success' : ($violation->effective_severity === 'major' ? 'warning' : 'danger') }}">
+                              {{ ucfirst($violation->effective_severity) }}
+                              @if($violation->escalated)
+                                <i class="ri-arrow-up-line ms-1" title="{{ $violation->escalation_reason }}"></i>
+                              @endif
+                            </span>
+                            @if($violation->escalated)
+                              <small class="text-warning fw-bold" style="font-size: 0.7rem;">
+                                <i class="ri-alert-line me-1"></i>Escalated
+                              </small>
+                            @endif
+                          </div>
                         </div>
                         <p class="card-text text-muted mb-2">{{ $violation->description }}</p>
                         @if($violation->action_taken)
@@ -115,6 +143,7 @@
                   </div>
                 </div>
               </div>
+            @endif
             @endforeach
           </div>
 
@@ -139,10 +168,16 @@
                 <div class="col-md-6">
                   <h6 class="fw-bold text-primary">Recommendations</h6>
                   <ul class="list-unstyled">
-                    @if($violations->where('severity', 'major')->count() > 0)
+                    @if($violations->where('effective_severity', 'major')->count() > 0)
                       <li class="mb-2">
                         <i class="ri-lightbulb-line me-2 text-warning"></i>
                         Consider scheduling a guidance counseling session
+                      </li>
+                    @endif
+                    @if($escalatedCount > 0)
+                      <li class="mb-2">
+                        <i class="ri-alert-line me-2 text-danger"></i>
+                        Multiple minor violations have escalated to major severity
                       </li>
                     @endif
                     @if($violations->count() === 0)

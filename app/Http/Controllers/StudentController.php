@@ -65,13 +65,19 @@ class StudentController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // Calculate effective severity (3 minor violations = major)
-        $minorCount = 0;
+        // Set effective_severity and escalated for all violations
+        // Group minor violations by title to count occurrences
+        $minorCountsByTitle = [];
         foreach ($violations as $violation) {
             if ($violation->severity === 'minor') {
-                $minorCount++;
-                // If this is the 3rd or higher minor violation, mark as escalated
-                if ($minorCount >= 3) {
+                $minorCountsByTitle[$violation->title] = ($minorCountsByTitle[$violation->title] ?? 0) + 1;
+            }
+        }
+
+        foreach ($violations as $violation) {
+            if ($violation->severity === 'minor') {
+                $countForTitle = $minorCountsByTitle[$violation->title] ?? 0;
+                if ($countForTitle >= 3) {
                     $violation->effective_severity = 'major';
                     $violation->escalated = true;
                     $violation->escalation_reason = '3rd minor offense - treated as major';
@@ -79,7 +85,7 @@ class StudentController extends Controller
                     $violation->effective_severity = 'minor';
                     $violation->escalated = false;
                 }
-            } else {
+            } elseif ($violation->severity === 'major' || $violation->severity === 'severe') {
                 $violation->effective_severity = $violation->severity;
                 $violation->escalated = false;
             }

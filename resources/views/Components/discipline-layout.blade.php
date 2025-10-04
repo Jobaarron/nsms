@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+e<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -42,14 +42,14 @@
         </div>
         
         <!-- User Info -->
-        <div class="user-info">
-          <div class="user-name">{{ Auth::user()->name }}</div>
-          <div class="user-role">{{ ucwords(str_replace('_', ' ', Auth::user()->getRoleNames()->first())) }}</div>
+            <div class="user-info">
+                <div class="user-name">{{ Auth::check() ? Auth::user()->name : 'Guest' }}</div>
+          <div class="user-role">{{ Auth::check() ? ucwords(str_replace('_', ' ', Auth::user()->getRoleNames()->first())) : '' }}</div>
         </div>
 
         <ul class="nav flex-column">
           <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('discipline.dashboard') ? 'active' : '' }}" href="{{ route('guidance.dashboard') }}">
+            <a class="nav-link {{ request()->routeIs('discipline.dashboard') ? 'active' : '' }}" href="{{ route('discipline.dashboard') }}">
               <i class="ri-dashboard-line me-2"></i>Dashboard
             </a>
           </li>
@@ -85,7 +85,7 @@
           </li>
           
           <li class="nav-item mt-3">
-            <form method="POST" action="{{ route('guidance.logout') }}">
+            <form method="POST" action="{{ route('discipline.logout') }}">
               @csrf
               <button type="submit" class="btn btn-logout w-100">
                 <i class="ri-logout-circle-line me-2"></i>Logout

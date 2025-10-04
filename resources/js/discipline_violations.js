@@ -13,63 +13,27 @@ function debounce(func, wait) {
   };
 }
 
-window.offenseOptions = {
-    minor: [
-        "Not wearing of prescribed uniform and Improper wearing of school ID",
-        "Unauthorized use of cellphones and other electronic gadgets inside the classroom",
-        "Wearing earrings (for male students) and multiple earrings (for female students)",
-        "Not sporting the prescribed haircut",
-        "Unauthorized use of electronic gadgets inside the classroom",
-        "Loitering inside the school"
-    ],
-    major: {
-        "Category 1": [
-            "Borrowing, lending, and tampering of school ID",
-            "Disrespect to school logo",
-            "Unauthorized use of school forms",
-            "Loitering inside the campus",
-            "Littering inside the campus",
-            "Eating outside the classroom during class hours",
-            "Non-observance of Clean As You Go policy",
-            "Using profane and indecent language",
-            "Bringing pornographic materials and browsing pornographic sites",
-            "Smoking, e-cigarettes and similar acts",
-            "Participating in any form of gambling",
-            "Threatening fellow students",
-            "Leaving the school without a valid gate pass",
-            "Making an alarming fake bomb or fire threat or joke",
-            "Any offense analogous to the above"
-        ],
-        "Category 2": [
-            "Disrespecting the Philippine flag and other national / institutional symbols",
-            "Vandalism inside the campus",
-            "Engaging in immodest act such as public display of affection",
-            "Bringing intoxicating drinks or alcoholic beverages",
-            "Cheating during examination / acting as accomplice",
-            "Tampering with test scores",
-            "Cutting classes",
-            "Gross scandalous behavior inside/outside the campus",
-            "Act that malign the good name and reputation of the school",
-            "Withholding information during formal investigation",
-            "Habitual disregard to school policies",
-            "Any offense analogous to the above"
-        ],
-        "Category 3": [
-            "Bullying including physical, emotional and cyberbullying",
-            "Forging the signature of parents/guardian in school documents",
-            "Forging the signature of teachers or persons in authority",
-            "Assaulting or showing disrespect to teachers or persons in authority",
-            "Disrespectful or abusive behavior towards any faculty member",
-            "Possession, pushing, use of dangerous drugs, deadly weapons or explosives",
-            "Recruiting or engaging in pseudo fraternities / gangs",
-            "Engaging in fight and assaulting fellow students",
-            "Hazing, extortion and engaging in pre-marital sex",
-            "Deception of school authorities",
-            "Stealing school or others' personal property",
-            "Any offense analogous to the above"
-        ]
+// Global variable to store violation options fetched from the database
+window.offenseOptions = null;
+
+// Function to fetch violation options from the database
+async function fetchViolationOptions() {
+    try {
+        const response = await fetch('/discipline/violations/summary');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        window.offenseOptions = data.options;
+        console.log('Violation options loaded from database:', window.offenseOptions);
+        return window.offenseOptions;
+    } catch (error) {
+        console.error('Failed to fetch violation options:', error);
+        // Fallback to empty options if fetch fails
+        window.offenseOptions = { minor: [], major: { "Category 1": [], "Category 2": [], "Category 3": [] } };
+        return window.offenseOptions;
     }
-};
+}
 
 // Automatic Sanction Management System
 window.SanctionSystem = {
@@ -724,8 +688,8 @@ function getViolationTitle() {
     return violationTitleSelect.value;
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-        // Initialize sanction system when page loads
+document.addEventListener('DOMContentLoaded', async function() {
+    // Initialize sanction system when page loads
     fetch('/discipline/violations/summary')
         .then(response => response.json())
         .then(data => {
@@ -735,16 +699,21 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error loading violation summary:', error);
         });
 
+    // Fetch violation options and initialize mappings
+    await fetchViolationOptions();
+
     // Create reverse mapping: title -> {severity, category}
     window.titleToSeverityMap = {};
-    window.offenseOptions.minor.forEach(title => {
-        window.titleToSeverityMap[title] = { severity: 'minor', category: null };
-    });
-    Object.keys(window.offenseOptions.major).forEach(category => {
-        window.offenseOptions.major[category].forEach(title => {
-            window.titleToSeverityMap[title] = { severity: 'major', category: category };
+    if (window.offenseOptions) {
+        window.offenseOptions.minor.forEach(title => {
+            window.titleToSeverityMap[title] = { severity: 'minor', category: null };
         });
-    });
+        Object.keys(window.offenseOptions.major).forEach(category => {
+            window.offenseOptions.major[category].forEach(title => {
+                window.titleToSeverityMap[title] = { severity: 'major', category: category };
+            });
+        });
+    }
 
     const violationTitleSelect = document.getElementById('violationTitle');
 
@@ -811,6 +780,12 @@ document.addEventListener('DOMContentLoaded', function() {
         // Clear current options
         violationTitleSelect.innerHTML = '<option value="">-- Select Offense --</option>';
 
+        // Check if violation options are loaded
+        if (!window.offenseOptions) {
+            console.warn('Violation options not loaded yet');
+            return;
+        }
+
         // Add minor offenses
         window.offenseOptions.minor.forEach(offense => {
             const option = document.createElement('option');
@@ -839,7 +814,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Set student info when modal is shown
     const violationModal = document.getElementById('recordViolationModal');
     if (violationModal) {
-        violationModal.addEventListener('show.bs.modal', function(event) {
+        violationModal.addEventListener('show.bs.modal', async function(event) {
             const button = event.relatedTarget;
             const studentId = button ? button.getAttribute('data-student-id') : null;
 
@@ -873,6 +848,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             // Reset form
+
+            // Ensure violation options are loaded before populating
+            if (!window.offenseOptions) {
+                await fetchViolationOptions();
+            }
 
             // Populate all offenses in the title dropdown
             populateAllOffenses();
@@ -1491,7 +1471,7 @@ window.forwardViolation = function(violationId) {
         
       } catch (error) {
         console.error('Error hiding modal:', error);
-        return this.hideFallback(modalId);
+        return this.hideFallbproceedack(modalId);
       }
     },
     
@@ -1853,6 +1833,12 @@ function showIncidentForm() {
     if (incidentViolationSelect) {
         // Clear current options
         incidentViolationSelect.innerHTML = '<option value="">-- Select Offense --</option>';
+
+        // Check if violation options are loaded
+        if (!window.offenseOptions) {
+            console.warn('Violation options not loaded yet for incident form');
+            return;
+        }
 
         // Add minor offenses
         window.offenseOptions.minor.forEach(offense => {

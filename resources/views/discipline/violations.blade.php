@@ -98,62 +98,64 @@
             </thead>
             <tbody>
               @forelse($violations as $violation)
-              <tr>
-                <td>
-                  <div>
-                    <strong>{{ $violation->student->first_name }} {{ $violation->student->last_name }}</strong>
-                    <br><small class="text-muted">{{ $violation->student->student_id }}</small>
-                  </div>
-                </td>
-                <td>
-                  <strong>{{ $violation->title }}</strong>
-                  <br><small class="text-muted">{{ Str::limit($violation->description, 50) }}</small>
-                </td>
-                <td>
-                  {{ $violation->violation_date->format('M d, Y') }}
-                  @if($violation->violation_time)
-                    <br><small class="text-muted">{{ date('h:i A', strtotime($violation->violation_time)) }}</small>
-                  @endif
-                </td>
-                <td>
-                  {{ $violation->sanction ?? 'N/A' }}
-                </td>
-                <td>
-                  @if($violation->status === 'pending')
-                    <span class="badge bg-warning text-dark">Pending</span>
-                  @elseif($violation->status === 'investigating')
-                    <span class="badge bg-info text-dark">In Progress</span>
-                  @elseif($violation->status === 'resolved')
-                    <span class="badge bg-success">Resolved</span>
-                  @else
-                    <span class="badge bg-secondary">{{ ucfirst($violation->status) }}</span>
-                  @endif
-                </td>
-                <td>
-                  <div class="btn-group" role="group">
-                    <button type="button" class="btn btn-sm btn-outline-primary"
-                            onclick="viewViolation({{ $violation->id }})"
-                            title="View Details">
-                      <i class="ri-eye-line"></i>
-                    </button>
-                    <button type="button" class="btn btn-sm btn-outline-warning"
-                            onclick="editViolation({{ $violation->id }})"
-                            title="Edit">
-                      <i class="ri-edit-line"></i>
-                    </button>
-                    <button type="button" class="btn btn-sm btn-outline-info"
-                            onclick="forwardViolation({{ $violation->id }})"
-                            title="Forward to Case Meeting">
-                      <i class="ri-send-plane-line"></i>
-                    </button>
-                    <button type="button" class="btn btn-sm btn-outline-danger"
-                            onclick="deleteViolation({{ $violation->id }})"
-                            title="Delete">
-                      <i class="ri-delete-bin-line"></i>
-                    </button>
-                  </div>
-                </td>
-              </tr>
+                @if($violation->effective_severity === 'major')
+                <tr>
+                  <td>
+                    <div>
+                      <strong>{{ $violation->student->first_name }} {{ $violation->student->last_name }}</strong>
+                      <br><small class="text-muted">{{ $violation->student->student_id }}</small>
+                    </div>
+                  </td>
+                  <td>
+                    <strong>{{ $violation->title }}</strong>
+                    <br><small class="text-muted">{{ Str::limit($violation->description, 50) }}</small>
+                  </td>
+                  <td>
+                    {{ $violation->violation_date->format('M d, Y') }}
+                    @if($violation->violation_time)
+                      <br><small class="text-muted">{{ date('h:i A', strtotime($violation->violation_time)) }}</small>
+                    @endif
+                  </td>
+                  <td>
+                    {{ $violation->sanction ?? 'N/A' }}
+                  </td>
+                  <td>
+                    @if($violation->status === 'pending')
+                      <span class="badge bg-warning text-dark">Pending</span>
+                    @elseif($violation->status === 'investigating')
+                      <span class="badge bg-info text-dark">In Progress</span>
+                    @elseif($violation->status === 'resolved')
+                      <span class="badge bg-success">Resolved</span>
+                    @else
+                      <span class="badge bg-secondary">{{ ucfirst($violation->status) }}</span>
+                    @endif
+                  </td>
+                  <td>
+                    <div class="btn-group" role="group">
+                      <button type="button" class="btn btn-sm btn-outline-primary"
+                              onclick="viewViolation({{ $violation->id }})"
+                              title="View Details">
+                        <i class="ri-eye-line"></i>
+                      </button>
+                      <button type="button" class="btn btn-sm btn-outline-warning"
+                              onclick="editViolation({{ $violation->id }})"
+                              title="Edit">
+                        <i class="ri-edit-line"></i>
+                      </button>
+                      <button type="button" class="btn btn-sm btn-outline-info"
+                              onclick="forwardViolation({{ $violation->id }})"
+                              title="Forward to Case Meeting">
+                        <i class="ri-send-plane-line"></i>
+                      </button>
+                      <button type="button" class="btn btn-sm btn-outline-danger"
+                              onclick="deleteViolation({{ $violation->id }})"
+                              title="Delete">
+                        <i class="ri-delete-bin-line"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                @endif
               @empty
               <tr>
                 <td colspan="6" class="text-center py-5">
