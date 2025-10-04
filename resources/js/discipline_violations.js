@@ -19,7 +19,12 @@ window.offenseOptions = null;
 // Function to fetch violation options from the database
 async function fetchViolationOptions() {
     try {
-        const response = await fetch('/discipline/violations/summary');
+        const response = await fetch('/discipline/violations/summary', { credentials: 'include' });
+        if (response.status === 401) {
+            alert('Your session has expired. Please log in again.');
+            window.location.href = '/discipline/login';
+            return { minor: [], major: { "Category 1": [], "Category 2": [], "Category 3": [] } };
+        }
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -62,7 +67,7 @@ window.SanctionSystem = {
                 allViolations: []
             });
         }
-        
+
         const studentRecord = this.studentViolations.get(studentId);
         const violationRecord = {
             severity,
@@ -70,17 +75,58 @@ window.SanctionSystem = {
             date: new Date().toISOString(),
             sanction: null
         };
-        
+
         if (severity === 'minor') {
             studentRecord.minorCount++;
+
+            // Check for escalation: if minor count reaches 3, escalate to major
+            if (studentRecord.minorCount >= 3) {
+                // Remove the previous 2 minor violations from history
+                const minorViolations = studentRecord.allViolations.filter(v => v.severity === 'minor');
+                if (minorViolations.length >= 2) {
+                    // Remove the first 2 minor violations
+                    const indicesToRemove = [];
+                    let minorCount = 0;
+                    for (let i = 0; i < studentRecord.allViolations.length; i++) {
+                        if (studentRecord.allViolations[i].severity === 'minor') {
+                            minorCount++;
+                            if (minorCount <= 2) {
+                                indicesToRemove.push(i);
+                            }
+                        }
+                    }
+
+                    // Remove indices in reverse order to maintain correct indices
+                    indicesToRemove.reverse().forEach(index => {
+                        studentRecord.allViolations.splice(index, 1);
+                    });
+
+                    // Decrement minor count by 2
+                    studentRecord.minorCount -= 2;
+
+                    // Increment major count
+                    studentRecord.majorCount++;
+
+                    // Add escalation record as major violation (Category 1 by default)
+                    const escalationRecord = {
+                        severity: 'major',
+                        category: 1,
+                        date: new Date().toISOString(),
+                        sanction: 'Escalated from 3 minor violations',
+                        isEscalation: true
+                    };
+                    studentRecord.allViolations.push(escalationRecord);
+                    studentRecord.majorByCategory[1] = (studentRecord.majorByCategory[1] || 0) + 1;
+                }
+            }
         } else if (severity === 'major') {
             studentRecord.majorCount++;
             if (category) {
-                studentRecord.majorByCategory[category] = 
+                studentRecord.majorByCategory[category] =
                     (studentRecord.majorByCategory[category] || 0) + 1;
             }
         }
-        
+
         studentRecord.allViolations.push(violationRecord);
         return studentRecord;
     },
@@ -236,15 +282,25 @@ function setupEnhancedViolationSubmission() {
                 formData.append('status', 'pending');
 
                 const csrfTokenEl = document.querySelector('meta[name="csrf-token"]');
+                const csrfToken = csrfTokenEl ? csrfTokenEl.getAttribute('content') : '';
                 formData.append('_token', csrfTokenEl.getAttribute('content'));
 
                 const response = await fetch('/discipline/violations', {
                     method: 'POST',
+                    credentials: 'include',
                     headers: {
-                        'Accept': 'application/json'
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
                     },
                     body: formData
                 });
+
+                if (response.status === 401) {
+                    // User is not authenticated, redirect to login
+                    alert('Your session has expired. Please log in again.');
+                    window.location.href = '/discipline/login';
+                    return;
+                }
 
                 if (!response.ok) {
                     throw new Error(`Server error: ${response.status}`);
@@ -387,7 +443,7 @@ window.editViolation = function(violationId) {
     // Fetch violation data for editing
     console.log('📡 Making API call to:', `/discipline/violations/${violationId}/edit`);
 
-    fetch(`/discipline/violations/${violationId}/edit`)
+        fetch(`/discipline/violations/${violationId}/edit`, { credentials: 'include' })
         .then(response => {
             console.log('📡 Response received:', {
                 status: response.status,
@@ -395,6 +451,12 @@ window.editViolation = function(violationId) {
                 ok: response.ok,
                 url: response.url
             });
+
+            if (response.status === 401) {
+                alert('Your session has expired. Please log in again.');
+                window.location.href = '/discipline/login';
+                throw new Error('Authentication required');
+            }
 
             if (!response.ok) {
                 // Handle HTTP errors (404, 500, etc.)
@@ -562,14 +624,15 @@ window.editViolation = function(violationId) {
                 submitBtn.innerHTML = '<i class="ri-loader-line me-2 spinner-border spinner-border-sm"></i>Updating...';
 
                 try {
-                    const response = await fetch(form.action, {
-                        method: 'POST',
-                        body: formData,
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'Accept': 'application/json'
-                        }
-                    });
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    credentials: 'include',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                });
 
                     console.log('📡 Update response status:', response.status);
 
@@ -1091,7 +1154,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 // Global functions for CRUD operations (must be in global scope)
 window.viewViolation = function(violationId) {
     // Fetch violation data from server
-    fetch(`/discipline/violations/${violationId}`)
+    fetch(`/discipline/violations/${violationId}`, { credentials: 'include' })
       .then(response => response.json())
       .then(data => {
         document.getElementById('viewViolationModalBody').innerHTML = `
@@ -1189,6 +1252,7 @@ window.deleteViolation = function(violationId) {
       // Use AJAX for better UX
       fetch(`/discipline/violations/${violationId}`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           'X-Requested-With': 'XMLHttpRequest',
@@ -1326,6 +1390,7 @@ window.forwardViolation = function(violationId) {
       // Use AJAX to forward violation
       fetch(`/discipline/violations/${violationId}/forward`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           'X-Requested-With': 'XMLHttpRequest',
@@ -1413,7 +1478,169 @@ window.forwardViolation = function(violationId) {
     }
   }
 
-  // Comprehensive modal management system
+
+  window.scheduleCaseMeeting = function(violationId) {
+    console.log('🚀 scheduleCaseMeeting called with id:', violationId);
+
+    // Show loading state
+    const modalBody = document.querySelector('#scheduleCaseMeetingModal .modal-body');
+    if (modalBody) {
+      modalBody.innerHTML = `
+        <div class="text-center py-4">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="mt-2">Loading violation data for ID: ${violationId}...</p>
+        </div>
+      `;
+    }
+
+    // Show modal immediately
+    try {
+      const modal = new bootstrap.Modal(document.getElementById('scheduleCaseMeetingModal'));
+      modal.show();
+      console.log('✅ Modal shown successfully');
+    } catch (modalError) {
+      console.error('❌ Modal error:', modalError);
+    }
+
+    // Fetch violation data
+    console.log('📡 Making API call to:', `/discipline/violations/${violationId}`);
+
+    fetch(`/discipline/violations/${violationId}`, { credentials: 'include' })
+      .then(response => {
+        console.log('📡 Response received:', {
+          status: response.status,
+          statusText: response.statusText,
+          ok: response.ok,
+          url: response.url
+        });
+
+        if (response.status === 401) {
+          alert('Your session has expired. Please log in again.');
+          window.location.href = '/discipline/login';
+          throw new Error('Authentication required');
+        }
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            throw new Error(`Violation not found (404). Check if the ID ${violationId} exists.`);
+          } else if (response.status === 500) {
+            throw new Error('Server error (500). Please check the server logs.');
+          } else {
+            throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
+          }
+        }
+
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new Error('Server returned non-JSON response');
+        }
+
+        return response.json();
+      })
+      .then(data => {
+        console.log('✅ Violation data received:', data);
+
+        if (!data) {
+          throw new Error('No data received from server');
+        }
+
+        // Populate modal with violation data
+        document.getElementById('scheduleViolationId').value = violationId;
+        document.getElementById('scheduleStudentId').value = data.student_id;
+        document.getElementById('scheduleStudentName').value = `${data.student.first_name} ${data.student.last_name} (${data.student.student_id || 'No ID'})`;
+        document.getElementById('scheduleViolationTitle').value = data.title;
+
+        // Pre-populate reason field
+        const reasonField = document.querySelector('#scheduleCaseMeetingForm textarea[name="reason"]');
+        if (reasonField) {
+          reasonField.value = `Violation: ${data.title} - ${data.description || 'No description provided'}`;
+        }
+
+        // Reset form to original state
+        const form = document.getElementById('scheduleCaseMeetingForm');
+        form.innerHTML = `
+          <input type="hidden" id="scheduleViolationId" name="violation_id" value="${violationId}">
+          <div class="modal-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Student <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="scheduleStudentName" value="${data.student.first_name} ${data.student.last_name} (${data.student.student_id || 'No ID'})" readonly>
+                <input type="hidden" id="scheduleStudentId" name="student_id" value="${data.student_id}">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Violation</label>
+                <input type="text" class="form-control" id="scheduleViolationTitle" value="${data.title}" readonly>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Date <span class="text-danger">*</span></label>
+                <input type="date" class="form-control" name="scheduled_date" required min="${new Date().toISOString().split('T')[0]}">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Time <span class="text-danger">*</span></label>
+                <input type="time" class="form-control" name="scheduled_time" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Location</label>
+                <input type="text" class="form-control" name="location" placeholder="e.g., Guidance Office, Student's Home">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Urgency Level</label>
+                <select class="form-select" name="urgency_level">
+                  <option value="">Normal</option>
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                  <option value="urgent">Urgent</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <label class="form-label">Reason <span class="text-danger">*</span></label>
+                <textarea class="form-control" name="reason" rows="3" required placeholder="Describe the reason for this meeting...">${`Violation: ${data.title} - ${data.description || 'No description provided'}`}</textarea>
+              </div>
+              <div class="col-12">
+                <label class="form-label">Notes</label>
+                <textarea class="form-control" name="notes" rows="2" placeholder="Additional notes or preparation needed..."></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">
+              <i class="ri-calendar-event-line me-2"></i>Schedule Meeting
+            </button>
+          </div>
+        `;
+
+        console.log('✅ Modal populated successfully');
+      })
+      .catch(error => {
+        console.error('❌ Fetch error:', error);
+
+        // Show error in modal
+        if (modalBody) {
+          modalBody.innerHTML = `
+            <div class="alert alert-danger">
+              <h6>Error Loading Violation</h6>
+              <p><strong>${error.message}</strong></p>
+              <p>URL: <code>/discipline/violations/${violationId}</code></p>
+              <div class="mt-3">
+                <button class="btn btn-sm btn-outline-secondary" onclick="bootstrap.Modal.getInstance(document.getElementById('scheduleCaseMeetingModal')).hide()">
+                  Close
+                </button>
+                <button class="btn btn-sm btn-primary" onclick="scheduleCaseMeeting(${violationId})">
+                  Retry
+                </button>
+              </div>
+            </div>
+          `;
+        }
+
+        alert('Failed to load violation: ' + error.message);
+      });
+  };
+
   window.ModalManager = {
     activeModals: new Set(),
     
@@ -1968,6 +2195,7 @@ function showIncidentForm() {
 
                 const response = await fetch('/discipline/violations', {
                     method: 'POST',
+                    credentials: 'include',
                     headers: {
                         'Accept': 'application/json'
                     },

@@ -236,10 +236,6 @@
                 <label class="form-label fw-bold">Violation Time</label>
                 <input type="time" class="form-control" id="violationTime" name="violation_time" value="{{ now()->format('H:i') }}">
               </div>
-
-
-
-
             </div>
           </div>
         </div>
@@ -289,6 +285,5 @@
       </div>
     </div>
   </div>
-
 
 </x-discipline-layout>

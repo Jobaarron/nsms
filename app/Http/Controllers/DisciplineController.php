@@ -12,6 +12,7 @@ use App\Models\Violation;
 use App\Models\ViolationList;
 use App\Models\CaseMeeting;
 use App\Models\Guidance;
+use App\Models\ArchiveViolation;
 use Illuminate\Support\Facades\Storage;
 
 class DisciplineController extends Controller
@@ -37,11 +38,11 @@ class DisciplineController extends Controller
         ]);
 
         $credentials = $request->only('email', 'password');
-        
+
         // Check if user exists and has discipline role
         $user = User::where('email', $credentials['email'])
                    ->first();
-        
+
         if ($user && Hash::check($credentials['password'], $user->password)) {
             // Check if user has appropriate role
             if ($user->isDisciplineStaff()) {
@@ -79,12 +80,12 @@ class DisciplineController extends Controller
 
         // Get statistics
         $totalStudents = Student::count();
-        
+
         // Get violations statistics
         $violationsThisMonth = Violation::whereMonth('violation_date', now()->month)
             ->whereYear('violation_date', now()->year)
             ->count();
-            
+
         $totalViolations = Violation::count();
         $pendingViolations = Violation::where('status', 'pending')->count();
         $violationsToday = Violation::whereDate('violation_date', now()->toDateString())->count();
@@ -98,7 +99,7 @@ class DisciplineController extends Controller
             ->orderBy('violation_time', 'desc')
             ->limit(10)
             ->get();
-        
+
         $stats = [
             'total_students' => $totalStudents,
             'violations_this_month' => $violationsThisMonth,
@@ -268,7 +269,7 @@ class DisciplineController extends Controller
             }
             return back()->withErrors(['error' => 'You do not have permission to report violations.']);
         }
-        
+
         // Process violation time
         if (isset($validatedData['violation_time']) && $validatedData['violation_time']) {
             $time = $validatedData['violation_time'];
@@ -278,8 +279,6 @@ class DisciplineController extends Controller
                 $validatedData['violation_time'] = $time;
             }
         }
-
-
 
         $validatedData['reported_by'] = $disciplineRecord->id;
 
@@ -303,10 +302,70 @@ class DisciplineController extends Controller
                 ->count();
 
             if ($sameViolationCount >= 3) {
-                // Update all same violations to major severity
-                Violation::where('student_id', $validatedData['student_id'])
-                    ->where('title', $validatedData['title'])
-                    ->update(['severity' => 'major']);
+                try {
+                    // Get all same violations (including the newly created one)
+                    $violationsToEscalate = Violation::where('student_id', $validatedData['student_id'])
+                        ->where('title', $validatedData['title'])
+                        ->get();
+
+                    // Archive all violations except one, which will become major
+                    $keepOne = true;
+                    foreach ($violationsToEscalate as $violationToEscalate) {
+                        if ($keepOne) {
+                            // Keep this one and make it major
+                            $updated = $violationToEscalate->update([
+                                'severity' => 'major',
+                                'major_category' => $validatedData['major_category'] ?? 1,
+                                'title' => 'Escalated: ' . $violationToEscalate->title,
+                                'description' => 'This violation has been escalated to major due to multiple occurrences (' . $sameViolationCount . ' total). Original description: ' . $violationToEscalate->description
+                            ]);
+                            if ($updated) {
+                                \Log::info("Kept violation ID {$violationToEscalate->id} updated to major.");
+                            } else {
+                                \Log::error("Failed to update kept violation ID {$violationToEscalate->id} to major.");
+                            }
+                            $keepOne = false;
+                        } else {
+                            // Archive the others
+                            ArchiveViolation::create([
+                                'student_id' => $violationToEscalate->student_id,
+                                'reported_by' => $violationToEscalate->reported_by,
+                                'violation_type' => $violationToEscalate->violation_type,
+                                'title' => $violationToEscalate->title,
+                                'description' => $violationToEscalate->description,
+                                'severity' => $violationToEscalate->severity,
+                                'major_category' => $violationToEscalate->major_category,
+                                'sanction' => $violationToEscalate->sanction,
+                                'violation_date' => $violationToEscalate->violation_date,
+                                'violation_time' => $violationToEscalate->violation_time,
+                                'location' => $violationToEscalate->location,
+                                'witnesses' => $violationToEscalate->witnesses,
+                                'evidence' => $violationToEscalate->evidence,
+                                'attachments' => $violationToEscalate->attachments,
+                                'status' => $violationToEscalate->status,
+                                'resolution' => $violationToEscalate->resolution,
+                                'resolved_by' => $violationToEscalate->resolved_by,
+                                'resolved_at' => $violationToEscalate->resolved_at,
+                                'student_statement' => $violationToEscalate->student_statement,
+                                'disciplinary_action' => $violationToEscalate->disciplinary_action,
+                                'parent_notified' => $violationToEscalate->parent_notified,
+                                'parent_notification_date' => $violationToEscalate->parent_notification_date,
+                                'notes' => $violationToEscalate->notes,
+                                'archived_at' => now(),
+                                'archive_reason' => 'escalation_to_major',
+                            ]);
+                            // Delete the archived violation from student_violations table
+                            $violationToEscalate->delete();
+                        }
+                    }
+                } catch (\Exception $e) {
+                    \Log::error('Failed to escalate and archive violations: ' . $e->getMessage(), [
+                        'student_id' => $validatedData['student_id'],
+                        'title' => $validatedData['title'],
+                        'error' => $e->getTraceAsString()
+                    ]);
+                    // Continue without escalation - violation is still created
+                }
             }
 
             if ($request->wantsJson() || $request->ajax()) {
@@ -407,7 +466,7 @@ class DisciplineController extends Controller
             }
             throw $e;
         }
-        
+
         // Process violation time
         if (isset($validatedData['violation_time']) && $validatedData['violation_time']) {
             $time = $validatedData['violation_time'];
@@ -417,8 +476,6 @@ class DisciplineController extends Controller
                 $validatedData['violation_time'] = $time;
             }
         }
-
-
 
         // If status is being changed to resolved, set resolved_by and resolved_at
         if ($validatedData['status'] === 'resolved' && $violation->status !== 'resolved') {
@@ -451,34 +508,65 @@ class DisciplineController extends Controller
     }
 
     /**
-     * Delete violation
+     * Archive violation (instead of delete)
      */
     public function destroyViolation(Request $request, Violation $violation)
     {
         try {
             $violationId = $violation->id;
+
+            // Archive the violation before deleting
+            ArchiveViolation::create([
+                'student_id' => $violation->student_id,
+                'reported_by' => $violation->reported_by,
+                'violation_type' => $violation->violation_type,
+                'title' => $violation->title,
+                'description' => $violation->description,
+                'severity' => $violation->severity,
+                'major_category' => $violation->major_category,
+                'sanction' => $violation->sanction,
+                'violation_date' => $violation->violation_date,
+                'violation_time' => $violation->violation_time,
+                'location' => $violation->location,
+                'witnesses' => $violation->witnesses,
+                'evidence' => $violation->evidence,
+                'attachments' => $violation->attachments,
+                'status' => $violation->status,
+                'resolution' => $violation->resolution,
+                'resolved_by' => $violation->resolved_by,
+                'resolved_at' => $violation->resolved_at,
+                'student_statement' => $violation->student_statement,
+                'disciplinary_action' => $violation->disciplinary_action,
+                'parent_notified' => $violation->parent_notified,
+                'parent_notification_date' => $violation->parent_notification_date,
+                'notes' => $violation->notes,
+                'archived_at' => now(),
+                'archive_reason' => 'manual_deletion',
+            ]);
+
+            // Delete the original violation
             $violation->delete();
 
             if ($request->wantsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Violation deleted successfully.',
+                    'message' => 'Violation archived successfully.',
                     'violation_id' => $violationId
                 ]);
             }
 
             return redirect()->route('discipline.violations.index')
-                ->with('success', 'Violation deleted successfully.');
+                ->with('success', 'Violation archived successfully.');
         } catch (\Exception $e) {
             if ($request->wantsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Failed to delete violation.'
+                    'message' => 'Failed to archive violation.'
                 ], 500);
             }
 
             return redirect()->route('discipline.violations.index')
-                ->with('error', 'Failed to delete violation.');
+                ->with('error', 'Failed to archive violation.');
         }
     }
 
@@ -516,7 +604,7 @@ class DisciplineController extends Controller
                 'location' => 'Guidance Office',
                 'reason' => 'Violation: ' . $violation->title . ' - ' . $violation->description,
                 'notes' => 'Forwarded from Discipline Office. Violation ID: ' . $violation->id . '. Severity: ' . $violation->severity,
-                'status' => 'scheduled',
+                'status' => 'in_progress',
             ]);
 
             // Update violation status to in progress (investigating)
@@ -539,8 +627,6 @@ class DisciplineController extends Controller
         }
     }
 
-
-
     /**
      * Get violations summary for sanction system
      */
@@ -554,9 +640,9 @@ class DisciplineController extends Controller
             $violationOptions = [
                 'minor' => ViolationList::where('severity', 'minor')->pluck('title')->toArray(),
                 'major' => [
-                    'Category 1' => ViolationList::where('severity', 'major')->where('category', '1')->pluck('title')->toArray(),
-                    'Category 2' => ViolationList::where('severity', 'major')->where('category', '2')->pluck('title')->toArray(),
-                    'Category 3' => ViolationList::where('severity', 'major')->where('category', '3')->pluck('title')->toArray(),
+                    '1' => ViolationList::where('severity', 'major')->where('category', '1')->pluck('title')->toArray(),
+                    '2' => ViolationList::where('severity', 'major')->where('category', '2')->pluck('title')->toArray(),
+                    '3' => ViolationList::where('severity', 'major')->where('category', '3')->pluck('title')->toArray(),
                 ]
             ];
 

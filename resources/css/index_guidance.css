@@ -61,12 +61,6 @@
       transform: translateX(5px);
       box-shadow: 0 4px 12px rgba(43, 122, 59, 0.3);
     }
-    /* Section Title */
-    .section-title {
-      color: var(--primary-color);
-      font-weight: 700;
-      margin-bottom: 1rem;
-    }
     /* Summary Cards */
     .card-summary { color: #fff; }
     .card-students    { background-color: var(--primary-color); }

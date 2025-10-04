@@ -1,9 +1,21 @@
-# Fix Controllers to Give Right Data
+# TODO: Fix Laravel Errors
 
-## Tasks
+## Database Connection
+- [ ] Start MySQL service (net start mysql)
+- [ ] Run php artisan migrate
+- [ ] If MySQL not available, consider switching to SQLite
 
-## Completed
-- [x] Analyze the issue: Controllers filtering violations incorrectly, causing wrong counts in views
-- [x] Create plan and get approval
-- [x] Modify StudentController::violations() to pass all violations with effective_severity and escalated set instead of filtered
-- [x] Modify DisciplineController::violationsIndex() to calculate stats from the filtered major violations collection
+## Vite Assets
+- [ ] Run npm run build
+
+## Cache and Config
+- [ ] Run php artisan config:clear
+- [ ] Run php artisan cache:clear
+
+## Check Imports
+- [ ] Verify no duplicate Str imports in routes/api.php
+- [ ] Check AppServiceProvider for Route facade usage
+
+## Test Application
+- [ ] Run php artisan serve
+- [ ] Check logs for remaining errors

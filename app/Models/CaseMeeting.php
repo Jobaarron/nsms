@@ -106,6 +106,7 @@ class CaseMeeting extends Model
     {
         return match($this->status) {
             'scheduled' => ['text' => 'Scheduled', 'class' => 'badge bg-primary'],
+            'in_progress' => ['text' => 'In Progress', 'class' => 'badge bg-info'],
             'completed' => ['text' => 'Completed', 'class' => 'badge bg-success'],
             'cancelled' => ['text' => 'Cancelled', 'class' => 'badge bg-danger'],
             'forwarded' => ['text' => 'Forwarded', 'class' => 'badge bg-warning'],

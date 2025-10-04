@@ -38,7 +38,23 @@
                     </div>
                 </div>
             </div>
-            
+
+            <div class="col-xl-3 col-md-6 mb-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="flex-shrink-0 me-3">
+                            <div class="rounded-circle bg-info bg-opacity-10 p-3">
+                                <i class="ri-time-line fs-2 text-info"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold fs-4" id="in-progress-meetings">{{ $caseMeetings->where('status', 'in_progress')->count() }}</div>
+                            <div class="text-muted small">In Progress</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="col-xl-3 col-md-6 mb-3">
                 <div class="card border-0 shadow-sm h-100">
                     <div class="card-body d-flex align-items-center">
@@ -54,23 +70,7 @@
                     </div>
                 </div>
             </div>
-            
-            <div class="col-xl-3 col-md-6 mb-3">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-body d-flex align-items-center">
-                        <div class="flex-shrink-0 me-3">
-                            <div class="rounded-circle bg-info bg-opacity-10 p-3">
-                                <i class="ri-home-heart-line fs-2 text-info"></i>
-                            </div>
-                        </div>
-                        <div class="flex-grow-1">
-                            <div class="fw-bold fs-4" id="house-visits">{{ $caseMeetings->where('meeting_type', 'house_visit')->count() }}</div>
-                            <div class="text-muted small">House Visits</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
+
             <div class="col-xl-3 col-md-6 mb-3">
                 <div class="card border-0 shadow-sm h-100">
                     <div class="card-body d-flex align-items-center">
@@ -99,17 +99,10 @@
                                 <select class="form-select" id="status-filter" onchange="filterCaseMeetings()">
                                     <option value="">All Status</option>
                                     <option value="scheduled">Scheduled</option>
+                                    <option value="in_progress">In Progress</option>
                                     <option value="completed">Completed</option>
                                     <option value="cancelled">Cancelled</option>
                                     <option value="forwarded">Forwarded</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Meeting Type</label>
-                                <select class="form-select" id="type-filter" onchange="filterCaseMeetings()">
-                                    <option value="">All Types</option>
-                                    <option value="case_meeting">Case Meeting</option>
-                                    <option value="house_visit">House Visit</option>
                                 </select>
                             </div>
                             <div class="col-md-3">
@@ -159,7 +152,6 @@
                                 <thead class="table-light">
                                     <tr>
                                         <th>Student</th>
-                                        <th>Type</th>
                                         <th>Date & Time</th>
                                         <th>Location</th>
                                         <th>Status</th>
@@ -180,11 +172,6 @@
                                                     <small class="text-muted">{{ $meeting->student->student_id ?? 'N/A' }}</small>
                                                 </div>
                                             </div>
-                                        </td>
-                                        <td>
-                                            <span class="badge {{ $meeting->meeting_type === 'house_visit' ? 'bg-info' : 'bg-primary' }}">
-                                                {{ $meeting->meeting_type_display }}
-                                            </span>
                                         </td>
                                         <td>
                                             <div>{{ $meeting->scheduled_date->format('M d, Y') }}</div>
@@ -211,6 +198,9 @@
                                             <div class="btn-group btn-group-sm">
                                                 <button class="btn btn-outline-primary" onclick="viewCaseMeeting({{ $meeting->id }})" title="View Details">
                                                     <i class="ri-eye-line"></i>
+                                                </button>
+                                                <button class="btn btn-outline-primary" onclick="openScheduleMeetingModal({{ $meeting->student->id }})" title="Schedule Meeting">
+                                                    <i class="ri-calendar-event-line"></i>
                                                 </button>
                                                 @if($meeting->status === 'scheduled')
                                                     <button class="btn btn-outline-success" onclick="completeCaseMeeting({{ $meeting->id }})" title="Mark Complete">

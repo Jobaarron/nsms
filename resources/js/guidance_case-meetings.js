@@ -358,6 +358,27 @@ function showAlert(message, type = 'info') {
     }, 5000);
 }
 
+function openScheduleMeetingModal(studentId) {
+    // Open the schedule case meeting modal programmatically
+    const modalElement = document.getElementById('scheduleCaseMeetingModal');
+    if (!modalElement) return;
+
+    // Reset the form
+    const form = document.getElementById('scheduleCaseMeetingForm');
+    if (form) {
+        form.reset();
+        // Set the student select field to the given studentId
+        const studentSelect = form.querySelector('select[name="student_id"]');
+        if (studentSelect) {
+            studentSelect.value = studentId;
+        }
+    }
+
+    // Show the modal using Bootstrap's modal API
+    const modal = new bootstrap.Modal(modalElement);
+    modal.show();
+}
+
 // Expose functions to global scope for onclick handlers
 window.submitCaseMeeting = submitCaseMeeting;
 window.viewCaseMeeting = viewCaseMeeting;
@@ -370,3 +391,4 @@ window.refreshCaseMeetings = refreshCaseMeetings;
 window.exportCaseMeetings = exportCaseMeetings;
 window.printCaseMeetings = printCaseMeetings;
 window.closeModal = closeModal;
+window.openScheduleMeetingModal = openScheduleMeetingModal;

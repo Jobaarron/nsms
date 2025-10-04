@@ -275,9 +275,9 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
     // Public routes
     Route::get('/login', [App\Http\Controllers\GuidanceController::class, 'showLogin'])->name('login');
     Route::post('/login', [App\Http\Controllers\GuidanceController::class, 'login'])->name('login.submit');
-    
+
     // Protected routes
-    Route::middleware(['web'])->group(function () {
+    Route::middleware(['web', 'auth'])->group(function () {
         // Dashboard
         Route::get('/', [App\Http\Controllers\GuidanceController::class, 'dashboard'])->name('dashboard');
         
@@ -288,13 +288,25 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
         Route::prefix('case-meetings')->name('case-meetings.')->group(function () {
             Route::get('/', [App\Http\Controllers\GuidanceController::class, 'caseMeetingsIndex'])
                 ->name('index');
-            
+
+            Route::get('/{caseMeeting}', [App\Http\Controllers\GuidanceController::class, 'showCaseMeeting'])
+                ->name('show');
+
+            Route::get('/{caseMeeting}/edit', [App\Http\Controllers\GuidanceController::class, 'editCaseMeeting'])
+                ->name('edit');
+
+            Route::get('/export', [App\Http\Controllers\GuidanceController::class, 'exportCaseMeetings'])
+                ->name('export');
+
             Route::post('/', [App\Http\Controllers\GuidanceController::class, 'scheduleCaseMeeting'])
                 ->name('schedule');
-            
+
+            Route::post('/{caseMeeting}/complete', [App\Http\Controllers\GuidanceController::class, 'completeCaseMeeting'])
+                ->name('complete');
+
             Route::post('/{caseMeeting}/summary', [App\Http\Controllers\GuidanceController::class, 'createCaseSummary'])
                 ->name('summary');
-            
+
             Route::post('/{caseMeeting}/forward', [App\Http\Controllers\GuidanceController::class, 'forwardToPresident'])
                 ->name('forward');
         });
