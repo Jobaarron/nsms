@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('sanctions', function (Blueprint $table) {
-            $table->string('major_category')->after('category');
+            $table->string('major_category')->nullable()->change();
         });
     }
 
@@ -22,7 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('sanctions', function (Blueprint $table) {
-            $table->dropColumn('major_category');
+            $table->string('major_category')->nullable(false)->change();
         });
     }
 };

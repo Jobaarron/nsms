@@ -55,7 +55,7 @@ class SanctionsSeeder extends Seeder
             [
                 'severity' => 'major',
                 'category' => null,
-                'major_category' => null,
+                'major_category' => '1',
                 'offense_number' => 1,
                 'sanction' => 'One step lower in the Deportment Grade, Community Service',
                 'deportment_grade_action' => 'Lowered by one step',
@@ -67,7 +67,7 @@ class SanctionsSeeder extends Seeder
             [
                 'severity' => 'major',
                 'category' => null,
-                'major_category' => null,
+                'major_category' => '1',
                 'offense_number' => 2,
                 'sanction' => 'Needs Improvement in Deportment, 3-5 days suspension, Community Service',
                 'deportment_grade_action' => 'Needs Improvement (NI)',
@@ -79,7 +79,7 @@ class SanctionsSeeder extends Seeder
             [
                 'severity' => 'major',
                 'category' => null,
-                'major_category' => null,
+                'major_category' => '1',
                 'offense_number' => 3,
                 'sanction' => 'Needs Improvement in Deportment, Dismissal or Expulsion',
                 'deportment_grade_action' => 'Needs Improvement (NI)',

@@ -28,10 +28,12 @@ class DatabaseSeeder extends Seeder
             FeesTableSeeder::class,
             SubjectSeeder::class,
             // RegistrarSeeder::class,
-            
-            
+
+
             TestStudentSeeder::class, // Added test student data for login testing
             // EnrolleeSeeder::class, // Added enrollee test data
+            SanctionsSeeder::class,
+            ViolationListSeeder::class,
         ]);
     }
 }

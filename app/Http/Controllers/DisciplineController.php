@@ -206,7 +206,7 @@ class DisciplineController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'severity' => 'required|in:minor,major,severe',
-            'major_category' => 'nullable|string',
+            'major_category' => 'nullable|string|required_if:severity,major',
             'violation_date' => 'required|date',
             'violation_time' => 'nullable',
             'status' => 'nullable|in:pending,investigating,resolved,dismissed',
