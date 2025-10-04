@@ -53,18 +53,38 @@ class StudentController extends Controller
     public function violations()
     {
         $student = Auth::guard('student')->user();
-        
+
         if (!$student) {
             return redirect()->route('student.login');
         }
-        
+
         // Get all violations for the current student, ordered by most recent first
         $violations = Violation::where('student_id', $student->id)
             ->with(['reportedBy', 'resolvedBy']) // Load relationships if needed
             ->orderBy('violation_date', 'desc')
             ->orderBy('created_at', 'desc')
             ->get();
-        
+
+        // Calculate effective severity (3 minor violations = major)
+        $minorCount = 0;
+        foreach ($violations as $violation) {
+            if ($violation->severity === 'minor') {
+                $minorCount++;
+                // If this is the 3rd or higher minor violation, mark as escalated
+                if ($minorCount >= 3) {
+                    $violation->effective_severity = 'major';
+                    $violation->escalated = true;
+                    $violation->escalation_reason = '3rd minor offense - treated as major';
+                } else {
+                    $violation->effective_severity = 'minor';
+                    $violation->escalated = false;
+                }
+            } else {
+                $violation->effective_severity = $violation->severity;
+                $violation->escalated = false;
+            }
+        }
+
         return view('student.violations', compact('student', 'violations'));
     }
 
