@@ -168,7 +168,7 @@ function showCaseMeetingModal(meeting) {
                         </div>
                     </div>
                     <div class="modal-footer">
-                        ${meeting.status === 'scheduled' ? `
+                        ${['scheduled', 'in_progress'].includes(meeting.status) ? `
                             <button type="button" class="btn btn-success" onclick="completeCaseMeeting(${meeting.id}); closeModal('viewCaseMeetingModal');">
                                 <i class="ri-check-line me-2"></i>Mark Complete
                             </button>
