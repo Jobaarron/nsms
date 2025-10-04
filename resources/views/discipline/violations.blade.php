@@ -46,7 +46,7 @@
           <div class="card-body text-center">
             <i class="ri-loader-4-line display-6 mb-2"></i>
             <div>In Progress</div>
-            <h3>{{ $stats['in_progress'] ?? 0 }}</h3>
+            <h3>{{ $stats['investigating'] ?? 0 }}</h3>
           </div>
         </div>
       </div>
@@ -121,12 +121,12 @@
                 <td>
                   @if($violation->status === 'pending')
                     <span class="badge bg-warning text-dark">Pending</span>
-                  @elseif($violation->status === 'in_progress')
+                  @elseif($violation->status === 'investigating')
                     <span class="badge bg-info text-dark">In Progress</span>
                   @elseif($violation->status === 'resolved')
                     <span class="badge bg-success">Resolved</span>
                   @else
-                    <span class="badge bg-secondary">Unknown</span>
+                    <span class="badge bg-secondary">{{ ucfirst($violation->status) }}</span>
                   @endif
                 </td>
                 <td>
@@ -140,6 +140,11 @@
                             onclick="editViolation({{ $violation->id }})"
                             title="Edit">
                       <i class="ri-edit-line"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-info"
+                            onclick="forwardViolation({{ $violation->id }})"
+                            title="Forward to Case Meeting">
+                      <i class="ri-send-plane-line"></i>
                     </button>
                     <button type="button" class="btn btn-sm btn-outline-danger"
                             onclick="deleteViolation({{ $violation->id }})"

@@ -260,8 +260,12 @@ Route::prefix('discipline')->name('discipline.')->group(function () {
             Route::put('/{violation}', [App\Http\Controllers\DisciplineController::class, 'updateViolation'])
                 ->name('update');
 
-            Route::delete('/{violation}', [App\Http\Controllers\DisciplineController::class, 'destroyViolation'])
-                ->name('destroy');
+        Route::delete('/{violation}', [App\Http\Controllers\DisciplineController::class, 'destroyViolation'])
+            ->name('destroy');
+
+        // Forward violation to case meeting
+        Route::post('/{violation}/forward', [App\Http\Controllers\DisciplineController::class, 'forwardViolation'])
+            ->name('forward');
         });
     });
 });

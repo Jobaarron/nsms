@@ -10,6 +10,8 @@ use App\Models\User;
 use App\Models\Student;
 use App\Models\Violation;
 use App\Models\ViolationList;
+use App\Models\CaseMeeting;
+use App\Models\Guidance;
 use Illuminate\Support\Facades\Storage;
 
 class DisciplineController extends Controller
@@ -429,6 +431,63 @@ class DisciplineController extends Controller
 
             return redirect()->route('discipline.violations.index')
                 ->with('error', 'Failed to delete violation.');
+        }
+    }
+
+    /**
+     * Forward violation to case meeting
+     */
+    public function forwardViolation(Request $request, Violation $violation)
+    {
+        try {
+            // Check if violation is already forwarded/investigating
+            if ($violation->status === 'investigating') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Violation has already been forwarded.'
+                ], 400);
+            }
+
+            // Get an active guidance counselor to assign the case meeting
+            $guidanceCounselor = Guidance::active()->counselors()->first();
+
+            if (!$guidanceCounselor) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No available guidance counselor to assign the case meeting.'
+                ], 400);
+            }
+
+            // Create case meeting
+            $caseMeeting = CaseMeeting::create([
+                'student_id' => $violation->student_id,
+                'counselor_id' => $guidanceCounselor->id,
+                'meeting_type' => 'case_meeting',
+                'scheduled_date' => now()->addDays(7)->toDateString(), // Schedule for next week
+                'scheduled_time' => '09:00:00', // Default morning time
+                'location' => 'Guidance Office',
+                'reason' => 'Violation: ' . $violation->title . ' - ' . $violation->description,
+                'notes' => 'Forwarded from Discipline Office. Violation ID: ' . $violation->id . '. Severity: ' . $violation->severity,
+                'status' => 'scheduled',
+            ]);
+
+            // Update violation status to in progress (investigating)
+            $violation->update([
+                'status' => 'investigating',
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Violation forwarded to case meeting successfully. Case meeting scheduled for ' . $caseMeeting->scheduled_date->format('M d, Y') . ' at ' . $caseMeeting->scheduled_time->format('H:i') . '.',
+                'case_meeting_id' => $caseMeeting->id,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error forwarding violation: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to forward violation: ' . $e->getMessage()
+            ], 500);
         }
     }
 

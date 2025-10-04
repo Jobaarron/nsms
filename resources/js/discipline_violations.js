@@ -272,10 +272,11 @@ function setupEnhancedViolationSubmission() {
                 formData.append('status', 'pending');
 
                 const csrfTokenEl = document.querySelector('meta[name="csrf-token"]');
+                formData.append('_token', csrfTokenEl.getAttribute('content'));
+
                 const response = await fetch('/discipline/violations', {
                     method: 'POST',
                     headers: {
-                        'X-CSRF-TOKEN': csrfTokenEl.getAttribute('content'),
                         'Accept': 'application/json'
                     },
                     body: formData
@@ -508,7 +509,7 @@ window.editViolation = function(violationId) {
     <label class="form-label fw-bold small">Status</label>
     <select class="form-select form-select-sm" id="edit_status" name="status" required disabled>
         <option value="pending" ${violation.status === 'pending' ? 'selected' : ''}>Pending</option>
-        <option value="in progress" ${violation.status === 'in progress' ? 'selected' : ''}>In Progress</option>
+                <option value="investigating" ${violation.status === 'investigating' ? 'selected' : ''}>In Progress</option>
         <option value="resolved" ${violation.status === 'resolved' ? 'selected' : ''}>Resolved</option>
     </select>
     <small class="text-muted">Status cannot be changed.</small>
@@ -1333,6 +1334,105 @@ window.updateViolationRow = function(violationId, violation) {
     });
   }
 
+// Forward violation to case meeting
+window.forwardViolation = function(violationId) {
+    if (confirm('Are you sure you want to forward this violation to case meeting?')) {
+      // Show loading state
+      const button = event.target.closest('button');
+      const originalHTML = button.innerHTML;
+      button.innerHTML = '<i class="ri-loader-line spinner-border spinner-border-sm"></i>';
+      button.disabled = true;
+
+      // Use AJAX to forward violation
+      fetch(`/discipline/violations/${violationId}/forward`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+          '_token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        })
+      })
+      .then(response => {
+        if (response.ok) {
+          return response.json();
+        } else {
+          throw new Error('Forward failed with status: ' + response.status);
+        }
+      })
+      .then(data => {
+        if (data.success) {
+          // Update the violation status to "in progress" in the table
+          const rows = document.querySelectorAll('#violationsTable tbody tr');
+          rows.forEach(row => {
+            const idCell = row.cells[0];
+            if (idCell && idCell.textContent.includes('#' + violationId)) {
+              // Update status cell to "In Progress"
+              const statusCell = row.cells[6];
+              if (statusCell) {
+                statusCell.innerHTML = `<span class="badge bg-info">In Progress</span>`;
+              }
+
+              // Add visual feedback
+              row.style.backgroundColor = '#d1ecf1';
+              setTimeout(() => {
+                row.style.backgroundColor = '';
+              }, 2000);
+            }
+          });
+
+          // Show success message
+          const alertDiv = document.createElement('div');
+          alertDiv.className = 'alert alert-success alert-dismissible fade show';
+          alertDiv.innerHTML = `
+            <strong>Success!</strong> ${data.message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          `;
+
+          const mainContent = document.querySelector('main');
+          mainContent.insertBefore(alertDiv, mainContent.firstChild);
+
+          // Auto-dismiss after 3 seconds
+          setTimeout(() => {
+            if (alertDiv.parentNode) {
+              alertDiv.remove();
+            }
+          }, 3000);
+        } else {
+          throw new Error(data.message || 'Forward failed');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+
+        // Restore button state
+        button.innerHTML = originalHTML;
+        button.disabled = false;
+
+        // Show error message
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+        alertDiv.innerHTML = `
+          <strong>Error!</strong> Failed to forward violation: ${error.message}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+
+        const mainContent = document.querySelector('main');
+        mainContent.insertBefore(alertDiv, mainContent.firstChild);
+
+        // Auto dismiss after 5 seconds
+        setTimeout(() => {
+          if (alertDiv.parentNode) {
+            alertDiv.remove();
+          }
+        }, 5000);
+      });
+    }
+  }
+
   // Comprehensive modal management system
   window.ModalManager = {
     activeModals: new Set(),
@@ -1873,15 +1973,9 @@ function showIncidentForm() {
 
 
 
-                // Add CSRF
+                // Add CSRF token to FormData
                 const csrfTokenEl = document.querySelector('meta[name="csrf-token"]');
-                if (!violationForm.querySelector('input[name="_token"]')) {
-                    const tokenInput = document.createElement('input');
-                    tokenInput.type = 'hidden';
-                    tokenInput.name = '_token';
-                    tokenInput.value = csrfTokenEl.getAttribute('content');
-                    violationForm.appendChild(tokenInput);
-                }
+                formData.append('_token', csrfTokenEl.getAttribute('content'));
 
                 // Ensure title is set
                 getViolationTitle();
@@ -1889,7 +1983,6 @@ function showIncidentForm() {
                 const response = await fetch('/discipline/violations', {
                     method: 'POST',
                     headers: {
-                        'X-CSRF-TOKEN': csrfTokenEl.getAttribute('content'),
                         'Accept': 'application/json'
                     },
                     body: formData
