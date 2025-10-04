@@ -220,6 +220,12 @@ class GuidanceController extends Controller
 
         $caseMeeting = CaseMeeting::create($validatedData);
 
+        // Update student's case meeting status
+        $student = Student::find($validatedData['student_id']);
+        if ($student) {
+            $student->update(['case_meeting_status' => 'scheduled']);
+        }
+
         \Log::info('Schedule Case Meeting: Success', [
             'user_id' => $user->id,
             'case_meeting_id' => $caseMeeting->id,
@@ -258,6 +264,11 @@ class GuidanceController extends Controller
             'status' => 'completed',
             'completed_at' => now(),
         ]);
+
+        // Update student's case meeting status
+        if ($caseMeeting->student) {
+            $caseMeeting->student->update(['case_meeting_status' => 'completed']);
+        }
 
         if ($request->ajax()) {
             return response()->json([
@@ -451,6 +462,11 @@ class GuidanceController extends Controller
             'forwarded_at' => now(),
             'status' => 'in_progress',
         ]);
+
+        // Update student's case meeting status
+        if ($caseMeeting->student) {
+            $caseMeeting->student->update(['case_meeting_status' => 'in_progress']);
+        }
 
         if ($request->ajax()) {
             return response()->json([
