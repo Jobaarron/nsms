@@ -198,6 +198,23 @@ class GuidanceController extends Controller
             return back()->withErrors(['error' => 'Your guidance account is inactive. Please contact an administrator.']);
         }
 
+        // Check for duplicate meeting
+        $existingMeeting = CaseMeeting::where('student_id', $validatedData['student_id'])
+            ->where('scheduled_date', $validatedData['scheduled_date'])
+            ->where('scheduled_time', $validatedData['scheduled_time'])
+            ->first();
+
+        if ($existingMeeting) {
+            $message = 'A meeting for this student at the specified date and time already exists.';
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $message,
+                ], 409);
+            }
+            return back()->withErrors(['error' => $message]);
+        }
+
         $validatedData['counselor_id'] = $guidanceRecord->id;
         $validatedData['status'] = 'scheduled';
 
