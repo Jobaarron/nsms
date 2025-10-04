@@ -202,7 +202,7 @@
                                                 <button class="btn btn-outline-primary" onclick="openScheduleMeetingModal({{ $meeting->student->id }})" title="Schedule Meeting">
                                                     <i class="ri-calendar-event-line"></i>
                                                 </button>
-                                                @if($meeting->status === 'scheduled')
+                                                @if(in_array($meeting->status, ['scheduled', 'in_progress']))
                                                     <button class="btn btn-outline-success" onclick="completeCaseMeeting({{ $meeting->id }})" title="Mark Complete">
                                                         <i class="ri-check-line"></i>
                                                     </button>
