@@ -31,10 +31,10 @@
                 </div>
                 
                 <!-- User Info -->
-                <div class="user-info">
+                {{-- <div class="user-info">
                     <div class="user-name">{{ Auth::user()->discipline->full_name ?? Auth::user()->name ?? 'Discipline Staff' }}</div>
                     <div class="user-role">Discipline Portal</div>
-                </div>
+                </div> --}}
                 
                 <!-- Navigation -->
                 <ul class="nav flex-column">

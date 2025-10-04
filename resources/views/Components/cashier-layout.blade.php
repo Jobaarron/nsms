@@ -60,7 +60,7 @@
         </div>
         
         <!-- User Info -->
-        <div class="user-info mb-4 p-3 bg-light rounded">
+        {{-- <div class="user-info mb-4 p-3 bg-light rounded">
           <div class="d-flex align-items-center">
             <div class="avatar-circle me-3">
               <i class="ri-money-dollar-circle-line"></i>
@@ -70,7 +70,7 @@
               <small class="text-muted">{{ Auth::guard('cashier')->user()->employee_id ?? 'ID: N/A' }}</small>
             </div>
           </div>
-        </div>
+        </div> --}}
 
         <ul class="nav flex-column">
           <li class="nav-item mb-2">
@@ -103,11 +103,11 @@
             </a>
           </li>
           
-          <li class="nav-item mb-2">
+          {{-- <li class="nav-item mb-2">
             <a class="nav-link {{ request()->routeIs('cashier.reports') ? 'active' : '' }}" href="{{ route('cashier.reports') }}">
               <i class="ri-bar-chart-line me-2"></i>Reports
             </a>
-          </li>
+          </li> --}}
          
         </ul>
         

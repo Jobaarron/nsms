@@ -2,6 +2,8 @@
     @push('styles')
         @vite('resources/css/index_student.css')
     @endpush
+    @vite(['resources/js/cashier-payment-schedules.js'])
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <!-- Page Header -->
     <div class="row mb-4">
@@ -47,7 +49,10 @@
                                 <tbody>
                                     @foreach($payments as $payment)
                                         @php
-                                            $daysOverdue = now()->diffInDays($payment->created_at);
+                                            $scheduledDate = \Carbon\Carbon::parse($payment->scheduled_date);
+                                            $today = \Carbon\Carbon::today();
+                                            $daysOverdue = $today->diffInDays($scheduledDate, false); // false = don't get absolute value
+                                            $daysOverdue = $daysOverdue < 0 ? abs($daysOverdue) : 0; // Only show positive overdue days
                                             $priorityClass = $daysOverdue > 7 ? 'danger' : ($daysOverdue > 3 ? 'warning' : 'info');
                                         @endphp
                                         <tr>
@@ -93,7 +98,11 @@
                                             </td>
                                             <td>
                                                 <span class="text-{{ $priorityClass }}">
-                                                    {{ $daysOverdue }} days
+                                                    @if($daysOverdue > 0)
+                                                        {{ $daysOverdue }} days overdue
+                                                    @else
+                                                        Due today
+                                                    @endif
                                                 </span>
                                             </td>
                                             <td>
@@ -236,14 +245,17 @@
 
             function displayPaymentDetails(payment) {
                 const content = document.getElementById('paymentDetailsContent');
-                const daysOverdue = Math.floor((new Date() - new Date(payment.created_at)) / (1000 * 60 * 60 * 24));
+                const today = new Date();
+                const scheduledDate = new Date(payment.scheduled_date);
+                const diffTime = today - scheduledDate;
+                const daysOverdue = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24))); // Only positive overdue days
                 const priorityClass = daysOverdue > 7 ? 'danger' : (daysOverdue > 3 ? 'warning' : 'info');
                 
                 content.innerHTML = `
                     <div class="alert alert-${priorityClass}">
                         <i class="ri-alarm-warning-line me-2"></i>
                         <strong>Priority:</strong> ${daysOverdue > 7 ? 'Critical' : (daysOverdue > 3 ? 'High' : 'Medium')} 
-                        (${daysOverdue} days overdue)
+                        ${daysOverdue > 0 ? `(${daysOverdue} days overdue)` : '(Due today)'}
                     </div>
                     <div class="row">
                         <div class="col-md-6">

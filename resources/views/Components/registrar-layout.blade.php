@@ -42,10 +42,10 @@
         </div>
         
         <!-- User Info -->
-        <div class="user-info">
+        {{-- <div class="user-info">
           <div class="user-name">{{ auth('registrar')->user()->name ?? 'Registrar' }}</div>
           <div class="user-role">Registrar</div>
-        </div>
+        </div> --}}
 
         <ul class="nav flex-column">
           <li class="nav-item mb-2">

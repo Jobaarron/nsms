@@ -13,6 +13,7 @@ use App\Models\FaceRegistration;
 use Illuminate\Support\Facades\Log;
 use App\Models\Subject;
 use App\Models\Fee;
+use App\Models\Payment;
 use Illuminate\Support\Facades\DB;
 
 class StudentController extends Controller
@@ -56,18 +57,44 @@ class StudentController extends Controller
     public function violations()
     {
         $student = Auth::guard('student')->user();
-        
+
         if (!$student) {
             return redirect()->route('student.login');
         }
-        
+
         // Get all violations for the current student, ordered by most recent first
         $violations = Violation::where('student_id', $student->id)
             ->with(['reportedBy', 'resolvedBy']) // Load relationships if needed
             ->orderBy('violation_date', 'desc')
             ->orderBy('created_at', 'desc')
             ->get();
-        
+
+        // Set effective_severity and escalated for all violations
+        // Group minor violations by title to count occurrences
+        $minorCountsByTitle = [];
+        foreach ($violations as $violation) {
+            if ($violation->severity === 'minor') {
+                $minorCountsByTitle[$violation->title] = ($minorCountsByTitle[$violation->title] ?? 0) + 1;
+            }
+        }
+
+        foreach ($violations as $violation) {
+            if ($violation->severity === 'minor') {
+                $countForTitle = $minorCountsByTitle[$violation->title] ?? 0;
+                if ($countForTitle >= 3) {
+                    $violation->effective_severity = 'major';
+                    $violation->escalated = true;
+                    $violation->escalation_reason = '3rd minor offense - treated as major';
+                } else {
+                    $violation->effective_severity = 'minor';
+                    $violation->escalated = false;
+                }
+            } elseif ($violation->severity === 'major' || $violation->severity === 'severe') {
+                $violation->effective_severity = $violation->severity;
+                $violation->escalated = false;
+            }
+        }
+
         return view('student.violations', compact('student', 'violations'));
     }
 
@@ -232,7 +259,39 @@ class StudentController extends Controller
             return redirect()->route('student.login');
         }
         
-        return view('student.payments', compact('student'));
+        // Get all payment records for this student
+        $paymentSchedules = Payment::where('payable_type', Student::class)
+            ->where('payable_id', $student->id)
+            ->orderBy('scheduled_date', 'asc')
+            ->get();
+        
+        // Get payment history (confirmed payments)
+        $paymentHistory = Payment::where('payable_type', Student::class)
+            ->where('payable_id', $student->id)
+            ->where('confirmation_status', 'confirmed')
+            ->orderBy('confirmed_at', 'desc')
+            ->get();
+        
+        // Calculate fee breakdown and totals
+        $feeCalculation = Fee::calculateTotalFeesForGrade($student->grade_level);
+        $totalFeesAmount = $feeCalculation['total_amount'];
+        
+        // Calculate total paid (confirmed payments)
+        $totalPaid = $paymentHistory->sum('amount_received') ?: $paymentHistory->sum('amount');
+        
+        // Calculate balance due
+        $balanceDue = $totalFeesAmount - $totalPaid;
+        
+        // Update student totals if they don't match
+        if ($student->total_fees_due != $totalFeesAmount || $student->total_paid != $totalPaid) {
+            $student->update([
+                'total_fees_due' => $totalFeesAmount,
+                'total_paid' => $totalPaid,
+                'is_paid' => $balanceDue <= 0
+            ]);
+        }
+        
+        return view('student.payments', compact('student', 'paymentSchedules', 'paymentHistory', 'totalFeesAmount', 'totalPaid', 'balanceDue'));
     }
 
     public function updatePaymentMode(Request $request)

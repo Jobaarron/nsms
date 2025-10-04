@@ -32,8 +32,8 @@
                             <i class="ri-money-dollar-circle-line fs-2"></i>
                         </div>
                         <div class="flex-grow-1">
-                            <h3 class="fw-bold fs-4 mb-0">₱{{ number_format($student->total_paid ?? 0, 2) }}</h3>
-                            <small class="text-white-50">Total Paid</small>
+                            <h3 class="fw-bold fs-4 mb-0 text-white">₱{{ number_format($totalPaid, 2) }}</h3>
+                            <small class="text-white">Total Paid</small>
                         </div>
                     </div>
                 </div>
@@ -45,11 +45,8 @@
                             <i class="ri-money-dollar-box-line fs-2"></i>
                         </div>
                         <div class="flex-grow-1">
-                            @php
-                                $balance = ($student->total_fees_due ?? 0) - ($student->total_paid ?? 0);
-                            @endphp
-                            <h3 class="fw-bold fs-4 mb-0">₱{{ number_format($balance, 2) }}</h3>
-                            <small class="text-white-50">Balance Due</small>
+                            <h3 class="fw-bold fs-4 mb-0 text-white">₱{{ number_format($balanceDue, 2) }}</h3>
+                            <small class="text-white">Balance Due</small>
                         </div>
                     </div>
                 </div>
@@ -61,8 +58,8 @@
                             <i class="ri-bill-line fs-2"></i>
                         </div>
                         <div class="flex-grow-1">
-                            <h3 class="fw-bold fs-4 mb-0">₱{{ number_format($student->total_fees_due ?? 0, 2) }}</h3>
-                            <small class="text-white-50">Total Fees</small>
+                            <h3 class="fw-bold fs-4 mb-0 text-white">₱{{ number_format($totalFeesAmount, 2) }}</h3>
+                            <small class="text-white">Total Fees</small>
                         </div>
                     </div>
                 </div>
@@ -74,8 +71,8 @@
                             <i class="ri-calendar-line fs-2"></i>
                         </div>
                         <div class="flex-grow-1">
-                            <h3 class="fw-bold fs-4 mb-0">{{ ucfirst($student->payment_mode ?? 'Not Set') }}</h3>
-                            <small class="opacity-75">Payment Mode</small>
+                            <h3 class="fw-bold fs-4 mb-0 text-white">{{ ucfirst($student->payment_mode ?? 'Not Set') }}</h3>
+                            <small class="text-white">Payment Mode</small>
                         </div>
                     </div>
                 </div>
@@ -86,7 +83,7 @@
             <!-- Left Column -->
             <div class="col-lg-8">
                 <!-- Payment Schedule -->
-                @if($student->payment_mode && $student->total_fees_due > 0)
+                @if($paymentSchedules->count() > 0)
                     <div class="card border-0 shadow-sm mb-4">
                         <div class="card-header bg-white border-0 pb-0">
                             <div class="d-flex justify-content-between align-items-center">
@@ -97,34 +94,12 @@
                             </div>
                         </div>
                         <div class="card-body">
-                            @php
-                                $totalAmount = $student->total_fees_due;
-                                $paymentSchedule = [];
-                                
-                                switch($student->payment_mode) {
-                                    case 'full':
-                                        $paymentSchedule = [
-                                            ['period' => 'Full Payment', 'amount' => $totalAmount, 'due_date' => 'Upon Enrollment', 'status' => $student->is_paid ? 'paid' : 'pending']
-                                        ];
-                                        break;
-                                    case 'quarterly':
-                                        $quarterlyAmount = $totalAmount / 4;
-                                        $paymentSchedule = [
-                                            ['period' => '1st Quarter', 'amount' => $quarterlyAmount, 'due_date' => 'August 2024', 'status' => 'pending'],
-                                            ['period' => '2nd Quarter', 'amount' => $quarterlyAmount, 'due_date' => 'November 2024', 'status' => 'pending'],
-                                            ['period' => '3rd Quarter', 'amount' => $quarterlyAmount, 'due_date' => 'February 2025', 'status' => 'pending'],
-                                            ['period' => '4th Quarter', 'amount' => $quarterlyAmount, 'due_date' => 'May 2025', 'status' => 'pending']
-                                        ];
-                                        break;
-                                    case 'monthly':
-                                        $monthlyAmount = $totalAmount / 10;
-                                        $months = ['August', 'September', 'October', 'November', 'December', 'January', 'February', 'March', 'April', 'May'];
-                                        foreach($months as $month) {
-                                            $paymentSchedule[] = ['period' => $month, 'amount' => $monthlyAmount, 'due_date' => $month . ' 2024/2025', 'status' => 'pending'];
-                                        }
-                                        break;
-                                }
-                            @endphp
+                            @if($paymentSchedules->count() > 0)
+                                <div class="alert alert-info mb-3">
+                                    <i class="ri-information-line me-2"></i>
+                                    <strong>Payment Schedule Status:</strong> Your payment schedule has been submitted and is being processed by the cashier.
+                                </div>
+                            @endif
                             
                             <div class="table-responsive">
                                 <table class="table table-hover">
@@ -132,41 +107,67 @@
                                         <tr>
                                             <th>Payment Period</th>
                                             <th>Amount</th>
-                                            <th>Due Date</th>
-                                            <th>Status</th>
-                                            <th>Action</th>
+                                            <th>Scheduled Date</th>
+                                            <th>Payment Status</th>
+                                            <th>Cashier Status</th>
+                                            <th>Transaction ID</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @foreach($paymentSchedule as $index => $payment)
+                                        @foreach($paymentSchedules as $payment)
                                             <tr>
-                                                <td class="fw-semibold">{{ $payment['period'] }}</td>
-                                                <td class="fw-bold text-primary">₱{{ number_format($payment['amount'], 2) }}</td>
-                                                <td>{{ $payment['due_date'] }}</td>
+                                                <td class="fw-semibold">{{ $payment->period_name }}</td>
+                                                <td class="fw-bold text-primary">₱{{ number_format($payment->amount, 2) }}</td>
+                                                <td>{{ $payment->scheduled_date ? $payment->scheduled_date->format('M d, Y') : 'Not Set' }}</td>
                                                 <td>
-                                                    @if($payment['status'] === 'paid')
+                                                    @if($payment->status === 'paid')
                                                         <span class="badge bg-success">Paid</span>
-                                                    @elseif($payment['status'] === 'overdue')
-                                                        <span class="badge bg-danger">Overdue</span>
                                                     @else
                                                         <span class="badge bg-warning">Pending</span>
                                                     @endif
                                                 </td>
                                                 <td>
-                                                    @if($payment['status'] === 'paid')
-                                                        <button class="btn btn-outline-success btn-sm" disabled>
-                                                            <i class="ri-check-line me-1"></i>Paid
-                                                        </button>
+                                                    @if($payment->confirmation_status === 'confirmed')
+                                                        <span class="badge bg-success">
+                                                            <i class="ri-check-line me-1"></i>Confirmed
+                                                        </span>
+                                                    @elseif($payment->confirmation_status === 'rejected')
+                                                        <span class="badge bg-danger">
+                                                            <i class="ri-close-line me-1"></i>Rejected
+                                                        </span>
                                                     @else
-                                                        <button class="btn btn-primary btn-sm" onclick="makePayment({{ $index }}, '{{ $payment['period'] }}', {{ $payment['amount'] }})">
-                                                            <i class="ri-money-dollar-circle-line me-1"></i>Pay Now
-                                                        </button>
+                                                        <span class="badge bg-warning">
+                                                            <i class="ri-time-line me-1"></i>Pending Review
+                                                        </span>
                                                     @endif
+                                                </td>
+                                                <td>
+                                                    <small class="font-monospace text-muted">{{ $payment->transaction_id }}</small>
                                                 </td>
                                             </tr>
                                         @endforeach
                                     </tbody>
                                 </table>
+                            </div>
+                        </div>
+                    </div>
+                @else
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-white border-0 pb-0">
+                            <h5 class="card-title mb-0">
+                                <i class="ri-calendar-check-line me-2"></i>Payment Schedule
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="text-center py-5">
+                                <i class="ri-calendar-line fs-1 text-muted mb-3"></i>
+                                <h6 class="text-muted">No Payment Schedule</h6>
+                                <p class="text-muted small">You haven't submitted a payment schedule yet.</p>
+                                @if($student->enrollment_status === 'pre_registered')
+                                    <a href="{{ route('student.enrollment') }}" class="btn btn-primary">
+                                        <i class="ri-send-plane-line me-2"></i>Submit Payment Schedule
+                                    </a>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -180,24 +181,7 @@
                         </h5>
                     </div>
                     <div class="card-body">
-                        @php
-                            // Mock payment history - in real implementation, this would come from payments table
-                            $paymentHistory = [];
-                            if($student->is_paid) {
-                                $paymentHistory = [
-                                    [
-                                        'id' => 'PAY-001',
-                                        'date' => now()->subDays(5),
-                                        'amount' => $student->total_paid ?? 0,
-                                        'method' => 'Cash',
-                                        'reference' => 'CASH-' . now()->format('Ymd') . '-001',
-                                        'status' => 'completed'
-                                    ]
-                                ];
-                            }
-                        @endphp
-                        
-                        @if(count($paymentHistory) > 0)
+                        @if(isset($paymentHistory) && $paymentHistory->count() > 0)
                             <div class="table-responsive">
                                 <table class="table table-hover">
                                     <thead>
@@ -213,13 +197,15 @@
                                     <tbody>
                                         @foreach($paymentHistory as $payment)
                                             <tr>
-                                                <td class="fw-semibold">{{ $payment['id'] }}</td>
-                                                <td>{{ $payment['date']->format('M d, Y') }}</td>
-                                                <td class="fw-bold text-success">₱{{ number_format($payment['amount'], 2) }}</td>
-                                                <td>{{ $payment['method'] }}</td>
-                                                <td class="font-monospace">{{ $payment['reference'] }}</td>
+                                                <td class="fw-semibold">{{ $payment->transaction_id }}</td>
+                                                <td>{{ $payment->confirmed_at ? $payment->confirmed_at->format('M d, Y') : 'N/A' }}</td>
+                                                <td class="fw-bold text-success">₱{{ number_format($payment->amount_received ?: $payment->amount, 2) }}</td>
+                                                <td>{{ ucfirst(str_replace('_', ' ', $payment->payment_method)) }}</td>
+                                                <td class="font-monospace">{{ $payment->reference_number ?: 'N/A' }}</td>
                                                 <td>
-                                                    <span class="badge bg-success">{{ ucfirst($payment['status']) }}</span>
+                                                    <span class="badge bg-success">
+                                                        <i class="ri-check-line me-1"></i>Completed
+                                                    </span>
                                                 </td>
                                             </tr>
                                         @endforeach
@@ -280,11 +266,11 @@
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <span class="text-muted">Paid:</span>
-                                    <span class="fw-semibold text-success">₱{{ number_format($student->total_paid ?? 0, 2) }}</span>
+                                    <span class="fw-semibold text-success">₱{{ number_format($totalPaid, 2) }}</span>
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center">
                                     <span class="text-muted">Balance:</span>
-                                    <span class="fw-bold text-{{ $balance > 0 ? 'danger' : 'success' }}">₱{{ number_format($balance, 2) }}</span>
+                                    <span class="fw-bold text-{{ $balanceDue > 0 ? 'danger' : 'success' }}">₱{{ number_format($balanceDue, 2) }}</span>
                                 </div>
                             </div>
                         @else
@@ -301,7 +287,7 @@
                 <div class="card border-0 shadow-sm mb-4">
                     <div class="card-header bg-white border-0 pb-0">
                         <h6 class="card-title mb-0">
-                            <i class="ri-bank-card-line me-2"></i>Payment Methods
+                            <i class="ri-bank-card-line me-2"></i>Payment Mode
                         </h6>
                     </div>
                     <div class="card-body">

@@ -2,6 +2,8 @@
     @push('styles')
         @vite('resources/css/index_student.css')
     @endpush
+    @vite(['resources/js/cashier-payment-schedules.js'])
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <!-- Page Header -->
     <div class="row mb-4">
@@ -91,9 +93,9 @@
                         <h5 class="card-title mb-0">
                             <i class="ri-history-line me-2"></i>Payment Records
                         </h5>
-                        <button class="btn btn-outline-success btn-sm" onclick="exportPaymentHistory()">
+                        {{-- <button class="btn btn-outline-success btn-sm" onclick="exportPaymentHistory()">
                             <i class="ri-download-line me-2"></i>Export All
-                        </button>
+                        </button> --}}
                     </div>
                 </div>
                 <div class="card-body">

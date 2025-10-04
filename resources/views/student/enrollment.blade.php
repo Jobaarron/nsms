@@ -1,4 +1,7 @@
 <x-student-layout>
+    @vite(['resources/js/student-enrollment.js'])
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <div class="container-fluid px-4 py-4">
     @push('styles')
         @vite('resources/css/index_student.css')
     @endpush
@@ -179,6 +182,211 @@
                             @enderror
                         </div>
                     </div>
+
+                    <!-- Payment Schedule & Amount -->
+                    <div class="card border-0 shadow-sm mb-4" id="payment-schedule-card" style="display: none;">
+                        <div class="card-header bg-white border-0 pb-0">
+                            <h5 class="card-title mb-0">
+                                <i class="ri-calendar-schedule-line me-2"></i>Payment Schedule & Amount
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <!-- Payment Breakdown Display -->
+                            <div id="payment-breakdown-container">
+                                <!-- Full Payment Breakdown -->
+                                <div id="full-payment-breakdown" class="payment-breakdown" style="display: none;">
+                                    <h6 class="fw-bold text-success mb-3">
+                                        <i class="ri-money-dollar-circle-line me-2"></i>Full Payment Breakdown
+                                    </h6>
+                                    <div class="alert alert-success">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span><strong>Total Amount Due:</strong></span>
+                                            <span class="fw-bold">₱<span id="full-total-amount">0.00</span></span>
+                                        </div>
+                                        <small class="text-muted">Pay the entire amount at once with no additional fees</small>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Payment Date</label>
+                                            <input type="date" class="form-control" name="full_payment_date" min="{{ date('Y-m-d') }}">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Amount to Pay</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">₱</span>
+                                                <input type="number" class="form-control" name="full_payment_amount" step="0.01" min="0" placeholder="0.00">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Quarterly Payment Breakdown -->
+                                <div id="quarterly-payment-breakdown" class="payment-breakdown" style="display: none;">
+                                    <h6 class="fw-bold text-warning mb-3">
+                                        <i class="ri-calendar-line me-2"></i>Quarterly Payment Breakdown
+                                    </h6>
+                                    <div class="alert alert-warning">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span><strong>Total Amount:</strong></span>
+                                            <span class="fw-bold">₱<span id="quarterly-total-amount">0.00</span></span>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span><strong>Per Quarter:</strong></span>
+                                            <span class="fw-bold">₱<span id="quarterly-per-payment">0.00</span></span>
+                                        </div>
+                                        <small class="text-muted">4 payments throughout the academic year</small>
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-md-6 col-lg-3">
+                                            <div class="card bg-light">
+                                                <div class="card-body p-3">
+                                                    <h6 class="card-title mb-2">1st Quarter</h6>
+                                                    <p class="mb-2">₱<span class="quarterly-amount">0.00</span></p>
+                                                    <input type="date" class="form-control form-control-sm mb-2" name="quarterly_date_1" min="{{ date('Y-m-d') }}">
+                                                    <div class="input-group input-group-sm">
+                                                        <span class="input-group-text">₱</span>
+                                                        <input type="number" class="form-control" name="quarterly_amount_1" step="0.01" min="0" placeholder="0.00">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 col-lg-3">
+                                            <div class="card bg-light">
+                                                <div class="card-body p-3">
+                                                    <h6 class="card-title mb-2">2nd Quarter</h6>
+                                                    <p class="mb-2">₱<span class="quarterly-amount">0.00</span></p>
+                                                    <input type="date" class="form-control form-control-sm mb-2" name="quarterly_date_2" min="{{ date('Y-m-d') }}">
+                                                    <div class="input-group input-group-sm">
+                                                        <span class="input-group-text">₱</span>
+                                                        <input type="number" class="form-control" name="quarterly_amount_2" step="0.01" min="0" placeholder="0.00">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 col-lg-3">
+                                            <div class="card bg-light">
+                                                <div class="card-body p-3">
+                                                    <h6 class="card-title mb-2">3rd Quarter</h6>
+                                                    <p class="mb-2">₱<span class="quarterly-amount">0.00</span></p>
+                                                    <input type="date" class="form-control form-control-sm mb-2" name="quarterly_date_3" min="{{ date('Y-m-d') }}">
+                                                    <div class="input-group input-group-sm">
+                                                        <span class="input-group-text">₱</span>
+                                                        <input type="number" class="form-control" name="quarterly_amount_3" step="0.01" min="0" placeholder="0.00">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 col-lg-3">
+                                            <div class="card bg-light">
+                                                <div class="card-body p-3">
+                                                    <h6 class="card-title mb-2">4th Quarter</h6>
+                                                    <p class="mb-2">₱<span class="quarterly-amount">0.00</span></p>
+                                                    <input type="date" class="form-control form-control-sm mb-2" name="quarterly_date_4" min="{{ date('Y-m-d') }}">
+                                                    <div class="input-group input-group-sm">
+                                                        <span class="input-group-text">₱</span>
+                                                        <input type="number" class="form-control" name="quarterly_amount_4" step="0.01" min="0" placeholder="0.00">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Monthly Payment Breakdown -->
+                                <div id="monthly-payment-breakdown" class="payment-breakdown" style="display: none;">
+                                    <h6 class="fw-bold text-info mb-3">
+                                        <i class="ri-calendar-2-line me-2"></i>Monthly Payment Breakdown
+                                    </h6>
+                                    <div class="alert alert-info">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span><strong>Total Amount:</strong></span>
+                                            <span class="fw-bold">₱<span id="monthly-total-amount">0.00</span></span>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span><strong>Per Month:</strong></span>
+                                            <span class="fw-bold">₱<span id="monthly-per-payment">0.00</span></span>
+                                        </div>
+                                        <small class="text-muted">10 payments throughout the academic year (excluding vacation months)</small>
+                                    </div>
+                                    <div class="row g-2">
+                                        @php
+                                            $months = [
+                                                'June', 'July', 'August', 'September', 'October',
+                                                'November', 'December', 'January', 'February', 'March'
+                                            ];
+                                        @endphp
+                                        @foreach($months as $index => $month)
+                                            <div class="col-md-6 col-lg-4 col-xl-3">
+                                                <div class="card bg-light">
+                                                    <div class="card-body p-2">
+                                                        <h6 class="card-title mb-1 small">{{ $month }}</h6>
+                                                        <p class="mb-1 small">₱<span class="monthly-amount">0.00</span></p>
+                                                        <input type="date" class="form-control form-control-sm mb-1" name="monthly_date_{{ $index + 1 }}" min="{{ date('Y-m-d') }}">
+                                                        <div class="input-group input-group-sm">
+                                                            <span class="input-group-text">₱</span>
+                                                            <input type="number" class="form-control" name="monthly_amount_{{ $index + 1 }}" step="0.01" min="0" placeholder="0.00">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Payment Method Selection -->
+                            <div class="mt-4">
+                                <h6 class="fw-bold mb-3">Payment Mode</h6>
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="payment_method" id="cash" value="cash">
+                                            <label class="form-check-label w-100" for="cash">
+                                                <div class="card border-2 h-100">
+                                                    <div class="card-body text-center py-3">
+                                                        <i class="ri-money-dollar-box-line fs-3 text-success mb-2"></i>
+                                                        <h6 class="fw-bold mb-0">Cash</h6>
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="payment_method" id="bank_transfer" value="bank_transfer">
+                                            <label class="form-check-label w-100" for="bank_transfer">
+                                                <div class="card border-2 h-100">
+                                                    <div class="card-body text-center py-3">
+                                                        <i class="ri-bank-line fs-3 text-primary mb-2"></i>
+                                                        <h6 class="fw-bold mb-0">Bank Transfer</h6>
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="payment_method" id="online_payment" value="online_payment">
+                                            <label class="form-check-label w-100" for="online_payment">
+                                                <div class="card border-2 h-100">
+                                                    <div class="card-body text-center py-3">
+                                                        <i class="ri-smartphone-line fs-3 text-info mb-2"></i>
+                                                        <h6 class="fw-bold mb-0">Online Payment</h6>
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Notes Section -->
+                            <div class="mt-4">
+                                <label class="form-label">Additional Notes (Optional)</label>
+                                <textarea class="form-control" name="payment_notes" rows="3" placeholder="Any additional information about your payment schedule..."></textarea>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Right Column - Fee Breakdown -->
@@ -279,7 +487,7 @@
                     @if($student->enrollment_status !== 'enrolled')
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-primary btn-lg" id="enrollBtn">
-                                <i class="ri-check-line me-2"></i>Complete Enrollment
+                                <i class="ri-send-plane-line me-2"></i>Submit Payment Schedule
                             </button>
                             <a href="{{ route('student.dashboard') }}" class="btn btn-outline-secondary">
                                 <i class="ri-arrow-left-line me-2"></i>Back to Dashboard

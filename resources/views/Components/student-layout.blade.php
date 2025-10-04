@@ -45,7 +45,7 @@
         </div>
         
         <!-- User Info -->
-        <div class="user-info mb-4 p-3 bg-light rounded">
+        {{-- <div class="user-info mb-4 p-3 bg-light rounded">
           <div class="d-flex align-items-center">
             <div class="avatar-circle me-3">
               <i class="ri-user-line"></i>
@@ -55,7 +55,7 @@
               <small class="text-muted">{{ Auth::guard('student')->user()->student_id ?? (Auth::guard('web')->user()->student_id ?? 'ID: N/A') }}</small>
             </div>
           </div>
-        </div>
+        </div> --}}
 
         <ul class="nav flex-column">
           <li class="nav-item mb-2">

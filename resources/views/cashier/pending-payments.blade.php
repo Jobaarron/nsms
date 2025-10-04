@@ -2,6 +2,8 @@
     @push('styles')
         @vite('resources/css/index_student.css')
     @endpush
+    @vite(['resources/js/cashier-payment-schedules.js'])
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <!-- Page Header -->
     <div class="row mb-4">
@@ -18,13 +20,72 @@
         </div>
     </div>
 
-    <!-- Payments Table -->
+    <!-- Student Payment Schedules -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 pb-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="ri-calendar-schedule-line me-2"></i>Student Payment Schedules
+                        </h5>
+                        <div class="d-flex gap-2">
+                            <select class="form-select form-select-sm payment-filter" name="status">
+                                <option value="">All Status</option>
+                                <option value="pending">Pending</option>
+                                <option value="confirmed">Confirmed</option>
+                                <option value="rejected">Rejected</option>
+                            </select>
+                            <select class="form-select form-select-sm payment-filter" name="payment_mode">
+                                <option value="">All Modes</option>
+                                <option value="full">Full Payment</option>
+                                <option value="quarterly">Quarterly</option>
+                                <option value="monthly">Monthly</option>
+                            </select>
+                            <input type="text" class="form-control form-control-sm" id="payment-search" placeholder="Search...">
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="payment-schedules-table">
+                            <thead>
+                                <tr>
+                                    <th>Priority</th>
+                                    <th>Transaction ID</th>
+                                    <th>Student</th>
+                                    <th>Amount</th>
+                                    <th>Payment Method</th>
+                                    <th>Scheduled Date</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="8" class="text-center py-4">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                        <p class="text-muted mt-2">Loading payment schedules...</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="pagination-container"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Regular Payments Table -->
     <div class="row">
         <div class="col-12">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white border-0 pb-0">
                     <h5 class="card-title mb-0">
-                        <i class="ri-time-line me-2"></i>Payments Awaiting Confirmation
+                        <i class="ri-time-line me-2"></i>Regular Payments Awaiting Confirmation
                     </h5>
                 </div>
                 <div class="card-body">

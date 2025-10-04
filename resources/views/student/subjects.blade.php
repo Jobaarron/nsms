@@ -1,10 +1,12 @@
 <x-student-layout>
-    @push('styles')
-        @vite('resources/css/index_student.css')
-    @endpush
+    @vite(['resources/js/student-subjects.js'])
+    <div class="container-fluid px-4 py-4">
+        @push('styles')
+            @vite('resources/css/index_student.css')
+        @endpush
 
-    <!-- Page Header -->
-    <div class="row mb-4">
+        <!-- Page Header -->
+        <div class="row mb-4">
             <div class="col-12">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
@@ -35,8 +37,8 @@
                                     $student->track
                                 );
                             @endphp
-                            <h3 class="fw-bold fs-4 mb-0">{{ $subjects->count() }}</h3>
-                            <small class="text-white-50">Total Subjects</small>
+                            <h3 class="fw-bold fs-4 mb-0 text-white">{{ $subjects->count() }}</h3>
+                            <small class="text-white">Total Subjects</small>
                         </div>
                     </div>
                 </div>
@@ -48,8 +50,8 @@
                             <i class="ri-star-line fs-2"></i>
                         </div>
                         <div class="flex-grow-1">
-                            <h3 class="fw-bold fs-4 mb-0">{{ $subjects->whereNull('strand')->count() }}</h3>
-                            <small class="text-white-50">Core Subjects</small>
+                            <h3 class="fw-bold fs-4 mb-0 text-white">{{ $subjects->whereNull('strand')->count() }}</h3>
+                            <small class="text-white">Core Subjects</small>
                         </div>
                     </div>
                 </div>
@@ -61,8 +63,8 @@
                             <i class="ri-focus-line fs-2"></i>
                         </div>
                         <div class="flex-grow-1">
-                            <h3 class="fw-bold fs-4 mb-0">{{ $subjects->whereNotNull('strand')->count() }}</h3>
-                            <small class="text-white-50">Specialized</small>
+                            <h3 class="fw-bold fs-4 mb-0 text-white">{{ $subjects->whereNotNull('strand')->count() }}</h3>
+                            <small class="text-white">Specialized</small>
                         </div>
                     </div>
                 </div>
@@ -74,8 +76,8 @@
                             <i class="ri-graduation-cap-line fs-2"></i>
                         </div>
                         <div class="flex-grow-1">
-                            <h3 class="fw-bold fs-4 mb-0">{{ $student->grade_level }}</h3>
-                            <small class="opacity-75">Grade Level</small>
+                            <h3 class="fw-bold fs-4 mb-0 text-white">{{ $student->grade_level }}</h3>
+                            <small class="text-white">Grade Level</small>
                         </div>
                     </div>
                 </div>
@@ -271,7 +273,7 @@
                 </div>
 
                 <!-- Curriculum Guide -->
-                @if($student->grade_level === 'Grade 11' || $student->grade_level === 'Grade 12')
+                {{-- @if($student->grade_level === 'Grade 11' || $student->grade_level === 'Grade 12')
                     <div class="card border-0 shadow-sm mb-4">
                         <div class="card-header bg-white border-0 pb-0">
                             <h6 class="card-title mb-0">
@@ -327,7 +329,7 @@
                             @endif
                         </div>
                     </div>
-                @endif
+                @endif --}}
 
                 <!-- Quick Actions -->
                 <div class="card border-0 shadow-sm mb-4">

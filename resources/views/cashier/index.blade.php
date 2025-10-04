@@ -2,6 +2,8 @@
     @push('styles')
         @vite('resources/css/index_student.css')
     @endpush
+    @vite(['resources/js/cashier-payment-schedules.js'])
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <!-- Page Header -->
     <div class="row mb-4">
@@ -11,10 +13,10 @@
                     <h2 class="section-title mb-1">Cashier Dashboard</h2>
                     <p class="text-muted mb-0">Welcome back, {{ $cashier->full_name }}</p>
                 </div>
-                <div class="text-end">
+                {{-- <div class="text-end">
                     <small class="text-muted">Employee ID: <strong>{{ $cashier->employee_id }}</strong></small><br>
                     <small class="text-muted">Department: <strong>{{ $cashier->department }}</strong></small>
-                </div>
+                </div> --}}
             </div>
         </div>
     </div>
@@ -113,7 +115,7 @@
                             </a>
                         </div>
                         <div class="col-md-3">
-                            <a href="{{ route('cashier.reports') }}" class="btn btn-outline-success w-100">
+                            <a href="{{ route('cashier.reports') }}" class="btn disabled btn-outline-success w-100">
                                 <i class="ri-bar-chart-line me-2"></i>Generate Reports
                             </a>
                         </div>
@@ -147,6 +149,7 @@
                                         <th>Student/Enrollee</th>
                                         <th>Fee Type</th>
                                         <th>Amount</th>
+                                        <th>Payment Method</th>
                                         <th>Status</th>
                                         <th>Date</th>
                                         <th>Actions</th>
@@ -177,6 +180,11 @@
                                             <td>
                                                 <span class="fw-bold text-success">
                                                     ₱{{ number_format($payment->amount, 2) }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info">
+                                                    {{ ucfirst(str_replace('_', ' ', $payment->payment_method ?? 'N/A')) }}
                                                 </span>
                                             </td>
                                             <td>

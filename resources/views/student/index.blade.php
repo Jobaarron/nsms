@@ -62,8 +62,8 @@
                             <i class="ri-money-dollar-circle-line fs-2"></i>
                         </div>
                         <div class="flex-grow-1">
-                            <h3 class="fw-bold fs-4 mb-0">₱{{ number_format($student->total_paid ?? 0, 2) }}</h3>
-                            <small class="text-white-50">Total Paid</small>
+                            <h3 class="fw-bold fs-4 mb-0 text-white">₱{{ number_format($student->total_paid ?? 0, 2) }}</h3>
+                            <small class="text-white">Total Paid</small>
                         </div>
                     </div>
                 </div>
@@ -75,8 +75,8 @@
                             <i class="ri-money-dollar-box-line fs-2"></i>
                         </div>
                         <div class="flex-grow-1">
-                            <h3 class="fw-bold fs-4 mb-0">₱{{ number_format(($student->total_fees_due ?? 0) - ($student->total_paid ?? 0), 2) }}</h3>
-                            <small class="text-white-50">Balance Due</small>
+                            <h3 class="fw-bold fs-4 mb-0 text-white">₱{{ number_format(($student->total_fees_due ?? 0) - ($student->total_paid ?? 0), 2) }}</h3>
+                            <small class="text-white">Balance Due</small>
                         </div>
                     </div>
                 </div>
@@ -95,8 +95,8 @@
                                     $student->track
                                 );
                             @endphp
-                            <h3 class="fw-bold fs-4 mb-0">{{ $subjects->count() }}</h3>
-                            <small class="text-white-50">Subjects</small>
+                            <h3 class="fw-bold fs-4 mb-0 text-white">{{ $subjects->count() }}</h3>
+                            <small class="text-white">Subjects</small>
                         </div>
                     </div>
                 </div>
@@ -108,8 +108,8 @@
                             <i class="ri-graduation-cap-line fs-2"></i>
                         </div>
                         <div class="flex-grow-1">
-                            <h3 class="fw-bold fs-4 mb-0">{{ $student->grade_level }}</h3>
-                            <small class="opacity-75">Grade Level</small>
+                            <h3 class="fw-bold fs-4 mb-0 text-white">{{ $student->grade_level }}</h3>
+                            <small class="text-white">Grade Level</small>
                         </div>
                     </div>
                 </div>

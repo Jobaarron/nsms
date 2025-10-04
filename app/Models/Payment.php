@@ -26,6 +26,10 @@ class Payment extends Model
         'confirmed_at',
         'cashier_notes',
         'confirmation_status',
+        'scheduled_date',
+        'period_name',
+        'payment_mode',
+        'amount_received',
     ];
 
     /**
@@ -58,6 +62,8 @@ class Payment extends Model
     protected $casts = [
         'paid_at' => 'datetime',
         'confirmed_at' => 'datetime',
+        'scheduled_date' => 'date',
+        'amount_received' => 'decimal:2',
     ];
 
     /**

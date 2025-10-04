@@ -16,6 +16,7 @@ use App\Http\Controllers\RegistrarController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\AdminEnrollmentController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\PaymentScheduleController;
 
 
 
@@ -490,6 +491,25 @@ Route::prefix('registrar')->name('registrar.')->group(function () {
             return redirect()->route('registrar.login');
         })->name('logout');
     });
+});
+
+// ===== PAYMENT SCHEDULING ROUTES =====
+
+
+// Student Payment Scheduling Routes
+Route::middleware(['auth:student'])->prefix('student')->name('student.')->group(function () {
+    Route::post('/payment-schedule', [PaymentScheduleController::class, 'createPaymentSchedule'])->name('payment-schedule.create');
+    Route::get('/payment-schedule/{studentId}', [PaymentScheduleController::class, 'getPaymentSchedule'])->name('payment-schedule.get');
+});
+
+// Cashier Payment Management Routes (AJAX/API style)
+Route::middleware(['auth:cashier'])->prefix('cashier/api')->name('cashier.api.')->group(function () {
+    Route::get('/payment-schedules', [PaymentScheduleController::class, 'getAllPaymentSchedules'])->name('payment-schedules.all');
+    Route::get('/payment-schedules/{paymentId}', [PaymentScheduleController::class, 'getPaymentDetails'])->name('payment-schedules.details');
+    Route::get('/payment-schedules/pending', [PaymentScheduleController::class, 'getPendingPaymentSchedules'])->name('payment-schedules.pending');
+    Route::get('/payment-schedules/due', [PaymentScheduleController::class, 'getDuePaymentSchedules'])->name('payment-schedules.due');
+    Route::post('/payment-schedules/{paymentId}/process', [PaymentScheduleController::class, 'processPayment'])->name('payment-schedules.process');
+    Route::get('/payment-statistics', [PaymentScheduleController::class, 'getPaymentStatistics'])->name('payment-statistics');
 });
 
 // ===== CASHIER ROUTES =====
