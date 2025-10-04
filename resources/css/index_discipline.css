@@ -109,7 +109,7 @@ body {
 
 /* Summary Cards - Discipline specific */
 .card-summary { 
-  color: #fff; 
+  color: #ffffff; 
   transition: all 0.3s ease;
   cursor: pointer;
 }
@@ -118,6 +118,8 @@ body {
 .card-counsel { background-color: var(--accent-color); }
 .card-reports { background-color: var(--dark-red); }
 .card-facerec { background-color: #6c757d; }
+.card-weekly { background-color: #17a2b8; }
+
 
 /* Card hover effects */
 .card {

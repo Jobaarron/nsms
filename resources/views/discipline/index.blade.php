@@ -106,7 +106,6 @@
         </div> --}}
 
         <!-- WEEKLY VIOLATIONS TABLE -->
-        @if($weeklyViolations->count() > 0)
         <h4 class="section-title">Weekly Violations</h4>
         <div class="table-responsive mb-5">
           <table class="table table-striped align-middle">
@@ -120,7 +119,7 @@
               </tr>
             </thead>
             <tbody>
-              @foreach($weeklyViolations as $index => $violation)
+              @forelse($weeklyViolations as $index => $violation)
               <tr>
                 <td>{{ $violation->student->first_name }} {{ $violation->student->last_name }}</td>
                 <td>{{ $violation->title }}</td>
@@ -138,11 +137,14 @@
                   </button>
                 </td>
               </tr>
-              @endforeach
+              @empty
+              <tr>
+                <td colspan="5" class="text-center text-muted">No weekly violations found.</td>
+              </tr>
+              @endforelse
             </tbody>
           </table>
         </div>
-        @endif
       </main>
 
   <!-- VIEW VIOLATION MODAL -->
