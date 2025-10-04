@@ -154,7 +154,8 @@
                                         <th>Student</th>
                                         <th>Date & Time</th>
                                         <th>Location</th>
-                                        <th>Status</th>
+                                        <th>Meeting Status</th>
+                                        <th>Student Status</th>
                                         <th>Urgency</th>
                                         <th>Actions</th>
                                     </tr>
@@ -184,6 +185,15 @@
                                             <span class="badge {{ $meeting->status_display['class'] }}">
                                                 {{ $meeting->status_display['text'] }}
                                             </span>
+                                        </td>
+                                        <td>
+                                            @if($meeting->student && $meeting->student->case_meeting_status)
+                                                <span class="badge bg-{{ $meeting->student->case_meeting_status === 'scheduled' ? 'primary' : ($meeting->student->case_meeting_status === 'in_progress' ? 'info' : ($meeting->student->case_meeting_status === 'completed' ? 'success' : 'secondary')) }}">
+                                                    {{ ucfirst(str_replace('_', ' ', $meeting->student->case_meeting_status)) }}
+                                                </span>
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
                                         </td>
                                         <td>
                                             @if($meeting->urgency_level)
@@ -218,7 +228,7 @@
                                     </tr>
                                     @empty
                                     <tr>
-                                        <td colspan="7" class="text-center py-4">
+                                        <td colspan="8" class="text-center py-4">
                                             <div class="text-muted">
                                                 <i class="ri-calendar-line fs-1 d-block mb-2"></i>
                                                 <p>No case meetings found</p>
