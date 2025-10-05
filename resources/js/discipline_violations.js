@@ -502,9 +502,8 @@ window.editViolation = function(violationId) {
             form.action = `/discipline/violations/${violationId}`;
 
             // Use the same structure as viewViolation but with editable inputs
-            const canChangeStudent = data.can_change_student !== false;
-            const studentSelectDisabled = canChangeStudent ? '' : 'disabled';
-            const studentSelectHelp = canChangeStudent ? '' : '<small class="text-muted">Student cannot be changed as they have existing violation records.</small>';
+            const studentSelectDisabled = 'disabled';
+            const studentSelectHelp = '<small class="text-muted">Student cannot be changed.</small>';
 
             // Populate modal body
             modalBody.innerHTML = `
@@ -515,14 +514,14 @@ window.editViolation = function(violationId) {
             <div class="row g-2">
                 <div class="col-12">
                     <label class="form-label fw-bold small">Student Name</label>
-                    <select class="form-select form-select-sm" id="edit_student_id" name="student_id" required disabled>
+                    <select class="form-select form-select-sm" id="edit_student_id" name="student_id" required ${studentSelectDisabled}>
                         ${students.length > 0 ? students.map(student => `
                             <option value="${student.id}" ${student.id == (violation.student ? violation.student.id : violation.student_id) ? 'selected' : ''}>
                                 ${student.first_name} ${student.last_name} (${student.student_id || 'No ID'})
                             </option>
                         `).join('') : '<option value="">No students available</option>'}
                     </select>
-                    <small class="text-muted">Student cannot be changed.</small>
+                    ${studentSelectHelp}
                 </div>
             </div>
 
@@ -613,6 +612,10 @@ window.editViolation = function(violationId) {
                 // Add CSRF token and method spoofing
                 formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
                 formData.append('_method', 'PUT');
+
+                // Ensure required fields are included (disabled fields may not be in FormData)
+                formData.append('severity', violation.severity || 'minor');
+                formData.append('status', violation.status || 'pending');
 
                 // Handle checkbox explicitly
                 const parentNotifiedCheckbox = form.querySelector('#edit_parent_notified');
@@ -1152,6 +1155,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   });
 
 // Global functions for CRUD operations (must be in global scope)
+
 window.viewViolation = function(violationId) {
     // Fetch violation data from server
     fetch(`/discipline/violations/${violationId}`, { credentials: 'include' })
@@ -1698,7 +1702,7 @@ window.forwardViolation = function(violationId) {
         
       } catch (error) {
         console.error('Error hiding modal:', error);
-        return this.hideFallbproceedack(modalId);
+        return this.hideFallback(modalId);
       }
     },
     
