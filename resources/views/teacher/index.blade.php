@@ -147,6 +147,18 @@
              </div>
            </div>
          </div>
+         <div class="col-md-4">
+           <div class="card h-100">
+             <div class="card-body text-center">
+               <i class="ri-heart-pulse-line display-4 text-warning mb-3"></i>
+               <h5>Recommend for Counseling</h5>
+               <p class="text-muted">Refer students to guidance counseling services</p>
+               <a href="{{ route('teacher.recommend-counseling.form') }}" class="btn btn-outline-warning">
+                 <i class="ri-heart-pulse-line me-2"></i>Recommend Student
+               </a>
+             </div>
+           </div>
+         </div>
        </div>
 
      </main>

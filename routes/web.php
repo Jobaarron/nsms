@@ -210,6 +210,14 @@ Route::get('/teacher', [TeacherController::class, 'index'])
     ->name('teacher.dashboard')
     ->middleware(['auth', 'role:teacher']);
 
+// Teacher Counseling Recommendation Routes
+Route::middleware(['auth', 'role:teacher'])->prefix('teacher')->name('teacher.')->group(function () {
+    Route::get('/recommend-counseling', [TeacherController::class, 'showRecommendForm'])
+        ->name('recommend-counseling.form');
+    Route::post('/recommend-counseling', [TeacherController::class, 'recommendToCounseling'])
+        ->name('recommend-counseling');
+});
+
 
 // Discipline Portal Routes
 Route::prefix('discipline')->name('discipline.')->group(function () {
@@ -315,12 +323,21 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
         Route::prefix('counseling-sessions')->name('counseling-sessions.')->group(function () {
             Route::get('/', [App\Http\Controllers\GuidanceController::class, 'counselingSessionsIndex'])
                 ->name('index');
-            
+
             Route::post('/', [App\Http\Controllers\GuidanceController::class, 'scheduleCounselingSession'])
                 ->name('schedule');
-            
+
+            Route::post('/{counselingSession}/schedule-recommended', [App\Http\Controllers\GuidanceController::class, 'scheduleRecommendedSession'])
+                ->name('schedule-recommended');
+
             Route::post('/{counselingSession}/summary', [App\Http\Controllers\GuidanceController::class, 'createCounselingSummary'])
                 ->name('summary');
+        });
+
+        // API Routes
+        Route::prefix('api')->name('api.')->group(function () {
+            Route::get('/counselors', [App\Http\Controllers\GuidanceController::class, 'getCounselors'])
+                ->name('counselors');
         });
     });
 });

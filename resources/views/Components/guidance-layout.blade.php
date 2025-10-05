@@ -56,7 +56,7 @@
           
           <li class="nav-item mb-2">
             <a class="nav-link {{ request()->routeIs('guidance.case-meetings.*') ? 'active' : '' }}" href="{{ route('guidance.case-meetings.index') }}">
-              <i class="ri-calendar-event-line me-2"></i>Case Meetings
+              <i class="ri-calendar-event-line me-2"></i>Case Management
             </a>
           </li>
           

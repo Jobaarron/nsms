@@ -60,6 +60,22 @@
                 <div class="card border-0 shadow-sm h-100">
                     <div class="card-body d-flex align-items-center">
                         <div class="flex-shrink-0 me-3">
+                            <div class="rounded-circle bg-warning bg-opacity-10 p-3">
+                                <i class="ri-file-text-line fs-2 text-warning"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold fs-4" id="pre-completed-meetings">{{ $caseMeetings->where('status', 'pre_completed')->count() }}</div>
+                            <div class="text-muted small">Pre-Completed</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="flex-shrink-0 me-3">
                             <div class="rounded-circle bg-success bg-opacity-10 p-3">
                                 <i class="ri-checkbox-circle-line fs-2 text-success"></i>
                             </div>
@@ -101,6 +117,7 @@
                                     <option value="">All Status</option>
                                     <option value="scheduled">Scheduled</option>
                                     <option value="in_progress">In Progress</option>
+                                    <option value="pre_completed">Pre-Completed</option>
                                     <option value="completed">Completed</option>
                                     <option value="cancelled">Cancelled</option>
                                     <option value="forwarded">Forwarded</option>
@@ -203,7 +220,7 @@
                                                 <button class="btn btn-outline-primary" onclick="openScheduleMeetingModal({{ $meeting->student->id }})" title="Schedule Meeting">
                                                     <i class="ri-calendar-event-line"></i>
                                                 </button>
-                                                @if(in_array($meeting->status, ['scheduled', 'in_progress']))
+                                                @if(in_array($meeting->status, ['scheduled', 'in_progress', 'pre_completed']))
                                                     <button class="btn btn-outline-success" onclick="completeCaseMeeting({{ $meeting->id }})" title="Mark Complete">
                                                         <i class="ri-check-line"></i>
                                                     </button>
