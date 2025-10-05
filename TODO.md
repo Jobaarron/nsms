@@ -14,3 +14,10 @@
 - [x] Update case-meetings view to include 'pre_completed' in status filter and statistics
 - [x] Run migration to update database
 - [x] Fix action buttons to remain available for 'pre_completed' status
+
+## Status Workflow: Discipline Forward -> In Progress, Guidance Schedule -> Scheduled
+- [x] Update DisciplineController::forwardViolation to set CaseMeeting status to 'in_progress' and Violation status to 'in_progress'
+- [x] Update Violation model getStatusColorAttribute to include 'in_progress' -> 'info'
+- [x] Update discipline violations view to show 'in_progress' status as "In Progress" badge
+- [x] Update DisciplineController validations to include 'in_progress' status
+- [x] Update DisciplineController stats to count 'in_progress' in investigating stats

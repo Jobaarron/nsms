@@ -217,7 +217,7 @@ class DisciplineController extends Controller
 
         $stats = [
             'pending' => $filtered->where('status', 'pending')->count(),
-            'investigating' => $filtered->where('status', 'investigating')->count(),
+            'investigating' => $filtered->whereIn('status', ['investigating', 'in_progress'])->count(),
             'resolved' => $filtered->where('status', 'resolved')->count(),
             'severe' => $filtered->where('effective_severity', 'severe')->count(),
         ];
@@ -249,7 +249,7 @@ class DisciplineController extends Controller
             'major_category' => 'nullable|string|required_if:severity,major',
             'violation_date' => 'required|date',
             'violation_time' => 'nullable',
-            'status' => 'nullable|in:pending,investigating,resolved,dismissed',
+            'status' => 'nullable|in:pending,investigating,in_progress,resolved,dismissed',
         ]);
 
         // Automatically calculate sanction based on severity and major_category
@@ -450,7 +450,7 @@ class DisciplineController extends Controller
                 'severity' => 'required|in:minor,major,severe',
                 'violation_date' => 'required|date',
                 'violation_time' => 'nullable',
-                'status' => 'required|in:pending,investigating,resolved,dismissed',
+                'status' => 'required|in:pending,investigating,in_progress,resolved,dismissed',
                 'resolution' => 'nullable|string',
                 'student_statement' => 'nullable|string',
                 'disciplinary_action' => 'nullable|string',
@@ -577,8 +577,8 @@ class DisciplineController extends Controller
     public function forwardViolation(Request $request, Violation $violation)
     {
         try {
-            // Check if violation is already forwarded/investigating
-            if ($violation->status === 'investigating') {
+            // Check if violation is already forwarded/in progress
+            if ($violation->status === 'in_progress') {
                 return response()->json([
                     'success' => false,
                     'message' => 'Violation has already been forwarded.'
@@ -600,8 +600,6 @@ class DisciplineController extends Controller
                 'student_id' => $violation->student_id,
                 'counselor_id' => $guidanceCounselor->id,
                 'meeting_type' => 'case_meeting',
-                'scheduled_date' => now()->addDays(7)->toDateString(), // Schedule for next week
-                'scheduled_time' => '09:00:00', // Default morning time
                 'location' => 'Guidance Office',
                 'reason' => 'Violation: ' . $violation->title . ' - ' . $violation->description,
                 'notes' => 'Forwarded from Discipline Office. Violation ID: ' . $violation->id . '. Severity: ' . $violation->severity,
@@ -609,9 +607,9 @@ class DisciplineController extends Controller
                 'sanction_recommendation' => $violation->sanction,
             ]);
 
-            // Update violation status to in progress (investigating)
+            // Update violation status to in progress
             $violation->update([
-                'status' => 'investigating',
+                'status' => 'in_progress',
             ]);
 
             // Create a sanction for the case meeting based on the violation
@@ -642,7 +640,7 @@ class DisciplineController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Violation forwarded to case meeting successfully. Case meeting scheduled for ' . $caseMeeting->scheduled_date->format('M d, Y') . ' at ' . $caseMeeting->scheduled_time->format('H:i') . '.',
+                'message' => 'Violation forwarded to case meeting successfully. Guidance will schedule the meeting.',
                 'case_meeting_id' => $caseMeeting->id,
             ]);
         } catch (\Exception $e) {

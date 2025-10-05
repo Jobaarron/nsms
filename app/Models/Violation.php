@@ -95,6 +95,7 @@ class Violation extends Model
         return match($this->status) {
             'pending' => 'warning',
             'investigating' => 'info',
+            'in_progress' => 'info',
             'resolved' => 'success',
             'dismissed' => 'secondary',
             default => 'secondary'

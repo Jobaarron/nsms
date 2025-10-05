@@ -219,9 +219,9 @@ class GuidanceController extends Controller
         $validatedData['counselor_id'] = $guidanceRecord->id;
         $validatedData['status'] = 'scheduled';
 
-        // Check if there's an existing in_progress case meeting for this student
+        // Check if there's an existing pending or in_progress case meeting for this student
         $existingMeeting = CaseMeeting::where('student_id', $validatedData['student_id'])
-            ->where('status', 'in_progress')
+            ->whereIn('status', ['pending', 'in_progress'])
             ->first();
 
         if ($existingMeeting) {

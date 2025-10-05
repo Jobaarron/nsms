@@ -122,7 +122,7 @@
                   <td>
                     @if($violation->status === 'pending')
                       <span class="badge bg-warning text-dark">Pending</span>
-                    @elseif($violation->status === 'investigating')
+                    @elseif(in_array($violation->status, ['investigating', 'in_progress']))
                       <span class="badge bg-info text-dark">In Progress</span>
                     @elseif($violation->status === 'resolved')
                       <span class="badge bg-success">Resolved</span>

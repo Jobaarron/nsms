@@ -192,8 +192,8 @@
                                             </div>
                                         </td>
                                         <td>
-                                            <div>{{ $meeting->scheduled_date->format('M d, Y') }}</div>
-                                            <small class="text-muted">{{ $meeting->scheduled_time->format('h:i A') }}</small>
+                                            <div>{{ $meeting->scheduled_date ? $meeting->scheduled_date->format('M d, Y') : 'TBD' }}</div>
+                                            <small class="text-muted">{{ $meeting->scheduled_time ? $meeting->scheduled_time->format('h:i A') : 'TBD' }}</small>
                                         </td>
                                         <td>
                                             <span class="text-muted">{{ $meeting->location ?: 'TBD' }}</span>
