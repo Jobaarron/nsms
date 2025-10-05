@@ -300,8 +300,8 @@ class GuidanceController extends Controller
             'recommendations' => $validatedData['recommendations'],
             'follow_up_required' => $validatedData['follow_up_required'] ?? false,
             'follow_up_date' => $validatedData['follow_up_date'],
-            'status' => 'completed',
-            'completed_at' => now(),
+//            'status' => 'completed',
+//            'completed_at' => now(),
         ]);
 
         if ($request->ajax()) {

@@ -379,6 +379,70 @@ function openScheduleMeetingModal(studentId) {
     modal.show();
 }
 
+// Open create summary modal
+function openCreateSummaryModal(meetingId) {
+    const modalElement = document.getElementById('createCaseSummaryModal');
+    if (!modalElement) return;
+
+    // Reset the form
+    const form = document.getElementById('createCaseSummaryForm');
+    if (form) {
+        form.reset();
+        // Set the meeting ID in a hidden field or data attribute
+        form.setAttribute('data-meeting-id', meetingId);
+    }
+
+    // Show the modal using Bootstrap's modal API
+    const modal = new bootstrap.Modal(modalElement);
+    modal.show();
+}
+
+// Submit case summary form
+function submitCaseSummary(event) {
+    event.preventDefault();
+
+    const form = event.target;
+    const meetingId = form.getAttribute('data-meeting-id');
+    const formData = new FormData(form);
+    const submitBtn = form.querySelector('button[type="submit"]');
+
+    // Show loading state
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="ri-loader-4-line me-2 spinner-border spinner-border-sm"></i>Saving...';
+    submitBtn.disabled = true;
+
+    fetch(`/guidance/case-meetings/${meetingId}/summary`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('Case summary created successfully!', 'success');
+            closeModal('createCaseSummaryModal');
+            form.reset();
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } else {
+            showAlert(data.message || 'Failed to create case summary', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error creating case summary:', error);
+        showAlert('An error occurred while creating the summary', 'danger');
+    })
+    .finally(() => {
+        // Restore button state
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+}
+
 // Expose functions to global scope for onclick handlers
 window.submitCaseMeeting = submitCaseMeeting;
 window.viewCaseMeeting = viewCaseMeeting;
@@ -392,3 +456,5 @@ window.exportCaseMeetings = exportCaseMeetings;
 window.printCaseMeetings = printCaseMeetings;
 window.closeModal = closeModal;
 window.openScheduleMeetingModal = openScheduleMeetingModal;
+window.openCreateSummaryModal = openCreateSummaryModal;
+window.submitCaseSummary = submitCaseSummary;
