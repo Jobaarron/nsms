@@ -300,8 +300,8 @@ class GuidanceController extends Controller
             'recommendations' => $validatedData['recommendations'],
             'follow_up_required' => $validatedData['follow_up_required'] ?? false,
             'follow_up_date' => $validatedData['follow_up_date'],
-//            'status' => 'completed',
-//            'completed_at' => now(),
+            'status' => 'pre_completed',
+            'completed_at' => now(),
         ]);
 
         if ($request->ajax()) {
@@ -483,8 +483,8 @@ class GuidanceController extends Controller
      */
     public function counselingSessionsIndex()
     {
-        $counselingSessions = CounselingSession::with(['student', 'counselor'])
-            ->orderBy('scheduled_date', 'desc')
+        $counselingSessions = CounselingSession::with(['student', 'counselor', 'recommender'])
+            ->orderByRaw("CASE WHEN status = 'recommended' THEN 0 ELSE 1 END, scheduled_date DESC")
             ->paginate(20);
 
         $students = Student::select('id', 'first_name', 'last_name', 'student_id')
@@ -524,6 +524,43 @@ class GuidanceController extends Controller
 
         return redirect()->route('guidance.counseling-sessions.index')
             ->with('success', 'Counseling session scheduled successfully.');
+    }
+
+    /**
+     * Schedule a recommended counseling session
+     */
+    public function scheduleRecommendedSession(Request $request, CounselingSession $counselingSession)
+    {
+        // Ensure the session is recommended
+        if ($counselingSession->status !== 'recommended') {
+            return response()->json([
+                'success' => false,
+                'message' => 'This session is not in recommended status.'
+            ], 400);
+        }
+
+        $validatedData = $request->validate([
+            'counselor_id' => 'required|exists:guidances,id',
+            'scheduled_date' => 'required|date|after_or_equal:today',
+            'scheduled_time' => 'required|date_format:H:i',
+            'duration' => 'required|integer|min:15|max:240',
+            'location' => 'nullable|string|max:255',
+        ]);
+
+        $counselingSession->update([
+            'counselor_id' => $validatedData['counselor_id'],
+            'scheduled_date' => $validatedData['scheduled_date'],
+            'scheduled_time' => $validatedData['scheduled_time'],
+            'duration' => $validatedData['duration'],
+            'location' => $validatedData['location'],
+            'status' => 'scheduled',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Recommended counseling session scheduled successfully.',
+            'counseling_session' => $counselingSession->load(['student', 'counselor', 'recommender'])
+        ]);
     }
 
     /**
@@ -568,6 +605,22 @@ class GuidanceController extends Controller
             'pending' => 'bg-secondary',
             default => 'bg-secondary'
         };
+    }
+
+    /**
+     * Get counselors for API
+     */
+    public function getCounselors()
+    {
+        $counselors = Guidance::select('id', 'name')
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'counselors' => $counselors
+        ]);
     }
 
     /**
