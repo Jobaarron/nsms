@@ -221,10 +221,10 @@
                                                     <i class="ri-calendar-event-line"></i>
                                                 </button>
                                                 @if(in_array($meeting->status, ['scheduled', 'in_progress', 'pre_completed']))
-                                                    <button class="btn btn-outline-success" onclick="completeCaseMeeting({{ $meeting->id }})" title="Mark Complete">
+                                                    <!-- <button class="btn btn-outline-success" onclick="completeCaseMeeting({{ $meeting->id }})" title="Mark Complete">
                                                         <i class="ri-check-line"></i>
-                                                    </button>
-                                                    <button class="btn btn-outline-warning" onclick="forwardToPresident({{ $meeting->id }})" title="Forward to President">
+                                                    </button> -->
+                                                    <button class="btn btn-outline-warning {{ $meeting->summary && $meeting->sanctions->isNotEmpty() ? '' : 'disabled' }}" onclick="forwardToPresident({{ $meeting->id }})" title="{{ $meeting->summary && $meeting->sanctions->isNotEmpty() ? 'Forward to President' : 'Summary and sanctions required before forwarding' }}">
                                                         <i class="ri-send-plane-line"></i>
                                                     </button>
                                                 @endif

@@ -57,12 +57,15 @@ function submitCaseMeeting(event) {
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
         }
     })
-    .then(response => response.json())
-    .then(data => {
+    .then(response => response.json().then(data => ({ response, data })))
+    .then(({ response, data }) => {
+        if (!response.ok) {
+            showAlert(data.message || 'Request failed', 'danger');
+            return;
+        }
+
         if (data.success) {
             showAlert('Case meeting scheduled successfully!', 'success');
-            closeModal('scheduleCaseMeetingModal');
-            form.reset();
             setTimeout(() => {
                 window.location.reload();
             }, 1500);
@@ -165,6 +168,12 @@ function showCaseMeetingModal(meeting) {
                                 <p class="form-control-plaintext">${meeting.summary}</p>
                             </div>
                             ` : ''}
+                            ${meeting.sanction ? `
+                            <div class="col-12">
+                                <label class="form-label fw-bold">Sanction</label>
+                                <p class="form-control-plaintext">${meeting.sanction}</p>
+                            </div>
+                            ` : ''}
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -231,11 +240,65 @@ function completeCaseMeeting(meetingId) {
 
 // Forward case to president
 function forwardToPresident(meetingId) {
-    const reason = prompt('Please provide a reason for forwarding this case to the president:');
-    if (!reason || reason.trim() === '') {
-        return;
-    }
-    
+    // First, fetch the meeting details to check for summary and sanction
+    fetch(`/guidance/case-meetings/${meetingId}`, {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const meeting = data.meeting;
+            
+            // Check if a summary exists and if sanctions have been set
+            console.log('Forward check:', { summary: meeting.summary, sanctions: meeting.sanctions });
+            if (meeting.summary && meeting.sanctions && meeting.sanctions.length > 0) {
+                // Both conditions met - proceed with forwarding
+                const reason = prompt('Please provide a reason for forwarding this case to the president:');
+                if (!reason || reason.trim() === '') {
+                    return;
+                }
+
+                // Proceed with the forwarding request
+                proceedWithForwarding(meetingId, reason.trim());
+            } else {
+                // Conditions not met - show appropriate error message
+                let errorMessage = 'Action blocked: ';
+
+                if (!meeting.summary && (!meeting.sanctions || meeting.sanctions.length === 0)) {
+                    errorMessage += 'Please ensure a summary report has been created and sanctions have been set before forwarding.';
+                } else if (!meeting.summary) {
+                    errorMessage += 'Please ensure a summary report has been created before forwarding.';
+                } else if (!meeting.sanctions || meeting.sanctions.length === 0) {
+                    errorMessage += 'Please ensure sanctions have been set before forwarding.';
+                }
+
+                showAlert(errorMessage, 'danger');
+
+                // Optionally, open the summary modal if no summary exists
+                if (!meeting.summary) {
+                    closeModal('viewCaseMeetingModal'); // Close view modal if open
+                    setTimeout(() => {
+                        openCreateSummaryModal(meetingId);
+                    }, 500);
+                }
+            }
+        } else {
+            showAlert('Failed to load meeting details', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error loading meeting:', error);
+        showAlert('Error loading meeting details', 'danger');
+    });
+}
+
+// Helper function to handle the actual forwarding request
+function proceedWithForwarding(meetingId, reason) {
     fetch(`/guidance/case-meetings/${meetingId}/forward`, {
         method: 'POST',
         headers: {
@@ -245,7 +308,7 @@ function forwardToPresident(meetingId) {
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
         },
         body: JSON.stringify({
-            reason: reason.trim()
+            reason: reason
         })
     })
     .then(response => response.json())
@@ -458,3 +521,4 @@ window.closeModal = closeModal;
 window.openScheduleMeetingModal = openScheduleMeetingModal;
 window.openCreateSummaryModal = openCreateSummaryModal;
 window.submitCaseSummary = submitCaseSummary;
+window.proceedWithForwarding = proceedWithForwarding;

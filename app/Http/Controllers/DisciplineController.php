@@ -13,6 +13,7 @@ use App\Models\ViolationList;
 use App\Models\CaseMeeting;
 use App\Models\Guidance;
 use App\Models\ArchiveViolation;
+use App\Models\Sanction;
 use Illuminate\Support\Facades\Storage;
 
 class DisciplineController extends Controller
@@ -605,12 +606,39 @@ class DisciplineController extends Controller
                 'reason' => 'Violation: ' . $violation->title . ' - ' . $violation->description,
                 'notes' => 'Forwarded from Discipline Office. Violation ID: ' . $violation->id . '. Severity: ' . $violation->severity,
                 'status' => 'in_progress',
+                'sanction_recommendation' => $violation->sanction,
             ]);
 
             // Update violation status to in progress (investigating)
             $violation->update([
                 'status' => 'investigating',
             ]);
+
+            // Create a sanction for the case meeting based on the violation
+            try {
+                Sanction::create([
+                    'case_meeting_id' => $caseMeeting->id,
+                    'violation_id' => $violation->id,
+                    'severity' => $violation->severity,
+                    'category' => null,
+                    'major_category' => $violation->major_category,
+                    'sanction' => $violation->sanction ?: 'Pending sanction determination',
+                    'deportment_grade_action' => 'No change',
+                    'suspension' => 'None',
+                    'notes' => 'Created from violation forwarding',
+                    'is_automatic' => true,
+                    'is_approved' => false, // Requires approval from guidance
+                    'approved_by' => null,
+                    'approved_at' => null,
+                ]);
+            } catch (\Exception $e) {
+                \Log::error('Failed to create sanction for case meeting', [
+                    'case_meeting_id' => $caseMeeting->id,
+                    'violation_id' => $violation->id,
+                    'error' => $e->getMessage(),
+                ]);
+                // Continue without sanction, as it's not critical
+            }
 
             return response()->json([
                 'success' => true,

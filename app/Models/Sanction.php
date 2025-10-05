@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Sanction extends Model
 {
     protected $fillable = [
+        'case_meeting_id',        // <-- add this
         'violation_id',
         'severity',
         'category',
@@ -27,6 +28,12 @@ class Sanction extends Model
         'is_approved' => 'boolean',
         'approved_at' => 'datetime',
     ];
+
+     public function caseMeeting(): BelongsTo
+    {
+        return $this->belongsTo(CaseMeeting::class);
+    }
+
 
     /**
      * Get the violation that owns this sanction.

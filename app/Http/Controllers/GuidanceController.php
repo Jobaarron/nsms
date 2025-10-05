@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -97,7 +98,7 @@ class GuidanceController extends Controller
      */
     public function caseMeetingsIndex()
     {
-        $caseMeetings = CaseMeeting::with(['student', 'counselor'])
+        $caseMeetings = CaseMeeting::with(['student', 'counselor', 'sanctions'])
             ->orderBy('scheduled_date', 'desc')
             ->paginate(20);
 
@@ -232,6 +233,9 @@ class GuidanceController extends Controller
             $caseMeeting = CaseMeeting::create($validatedData);
         }
 
+        // Load related data
+        $caseMeeting->load(['student', 'counselor', 'sanctions']);
+
         \Log::info('Schedule Case Meeting: Success', [
             'user_id' => $user->id,
             'case_meeting_id' => $caseMeeting->id,
@@ -320,34 +324,44 @@ class GuidanceController extends Controller
      * Show case meeting details
      */
     public function showCaseMeeting(CaseMeeting $caseMeeting)
-    {
-        $caseMeeting->load(['student', 'counselor']);
+{
+    $caseMeeting->load(['student', 'counselor', 'sanctions']);
 
-        if (request()->ajax()) {
-            return response()->json([
-                'success' => true,
-                'meeting' => [
-                    'id' => $caseMeeting->id,
-                    'student_name' => $caseMeeting->student ? $caseMeeting->student->full_name : 'Unknown',
-                    'meeting_type' => $caseMeeting->meeting_type,
-                    'meeting_type_display' => ucwords(str_replace('_', ' ', $caseMeeting->meeting_type)),
-                    'scheduled_date' => $caseMeeting->scheduled_date,
-                    'scheduled_time' => $caseMeeting->scheduled_time,
-                    'location' => $caseMeeting->location,
-                    'status' => $caseMeeting->status,
-                    'status_text' => ucfirst($caseMeeting->status),
-                    'status_class' => $this->getStatusClass($caseMeeting->status),
-                    'urgency_level' => $caseMeeting->urgency_level,
-                    'urgency_color' => $this->getUrgencyColor($caseMeeting->urgency_level),
-                    'reason' => $caseMeeting->reason,
-                    'notes' => $caseMeeting->notes,
-                    'summary' => $caseMeeting->summary,
-                ]
-            ]);
-        }
-
-        return view('guidance.case-meeting-detail', compact('caseMeeting'));
+    if (request()->ajax()) {
+        return response()->json([
+            'success' => true,
+            'meeting' => [
+                'id' => $caseMeeting->id,
+                'student_name' => $caseMeeting->student ? $caseMeeting->student->full_name : 'Unknown',
+                'meeting_type' => $caseMeeting->meeting_type,
+                'meeting_type_display' => ucwords(str_replace('_', ' ', $caseMeeting->meeting_type)),
+                'scheduled_date' => $caseMeeting->scheduled_date,
+                'scheduled_time' => $caseMeeting->scheduled_time,
+                'location' => $caseMeeting->location,
+                'status' => $caseMeeting->status,
+                'status_text' => ucfirst($caseMeeting->status),
+                'status_class' => $this->getStatusClass($caseMeeting->status),
+                'urgency_level' => $caseMeeting->urgency_level,
+                'urgency_color' => $this->getUrgencyColor($caseMeeting->urgency_level),
+                'reason' => $caseMeeting->reason,
+                'notes' => $caseMeeting->notes,
+                'summary' => $caseMeeting->summary,
+                // ✅ include sanctions
+                'sanctions' => $caseMeeting->sanctions->map(function ($sanction) {
+                    return [
+                        'id' => $sanction->id,
+                        'type' => $sanction->sanction,
+                        'description' => $sanction->notes,
+                        'created_at' => $sanction->created_at->format('Y-m-d H:i'),
+                    ];
+                }),
+            ]
+        ]);
     }
+
+    return view('guidance.case-meeting-detail', compact('caseMeeting'));
+}
+
 
     /**
      * Edit case meeting
@@ -439,42 +453,53 @@ class GuidanceController extends Controller
     /**
      * Forward case to president
      */
-    public function forwardToPresident(Request $request, CaseMeeting $caseMeeting)
-    {
-        $user = Auth::user();
-        $guidanceRecord = $user->guidance ?? $user->guidanceDiscipline ?? null;
-        if (!$guidanceRecord || ($user->guidance && !$user->guidance->is_active)) {
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'You do not have permission to forward cases.'
-                ], 403);
-            }
-            return back()->withErrors(['error' => 'You do not have permission to forward cases.']);
-        }
-
-        $validatedData = $request->validate([
-            'reason' => 'required|string',
+ public function forwardToPresident(CaseMeeting $caseMeeting)
+{
+    try {
+        // Debug logs
+        Log::info('Forward attempt for CaseMeeting', [
+            'id' => $caseMeeting->id,
+            'status' => $caseMeeting->status,
+            'summary_exists' => !empty($caseMeeting->summary),
+            'sanctions_exist' => $caseMeeting->sanctions()->exists(),
+            'meeting_type' => $caseMeeting->meeting_type,
         ]);
+
+        if (! $caseMeeting->isReadyForForwarding()) {
+            Log::warning('Forward blocked: requirements not met', ['id' => $caseMeeting->id]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Please add both a summary report and a sanction before forwarding.'
+            ], 400);
+        }
 
         $caseMeeting->update([
-            'president_notes' => $validatedData['reason'],
+            'status' => 'forwarded',
             'forwarded_to_president' => true,
             'forwarded_at' => now(),
-            'status' => 'in_progress',
         ]);
 
-        if ($request->ajax()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Case forwarded to president successfully.',
-                'caseMeeting' => $caseMeeting
-            ]);
-        }
+        Log::info('Forward successful for CaseMeeting', ['id' => $caseMeeting->id]);
 
-        return redirect()->route('guidance.case-meetings.index')
-            ->with('success', 'Case forwarded to president successfully.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Case meeting forwarded to president successfully.'
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Error in forwardToPresident', [
+            'id' => $caseMeeting->id ?? null,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Unexpected error occurred while forwarding. Check logs.'
+        ], 500);
     }
+}
+
 
     // COUNSELING SESSION METHODS
 
