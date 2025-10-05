@@ -111,14 +111,34 @@ class CounselingSession extends Model
     /**
      * Get the display name for the session type.
      */
-    public function getSessionTypeDisplayAttribute(): string
+    public function getSessionTypeDisplayAttribute(): array
     {
         return match($this->session_type) {
-            'individual' => 'Individual Counseling',
-            'group' => 'Group Counseling',
-            'family' => 'Family Counseling',
-            'career' => 'Career Counseling',
-            default => ucfirst(str_replace('_', ' ', $this->session_type))
+            'individual' => [
+                'text' => 'Individual Counseling',
+                'class' => 'badge bg-primary',
+                'icon' => 'ri-user-heart-line'
+            ],
+            'group' => [
+                'text' => 'Group Counseling',
+                'class' => 'badge bg-info',
+                'icon' => 'ri-group-line'
+            ],
+            'family' => [
+                'text' => 'Family Counseling',
+                'class' => 'badge bg-warning',
+                'icon' => 'ri-home-heart-line'
+            ],
+            'career' => [
+                'text' => 'Career Counseling',
+                'class' => 'badge bg-success',
+                'icon' => 'ri-briefcase-line'
+            ],
+            default => [
+                'text' => ucfirst(str_replace('_', ' ', $this->session_type)),
+                'class' => 'badge bg-secondary',
+                'icon' => 'ri-question-line'
+            ]
         };
     }
 
