@@ -218,12 +218,18 @@ class GuidanceController extends Controller
         $validatedData['counselor_id'] = $guidanceRecord->id;
         $validatedData['status'] = 'scheduled';
 
-        $caseMeeting = CaseMeeting::create($validatedData);
+        // Check if there's an existing in_progress case meeting for this student
+        $existingMeeting = CaseMeeting::where('student_id', $validatedData['student_id'])
+            ->where('status', 'in_progress')
+            ->first();
 
-        // Update student's case meeting status
-        $student = Student::find($validatedData['student_id']);
-        if ($student) {
-            $student->update(['case_meeting_status' => 'scheduled']);
+        if ($existingMeeting) {
+            // Update the existing in_progress meeting
+            $existingMeeting->update($validatedData);
+            $caseMeeting = $existingMeeting;
+        } else {
+            // Create new case meeting
+            $caseMeeting = CaseMeeting::create($validatedData);
         }
 
         \Log::info('Schedule Case Meeting: Success', [
@@ -264,11 +270,6 @@ class GuidanceController extends Controller
             'status' => 'completed',
             'completed_at' => now(),
         ]);
-
-        // Update student's case meeting status
-        if ($caseMeeting->student) {
-            $caseMeeting->student->update(['case_meeting_status' => 'completed']);
-        }
 
         if ($request->ajax()) {
             return response()->json([
@@ -462,11 +463,6 @@ class GuidanceController extends Controller
             'forwarded_at' => now(),
             'status' => 'in_progress',
         ]);
-
-        // Update student's case meeting status
-        if ($caseMeeting->student) {
-            $caseMeeting->student->update(['case_meeting_status' => 'in_progress']);
-        }
 
         if ($request->ajax()) {
             return response()->json([

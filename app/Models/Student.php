@@ -66,7 +66,7 @@ class Student extends Authenticatable
         'pre_registered_at',
         'is_active',
         'remarks',
-        'case_meeting_status',
+
     ];
 
 

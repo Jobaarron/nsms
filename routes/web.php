@@ -496,4 +496,3 @@ Route::prefix('registrar')->name('registrar.')->group(function () {
         })->name('logout');
     });
 });
-
