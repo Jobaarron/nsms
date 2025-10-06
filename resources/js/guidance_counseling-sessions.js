@@ -209,10 +209,10 @@ function showCounselingSessionModal(session) {
                     </div>
                     <div class="modal-footer">
                         ${session.status === 'scheduled' ? `
-                            <button type="button" class="btn btn-success" onclick="completeCounselingSession(${session.id}); closeModal('viewCounselingSessionModal');">
+                            <button type="button" class="btn btn-success" onclick="completeCounselingSession(${session.id})">
                                 <i class="ri-check-line me-2"></i>Mark Complete
                             </button>
-                            <button type="button" class="btn btn-warning" onclick="rescheduleCounselingSession(${session.id}); closeModal('viewCounselingSessionModal');">
+                            <button type="button" class="btn btn-warning" onclick="rescheduleCounselingSession(${session.id})">
                                 <i class="ri-calendar-todo-line me-2"></i>Reschedule
                             </button>
                         ` : ''}
@@ -278,28 +278,170 @@ function completeCounselingSession(sessionId) {
     });
 }
 
+// Schedule recommended counseling session
+function scheduleRecommendedSession(sessionId) {
+    // Show modal for scheduling recommended session
+    const modalHtml = `
+        <div class="modal fade" id="scheduleRecommendedModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Schedule Recommended Counseling Session</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form id="scheduleRecommendedForm" onsubmit="submitScheduleRecommended(event, ${sessionId})">
+                        <div class="modal-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Counselor <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="counselor_id" required>
+                                        <option value="">Select Counselor</option>
+                                        <!-- Counselors will be loaded dynamically -->
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Date <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" name="scheduled_date" required min="${new Date().toISOString().split('T')[0]}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Time <span class="text-danger">*</span></label>
+                                    <input type="time" class="form-control" name="scheduled_time" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Duration (minutes) <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="duration" required>
+                                        <option value="30">30 minutes</option>
+                                        <option value="45">45 minutes</option>
+                                        <option value="60" selected>60 minutes</option>
+                                        <option value="90">90 minutes</option>
+                                        <option value="120">120 minutes</option>
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Location</label>
+                                    <input type="text" class="form-control" name="location" placeholder="e.g., Guidance Office, Conference Room">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-success">
+                                <i class="ri-calendar-check-line me-2"></i>Schedule Session
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Remove existing modal if any
+    const existingModal = document.getElementById('scheduleRecommendedModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+
+    // Add new modal to body
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    // Load counselors
+    loadCounselors();
+
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('scheduleRecommendedModal'));
+    modal.show();
+}
+
+// Load counselors for the dropdown
+function loadCounselors() {
+    fetch('/api/guidance/counselors', {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const counselorSelect = document.querySelector('#scheduleRecommendedModal select[name="counselor_id"]');
+        if (counselorSelect && data.counselors) {
+            counselorSelect.innerHTML = '<option value="">Select Counselor</option>';
+            data.counselors.forEach(counselor => {
+                counselorSelect.innerHTML += `<option value="${counselor.id}">${counselor.name}</option>`;
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error loading counselors:', error);
+    });
+}
+
+// Submit schedule recommended form
+function submitScheduleRecommended(event, sessionId) {
+    event.preventDefault();
+
+    const form = event.target;
+    const formData = new FormData(form);
+    const submitBtn = form.querySelector('button[type="submit"]');
+
+    // Show loading state
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="ri-loader-4-line me-2 spinner-border spinner-border-sm"></i>Scheduling...';
+    submitBtn.disabled = true;
+
+    fetch(`/guidance/counseling-sessions/${sessionId}/schedule-recommended`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('Recommended counseling session scheduled successfully!', 'success');
+            closeModal('scheduleRecommendedModal');
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } else {
+            showAlert(data.message || 'Failed to schedule session', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error scheduling recommended session:', error);
+        showAlert('An error occurred while scheduling the session', 'danger');
+    })
+    .finally(() => {
+        // Restore button state
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+}
+
 // Reschedule counseling session
 function rescheduleCounselingSession(sessionId) {
     const newDate = prompt('Enter new date (YYYY-MM-DD):');
     if (!newDate) return;
-    
+
     const newTime = prompt('Enter new time (HH:MM):');
     if (!newTime) return;
-    
+
     // Basic validation
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     const timeRegex = /^\d{2}:\d{2}$/;
-    
+
     if (!dateRegex.test(newDate)) {
         showAlert('Invalid date format. Please use YYYY-MM-DD', 'warning');
         return;
     }
-    
+
     if (!timeRegex.test(newTime)) {
         showAlert('Invalid time format. Please use HH:MM', 'warning');
         return;
     }
-    
+
     fetch(`/guidance/counseling-sessions/${sessionId}/reschedule`, {
         method: 'POST',
         headers: {
@@ -427,6 +569,7 @@ function showAlert(message, type = 'info') {
 window.submitCounselingSession = submitCounselingSession;
 window.viewCounselingSession = viewCounselingSession;
 window.completeCounselingSession = completeCounselingSession;
+window.scheduleRecommendedSession = scheduleRecommendedSession;
 window.rescheduleCounselingSession = rescheduleCounselingSession;
 window.editCounselingSession = editCounselingSession;
 window.filterCounselingSessions = filterCounselingSessions;

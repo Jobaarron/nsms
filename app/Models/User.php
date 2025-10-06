@@ -148,7 +148,7 @@ class User extends Authenticatable
      */
     public function isGuidanceStaff()
     {
-        return $this->guidance()->exists() && $this->guidance->is_active;
+        return ($this->guidance()->exists() && $this->guidance->is_active) || $this->guidanceDiscipline()->exists();
     }
 
     /**

@@ -98,6 +98,7 @@
                                 <label class="form-label">Status</label>
                                 <select class="form-select" id="status-filter" onchange="filterCounselingSessions()">
                                     <option value="">All Status</option>
+                                    <option value="recommended">Recommended</option>
                                     <option value="scheduled">Scheduled</option>
                                     <option value="completed">Completed</option>
                                     <option value="cancelled">Cancelled</option>
@@ -121,7 +122,7 @@
                             <div class="col-md-3">
                                 <label class="form-label">Search</label>
                                 <div class="input-group">
-                                    <input type="text" class="form-control" id="search-filter" placeholder="Search student name..." onkeyup="filterCounselingSessions()">
+                                    <input type="text" class="form-control" id="search-filter" placeholder="Search student name..." onkeypress="if(event.key === 'Enter') filterCounselingSessions()">
                                     <button class="btn btn-outline-secondary" onclick="clearFilters()">
                                         <i class="ri-close-line"></i>
                                     </button>
@@ -161,6 +162,7 @@
                                 <thead class="table-light">
                                     <tr>
                                         <th>Student</th>
+                                        <th>Recommended By</th>
                                         <th>Session Type</th>
                                         <th>Date & Time</th>
                                         <th>Duration</th>
@@ -184,14 +186,26 @@
                                             </div>
                                         </td>
                                         <td>
+                                            @if($session->recommender)
+                                                <div class="fw-semibold">{{ $session->recommender->name }}</div>
+                                                <small class="text-muted">{{ $session->recommender->roles->first()->name ?? 'Teacher' }}</small>
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
+                                        </td>
+                                        <td>
                                             <span class="badge {{ $session->session_type_display['class'] }}">
                                                 <i class="{{ $session->session_type_display['icon'] }} me-1"></i>
                                                 {{ $session->session_type_display['text'] }}
                                             </span>
                                         </td>
                                         <td>
-                                            <div>{{ $session->scheduled_date->format('M d, Y') }}</div>
-                                            <small class="text-muted">{{ $session->scheduled_time->format('h:i A') }}</small>
+                                            @if($session->scheduled_date)
+                                                <div>{{ $session->scheduled_date->format('M d, Y') }}</div>
+                                                <small class="text-muted">{{ $session->scheduled_time->format('h:i A') }}</small>
+                                            @else
+                                                <span class="text-muted">Not scheduled</span>
+                                            @endif
                                         </td>
                                         <td>
                                             <span class="text-muted">{{ $session->duration }} min</span>
@@ -209,7 +223,11 @@
                                                 <button class="btn btn-outline-primary" onclick="viewCounselingSession({{ $session->id }})" title="View Details">
                                                     <i class="ri-eye-line"></i>
                                                 </button>
-                                                @if($session->status === 'scheduled')
+                                                @if($session->status === 'recommended')
+                                                    <button class="btn btn-outline-success" onclick="scheduleRecommendedSession({{ $session->id }})" title="Schedule Session">
+                                                        <i class="ri-calendar-check-line"></i>
+                                                    </button>
+                                                @elseif($session->status === 'scheduled')
                                                     <button class="btn btn-outline-success" onclick="completeCounselingSession({{ $session->id }})" title="Mark Complete">
                                                         <i class="ri-check-line"></i>
                                                     </button>
@@ -225,7 +243,7 @@
                                     </tr>
                                     @empty
                                     <tr>
-                                        <td colspan="7" class="text-center py-4">
+                                        <td colspan="8" class="text-center py-4">
                                             <div class="text-muted">
                                                 <i class="ri-heart-pulse-line fs-1 d-block mb-2"></i>
                                                 <p>No counseling sessions found</p>
@@ -335,12 +353,4 @@
     </div>
 
     @vite('resources/js/guidance_counseling-sessions.js')
-    
-    <script>
-        // Show/hide follow-up date field
-        document.getElementById('followUpRequired').addEventListener('change', function() {
-            const followUpContainer = document.getElementById('followUpDateContainer');
-            followUpContainer.style.display = this.checked ? 'block' : 'none';
-        });
-    </script>
 </x-guidance-layout>

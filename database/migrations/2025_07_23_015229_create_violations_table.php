@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('student_id')->constrained('students')->onDelete('cascade');
             $table->foreignId('reported_by')->constrained('guidance_discipline')->onDelete('cascade');
-            $table->string('violation_type'); // e.g., 'late', 'uniform', 'misconduct', 'academic'
+            $table->string('violation_type')->nullable(); // e.g., 'late', 'uniform', 'misconduct', 'academic'
             $table->string('title');
             $table->text('description');
             $table->enum('severity', ['minor', 'major', 'severe'])->default('minor');

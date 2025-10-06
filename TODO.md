@@ -1,0 +1,2 @@
+- [x] Fix inconsistent user role display in discipline layout
+- [ ] Test the fix by accessing guidance and discipline pages

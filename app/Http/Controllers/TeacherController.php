@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Teacher;
+use App\Models\Student;
+use App\Models\CounselingSession;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -84,7 +86,44 @@ class TeacherController extends Controller
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        
+
         return redirect()->route('teacher.login');
+    }
+
+    /**
+     * Show the form to recommend a student to counselling.
+     */
+    public function showRecommendForm()
+    {
+        $students = Student::select('id', 'first_name', 'last_name', 'student_id')
+            ->orderBy('last_name', 'asc')
+            ->get();
+
+        return view('teacher.recommend-counseling', compact('students'));
+    }
+
+    /**
+     * Recommend a student to counselling.
+     */
+    public function recommendToCounseling(Request $request)
+    {
+        $validatedData = $request->validate([
+            'student_id' => 'required|exists:students,id',
+            'reason' => 'required|string',
+            'notes' => 'nullable|string',
+        ]);
+
+        // Create a counseling session recommendation
+        CounselingSession::create([
+            'student_id' => $validatedData['student_id'],
+            'recommended_by' => Auth::id(),
+            'reason' => $validatedData['reason'],
+            'notes' => $validatedData['notes'],
+            'status' => 'recommended', // New status for recommendations
+            'session_type' => 'individual', // Default
+        ]);
+
+        return redirect()->route('teacher.dashboard')
+            ->with('success', 'Student has been recommended for counseling. Guidance will review the recommendation.');
     }
 }

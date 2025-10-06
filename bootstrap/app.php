@@ -52,10 +52,10 @@ return Application::configure(basePath: dirname(__DIR__))
          * -----------------
          */
         $middleware->api(append: [
-            EnsureFrontendRequestsAreStateful::class,
-            'throttle:api',   // ✅ cleaner way
-            SubstituteBindings::class,
-        ]);
+        \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+        'throttle:api',   // 👈 cleaner than ::class.':api'
+        \Illuminate\Routing\Middleware\SubstituteBindings::class,
+    ]);
 
         /**
          * -----------------

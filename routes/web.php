@@ -16,6 +16,7 @@ use App\Http\Controllers\RegistrarController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\AdminEnrollmentController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\DisciplineController;
 use App\Http\Controllers\PaymentScheduleController;
 
 
@@ -50,26 +51,29 @@ Route::post('/contact', [ContactController::class, 'store'])->name('contact.stor
 Route::get('/generate-admin', [AdminController::class, 'showGeneratorForm'])->name('show.admin.generator');
 Route::post('/generate-admin', [AdminController::class, 'generateAdmin'])->name('generate.admin');
 
-// Admin routes
 Route::prefix('admin')->group(function () {
     // Admin login routes (public)
     Route::get('/login', [AdminController::class, 'showLoginForm'])->name('admin.login');
     Route::post('/login', [AdminController::class, 'login'])->name('admin.login.submit');
-    
+
     // Protected admin routes - use auth middleware
     Route::middleware(['auth'])->group(function () {
         // Dashboard
-        
+
         Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
             Route::get('/dashboard', [AdminController::class, 'index'])->name('dashboard');
             Route::get('/dashboard/stats', [AdminController::class, 'getStats'])->name('dashboard.stats');
+
+            // Forwarded Case Meetings for President (Admin)
+            Route::get('/forwarded-cases', [AdminController::class, 'forwardedCases'])->name('forwarded.cases');
+
+            // Approve sanction for a case meeting
+            Route::post('/sanctions/{sanction}/approve', [AdminController::class, 'approveSanction'])->name('sanctions.approve');
         });
+
         Route::get('/', [AdminController::class, 'index'])->name('admin.dashboard');
         Route::post('/logout', [AdminController::class, 'logout'])->name('admin.logout');
-        
-       
-     
-        
+
         // User Management - Use your custom permission middleware
         Route::middleware(['can:Manage Roles'])->group(function () {
             Route::get('/manage-users', [UserManagementController::class, 'index'])->name('admin.manage.users');
@@ -82,10 +86,10 @@ Route::prefix('admin')->group(function () {
             Route::put('/permissions/{id}', [AdminController::class, 'updatePermission'])->name('admin.update.permission');
             Route::delete('/permissions/{id}', [AdminController::class, 'deletePermission'])->name('admin.delete.permission');
             Route::get('/users/{user}/roles', [AdminController::class, 'getUserRoles'])->name('admin.user.roles');
-            
+
             // User Management
             Route::get('/user-management', [UserManagementController::class, 'index'])->name('admin.user.management');
-            
+
             // User CRUD operations
             Route::get('/users/{id}', [UserManagementController::class, 'show'])->name('admin.users.show');
             Route::put('/users/{id}', [UserManagementController::class, 'update'])->name('admin.users.update');
@@ -100,44 +104,44 @@ Route::prefix('admin')->group(function () {
             Route::post('/users/cashier', [UserManagementController::class, 'createCashier'])->name('admin.users.store.cashier');
             Route::post('/users/faculty-head', [UserManagementController::class, 'createFacultyHead'])->name('admin.users.store.faculty_head');
             Route::get('/users/stats', [UserManagementController::class, 'getStats'])->name('admin.users.stats');
-            
+
             // Enrollments management 
             Route::get('/enrollments', [AdminEnrollmentController::class, 'index'])->name('admin.enrollments');
-            
+
             // Enrollment API routes
             Route::prefix('enrollments')->name('admin.enrollments.')->group(function () {
                 Route::get('/applications', [AdminEnrollmentController::class, 'getApplications'])->name('applications');
                 Route::get('/applications/{id}', [AdminEnrollmentController::class, 'getApplication'])->name('application');
                 Route::post('/applications/{id}/status', [AdminEnrollmentController::class, 'updateApplicationStatus'])->name('application.status');
-                
+
                 // Application actions
                 Route::post('/applications/{id}/approve', [AdminEnrollmentController::class, 'approveApplication'])->name('application.approve');
                 Route::post('/applications/{id}/decline', [AdminEnrollmentController::class, 'declineApplication'])->name('application.decline');
                 Route::delete('/applications/{id}', [AdminEnrollmentController::class, 'deleteApplication'])->name('application.delete');
-                
+
                 // Bulk actions
                 Route::post('/applications/bulk-approve', [AdminEnrollmentController::class, 'bulkApprove'])->name('applications.bulk-approve');
                 Route::post('/applications/bulk-decline', [AdminEnrollmentController::class, 'bulkDecline'])->name('applications.bulk-decline');
                 Route::post('/applications/bulk-delete', [AdminEnrollmentController::class, 'bulkDelete'])->name('applications.bulk-delete');
-                
+
                 Route::get('/documents', [AdminEnrollmentController::class, 'getDocuments'])->name('documents');
                 Route::get('/applications/{applicationId}/documents', [AdminEnrollmentController::class, 'getApplicationDocuments'])->name('application.documents');
                 Route::get('/documents/{enrolleeId}/{documentIndex}', [AdminEnrollmentController::class, 'getDocument'])->name('document');
                 Route::get('/documents/{enrolleeId}/{documentIndex}/view', [AdminEnrollmentController::class, 'viewDocument'])->name('document.view');
                 Route::get('/documents/{enrolleeId}/{documentIndex}/download', [AdminEnrollmentController::class, 'downloadDocument'])->name('document.download');
                 Route::post('/documents/{enrolleeId}/{documentIndex}/status', [AdminEnrollmentController::class, 'updateDocumentStatus'])->name('document.status');
-                
+
                 Route::get('/appointments', [AdminEnrollmentController::class, 'getAppointments'])->name('appointments');
                 Route::post('/applications/{applicationId}/appointment', [AdminEnrollmentController::class, 'updateAppointment'])->name('application.appointment');
-        
+
                 Route::get('/notices', [AdminEnrollmentController::class, 'getNotices'])->name('notices');
                 Route::post('/notices', [AdminEnrollmentController::class, 'createNotice'])->name('notices.create');
                 Route::post('/notices/bulk', [AdminEnrollmentController::class, 'sendBulkNotices'])->name('notices.bulk');
                 Route::delete('/notices/{noticeId}', [AdminEnrollmentController::class, 'deleteNotice'])->name('notices.delete');
-                
+
                 Route::get('/export', [AdminEnrollmentController::class, 'export'])->name('export');
             });
-            
+
             // Contact Messages Management
             Route::get('/contact-messages', [ContactController::class, 'adminIndex'])->name('admin.contact.messages');
             Route::get('/contact-messages/{message}', [ContactController::class, 'show'])->name('admin.contact.show');
@@ -211,6 +215,14 @@ Route::get('/teacher', [TeacherController::class, 'index'])
     ->name('teacher.dashboard')
     ->middleware(['auth', 'role:teacher']);
 
+// Teacher Counseling Recommendation Routes
+Route::middleware(['auth', 'role:teacher'])->prefix('teacher')->name('teacher.')->group(function () {
+    Route::get('/recommend-counseling', [TeacherController::class, 'showRecommendForm'])
+        ->name('recommend-counseling.form');
+    Route::post('/recommend-counseling', [TeacherController::class, 'recommendToCounseling'])
+        ->name('recommend-counseling');
+});
+
 
 // Discipline Portal Routes
 Route::prefix('discipline')->name('discipline.')->group(function () {
@@ -230,10 +242,13 @@ Route::prefix('discipline')->name('discipline.')->group(function () {
         Route::prefix('students')->name('students.')->group(function () {
             Route::get('/', [App\Http\Controllers\DisciplineController::class, 'studentsIndex'])
                 ->name('index');
-            
+
+            Route::get('/search', [App\Http\Controllers\DisciplineController::class, 'searchStudents'])
+                ->name('search');
+
             Route::get('/{student}', [App\Http\Controllers\DisciplineController::class, 'showStudent'])
                 ->name('show');
-                
+
             Route::get('/{student}/info', [App\Http\Controllers\DisciplineController::class, 'getStudentInfo'])
                 ->name('info');
         });
@@ -242,21 +257,28 @@ Route::prefix('discipline')->name('discipline.')->group(function () {
         Route::prefix('violations')->name('violations.')->group(function () {
             Route::get('/', [App\Http\Controllers\DisciplineController::class, 'violationsIndex'])
                 ->name('index');
-            
+
+            Route::get('/summary', [App\Http\Controllers\DisciplineController::class, 'violationsSummary'])
+                ->name('summary');
+
             Route::post('/', [App\Http\Controllers\DisciplineController::class, 'storeViolation'])
                 ->name('store');
-            
+
             Route::get('/{violation}', [App\Http\Controllers\DisciplineController::class, 'showViolation'])
                 ->name('show');
-            
+
             Route::get('/{violation}/edit', [App\Http\Controllers\DisciplineController::class, 'editViolation'])
                 ->name('edit');
-            
+
             Route::put('/{violation}', [App\Http\Controllers\DisciplineController::class, 'updateViolation'])
                 ->name('update');
-            
-            Route::delete('/{violation}', [App\Http\Controllers\DisciplineController::class, 'destroyViolation'])
-                ->name('destroy');
+
+        Route::delete('/{violation}', [App\Http\Controllers\DisciplineController::class, 'destroyViolation'])
+            ->name('destroy');
+
+        // Forward violation to case meeting
+        Route::post('/{violation}/forward', [App\Http\Controllers\DisciplineController::class, 'forwardViolation'])
+            ->name('forward');
         });
     });
 });
@@ -266,9 +288,9 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
     // Public routes
     Route::get('/login', [App\Http\Controllers\GuidanceController::class, 'showLogin'])->name('login');
     Route::post('/login', [App\Http\Controllers\GuidanceController::class, 'login'])->name('login.submit');
-    
+
     // Protected routes
-    Route::middleware(['web'])->group(function () {
+    Route::middleware(['web', 'auth'])->group(function () {
         // Dashboard
         Route::get('/', [App\Http\Controllers\GuidanceController::class, 'dashboard'])->name('dashboard');
         
@@ -279,13 +301,28 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
         Route::prefix('case-meetings')->name('case-meetings.')->group(function () {
             Route::get('/', [App\Http\Controllers\GuidanceController::class, 'caseMeetingsIndex'])
                 ->name('index');
-            
+
+            Route::get('/{caseMeeting}', [App\Http\Controllers\GuidanceController::class, 'showCaseMeeting'])
+                ->name('show');
+
+            Route::get('/{caseMeeting}/edit', [App\Http\Controllers\GuidanceController::class, 'editCaseMeeting'])
+                ->name('edit');
+
+            Route::put('/{caseMeeting}', [App\Http\Controllers\GuidanceController::class, 'updateCaseMeeting'])
+                ->name('update');
+
+            Route::get('/export', [App\Http\Controllers\GuidanceController::class, 'exportCaseMeetings'])
+                ->name('export');
+
             Route::post('/', [App\Http\Controllers\GuidanceController::class, 'scheduleCaseMeeting'])
                 ->name('schedule');
-            
+
+            Route::post('/{caseMeeting}/complete', [App\Http\Controllers\GuidanceController::class, 'completeCaseMeeting'])
+                ->name('complete');
+
             Route::post('/{caseMeeting}/summary', [App\Http\Controllers\GuidanceController::class, 'createCaseSummary'])
                 ->name('summary');
-            
+
             Route::post('/{caseMeeting}/forward', [App\Http\Controllers\GuidanceController::class, 'forwardToPresident'])
                 ->name('forward');
         });
@@ -294,12 +331,21 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
         Route::prefix('counseling-sessions')->name('counseling-sessions.')->group(function () {
             Route::get('/', [App\Http\Controllers\GuidanceController::class, 'counselingSessionsIndex'])
                 ->name('index');
-            
+
             Route::post('/', [App\Http\Controllers\GuidanceController::class, 'scheduleCounselingSession'])
                 ->name('schedule');
-            
+
+            Route::post('/{counselingSession}/schedule-recommended', [App\Http\Controllers\GuidanceController::class, 'scheduleRecommendedSession'])
+                ->name('schedule-recommended');
+
             Route::post('/{counselingSession}/summary', [App\Http\Controllers\GuidanceController::class, 'createCounselingSummary'])
                 ->name('summary');
+        });
+
+        // API Routes
+        Route::prefix('api')->name('api.')->group(function () {
+            Route::get('/counselors', [App\Http\Controllers\GuidanceController::class, 'getCounselors'])
+                ->name('counselors');
         });
     });
 });
@@ -351,13 +397,9 @@ Route::prefix('enrollee')->name('enrollee.')->group(function () {
     // Enrollee login routes (public)
     Route::get('/login', [EnrolleeController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [EnrolleeController::class, 'login'])->name('login.submit');
-    
+
     // Protected enrollee routes
-    Route::middleware(['auth:enrollee'])->group(function () {
-        // Dashboard
-        Route::get('/', [EnrolleeController::class, 'index'])->name('dashboard');
-        
-        // Application management
+    Route::middleware('auth:enrollee')->group(function () {
         Route::get('/application', [EnrolleeController::class, 'application'])->name('application');
         
         // Document management
@@ -491,6 +533,7 @@ Route::prefix('registrar')->name('registrar.')->group(function () {
             return redirect()->route('registrar.login');
         })->name('logout');
     });
+});
 });
 
 // ===== PAYMENT SCHEDULING ROUTES =====

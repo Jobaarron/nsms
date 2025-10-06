@@ -13,9 +13,9 @@
                         <button class="btn btn-outline-primary" onclick="refreshDashboard()">
                             <i class="ri-refresh-line me-2"></i>Refresh
                         </button>
-                        <button class="btn btn-primary" onclick="openQuickActionModal()">
+                        <!-- <button class="btn btn-primary" onclick="openQuickActionModal()">
                             <i class="ri-add-line me-2"></i>Quick Action
-                        </button>
+                        </button> -->
                     </div>
                 </div>
             </div>
@@ -123,91 +123,82 @@
                 </div>
             </div>
 
-            <!-- Quick Actions & Upcoming -->
-            <div class="col-lg-4">
-                <!-- Quick Actions -->
-                <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-header bg-white border-0">
-                        <h5 class="card-title mb-0">Quick Actions</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-grid gap-2">
-                            <button class="btn btn-outline-primary" onclick="scheduleNewCaseMeeting()">
-                                <i class="ri-calendar-event-line me-2"></i>Schedule Case Meeting
-                            </button>
-                            <button class="btn btn-outline-success" onclick="scheduleNewCounseling()">
-                                <i class="ri-heart-pulse-line me-2"></i>Schedule Counseling
-                            </button>
-                            <button class="btn btn-outline-info" onclick="scheduleHouseVisit()">
-                                <i class="ri-home-heart-line me-2"></i>Schedule House Visit
-                            </button>
-                            <button class="btn btn-outline-warning" onclick="createCaseSummary()">
-                                <i class="ri-file-text-line me-2"></i>Create Case Summary
-                            </button>
-                        </div>
-                    </div>
-                </div>
+   
+<!-- <div class="col-lg-4">
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-0">
+            <h5 class="card-title mb-0">Quick Actions</h5>
+        </div>
+        <div class="card-body">
+            <div class="d-grid gap-2">
+                <button class="btn btn-outline-primary" onclick="scheduleNewCaseMeeting()">
+                    <i class="ri-calendar-event-line me-2"></i>Schedule Case Meeting
+                </button>
+                <button class="btn btn-outline-success" onclick="scheduleNewCounseling()">
+                    <i class="ri-heart-pulse-line me-2"></i>Schedule Counseling
+                </button>
+                <button class="btn btn-outline-info" onclick="scheduleHouseVisit()">
+                    <i class="ri-home-heart-line me-2"></i>Schedule House Visit
+                </button>
+                <button class="btn btn-outline-warning" onclick="createCaseSummary()">
+                    <i class="ri-file-text-line me-2"></i>Create Case Summary
+                </button>
+            </div>
+        </div>
+    </div>
 
-                <!-- Upcoming Schedule -->
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white border-0">
-                        <h5 class="card-title mb-0">Today's Schedule</h5>
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0">
+            <h5 class="card-title mb-0">Today's Schedule</h5>
+        </div>
+        <div class="card-body">
+            <div id="todays-schedule"></div>
+        </div>
+    </div>
+</div>
+
+
+</div>
+
+
+<div class="modal fade" id="quickActionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Quick Action</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <button class="btn btn-outline-primary w-100 h-100" onclick="scheduleNewCaseMeeting(); closeModal('quickActionModal')">
+                            <i class="ri-calendar-event-line fs-3 d-block mb-2"></i>
+                            <span>Case Meeting</span>
+                        </button>
                     </div>
-                    <div class="card-body">
-                        <div id="todays-schedule">
-                            <!-- Schedule will be loaded here via JavaScript -->
-                            <div class="text-center py-3">
-                                <div class="spinner-border spinner-border-sm text-primary" role="status">
-                                    <span class="visually-hidden">Loading...</span>
-                                </div>
-                                <p class="text-muted mt-2 small">Loading today's schedule...</p>
-                            </div>
-                        </div>
+                    <div class="col-6">
+                        <button class="btn btn-outline-success w-100 h-100" onclick="scheduleNewCounseling(); closeModal('quickActionModal')">
+                            <i class="ri-heart-pulse-line fs-3 d-block mb-2"></i>
+                            <span>Counseling</span>
+                        </button>
+                    </div>
+                    <div class="col-6">
+                        <button class="btn btn-outline-info w-100 h-100" onclick="scheduleHouseVisit(); closeModal('quickActionModal')">
+                            <i class="ri-home-heart-line fs-3 d-block mb-2"></i>
+                            <span>House Visit</span>
+                        </button>
+                    </div>
+                    <div class="col-6">
+                        <button class="btn btn-outline-warning w-100 h-100" onclick="createCaseSummary(); closeModal('quickActionModal')">
+                            <i class="ri-file-text-line fs-3 d-block mb-2"></i>
+                            <span>Case Summary</span>
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- Quick Action Modal -->
-    <div class="modal fade" id="quickActionModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Quick Action</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="row g-3">
-                        <div class="col-6">
-                            <button class="btn btn-outline-primary w-100 h-100" onclick="scheduleNewCaseMeeting(); closeModal('quickActionModal')">
-                                <i class="ri-calendar-event-line fs-3 d-block mb-2"></i>
-                                <span>Case Meeting</span>
-                            </button>
-                        </div>
-                        <div class="col-6">
-                            <button class="btn btn-outline-success w-100 h-100" onclick="scheduleNewCounseling(); closeModal('quickActionModal')">
-                                <i class="ri-heart-pulse-line fs-3 d-block mb-2"></i>
-                                <span>Counseling</span>
-                            </button>
-                        </div>
-                        <div class="col-6">
-                            <button class="btn btn-outline-info w-100 h-100" onclick="scheduleHouseVisit(); closeModal('quickActionModal')">
-                                <i class="ri-home-heart-line fs-3 d-block mb-2"></i>
-                                <span>House Visit</span>
-                            </button>
-                        </div>
-                        <div class="col-6">
-                            <button class="btn btn-outline-warning w-100 h-100" onclick="createCaseSummary(); closeModal('quickActionModal')">
-                                <i class="ri-file-text-line fs-3 d-block mb-2"></i>
-                                <span>Case Summary</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+</div> -->
 
     @vite('resources/js/guidance-dashboard.js')
 </x-guidance-layout>

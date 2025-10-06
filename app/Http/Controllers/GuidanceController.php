@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -44,6 +45,7 @@ class GuidanceController extends Controller
             if ($user->isGuidanceStaff()) {
                 Auth::login($user);
                 $user->updateLastLogin(); // Update last login timestamp
+                session()->forget('discipline_user'); // Clear discipline user session flag
                 session(['guidance_user' => true]); // Mark as guidance user
                 return redirect()->route('guidance.dashboard');
             } else {
@@ -86,6 +88,7 @@ class GuidanceController extends Controller
     public function logout(Request $request)
     {
         session()->forget('guidance_user');
+        session()->forget('discipline_user'); // Clear discipline user session flag on logout
         Auth::logout();
         return redirect()->route('guidance.login');
     }
@@ -97,7 +100,7 @@ class GuidanceController extends Controller
      */
     public function caseMeetingsIndex()
     {
-        $caseMeetings = CaseMeeting::with(['student', 'counselor'])
+        $caseMeetings = CaseMeeting::with(['student', 'counselor', 'sanctions'])
             ->orderBy('scheduled_date', 'desc')
             ->paginate(20);
 
@@ -123,20 +126,167 @@ class GuidanceController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        // Get current user's guidance record
+        // Get current user
         $user = Auth::user();
+
+        // Log authentication status
+        \Log::info('Schedule Case Meeting Attempt', [
+            'user_id' => $user ? $user->id : null,
+            'user_authenticated' => Auth::check(),
+            'session_guidance_user' => session('guidance_user'),
+            'is_guidance_staff' => $user ? $user->isGuidanceStaff() : false,
+        ]);
+
+        if (!$user) {
+            \Log::warning('Schedule Case Meeting: User not authenticated');
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You must be logged in to schedule case meetings.'
+                ], 401);
+            }
+            return redirect()->route('guidance.login')->withErrors(['error' => 'Please login to continue.']);
+        }
+
+        if (!session('guidance_user') || !$user->isGuidanceStaff()) {
+            \Log::warning('Schedule Case Meeting: User is not guidance staff', [
+                'user_id' => $user->id,
+                'session_guidance_user' => session('guidance_user'),
+                'is_guidance_staff' => $user->isGuidanceStaff(),
+            ]);
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You do not have permission to access guidance features.'
+                ], 403);
+            }
+            return redirect()->route('guidance.login')->withErrors(['error' => 'Access denied.']);
+        }
+
+        // Get current user's guidance record
         $guidanceRecord = $user->guidance ?? $user->guidanceDiscipline ?? null;
+
+        \Log::info('Schedule Case Meeting: Guidance Record Check', [
+            'user_id' => $user->id,
+            'has_guidance' => $user->guidance ? true : false,
+            'has_guidance_discipline' => $user->guidanceDiscipline ? true : false,
+            'guidance_record_id' => $guidanceRecord ? $guidanceRecord->id : null,
+            'guidance_is_active' => $guidanceRecord ? $guidanceRecord->is_active : null,
+        ]);
+
         if (!$guidanceRecord) {
-            return back()->withErrors(['error' => 'You do not have permission to schedule case meetings.']);
+            \Log::warning('Schedule Case Meeting: No guidance record found', [
+                'user_id' => $user->id,
+            ]);
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Your guidance profile is not set up. Please contact an administrator.'
+                ], 403);
+            }
+            return back()->withErrors(['error' => 'Your guidance profile is not set up. Please contact an administrator.']);
+        }
+
+        if ($user->guidance && !$user->guidance->is_active) {
+            \Log::warning('Schedule Case Meeting: Guidance record is inactive', [
+                'user_id' => $user->id,
+                'guidance_id' => $user->guidance->id,
+            ]);
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Your guidance account is inactive. Please contact an administrator.'
+                ], 403);
+            }
+            return back()->withErrors(['error' => 'Your guidance account is inactive. Please contact an administrator.']);
+        }
+
+        // Check for duplicate meeting
+        $existingMeeting = CaseMeeting::where('student_id', $validatedData['student_id'])
+            ->where('scheduled_date', $validatedData['scheduled_date'])
+            ->where('scheduled_time', $validatedData['scheduled_time'])
+            ->first();
+
+        if ($existingMeeting) {
+            $message = 'A meeting for this student at the specified date and time already exists.';
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $message,
+                ], 409);
+            }
+            return back()->withErrors(['error' => $message]);
         }
 
         $validatedData['counselor_id'] = $guidanceRecord->id;
         $validatedData['status'] = 'scheduled';
 
-        $caseMeeting = CaseMeeting::create($validatedData);
+        // Check if there's an existing pending or in_progress case meeting for this student
+        $existingMeeting = CaseMeeting::where('student_id', $validatedData['student_id'])
+            ->whereIn('status', ['pending', 'in_progress'])
+            ->first();
+
+        if ($existingMeeting) {
+            // Update the existing in_progress meeting
+            $existingMeeting->update($validatedData);
+            $caseMeeting = $existingMeeting;
+        } else {
+            // Create new case meeting
+            $caseMeeting = CaseMeeting::create($validatedData);
+        }
+
+        // Load related data
+        $caseMeeting->load(['student', 'counselor', 'sanctions']);
+
+        \Log::info('Schedule Case Meeting: Success', [
+            'user_id' => $user->id,
+            'case_meeting_id' => $caseMeeting->id,
+        ]);
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Case meeting scheduled successfully.',
+                'meeting' => $caseMeeting
+            ]);
+        }
 
         return redirect()->route('guidance.case-meetings.index')
             ->with('success', 'Case meeting scheduled successfully.');
+    }
+
+    /**
+     * Complete a case meeting
+     */
+    public function completeCaseMeeting(Request $request, CaseMeeting $caseMeeting)
+    {
+        $user = Auth::user();
+        $guidanceRecord = $user->guidance ?? $user->guidanceDiscipline ?? null;
+        if (!$guidanceRecord || ($user->guidance && !$user->guidance->is_active)) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You do not have permission to complete case meetings.'
+                ], 403);
+            }
+            return back()->withErrors(['error' => 'You do not have permission to complete case meetings.']);
+        }
+
+        $caseMeeting->update([
+            'status' => 'completed',
+            'completed_at' => now(),
+        ]);
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Case meeting marked as completed.',
+                'caseMeeting' => $caseMeeting
+            ]);
+        }
+
+        return redirect()->route('guidance.case-meetings.index')
+            ->with('success', 'Case meeting marked as completed.');
     }
 
     /**
@@ -156,37 +306,232 @@ class GuidanceController extends Controller
             'recommendations' => $validatedData['recommendations'],
             'follow_up_required' => $validatedData['follow_up_required'] ?? false,
             'follow_up_date' => $validatedData['follow_up_date'],
-            'status' => 'completed',
+            'status' => 'pre_completed',
             'completed_at' => now(),
         ]);
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Case summary created successfully.',
+                'caseMeeting' => $caseMeeting
+            ]);
+        }
 
         return redirect()->route('guidance.case-meetings.index')
             ->with('success', 'Case summary created successfully.');
     }
 
     /**
-     * Forward case to president
+     * Show case meeting details
      */
-    public function forwardToPresident(Request $request, CaseMeeting $caseMeeting)
+    public function showCaseMeeting(CaseMeeting $caseMeeting)
+{
+    $caseMeeting->load(['student', 'counselor', 'sanctions']);
+
+    if (request()->ajax()) {
+        return response()->json([
+            'success' => true,
+            'meeting' => [
+                'id' => $caseMeeting->id,
+                'student_name' => $caseMeeting->student ? $caseMeeting->student->full_name : 'Unknown',
+                'meeting_type' => $caseMeeting->meeting_type,
+                'meeting_type_display' => ucwords(str_replace('_', ' ', $caseMeeting->meeting_type)),
+                'scheduled_date' => $caseMeeting->scheduled_date,
+                'scheduled_time' => $caseMeeting->scheduled_time,
+                'location' => $caseMeeting->location,
+                'status' => $caseMeeting->status,
+                'status_text' => ucfirst($caseMeeting->status),
+                'status_class' => $this->getStatusClass($caseMeeting->status),
+                'urgency_level' => $caseMeeting->urgency_level,
+                'urgency_color' => $this->getUrgencyColor($caseMeeting->urgency_level),
+                'reason' => $caseMeeting->reason,
+                'notes' => $caseMeeting->notes,
+                'summary' => $caseMeeting->summary,
+                // ✅ include sanctions
+                'sanctions' => $caseMeeting->sanctions->map(function ($sanction) {
+                    return [
+                        'id' => $sanction->id,
+                        'type' => $sanction->sanction,
+                        'description' => $sanction->notes,
+                        'created_at' => $sanction->created_at->format('Y-m-d H:i'),
+                    ];
+                }),
+            ]
+        ]);
+    }
+
+    return view('guidance.case-meeting-detail', compact('caseMeeting'));
+}
+
+
+    /**
+     * Edit case meeting
+     */
+    public function editCaseMeeting(CaseMeeting $caseMeeting)
+    {
+        $caseMeeting->load(['student', 'counselor']);
+        $students = Student::select('id', 'first_name', 'last_name', 'student_id')
+            ->orderBy('last_name', 'asc')
+            ->get();
+
+        return view('guidance.edit-case-meeting', compact('caseMeeting', 'students'));
+    }
+
+    /**
+     * Update case meeting
+     */
+    public function updateCaseMeeting(Request $request, CaseMeeting $caseMeeting)
     {
         $validatedData = $request->validate([
-            'sanction_recommendation' => 'required|string',
-            'urgency_level' => 'required|in:low,medium,high,urgent',
-            'president_notes' => 'nullable|string',
+            'student_id' => 'required|exists:students,id',
+            'meeting_type' => 'required|in:case_meeting,house_visit',
+            'scheduled_date' => 'required|date|after:today',
+            'scheduled_time' => 'required',
+            'location' => 'nullable|string|max:255',
+            'urgency_level' => 'nullable|in:low,medium,high,urgent',
+            'reason' => 'required|string',
+            'notes' => 'nullable|string',
         ]);
 
-        $caseMeeting->update([
-            'sanction_recommendation' => $validatedData['sanction_recommendation'],
-            'urgency_level' => $validatedData['urgency_level'],
-            'president_notes' => $validatedData['president_notes'],
-            'forwarded_to_president' => true,
-            'forwarded_at' => now(),
-            'status' => 'forwarded',
-        ]);
+        $caseMeeting->update($validatedData);
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Case meeting updated successfully.',
+                'meeting' => $caseMeeting->load(['student', 'counselor'])
+            ]);
+        }
 
         return redirect()->route('guidance.case-meetings.index')
-            ->with('success', 'Case forwarded to president successfully.');
+            ->with('success', 'Case meeting updated successfully.');
     }
+
+    /**
+     * Export case meetings
+     */
+    public function exportCaseMeetings(Request $request)
+    {
+        $query = CaseMeeting::with(['student', 'counselor']);
+
+        // Apply filters if provided
+        if ($request->has('status') && $request->status) {
+            $query->where('status', $request->status);
+        }
+        if ($request->has('type') && $request->type) {
+            $query->where('meeting_type', $request->type);
+        }
+        if ($request->has('date') && $request->date) {
+            $query->whereDate('scheduled_date', $request->date);
+        }
+        if ($request->has('search') && $request->search) {
+            $search = $request->search;
+            $query->whereHas('student', function($q) use ($search) {
+                $q->where('first_name', 'like', "%{$search}%")
+                  ->orWhere('last_name', 'like', "%{$search}%")
+                  ->orWhere('student_id', 'like', "%{$search}%");
+            });
+        }
+
+        $caseMeetings = $query->orderBy('scheduled_date', 'desc')->get();
+
+        $filename = 'case_meetings_' . now()->format('Y-m-d_H-i-s') . '.csv';
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function() use ($caseMeetings) {
+            $file = fopen('php://output', 'w');
+
+            // CSV headers
+            fputcsv($file, [
+                'Student ID',
+                'Student Name',
+                'Meeting Type',
+                'Scheduled Date',
+                'Scheduled Time',
+                'Location',
+                'Status',
+                'Reason',
+                'Counselor',
+                'Created At'
+            ]);
+
+            // CSV data
+            foreach ($caseMeetings as $meeting) {
+                fputcsv($file, [
+                    $meeting->student ? $meeting->student->student_id : '',
+                    $meeting->student ? $meeting->student->full_name : '',
+                    ucwords(str_replace('_', ' ', $meeting->meeting_type)),
+                    $meeting->scheduled_date,
+                    $meeting->scheduled_time,
+                    $meeting->location ?: '',
+                    ucfirst($meeting->status),
+                    $meeting->reason,
+                    $meeting->counselor ? $meeting->counselor->name : '',
+                    $meeting->created_at->format('Y-m-d H:i:s')
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Forward case to president
+     */
+ public function forwardToPresident(CaseMeeting $caseMeeting)
+{
+    try {
+        // Debug logs
+        Log::info('Forward attempt for CaseMeeting', [
+            'id' => $caseMeeting->id,
+            'status' => $caseMeeting->status,
+            'summary_exists' => !empty($caseMeeting->summary),
+            'sanctions_exist' => $caseMeeting->sanctions()->exists(),
+            'meeting_type' => $caseMeeting->meeting_type,
+        ]);
+
+        if (! $caseMeeting->isReadyForForwarding()) {
+            Log::warning('Forward blocked: requirements not met', ['id' => $caseMeeting->id]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Please add both a summary report and a sanction before forwarding.'
+            ], 400);
+        }
+
+        $caseMeeting->update([
+            'status' => 'forwarded',
+            'forwarded_to_president' => true,
+            'forwarded_at' => now(),
+        ]);
+
+        Log::info('Forward successful for CaseMeeting', ['id' => $caseMeeting->id]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Case meeting forwarded to president successfully.'
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Error in forwardToPresident', [
+            'id' => $caseMeeting->id ?? null,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Unexpected error occurred while forwarding. Check logs.'
+        ], 500);
+    }
+}
+
 
     // COUNSELING SESSION METHODS
 
@@ -195,8 +540,8 @@ class GuidanceController extends Controller
      */
     public function counselingSessionsIndex()
     {
-        $counselingSessions = CounselingSession::with(['student', 'counselor'])
-            ->orderBy('scheduled_date', 'desc')
+        $counselingSessions = CounselingSession::with(['student', 'counselor', 'recommender'])
+            ->orderByRaw("CASE WHEN status = 'recommended' THEN 0 ELSE 1 END, scheduled_date DESC")
             ->paginate(20);
 
         $students = Student::select('id', 'first_name', 'last_name', 'student_id')
@@ -239,6 +584,43 @@ class GuidanceController extends Controller
     }
 
     /**
+     * Schedule a recommended counseling session
+     */
+    public function scheduleRecommendedSession(Request $request, CounselingSession $counselingSession)
+    {
+        // Ensure the session is recommended
+        if ($counselingSession->status !== 'recommended') {
+            return response()->json([
+                'success' => false,
+                'message' => 'This session is not in recommended status.'
+            ], 400);
+        }
+
+        $validatedData = $request->validate([
+            'counselor_id' => 'required|exists:guidances,id',
+            'scheduled_date' => 'required|date|after_or_equal:today',
+            'scheduled_time' => 'required|date_format:H:i',
+            'duration' => 'required|integer|min:15|max:240',
+            'location' => 'nullable|string|max:255',
+        ]);
+
+        $counselingSession->update([
+            'counselor_id' => $validatedData['counselor_id'],
+            'scheduled_date' => $validatedData['scheduled_date'],
+            'scheduled_time' => $validatedData['scheduled_time'],
+            'duration' => $validatedData['duration'],
+            'location' => $validatedData['location'],
+            'status' => 'scheduled',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Recommended counseling session scheduled successfully.',
+            'counseling_session' => $counselingSession->load(['student', 'counselor', 'recommender'])
+        ]);
+    }
+
+    /**
      * Create counseling summary
      */
     public function createCounselingSummary(Request $request, CounselingSession $counselingSession)
@@ -265,5 +647,50 @@ class GuidanceController extends Controller
 
         return redirect()->route('guidance.counseling-sessions.index')
             ->with('success', 'Counseling summary created successfully.');
+    }
+
+    /**
+     * Get status class for badges
+     */
+    private function getStatusClass($status)
+    {
+        return match($status) {
+            'scheduled' => 'bg-primary',
+            'completed' => 'bg-success',
+            'cancelled' => 'bg-danger',
+            'in_progress' => 'bg-warning',
+            'pending' => 'bg-secondary',
+            default => 'bg-secondary'
+        };
+    }
+
+    /**
+     * Get counselors for API
+     */
+    public function getCounselors()
+    {
+        $counselors = Guidance::select('id', 'name')
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'counselors' => $counselors
+        ]);
+    }
+
+    /**
+     * Get urgency color for badges
+     */
+    private function getUrgencyColor($urgency)
+    {
+        return match($urgency) {
+            'low' => 'success',
+            'medium' => 'warning',
+            'high' => 'danger',
+            'urgent' => 'danger',
+            default => 'secondary'
+        };
     }
 }
