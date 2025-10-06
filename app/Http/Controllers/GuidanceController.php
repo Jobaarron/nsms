@@ -45,6 +45,7 @@ class GuidanceController extends Controller
             if ($user->isGuidanceStaff()) {
                 Auth::login($user);
                 $user->updateLastLogin(); // Update last login timestamp
+                session()->forget('discipline_user'); // Clear discipline user session flag
                 session(['guidance_user' => true]); // Mark as guidance user
                 return redirect()->route('guidance.dashboard');
             } else {
@@ -87,6 +88,7 @@ class GuidanceController extends Controller
     public function logout(Request $request)
     {
         session()->forget('guidance_user');
+        session()->forget('discipline_user'); // Clear discipline user session flag on logout
         Auth::logout();
         return redirect()->route('guidance.login');
     }
@@ -374,6 +376,36 @@ class GuidanceController extends Controller
             ->get();
 
         return view('guidance.edit-case-meeting', compact('caseMeeting', 'students'));
+    }
+
+    /**
+     * Update case meeting
+     */
+    public function updateCaseMeeting(Request $request, CaseMeeting $caseMeeting)
+    {
+        $validatedData = $request->validate([
+            'student_id' => 'required|exists:students,id',
+            'meeting_type' => 'required|in:case_meeting,house_visit',
+            'scheduled_date' => 'required|date|after:today',
+            'scheduled_time' => 'required',
+            'location' => 'nullable|string|max:255',
+            'urgency_level' => 'nullable|in:low,medium,high,urgent',
+            'reason' => 'required|string',
+            'notes' => 'nullable|string',
+        ]);
+
+        $caseMeeting->update($validatedData);
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Case meeting updated successfully.',
+                'meeting' => $caseMeeting->load(['student', 'counselor'])
+            ]);
+        }
+
+        return redirect()->route('guidance.case-meetings.index')
+            ->with('success', 'Case meeting updated successfully.');
     }
 
     /**
