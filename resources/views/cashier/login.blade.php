@@ -76,12 +76,12 @@
                 </button>
                 </form>
 
-                <div class="text-center">
+                {{-- <div class="text-center">
                     <small class="text-muted">
                         <i class="ri-information-line me-1"></i>
                         For cashier staff only - Contact administrator for assistance
                     </small>
-                </div>
+                </div> --}}
             </div>
         </div>
     </div>

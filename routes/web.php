@@ -16,6 +16,7 @@ use App\Http\Controllers\RegistrarController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\AdminEnrollmentController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\DisciplineController;
 use App\Http\Controllers\PaymentScheduleController;
 use App\Http\Controllers\CashierController;
 
@@ -47,9 +48,8 @@ Route::post('/contact', [ContactController::class, 'store'])->name('contact.stor
 
 
 
-// Admin Generator (accessible without login for initial setup)
-Route::get('/generate-admin', [AdminController::class, 'showGeneratorForm'])->name('show.admin.generator');
-Route::post('/generate-admin', [AdminController::class, 'generateAdmin'])->name('generate.admin');
+// Admin Generator (accessible without login for initial setup) Removed
+
 
 // Admin routes
 Route::prefix('admin')->group(function () {
@@ -64,6 +64,12 @@ Route::prefix('admin')->group(function () {
         Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
             Route::get('/dashboard', [AdminController::class, 'index'])->name('dashboard');
             Route::get('/dashboard/stats', [AdminController::class, 'getStats'])->name('dashboard.stats');
+
+            // Forwarded Case Meetings for President (Admin)
+            Route::get('/forwarded-cases', [AdminController::class, 'forwardedCases'])->name('forwarded.cases');
+
+            // Approve sanction for a case meeting
+            Route::post('/sanctions/{sanction}/approve', [AdminController::class, 'approveSanction'])->name('sanctions.approve');
         });
         Route::get('/', [AdminController::class, 'index'])->name('admin.dashboard');
         Route::post('/logout', [AdminController::class, 'logout'])->name('admin.logout');
@@ -174,28 +180,12 @@ Route::middleware(['auth'])->group(function () {
     });
 });
 
-// Test route to check authentication, roles, and permissions (Spatie)
-// Route::get('/test', function () {
-//     if (Auth::check()) {
-//         $user = Auth::user();
-//         $roles = $user->getRoleNames()->toArray();
-//         $permissions = $user->getAllPermissions()->pluck('name')->toArray();
-        
-//         return 'Logged in as: ' . $user->name . 
-//                ' (Roles: ' . implode(', ', $roles) . ')' .
-//                ' (Permissions: ' . implode(', ', $permissions) . ')';
-//     } else {
-//         return 'Not logged in';
-//     }
-// })->name('test');
 
 
-// Public Teacher Account Generator (no authentication required)
-Route::get('/teacher-generator', [TeacherController::class, 'showGeneratorForm'])
-    ->name('teacher.generator');
+// Public Teacher Account Generator (no authentication required) Removed
 
-Route::post('/teacher-generator', [TeacherController::class, 'generateTeacher'])
-    ->name('generate.teacher');
+
+
 
 // Teacher Authentication Routes
 Route::get('/teacher/login', [TeacherController::class, 'showLoginForm'])
@@ -211,6 +201,14 @@ Route::post('/teacher/logout', [TeacherController::class, 'logout'])
 Route::get('/teacher', [TeacherController::class, 'index'])
     ->name('teacher.dashboard')
     ->middleware(['auth', 'role:teacher']);
+
+// Teacher Counseling Recommendation Routes
+Route::middleware(['auth', 'role:teacher'])->prefix('teacher')->name('teacher.')->group(function () {
+    Route::get('/recommend-counseling', [TeacherController::class, 'showRecommendForm'])
+        ->name('recommend-counseling.form');
+    Route::post('/recommend-counseling', [TeacherController::class, 'recommendToCounseling'])
+        ->name('recommend-counseling');
+});
 
 
 // Discipline Portal Routes
@@ -231,10 +229,13 @@ Route::prefix('discipline')->name('discipline.')->group(function () {
         Route::prefix('students')->name('students.')->group(function () {
             Route::get('/', [App\Http\Controllers\DisciplineController::class, 'studentsIndex'])
                 ->name('index');
-            
+
+            Route::get('/search', [App\Http\Controllers\DisciplineController::class, 'searchStudents'])
+                ->name('search');
+
             Route::get('/{student}', [App\Http\Controllers\DisciplineController::class, 'showStudent'])
                 ->name('show');
-                
+
             Route::get('/{student}/info', [App\Http\Controllers\DisciplineController::class, 'getStudentInfo'])
                 ->name('info');
         });
@@ -243,21 +244,28 @@ Route::prefix('discipline')->name('discipline.')->group(function () {
         Route::prefix('violations')->name('violations.')->group(function () {
             Route::get('/', [App\Http\Controllers\DisciplineController::class, 'violationsIndex'])
                 ->name('index');
-            
+
+            Route::get('/summary', [App\Http\Controllers\DisciplineController::class, 'violationsSummary'])
+                ->name('summary');
+
             Route::post('/', [App\Http\Controllers\DisciplineController::class, 'storeViolation'])
                 ->name('store');
-            
+
             Route::get('/{violation}', [App\Http\Controllers\DisciplineController::class, 'showViolation'])
                 ->name('show');
-            
+
             Route::get('/{violation}/edit', [App\Http\Controllers\DisciplineController::class, 'editViolation'])
                 ->name('edit');
-            
+
             Route::put('/{violation}', [App\Http\Controllers\DisciplineController::class, 'updateViolation'])
                 ->name('update');
-            
-            Route::delete('/{violation}', [App\Http\Controllers\DisciplineController::class, 'destroyViolation'])
-                ->name('destroy');
+
+        Route::delete('/{violation}', [App\Http\Controllers\DisciplineController::class, 'destroyViolation'])
+            ->name('destroy');
+
+        // Forward violation to case meeting
+        Route::post('/{violation}/forward', [App\Http\Controllers\DisciplineController::class, 'forwardViolation'])
+            ->name('forward');
         });
     });
 });
@@ -280,13 +288,28 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
         Route::prefix('case-meetings')->name('case-meetings.')->group(function () {
             Route::get('/', [App\Http\Controllers\GuidanceController::class, 'caseMeetingsIndex'])
                 ->name('index');
-            
+
+            Route::get('/{caseMeeting}', [App\Http\Controllers\GuidanceController::class, 'showCaseMeeting'])
+                ->name('show');
+
+            Route::get('/{caseMeeting}/edit', [App\Http\Controllers\GuidanceController::class, 'editCaseMeeting'])
+                ->name('edit');
+
+            Route::put('/{caseMeeting}', [App\Http\Controllers\GuidanceController::class, 'updateCaseMeeting'])
+                ->name('update');
+
+            Route::get('/export', [App\Http\Controllers\GuidanceController::class, 'exportCaseMeetings'])
+                ->name('export');
+
             Route::post('/', [App\Http\Controllers\GuidanceController::class, 'scheduleCaseMeeting'])
                 ->name('schedule');
-            
+
+            Route::post('/{caseMeeting}/complete', [App\Http\Controllers\GuidanceController::class, 'completeCaseMeeting'])
+                ->name('complete');
+
             Route::post('/{caseMeeting}/summary', [App\Http\Controllers\GuidanceController::class, 'createCaseSummary'])
                 ->name('summary');
-            
+
             Route::post('/{caseMeeting}/forward', [App\Http\Controllers\GuidanceController::class, 'forwardToPresident'])
                 ->name('forward');
         });
@@ -295,68 +318,27 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
         Route::prefix('counseling-sessions')->name('counseling-sessions.')->group(function () {
             Route::get('/', [App\Http\Controllers\GuidanceController::class, 'counselingSessionsIndex'])
                 ->name('index');
-            
+
             Route::post('/', [App\Http\Controllers\GuidanceController::class, 'scheduleCounselingSession'])
                 ->name('schedule');
-            
+
+            Route::post('/{counselingSession}/schedule-recommended', [App\Http\Controllers\GuidanceController::class, 'scheduleRecommendedSession'])
+                ->name('schedule-recommended');
+
             Route::post('/{counselingSession}/summary', [App\Http\Controllers\GuidanceController::class, 'createCounselingSummary'])
                 ->name('summary');
+        });
+
+        // API Routes
+        Route::prefix('api')->name('api.')->group(function () {
+            Route::get('/counselors', [App\Http\Controllers\GuidanceController::class, 'getCounselors'])
+                ->name('counselors');
         });
     });
 });
 
-// Guidance & Discipline Portal Routes (GuidanceDisciplineController - for unified guidance/discipline system)
-Route::prefix('guidancediscipline')->name('guidancediscipline.')->group(function () {
-    // Public routes
-    Route::get('/login', [App\Http\Controllers\GuidanceDisciplineController::class, 'showLogin'])->name('login');
-    Route::post('/login', [App\Http\Controllers\GuidanceDisciplineController::class, 'login'])->name('login.submit');
-    
-    // Protected routes
-    Route::middleware(['web'])->group(function () {
-        // Dashboard
-        Route::get('/', [App\Http\Controllers\GuidanceDisciplineController::class, 'dashboard'])->name('dashboard');
-        
-        // Logout
-        Route::post('/logout', [App\Http\Controllers\GuidanceDisciplineController::class, 'logout'])->name('logout');
-        
-        // Account Management Routes (protected)
-        Route::get('/create-account', [App\Http\Controllers\GuidanceDisciplineController::class, 'showCreateAccount'])->name('create-account');
-        Route::post('/create-account', [App\Http\Controllers\GuidanceDisciplineController::class, 'createAccount'])->name('create-account.submit');
-        
-        // Student Management Routes
-        Route::prefix('students')->name('students.')->group(function () {
-            Route::get('/', [App\Http\Controllers\GuidanceDisciplineController::class, 'studentsIndex'])
-                ->name('index');
-            
-            Route::get('/{student}', [App\Http\Controllers\GuidanceDisciplineController::class, 'showStudent'])
-                ->name('show');
-                
-            Route::get('/{student}/info', [App\Http\Controllers\GuidanceDisciplineController::class, 'getStudentInfo'])
-                ->name('info');
-        });
-        
-        // Violations Management Routes
-        Route::prefix('violations')->name('violations.')->group(function () {
-            Route::get('/', [App\Http\Controllers\GuidanceDisciplineController::class, 'violationsIndex'])
-                ->name('index');
-            
-            Route::post('/', [App\Http\Controllers\GuidanceDisciplineController::class, 'storeViolation'])
-                ->name('store');
-            
-            Route::get('/{violation}', [App\Http\Controllers\GuidanceDisciplineController::class, 'showViolation'])
-                ->name('show');
-            
-            Route::get('/{violation}/edit', [App\Http\Controllers\GuidanceDisciplineController::class, 'editViolation'])
-                ->name('edit');
-            
-            Route::put('/{violation}', [App\Http\Controllers\GuidanceDisciplineController::class, 'updateViolation'])
-                ->name('update');
-            
-            Route::delete('/{violation}', [App\Http\Controllers\GuidanceDisciplineController::class, 'destroyViolation'])
-                ->name('destroy');
-        });
-    });
-});
+// Guidance & Discipline Portal Routes (GuidanceDisciplineController - for unified guidance/discipline system) Removed
+
 
 // API Routes for Violations (ViolationController - for React Native/API access)
 Route::prefix('api/violations')->name('api.violations.')->group(function () {
@@ -370,7 +352,7 @@ Route::prefix('api/violations')->name('api.violations.')->group(function () {
 });
 
 
-// First version of routes, keep it here and do not delete.
+// First version of routes, keep it here and do not delete. This is for early version and sentimental value purposes xD //
 // Route::get('/teacher', [TeacherController::class, 'index']);
 // Route::get('/admin', [adminController::class, 'adminindex']);
 // Route::get('/admin/login', [adminController::class, 'adminlogin']);
@@ -424,6 +406,9 @@ Route::prefix('enrollee')->name('enrollee.')->group(function () {
         
         // Application management
         Route::get('/application', [EnrolleeController::class, 'application'])->name('application');
+        
+        // Payment management
+        Route::get('/payment', [EnrolleeController::class, 'payment'])->name('payment');
         
         // Document management
         Route::get('/documents', [EnrolleeController::class, 'documents'])->name('documents');
@@ -558,7 +543,7 @@ Route::prefix('registrar')->name('registrar.')->group(function () {
     });
 });
 
-// ===== PAYMENT SCHEDULING ROUTES =====
+// ===== PAYMENT SCHEDULING ROUTES ===== 
 
 
 // Student Payment Scheduling Routes
@@ -578,7 +563,6 @@ Route::middleware(['auth:cashier'])->prefix('cashier/api')->name('cashier.api.')
 });
 
 // ===== CASHIER ROUTES =====
-
 
 // Cashier Authentication Routes
 Route::prefix('cashier')->name('cashier.')->group(function () {

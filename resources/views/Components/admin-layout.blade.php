@@ -31,10 +31,10 @@
         </div>
         
         <!-- User Info -->
-        <div class="user-info">
+        {{-- <div class="user-info">
           <div class="user-name">{{ Auth::user()->name }}</div>
           <div class="user-role">{{ ucwords(str_replace('_', ' ', Auth::user()->getRoleNames()->first())) }}</div>
-        </div>
+        </div> --}}
 
         <div class="px-3 mb-4">
           <h5 class="text-uppercase fw-bold text-muted small">Admin Panel</h5>
@@ -52,7 +52,7 @@
               <span>User Management</span>
             </a>
           </li>
-          <li class="nav-item">
+          {{-- <li class="nav-item">
             <a class="nav-link d-flex align-items-center py-3 px-3 rounded" href="{{ route('admin.enrollments') }}">
               <i class="ri-file-list-line me-2 fs-5"></i>
               <span>Enrollments</span>
@@ -63,10 +63,10 @@
               <i class="ri-mail-line me-2 fs-5"></i>
               <span>Contact Messages</span>
             </a>
-          </li>
+          </li> --}}
           <li class="nav-item">
             <a class="nav-link d-flex align-items-center py-3 px-3 rounded" href="{{ route('admin.forwarded.cases') }}">
-              <i class="ri-file-check-line me-2 fs-5"></i>
+              <i class="ri-file-list-3-line me-2 fs-5"></i>
               <span>Forwarded Cases</span>
             </a>
           </li>

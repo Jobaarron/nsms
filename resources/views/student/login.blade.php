@@ -80,12 +80,12 @@
                     </button>
                 </form>
 
-                <div class="text-center">
+                {{-- <div class="text-center">
                     <p class="text-muted">
                         Don't have an account? 
                         <a href="{{ route('enroll.create') }}" style="color: var(--primary-color);">Enroll now</a>
                     </p>
-                </div>
+                </div> --}}
             </div>
         </div>
     </div>
