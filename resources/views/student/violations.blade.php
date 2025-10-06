@@ -1,7 +1,7 @@
 <x-student-layout>
   @vite(['resources/css/student_violations.css'])
       <!-- MAIN CONTENT -->
-      <main class="col-12 col-md-10 px-4 py-4">
+      <div class="container-fluid px-4 py-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
           <h1 class="section-title mb-0">My Violations</h1>
           <div class="text-muted">
@@ -30,12 +30,12 @@
         <!-- SUMMARY CARDS -->
         <div class="row g-3 mb-5">
           <div class="col-6 col-lg-3">
-            <div class="card card-summary card-total h-100">
+            <div class="card card-summary card-major h-100">
               <div class="card-body d-flex align-items-center">
-                <i class="ri-flag-line display-6 me-3"></i>
+                <i class="ri-flag-line display-6 me-3 text-white"></i>
                 <div>
-                  <div>Total Violations</div>
-                  <h3>{{ $violations->count() }}</h3>
+                  <div class="text-white">Total Violations</div>
+                  <h3 class="text-white">{{ $violations->count() }}</h3>
                 </div>
               </div>
             </div>
@@ -43,12 +43,16 @@
           <div class="col-6 col-lg-3">
             <div class="card card-summary card-minor h-100">
               <div class="card-body d-flex align-items-center">
-                <i class="ri-information-line display-6 me-3"></i>
+                <i class="ri-information-line display-6 me-3 text-white"></i>
                 <div>
                   <div>Minor</div>
                   <h3>{{ $violations->where('effective_severity', 'minor')->count() }}</h3>
                   @if($violations->where('escalated', true)->count() > 0)
                     <small class="text-muted">({{ $violations->where('severity', 'minor')->where('escalated', false)->count() }} original)</small>
+                  <div class="text-white">Minor</div>
+                  <h3 class="text-white">{{ $violations->where('effective_severity', 'minor')->count() }}</h3>
+                  @if($violations->where('escalated', true)->count() > 0)
+                    <small class="text-white opacity-75">({{ $violations->where('severity', 'minor')->where('escalated', false)->count() }} original)</small>
                   @endif
                 </div>
               </div>
@@ -57,24 +61,28 @@
           <div class="col-6 col-lg-3">
             <div class="card card-summary card-major h-100">
               <div class="card-body d-flex align-items-center">
-                <i class="ri-alert-line display-6 me-3"></i>
+                <i class="ri-alert-line display-6 me-3 text-white"></i>
                 <div>
                   <div>Major</div>
                   <h3>{{ $violations->where('effective_severity', 'major')->count() }}</h3>
                   @if($violations->where('escalated', true)->count() > 0)
                     <small class="text-warning">({{ $violations->where('escalated', true)->count() }} escalated)</small>
+                  <div class="text-white">Major</div>
+                  <h3 class="text-white">{{ $violations->where('effective_severity', 'major')->count() }}</h3>
+                  @if($violations->where('escalated', true)->count() > 0)
+                    <small class="text-white opacity-75">({{ $violations->where('escalated', true)->count() }} escalated)</small>
                   @endif
                 </div>
               </div>
             </div>
           </div>
           <div class="col-6 col-lg-3">
-            <div class="card card-summary card-recent h-100">
+            <div class="card card-summary card-success h-100">
               <div class="card-body d-flex align-items-center">
-                <i class="ri-time-line display-6 me-3"></i>
+                <i class="ri-time-line display-6 me-3 text-white"></i>
                 <div>
-                  <div>This Month</div>
-                  <h3>{{ $violations->where('violation_date', '>=', now()->startOfMonth())->count() }}</h3>
+                  <div class="text-white">This Month</div>
+                  <h3 class="text-white">{{ $violations->where('violation_date', '>=', now()->startOfMonth())->count() }}</h3>
                 </div>
               </div>
             </div>
@@ -247,7 +255,5 @@
             </div>
           </div>
         </div>
-      </main>
-    </div>
-  </div>
+      </div>
 </x-student-layout>

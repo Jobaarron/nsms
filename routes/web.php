@@ -17,6 +17,8 @@ use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\AdminEnrollmentController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DisciplineController;
+use App\Http\Controllers\PaymentScheduleController;
+
 
 
 
@@ -368,6 +370,23 @@ Route::prefix('student')->name('student.')->group(function () {
     Route::middleware('auth:student')->group(function () {
         Route::get('/dashboard', [StudentController::class, 'index'])->name('dashboard');
         Route::get('/violations', [StudentController::class, 'violations'])->name('violations');
+        
+        // Enrollment routes
+        Route::get('/enrollment', [StudentController::class, 'enrollment'])->name('enrollment');
+        Route::post('/enrollment', [StudentController::class, 'submitEnrollment'])->name('enrollment.submit');
+        
+        // Subjects routes
+        Route::get('/subjects', [StudentController::class, 'subjects'])->name('subjects');
+        
+        // Payments routes
+        Route::get('/payments', [StudentController::class, 'payments'])->name('payments');
+        Route::post('/payment/mode/update', [StudentController::class, 'updatePaymentMode'])->name('payment.mode.update');
+        
+        // Face registration routes
+        Route::get('/face-registration', [StudentController::class, 'faceRegistration'])->name('face-registration');
+        Route::post('/face-registration/save', [StudentController::class, 'saveFaceRegistration'])->name('face-registration.save');
+        Route::delete('/face-registration/delete', [StudentController::class, 'deleteFaceRegistration'])->name('face-registration.delete');
+        
         Route::post('/logout', [StudentController::class, 'logout'])->name('logout');
     });
 });
@@ -515,3 +534,59 @@ Route::prefix('registrar')->name('registrar.')->group(function () {
         })->name('logout');
     });
 });
+});
+
+// ===== PAYMENT SCHEDULING ROUTES =====
+
+
+// Student Payment Scheduling Routes
+Route::middleware(['auth:student'])->prefix('student')->name('student.')->group(function () {
+    Route::post('/payment-schedule', [PaymentScheduleController::class, 'createPaymentSchedule'])->name('payment-schedule.create');
+    Route::get('/payment-schedule/{studentId}', [PaymentScheduleController::class, 'getPaymentSchedule'])->name('payment-schedule.get');
+});
+
+// Cashier Payment Management Routes (AJAX/API style)
+Route::middleware(['auth:cashier'])->prefix('cashier/api')->name('cashier.api.')->group(function () {
+    Route::get('/payment-schedules', [PaymentScheduleController::class, 'getAllPaymentSchedules'])->name('payment-schedules.all');
+    Route::get('/payment-schedules/{paymentId}', [PaymentScheduleController::class, 'getPaymentDetails'])->name('payment-schedules.details');
+    Route::get('/payment-schedules/pending', [PaymentScheduleController::class, 'getPendingPaymentSchedules'])->name('payment-schedules.pending');
+    Route::get('/payment-schedules/due', [PaymentScheduleController::class, 'getDuePaymentSchedules'])->name('payment-schedules.due');
+    Route::post('/payment-schedules/{paymentId}/process', [PaymentScheduleController::class, 'processPayment'])->name('payment-schedules.process');
+    Route::get('/payment-statistics', [PaymentScheduleController::class, 'getPaymentStatistics'])->name('payment-statistics');
+});
+
+// ===== CASHIER ROUTES =====
+use App\Http\Controllers\CashierController;
+
+// Cashier Authentication Routes
+Route::prefix('cashier')->name('cashier.')->group(function () {
+    // Guest routes (login form and process)
+    Route::middleware('guest:cashier')->group(function () {
+        Route::get('/login', [CashierController::class, 'showLoginForm'])->name('login');
+        Route::post('/login', [CashierController::class, 'login'])->name('login.submit');
+    });
+
+    // Protected routes (require cashier authentication)
+    Route::middleware(['auth:cashier'])->group(function () {
+        // Dashboard
+        Route::get('/dashboard', [CashierController::class, 'index'])->name('dashboard');
+        
+        // Payment Management
+        Route::get('/pending-payments', [CashierController::class, 'pendingPayments'])->name('pending-payments');
+        Route::get('/due-payments', [CashierController::class, 'duePayments'])->name('due-payments');
+        Route::get('/completed-payments', [CashierController::class, 'completedPayments'])->name('completed-payments');
+        Route::get('/payment-history', [CashierController::class, 'paymentHistory'])->name('payment-history');
+        
+        // Payment Actions
+        Route::post('/payments/{payment}/confirm', [CashierController::class, 'confirmPayment'])->name('payments.confirm');
+        Route::post('/payments/{payment}/reject', [CashierController::class, 'rejectPayment'])->name('payments.reject');
+        Route::get('/payments/{payment}/details', [CashierController::class, 'getPaymentDetails'])->name('payments.details');
+        
+        // Reports
+        Route::get('/reports', [CashierController::class, 'reports'])->name('reports');
+        
+        // Logout
+        Route::post('/logout', [CashierController::class, 'logout'])->name('logout');
+    });
+});
+

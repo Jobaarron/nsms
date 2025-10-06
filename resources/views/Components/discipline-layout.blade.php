@@ -55,6 +55,30 @@
           </li>
           
             <li class="nav-item">
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav class="col-12 col-md-2 sidebar p-3">
+                <!-- Logo -->
+                <div class="text-center mb-4">
+                    <img src="{{ asset('images/nicolites-logo.png') }}" alt="Nicolites Logo" class="sidebar-logo">
+                </div>
+                
+                <!-- User Info -->
+                {{-- <div class="user-info">
+                    <div class="user-name">{{ Auth::user()->discipline->full_name ?? Auth::user()->name ?? 'Discipline Staff' }}</div>
+                    <div class="user-role">Discipline Portal</div>
+                </div> --}}
+                
+                <!-- Navigation -->
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('discipline.dashboard') ? 'active' : '' }}" 
+                           href="{{ route('discipline.dashboard') }}">
+                            <i class="ri-dashboard-line me-2"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('discipline.students.*') ? 'active' : '' }}" 
                            href="{{ route('discipline.students.index') }}">
                             <i class="ri-team-line me-2"></i>

@@ -76,6 +76,20 @@ class RolePermissionSeeder extends Seeder
             'Approved',
             'Reports',
             
+            // CASHIER LAYOUT PERMISSIONS (cashier-layout.blade.php)
+            'Cashier Dashboard',
+            'Pending Payments',
+            'Due Payments',
+            'Completed Payments',
+            'Payment History',
+            'Payment Reports',
+            'Confirm Payments',
+            'Reject Payments',
+            'View Payment Details',
+            'Process Payments',
+            'Generate Payment Reports',
+            'Export Payment Data',
+            
             // CORE SYSTEM PERMISSIONS (for AdminController compatibility)
             'View Reports',
             'View Analytics',
@@ -191,12 +205,22 @@ class RolePermissionSeeder extends Seeder
             'Violations Management',
         ]);
 
-        // CASHIER ROLE - Financial transactions
+        // CASHIER ROLE - Financial transactions and payment management
         $cashier = Role::firstOrCreate(['name' => 'cashier', 'guard_name' => 'web']);
         $cashier->syncPermissions([
-            'Dashboard',
-            'Student Payments',
-            'Manage Enrollments',
+            'Cashier Dashboard',
+            'Pending Payments',
+            'Due Payments', 
+            'Completed Payments',
+            'Payment History',
+            'Payment Reports',
+            'Confirm Payments',
+            'Reject Payments',
+            'View Payment Details',
+            'Process Payments',
+            'Generate Payment Reports',
+            'Export Payment Data',
+            'View Reports',
         ]);
 
         // FACULTY HEAD ROLE - Academic leadership
@@ -228,7 +252,6 @@ class RolePermissionSeeder extends Seeder
             'Guidance Dashboard',
             'Student Profiles',
             'Violations Management',
-            'Facial Recognition',
         ]);
 
         // Super Admin - Full system access including role management

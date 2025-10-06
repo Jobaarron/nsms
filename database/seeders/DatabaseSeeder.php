@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
             RolePermissionSeeder::class,
             FeesTableSeeder::class,
             SubjectSeeder::class,
+            CashierSeeder::class,
             // RegistrarSeeder::class,
 
 

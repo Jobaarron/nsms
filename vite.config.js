@@ -48,7 +48,10 @@ export default defineConfig({
                 'resources/js/discipline_student-profile.js',
                 'resources/css/index_guidance.css',
                 'resources/js/guidance_case-meetings.js',
-                'resources/js/guidance_counseling-sessions.js'
+                'resources/js/guidance_counseling-sessions.js',
+                'resources/js/student-subjects.js',
+                'resources/js/student-enrollment.js',
+                'resources/js/cashier-payment-schedules.js'
                 
             ],
             refresh: true,

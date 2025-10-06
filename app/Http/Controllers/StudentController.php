@@ -11,6 +11,10 @@ use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
 use App\Models\FaceRegistration;
 use Illuminate\Support\Facades\Log;
+use App\Models\Subject;
+use App\Models\Fee;
+use App\Models\Payment;
+use Illuminate\Support\Facades\DB;
 
 class StudentController extends Controller
 {
@@ -189,6 +193,210 @@ class StudentController extends Controller
                 'success' => false,
                 'message' => 'Registration failed',
                 'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function enrollment()
+    {
+        $student = Auth::guard('student')->user();
+        
+        if (!$student) {
+            return redirect()->route('student.login');
+        }
+        
+        return view('student.enrollment', compact('student'));
+    }
+
+    public function submitEnrollment(Request $request)
+    {
+        $student = Auth::guard('student')->user();
+        
+        if (!$student) {
+            return redirect()->route('student.login');
+        }
+
+        $request->validate([
+            'payment_mode' => 'required|in:full,quarterly,monthly'
+        ]);
+
+        try {
+            // Calculate total fees
+            $feeCalculation = Fee::calculateTotalFeesForGrade($student->grade_level);
+            $totalAmount = $feeCalculation['total_amount'];
+
+            // Update student with enrollment information
+            $student->update([
+                'payment_mode' => $request->payment_mode,
+                'total_fees_due' => $totalAmount,
+                'enrollment_status' => 'enrolled'
+            ]);
+
+            return redirect()->route('student.dashboard')
+                ->with('success', 'Enrollment completed successfully! You can now proceed to payment.');
+        } catch (\Exception $e) {
+            Log::error('Enrollment submission failed: ' . $e->getMessage());
+            return back()->withErrors(['error' => 'Failed to complete enrollment. Please try again.']);
+        }
+    }
+
+    public function subjects()
+    {
+        $student = Auth::guard('student')->user();
+        
+        if (!$student) {
+            return redirect()->route('student.login');
+        }
+        
+        return view('student.subjects', compact('student'));
+    }
+
+    public function payments()
+    {
+        $student = Auth::guard('student')->user();
+        
+        if (!$student) {
+            return redirect()->route('student.login');
+        }
+        
+        // Get all payment records for this student
+        $paymentSchedules = Payment::where('payable_type', Student::class)
+            ->where('payable_id', $student->id)
+            ->orderBy('scheduled_date', 'asc')
+            ->get();
+        
+        // Get payment history (confirmed payments)
+        $paymentHistory = Payment::where('payable_type', Student::class)
+            ->where('payable_id', $student->id)
+            ->where('confirmation_status', 'confirmed')
+            ->orderBy('confirmed_at', 'desc')
+            ->get();
+        
+        // Calculate fee breakdown and totals
+        $feeCalculation = Fee::calculateTotalFeesForGrade($student->grade_level);
+        $totalFeesAmount = $feeCalculation['total_amount'];
+        
+        // Calculate total paid (confirmed payments)
+        $totalPaid = $paymentHistory->sum('amount_received') ?: $paymentHistory->sum('amount');
+        
+        // Calculate balance due
+        $balanceDue = $totalFeesAmount - $totalPaid;
+        
+        // Update student totals if they don't match
+        if ($student->total_fees_due != $totalFeesAmount || $student->total_paid != $totalPaid) {
+            $student->update([
+                'total_fees_due' => $totalFeesAmount,
+                'total_paid' => $totalPaid,
+                'is_paid' => $balanceDue <= 0
+            ]);
+        }
+        
+        return view('student.payments', compact('student', 'paymentSchedules', 'paymentHistory', 'totalFeesAmount', 'totalPaid', 'balanceDue'));
+    }
+
+    public function updatePaymentMode(Request $request)
+    {
+        $student = Auth::guard('student')->user();
+        
+        if (!$student) {
+            return redirect()->route('student.login');
+        }
+
+        $request->validate([
+            'payment_mode' => 'required|in:full,quarterly,monthly'
+        ]);
+
+        try {
+            $student->update([
+                'payment_mode' => $request->payment_mode
+            ]);
+
+            return back()->with('success', 'Payment mode updated successfully!');
+        } catch (\Exception $e) {
+            Log::error('Payment mode update failed: ' . $e->getMessage());
+            return back()->withErrors(['error' => 'Failed to update payment mode. Please try again.']);
+        }
+    }
+
+    public function faceRegistration()
+    {
+        $student = Auth::guard('student')->user();
+        
+        if (!$student) {
+            return redirect()->route('student.login');
+        }
+        
+        return view('student.face-registration', compact('student'));
+    }
+
+    public function saveFaceRegistration(Request $request)
+    {
+        $student = Auth::guard('student')->user();
+        
+        if (!$student) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $request->validate([
+            'face_images' => 'required|array|min:1',
+            'face_images.*' => 'required|string',
+            'source' => 'required|string'
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            // Deactivate existing face registrations
+            $student->faceRegistrations()->update(['is_active' => false]);
+
+            // Save the first (best) image as the active registration
+            $faceImage = $request->face_images[0];
+            
+            FaceRegistration::create([
+                'student_id' => $student->id,
+                'face_image_data' => $faceImage,
+                'face_image_mime_type' => 'image/jpeg',
+                'source' => $request->source,
+                'registered_at' => now(),
+                'is_active' => true
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Face registration saved successfully!'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollback();
+            Log::error('Face registration failed: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to save face registration'
+            ], 500);
+        }
+    }
+
+    public function deleteFaceRegistration()
+    {
+        $student = Auth::guard('student')->user();
+        
+        if (!$student) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        try {
+            $student->faceRegistrations()->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Face registration removed successfully!'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Face registration deletion failed: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to remove face registration'
             ], 500);
         }
     }

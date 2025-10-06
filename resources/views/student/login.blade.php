@@ -59,9 +59,7 @@
                                 placeholder="Enter your password"
                                 style="padding-right: 3rem;"
                             />
-                            <button type="button" class="btn btn-link position-absolute end-0 top-50 translate-middle-y me-2" onclick="togglePassword('password')" style="border: none; background: none; color: var(--primary-color);">
-                                <i class="ri-eye-line" id="password-eye"></i>
-                            </button>
+                            
                         </div>
                         @error('password')
                             <div class="invalid-feedback">{{ $message }}</div>

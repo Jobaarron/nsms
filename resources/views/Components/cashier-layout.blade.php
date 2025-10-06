@@ -6,11 +6,9 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf-token" content="{{ csrf_token() }}">
 
-  <title>Student Portal | Nicolites Portal</title>
+  <title>Cashier Portal | Nicolites Portal</title>
 
     <!-- Remix Icons -->
     <link 
@@ -24,13 +22,30 @@
     rel="stylesheet"
     />
 
-
   <!-- App CSS (includes Bootstrap 5 via Vite) -->
   @vite('resources/sass/app.scss')
   @vite(['resources/css/index_student.css'])
 
   <style>
-   
+    :root {
+      --cashier-accent: #28a745; /* Green for finance/money theme */
+    }
+    
+    .sidebar .nav-link.active {
+      background-color: var(--cashier-accent);
+    }
+    
+    .sidebar .nav-link.active:hover {
+      background-color: #218838;
+    }
+    
+    .user-info {
+      border-color: var(--cashier-accent);
+    }
+    
+    .avatar-circle {
+      background: linear-gradient(135deg, var(--cashier-accent), #20c997);
+    }
   </style>
 </head>
 <body>
@@ -48,57 +63,57 @@
         {{-- <div class="user-info mb-4 p-3 bg-light rounded">
           <div class="d-flex align-items-center">
             <div class="avatar-circle me-3">
-              <i class="ri-user-line"></i>
+              <i class="ri-money-dollar-circle-line"></i>
             </div>
             <div>
-              <h6 class="mb-0">{{ Auth::guard('student')->user()->first_name ?? (Auth::guard('web')->user()->first_name ?? 'Student') }}</h6>
-              <small class="text-muted">{{ Auth::guard('student')->user()->student_id ?? (Auth::guard('web')->user()->student_id ?? 'ID: N/A') }}</small>
+              <h6 class="mb-0">{{ Auth::guard('cashier')->user()->first_name ?? 'Cashier' }}</h6>
+              <small class="text-muted">{{ Auth::guard('cashier')->user()->employee_id ?? 'ID: N/A' }}</small>
             </div>
           </div>
         </div> --}}
 
         <ul class="nav flex-column">
           <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('student.dashboard') ? 'active' : '' }}" href="{{ route('student.dashboard') }}">
+            <a class="nav-link {{ request()->routeIs('cashier.dashboard') ? 'active' : '' }}" href="{{ route('cashier.dashboard') }}">
               <i class="ri-dashboard-line me-2"></i>Dashboard
             </a>
           </li>
           
           <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('student.enrollment') ? 'active' : '' }}" href="{{ route('student.enrollment') }}">
-              <i class="ri-file-list-3-line me-2"></i>Enrollment
+            <a class="nav-link {{ request()->routeIs('cashier.pending-payments') ? 'active' : '' }}" href="{{ route('cashier.pending-payments') }}">
+              <i class="ri-time-line me-2"></i>Pending Payments
             </a>
           </li>
           
           <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('student.subjects') ? 'active' : '' }}" href="{{ route('student.subjects') }}">
-              <i class="ri-book-open-line me-2"></i>Subjects
+            <a class="nav-link {{ request()->routeIs('cashier.due-payments') ? 'active' : '' }}" href="{{ route('cashier.due-payments') }}">
+              <i class="ri-alarm-warning-line me-2"></i>Due Payments
             </a>
           </li>
           
           <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('student.payments') ? 'active' : '' }}" href="{{ route('student.payments') }}">
-              <i class="ri-money-dollar-circle-line me-2"></i>Payments
+            <a class="nav-link {{ request()->routeIs('cashier.completed-payments') ? 'active' : '' }}" href="{{ route('cashier.completed-payments') }}">
+              <i class="ri-check-double-line me-2"></i>Completed Payments
             </a>
           </li>
           
           <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('student.face-registration') ? 'active' : '' }}" href="{{ route('student.face-registration') }}">
-              <i class="ri-user-smile-line me-2"></i>Face Registration
+            <a class="nav-link {{ request()->routeIs('cashier.payment-history') ? 'active' : '' }}" href="{{ route('cashier.payment-history') }}">
+              <i class="ri-history-line me-2"></i>Payment History
             </a>
           </li>
           
-          <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('student.violations') ? 'active' : '' }}" href="{{ route('student.violations') }}">
-              <i class="ri-flag-line me-2"></i>Violations
+          {{-- <li class="nav-item mb-2">
+            <a class="nav-link {{ request()->routeIs('cashier.reports') ? 'active' : '' }}" href="{{ route('cashier.reports') }}">
+              <i class="ri-bar-chart-line me-2"></i>Reports
             </a>
-          </li>
+          </li> --}}
          
         </ul>
         
         <!-- LOGOUT SECTION -->
         <div class="mt-auto pt-3">
-          <form action="{{ route('student.logout') }}" method="POST">
+          <form action="{{ route('cashier.logout') }}" method="POST">
             @csrf
             <button type="submit" class="nav-link text-danger border-0 bg-transparent w-100 text-start d-flex align-items-center" style="font-weight: 600;">
               <i class="ri-logout-circle-line me-2"></i>Logout
