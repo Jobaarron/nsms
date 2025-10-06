@@ -73,16 +73,14 @@
 
         <div class="col-xl-3 col-md-6 mb-3">
             <div class="card border-0 shadow-sm h-100">
-                <div class="card-body d-flex align-items-center">
-                    <div class="flex-shrink-0 me-3">
-                        <div class="rounded-circle bg-success bg-opacity-10 p-3">
-                            <i class="ri-checkbox-circle-line fs-2 text-success"></i>
-                        </div>
+                <div class="flex-shrink-0 me-3">
+                    <div class="rounded-circle bg-success bg-opacity-10 p-3">
+                        <i class="ri-checkbox-circle-line fs-2 text-success"></i>
                     </div>
-                    <div class="flex-grow-1">
-                        <div class="fw-bold fs-4" id="completed-meetings">{{ $caseMeetings->where('status', 'completed')->count() }}</div>
-                        <div class="text-muted small">Completed</div>
-                    </div>
+                </div>
+                <div class="flex-grow-1">
+                    <div class="fw-bold fs-4" id="completed-meetings">{{ $caseMeetings->where('status', 'completed')->count() }}</div>
+                    <div class="text-muted small">Completed</div>
                 </div>
             </div>
         </div>
@@ -124,7 +122,7 @@
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Date Range</label>
-                            <input type="date" class="form-control" id="date-filter" onchange="filterCaseMeetings()">
+                            <input type="date" class="form-control" id="date-filter">
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Search</label>
@@ -281,7 +279,7 @@
                 <form id="scheduleCaseMeetingForm" onsubmit="submitCaseMeeting(event)">
                     <div class="modal-body">
                         <div class="row g-3">
-                            <div class="col-md-6">
+                            <div class="col-md-6 schedule-field">
                                 <label class="form-label">Student <span class="text-danger">*</span></label>
                                 <select class="form-select" name="student_id" required>
                                     <option value="">Select Student</option>
@@ -290,7 +288,7 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6 schedule-field">
                                 <label class="form-label">Meeting Type <span class="text-danger">*</span></label>
                                 <select class="form-select" name="meeting_type" required>
                                     <option value="case_meeting">Case Meeting</option>
@@ -305,27 +303,27 @@
                                 <label class="form-label">Time <span class="text-danger">*</span></label>
                                 <input type="time" class="form-control" name="scheduled_time" required>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6 schedule-field">
                                 <label class="form-label">Location</label>
-                                <input type="text" class="form-control" name="location" placeholder="e.g., Guidance Office, Student's Home">
+                                <input type="text" class="form-control" name="location" placeholder="Meeting location">
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6 schedule-field">
                                 <label class="form-label">Urgency Level</label>
                                 <select class="form-select" name="urgency_level">
-                                    <option value="">Normal</option>
+                                    <option value="">Select Urgency</option>
                                     <option value="low">Low</option>
                                     <option value="medium">Medium</option>
                                     <option value="high">High</option>
                                     <option value="urgent">Urgent</option>
                                 </select>
                             </div>
-                            <div class="col-12">
+                            <div class="col-12 schedule-field">
                                 <label class="form-label">Reason <span class="text-danger">*</span></label>
                                 <textarea class="form-control" name="reason" rows="3" required placeholder="Describe the reason for this meeting..."></textarea>
                             </div>
-                            <div class="col-12">
+                            <div class="col-12 schedule-field">
                                 <label class="form-label">Notes</label>
-                                <textarea class="form-control" name="notes" rows="2" placeholder="Additional notes or preparation needed..."></textarea>
+                                <textarea class="form-control" name="notes" rows="2" placeholder="Additional notes..."></textarea>
                             </div>
                         </div>
                     </div>
@@ -421,12 +419,12 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Location</label>
-                                <input type="text" class="form-control" name="location" id="edit_location" placeholder="e.g., Guidance Office, Student's Home">
+                                <input type="text" class="form-control" name="location" id="edit_location" placeholder="Meeting location">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Urgency Level</label>
                                 <select class="form-select" name="urgency_level" id="edit_urgency_level">
-                                    <option value="">Normal</option>
+                                    <option value="">Select Urgency</option>
                                     <option value="low">Low</option>
                                     <option value="medium">Medium</option>
                                     <option value="high">High</option>
@@ -439,7 +437,7 @@
                             </div>
                             <div class="col-12">
                                 <label class="form-label">Notes</label>
-                                <textarea class="form-control" name="notes" id="edit_notes" rows="2" placeholder="Additional notes or preparation needed..."></textarea>
+                                <textarea class="form-control" name="notes" id="edit_notes" rows="2" placeholder="Additional notes..."></textarea>
                             </div>
                         </div>
                     </div>
