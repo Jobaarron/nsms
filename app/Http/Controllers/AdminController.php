@@ -530,10 +530,69 @@ public function getUserRoles(User $user)
 }
     
     
-    // REMOVED: generateAdmin() method
-    // This functionality has been moved to UserManagementController->storeAdmin()
-    // The admin-generator.blade.php view is no longer needed as admin creation
-    // is now handled through the centralized user management system
+public function forwardedCases()
+{
+    if ($response = $this->checkAdminAuth()) {
+        return $response;
+    }
+
+    $caseMeetings = \App\Models\CaseMeeting::with(['student', 'sanctions'])
+        ->where('status', 'forwarded')
+        ->paginate(10);
+
+    return view('admin.forwarded-cases', compact('caseMeetings'));
+}
+
+public function approveSanction(\App\Models\Sanction $sanction)
+{
+    $user = auth()->user();
+
+    if (!$user->hasRole('admin')) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Unauthorized. Only admins can approve sanctions.'
+        ], 403);
+    }
+
+    if ($sanction->is_approved) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Sanction is already approved.'
+        ], 400);
+    }
+
+    try {
+        $sanction->update([
+            'is_approved' => true,
+            'approved_by' => $user->id,
+            'approved_at' => now(),
+        ]);
+
+        // Mark the related case meeting as completed
+        $caseMeeting = $sanction->caseMeeting;
+        if ($caseMeeting) {
+            $caseMeeting->update([
+                'status' => 'completed',
+                'completed_at' => now(),
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Sanction approved and case meeting marked as completed.'
+        ]);
+    } catch (\Exception $e) {
+        \Log::error('Error approving sanction: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'An error occurred while approving the sanction.'
+        ], 500);
+    }
+}
+// REMOVED: generateAdmin() method
+// This functionality has been moved to UserManagementController->storeAdmin()
+// The admin-generator.blade.php view is no longer needed as admin creation
+// is now handled through the centralized user management system
 
 private function setupAdminRoleAndPermissions(User $user, string $adminLevel)
 {
