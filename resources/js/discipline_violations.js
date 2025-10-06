@@ -283,7 +283,7 @@ function setupEnhancedViolationSubmission() {
 
                 const csrfTokenEl = document.querySelector('meta[name="csrf-token"]');
                 const csrfToken = csrfTokenEl ? csrfTokenEl.getAttribute('content') : '';
-                formData.append('_token', csrfTokenEl.getAttribute('content'));
+                formData.append('_token', csrfToken);
 
                 const response = await fetch('/discipline/violations', {
                     method: 'POST',
@@ -514,7 +514,8 @@ window.editViolation = function(violationId) {
             <div class="row g-2">
                 <div class="col-12">
                     <label class="form-label fw-bold small">Student Name</label>
-                    <select class="form-select form-select-sm" id="edit_student_id" name="student_id" required ${studentSelectDisabled}>
+                    <input type="hidden" name="student_id" value="${violation.student_id}">
+                    <select class="form-select form-select-sm" id="edit_student_id" name="student_id_display" required ${studentSelectDisabled}>
                         ${students.length > 0 ? students.map(student => `
                             <option value="${student.id}" ${student.id == (violation.student ? violation.student.id : violation.student_id) ? 'selected' : ''}>
                                 ${student.first_name} ${student.last_name} (${student.student_id || 'No ID'})

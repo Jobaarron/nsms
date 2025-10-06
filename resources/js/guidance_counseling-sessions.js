@@ -209,10 +209,10 @@ function showCounselingSessionModal(session) {
                     </div>
                     <div class="modal-footer">
                         ${session.status === 'scheduled' ? `
-                            <button type="button" class="btn btn-success" onclick="completeCounselingSession(${session.id}); closeModal('viewCounselingSessionModal');">
+                            <button type="button" class="btn btn-success" onclick="completeCounselingSession(${session.id})">
                                 <i class="ri-check-line me-2"></i>Mark Complete
                             </button>
-                            <button type="button" class="btn btn-warning" onclick="rescheduleCounselingSession(${session.id}); closeModal('viewCounselingSessionModal');">
+                            <button type="button" class="btn btn-warning" onclick="rescheduleCounselingSession(${session.id})">
                                 <i class="ri-calendar-todo-line me-2"></i>Reschedule
                             </button>
                         ` : ''}

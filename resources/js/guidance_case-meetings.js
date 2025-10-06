@@ -258,7 +258,7 @@ function forwardToPresident(meetingId) {
             console.log('Forward check:', { summary: meeting.summary, sanctions: meeting.sanctions });
             if (meeting.summary && meeting.sanctions && meeting.sanctions.length > 0) {
                 // Both conditions met - proceed with forwarding
-                const reason = prompt('Please provide a reason for forwarding this case to the president:');
+                const reason = prompt('Please confirm if you would like to forward this case to the President for review:');
                 if (!reason || reason.trim() === '') {
                     return;
                 }
@@ -330,8 +330,98 @@ function proceedWithForwarding(meetingId, reason) {
 
 // Edit case meeting
 function editCaseMeeting(meetingId) {
-    // Redirect to edit page or show edit modal
-    window.location.href = `/guidance/case-meetings/${meetingId}/edit`;
+    // Fetch meeting data and populate edit modal
+    fetch(`/guidance/case-meetings/${meetingId}`, {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            populateEditModal(data.meeting);
+            const modal = new bootstrap.Modal(document.getElementById('editCaseMeetingModal'));
+            modal.show();
+        } else {
+            showAlert('Failed to load meeting details', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error loading meeting:', error);
+        showAlert('Error loading meeting details', 'danger');
+    });
+}
+
+function populateEditModal(meeting) {
+    const studentIdElem = document.getElementById('edit_student_id');
+    const meetingTypeElem = document.getElementById('edit_meeting_type');
+    const scheduledDateElem = document.getElementById('edit_scheduled_date');
+    const scheduledTimeElem = document.getElementById('edit_scheduled_time');
+    const locationElem = document.getElementById('edit_location');
+    const urgencyLevelElem = document.getElementById('edit_urgency_level');
+    const reasonElem = document.getElementById('edit_reason');
+    const notesElem = document.getElementById('edit_notes');
+    const form = document.getElementById('editCaseMeetingForm');
+
+    if (studentIdElem) studentIdElem.value = meeting.student_id || '';
+    if (meetingTypeElem) meetingTypeElem.value = meeting.meeting_type || '';
+    if (scheduledDateElem) scheduledDateElem.value = meeting.scheduled_date || '';
+    if (scheduledTimeElem) scheduledTimeElem.value = meeting.scheduled_time ? meeting.scheduled_time.substring(0, 5) : '';
+    if (locationElem) locationElem.value = meeting.location || '';
+    if (urgencyLevelElem) urgencyLevelElem.value = meeting.urgency_level || '';
+    if (reasonElem) reasonElem.value = meeting.reason || '';
+    if (notesElem) notesElem.value = meeting.notes || '';
+    if (form) form.setAttribute('data-meeting-id', meeting.id);
+}
+
+// Submit edit case meeting form
+function submitEditCaseMeeting(event) {
+    event.preventDefault();
+
+    const form = event.target;
+    const meetingId = form.getAttribute('data-meeting-id');
+    const formData = new FormData(form);
+    const submitBtn = form.querySelector('button[type="submit"]');
+
+    // Show loading state
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="ri-loader-4-line me-2 spinner-border spinner-border-sm"></i>Updating...';
+    submitBtn.disabled = true;
+
+    fetch(`/guidance/case-meetings/${meetingId}`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+            'X-HTTP-Method-Override': 'PUT'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('Case meeting updated successfully!', 'success');
+            closeModal('editCaseMeetingModal');
+            form.reset();
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } else {
+            showAlert(data.message || 'Failed to update case meeting', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error updating case meeting:', error);
+        showAlert('An error occurred while updating the meeting', 'danger');
+    })
+    .finally(() => {
+        // Restore button state
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
 }
 
 // Filter case meetings
@@ -512,6 +602,8 @@ window.viewCaseMeeting = viewCaseMeeting;
 window.completeCaseMeeting = completeCaseMeeting;
 window.forwardToPresident = forwardToPresident;
 window.editCaseMeeting = editCaseMeeting;
+window.populateEditModal = populateEditModal;
+window.submitEditCaseMeeting = submitEditCaseMeeting;
 window.filterCaseMeetings = filterCaseMeetings;
 window.clearFilters = clearFilters;
 window.refreshCaseMeetings = refreshCaseMeetings;

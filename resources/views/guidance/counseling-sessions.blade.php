@@ -122,7 +122,7 @@
                             <div class="col-md-3">
                                 <label class="form-label">Search</label>
                                 <div class="input-group">
-                                    <input type="text" class="form-control" id="search-filter" placeholder="Search student name..." onkeyup="filterCounselingSessions()">
+                                    <input type="text" class="form-control" id="search-filter" placeholder="Search student name..." onkeypress="if(event.key === 'Enter') filterCounselingSessions()">
                                     <button class="btn btn-outline-secondary" onclick="clearFilters()">
                                         <i class="ri-close-line"></i>
                                     </button>
@@ -353,12 +353,4 @@
     </div>
 
     @vite('resources/js/guidance_counseling-sessions.js')
-    
-    <script>
-        // Show/hide follow-up date field
-        document.getElementById('followUpRequired').addEventListener('change', function() {
-            const followUpContainer = document.getElementById('followUpDateContainer');
-            followUpContainer.style.display = this.checked ? 'block' : 'none';
-        });
-    </script>
 </x-guidance-layout>

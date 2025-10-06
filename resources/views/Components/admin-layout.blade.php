@@ -64,6 +64,12 @@
               <span>Contact Messages</span>
             </a>
           </li>
+          <li class="nav-item">
+            <a class="nav-link d-flex align-items-center py-3 px-3 rounded" href="{{ route('admin.forwarded.cases') }}">
+              <i class="ri-file-check-line me-2 fs-5"></i>
+              <span>Forwarded Cases</span>
+            </a>
+          </li>
           <li class="nav-item mt-4">
             <form method="POST" action="{{ route('admin.logout') }}" class="px-3">
               @csrf
