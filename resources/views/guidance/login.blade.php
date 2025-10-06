@@ -1,5 +1,5 @@
 <x-layout>
-    @vite('resources/css/enroll.css')
+    @vite(['resources/css/enroll.css', 'resources/css/password-field.css'])
     <div class="row justify-content-center">
         <div class="col-lg-6 col-md-8">
             <div class="content-card p-5">
@@ -38,11 +38,12 @@
                             type="email"
                             id="email"
                             name="email"
-                            class="form-control @error('email') is-invalid @enderror"
+                            class="form-control form-control-lg @error('email') is-invalid @enderror"
                             value="{{ old('email') }}"
                             required
                             placeholder="Enter your email address"
                             autocomplete="email"
+                            autofocus
                         />
                         @error('email')
                             <div class="invalid-feedback">{{ $message }}</div>
@@ -53,15 +54,21 @@
                         <label for="password" class="form-label fw-semibold" style="color: var(--primary-color);">
                             <i class="ri-lock-line me-2"></i>Password
                         </label>
-                        <input
-                            type="password"
-                            id="password"
-                            name="password"
-                            class="form-control @error('password') is-invalid @enderror"
-                            required
-                            placeholder="Enter your password"
-                            autocomplete="current-password"
-                        />
+                        <div class="password-input-container">
+                            <input
+                                type="password"
+                                id="password"
+                                name="password"
+                                class="form-control custom-password-input @error('password') is-invalid @enderror"
+                                required
+                                placeholder="Enter your password"
+                                autocomplete="current-password"
+                                data-toggle="password"
+                            />
+                            <button type="button" class="password-toggle-btn" onclick="togglePassword('password')" style="color: var(--primary-color);">
+                                <i class="ri-eye-line" id="password-eye"></i>
+                            </button>
+                        </div>
                         @error('password')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -72,8 +79,8 @@
                         <label class="form-check-label" for="remember">Remember Me</label>
                     </div>
 
-                    <button type="submit" class="btn btn-primary w-100 mb-3">
-                        <i class="ri-login-box-line me-2"></i>Login to Portal
+                    <button type="submit" class="btn btn-custom btn-lg w-100 mb-3">
+                        <i class="ri-login-circle-line me-2"></i>Login to Portal
                     </button>
                 </form>
 
@@ -86,4 +93,19 @@
             </div>
         </div>
     </div>
+
+    <script>
+        function togglePassword(fieldId) {
+            const passwordField = document.getElementById(fieldId);
+            const eyeIcon = document.getElementById(fieldId + '-eye');
+            
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                eyeIcon.className = 'ri-eye-off-line';
+            } else {
+                passwordField.type = 'password';
+                eyeIcon.className = 'ri-eye-line';
+            }
+        }
+    </script>
 </x-layout>

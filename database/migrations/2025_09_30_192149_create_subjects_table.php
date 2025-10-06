@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id();
             
             // Basic subject information
-            $table->string('subject_code', 20)->unique(); // e.g., ENG7, MATH8, SCI11-STEM
-            $table->string('subject_name', 100); // e.g., English 7, Mathematics 8, Earth Science
+            // $table->string('subject_code', 20)->unique(); // REMOVED: No longer using subject codes
+            $table->string('subject_name', 100); // e.g., English, Mathematics, Earth Science
             
             // Grade level (get from student/enrollee record)
             $table->string('grade_level', 20); // Kinder, Grade 1-12
@@ -24,6 +24,10 @@ return new class extends Migration
             // Senior High School specific (null for other levels)
             $table->string('strand', 20)->nullable(); // STEM, ABM, HUMSS, TVL
             $table->string('track', 20)->nullable(); // ICT, HE (for TVL only)
+            $table->string('semester', 20)->nullable(); // First Semester, Second Semester (for SHS)
+            
+            // Subject categorization
+            $table->enum('category', ['core', 'specialized'])->default('core'); // core or specialized subjects
             
             // Status
             $table->boolean('is_active')->default(true);

@@ -95,10 +95,36 @@
                         </div>
                         <div class="card-body">
                             @if($paymentSchedules->count() > 0)
-                                <div class="alert alert-info mb-3">
-                                    <i class="ri-information-line me-2"></i>
-                                    <strong>Payment Schedule Status:</strong> Your payment schedule has been submitted and is being processed by the cashier.
-                                </div>
+                                @php
+                                    $pendingCount = $paymentSchedules->where('confirmation_status', 'pending')->count();
+                                    $confirmedCount = $paymentSchedules->where('confirmation_status', 'confirmed')->count();
+                                    $rejectedCount = $paymentSchedules->where('confirmation_status', 'rejected')->count();
+                                @endphp
+                                
+                                @if($pendingCount > 0)
+                                    <div class="alert alert-warning mb-3">
+                                        <i class="ri-time-line me-2"></i>
+                                        <strong>Payment Schedule Status:</strong> Your payment schedule has been submitted and is awaiting cashier confirmation.
+                                        <br><small>You cannot modify payment settings until this is processed.</small>
+                                    </div>
+                                @elseif($confirmedCount > 0)
+                                    <div class="alert alert-success mb-3">
+                                        <i class="ri-check-line me-2"></i>
+                                        <strong>Payment Schedule Confirmed:</strong> Your payment schedule has been approved by the cashier.
+                                        <br><small>Contact the cashier's office for any changes needed.</small>
+                                    </div>
+                                @elseif($rejectedCount > 0)
+                                    <div class="alert alert-danger mb-3">
+                                        <i class="ri-close-line me-2"></i>
+                                        <strong>Payment Schedule Rejected:</strong> Your payment schedule was not approved.
+                                        <br><small>Please contact the cashier's office for assistance.</small>
+                                    </div>
+                                @else
+                                    <div class="alert alert-info mb-3">
+                                        <i class="ri-information-line me-2"></i>
+                                        <strong>Payment Schedule Status:</strong> Your payment schedule has been submitted and is being processed by the cashier.
+                                    </div>
+                                @endif
                             @endif
                             
                             <div class="table-responsive">
@@ -163,10 +189,22 @@
                                 <i class="ri-calendar-line fs-1 text-muted mb-3"></i>
                                 <h6 class="text-muted">No Payment Schedule</h6>
                                 <p class="text-muted small">You haven't submitted a payment schedule yet.</p>
-                                @if($student->enrollment_status === 'pre_registered')
+                                @php
+                                    $hasAnySchedule = \App\Models\Payment::where('payable_type', \App\Models\Student::class)
+                                        ->where('payable_id', $student->id)
+                                        ->exists();
+                                @endphp
+                                
+                                @if($student->enrollment_status === 'pre_registered' && !$hasAnySchedule)
                                     <a href="{{ route('student.enrollment') }}" class="btn btn-primary">
                                         <i class="ri-send-plane-line me-2"></i>Submit Payment Schedule
                                     </a>
+                                @elseif($hasAnySchedule)
+                                    <div class="alert alert-info">
+                                        <i class="ri-information-line me-2"></i>
+                                        <strong>Payment Schedule Already Submitted</strong><br>
+                                        <small>You have already submitted a payment schedule. Please wait for cashier confirmation or contact the cashier's office for changes.</small>
+                                    </div>
                                 @endif
                             </div>
                         </div>
@@ -324,33 +362,97 @@
                 </div>
 
                 <!-- Payment Mode Change -->
+                @php
+                    $hasPendingSchedule = $paymentSchedules->where('confirmation_status', 'pending')->count() > 0;
+                    $hasSubmittedSchedule = $paymentSchedules->count() > 0;
+                @endphp
+                
                 @if(!$student->is_paid && $student->enrollment_status === 'enrolled')
                     <div class="card border-0 shadow-sm mb-4">
                         <div class="card-header bg-white border-0 pb-0">
                             <h6 class="card-title mb-0">
-                                <i class="ri-settings-line me-2"></i>Change Payment Mode
+                                <i class="ri-settings-line me-2"></i>Payment Mode Settings
                             </h6>
                         </div>
                         <div class="card-body">
-                            <form action="{{ route('student.payment.mode.update') }}" method="POST">
-                                @csrf
-                                <div class="mb-3">
-                                    <label class="form-label">Current Mode</label>
-                                    <div class="fw-semibold">{{ ucfirst($student->payment_mode ?? 'Not Set') }}</div>
+                            @if($hasSubmittedSchedule)
+                                <!-- Payment Schedule Submitted - Locked State -->
+                                <div class="alert alert-warning mb-3">
+                                    <i class="ri-lock-line me-2"></i>
+                                    <strong>Payment Schedule Submitted</strong><br>
+                                    <small>Your payment schedule has been submitted and is under review. You cannot modify payment settings at this time.</small>
                                 </div>
+                                
                                 <div class="mb-3">
-                                    <label class="form-label">New Payment Mode</label>
-                                    <select class="form-select" name="payment_mode" required>
-                                        <option value="">Select Payment Mode</option>
-                                        <option value="full" {{ $student->payment_mode === 'full' ? 'selected' : '' }}>Full Payment</option>
-                                        <option value="quarterly" {{ $student->payment_mode === 'quarterly' ? 'selected' : '' }}>Quarterly</option>
-                                        <option value="monthly" {{ $student->payment_mode === 'monthly' ? 'selected' : '' }}>Monthly</option>
-                                    </select>
+                                    <label class="form-label">Current Payment Mode</label>
+                                    <div class="fw-semibold text-muted">
+                                        <i class="ri-lock-line me-1"></i>{{ ucfirst($student->payment_mode ?? 'Not Set') }}
+                                    </div>
                                 </div>
-                                <button type="submit" class="btn btn-primary btn-sm w-100">
-                                    <i class="ri-refresh-line me-1"></i>Update Payment Mode
-                                </button>
-                            </form>
+                                
+                                @if($hasPendingSchedule)
+                                    <div class="alert alert-info mb-3">
+                                        <i class="ri-information-line me-2"></i>
+                                        <strong>Status:</strong> Waiting for cashier confirmation
+                                    </div>
+                                @endif
+                                
+                                <div class="text-center">
+                                    <p class="text-muted small mb-2">
+                                        <i class="ri-customer-service-line me-1"></i>
+                                        Need to make changes? Contact the cashier's office.
+                                    </p>
+                                    <div class="d-grid gap-2">
+                                        <button class="btn btn-outline-secondary btn-sm" disabled>
+                                            <i class="ri-lock-line me-1"></i>Payment Settings Locked
+                                        </button>
+                                        <small class="text-muted">
+                                            Visit the cashier to cancel or modify your payment schedule
+                                        </small>
+                                    </div>
+                                    
+                                    <div class="mt-3 p-3 bg-light rounded">
+                                        <h6 class="fw-bold text-primary mb-2">
+                                            <i class="ri-customer-service-line me-1"></i>Nicolites Montessori School
+                                        </h6>
+                                        <div class="row text-sm">
+                                            <div class="col-12 mb-1">
+                                                <i class="ri-map-pin-line me-1 text-muted"></i>
+                                                <small>San Roque St., Brgy 4 Nasugbu, Batangas</small>
+                                            </div>
+                                            <div class="col-12 mb-1">
+                                                <i class="ri-time-line me-1 text-muted"></i>
+                                                <small>Mon-Fri: 8:00 AM - 5:00 PM</small>
+                                            </div>
+                                            <div class="col-12">
+                                                <i class="ri-phone-line me-1 text-muted"></i>
+                                                <small>(043) 416-0149</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @else
+                                <!-- No Payment Schedule - Allow Changes -->
+                                <form action="{{ route('student.payment.mode.update') }}" method="POST">
+                                    @csrf
+                                    <div class="mb-3">
+                                        <label class="form-label">Current Mode</label>
+                                        <div class="fw-semibold">{{ ucfirst($student->payment_mode ?? 'Not Set') }}</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">New Payment Mode</label>
+                                        <select class="form-select" name="payment_mode" required>
+                                            <option value="">Select Payment Mode</option>
+                                            <option value="full" {{ $student->payment_mode === 'full' ? 'selected' : '' }}>Full Payment</option>
+                                            <option value="quarterly" {{ $student->payment_mode === 'quarterly' ? 'selected' : '' }}>Quarterly</option>
+                                            <option value="monthly" {{ $student->payment_mode === 'monthly' ? 'selected' : '' }}>Monthly</option>
+                                        </select>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary btn-sm w-100">
+                                        <i class="ri-refresh-line me-1"></i>Update Payment Mode
+                                    </button>
+                                </form>
+                            @endif
                         </div>
                     </div>
                 @endif
@@ -370,7 +472,7 @@
                                     <i class="ri-user-add-line me-2"></i>Complete Enrollment
                                 </a>
                             @endif
-                            <button class="btn btn-success" onclick="window.print()">
+                            <button class="btn btn-success disabled" onclick="window.print()">
                                 <i class="ri-printer-line me-2"></i>Print Statement
                             </button>
                         </div>

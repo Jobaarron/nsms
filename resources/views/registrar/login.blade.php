@@ -1,5 +1,5 @@
 <x-layout>
-    @vite('resources/css/enroll.css')
+    @vite(['resources/css/enroll.css', 'resources/css/password-field.css'])
     <div class="row justify-content-center">
         <div class="col-lg-6 col-md-8">
             <div class="content-card p-5">
@@ -38,6 +38,7 @@
                             value="{{ old('email') }}"
                             required
                             placeholder="Enter your email address"
+                            autofocus
                             autocomplete="email"
                         />
                         @error('email')
@@ -49,18 +50,18 @@
                         <label for="password" class="form-label fw-semibold" style="color: var(--primary-color);">
                             <i class="ri-lock-line me-2"></i>Password
                         </label>
-                        <div class="position-relative">
+                        <div class="password-input-container">
                             <input
                                 type="password"
                                 id="password"
                                 name="password"
-                                class="form-control form-control-lg @error('password') is-invalid @enderror"
+                                class="form-control form-control-lg custom-password-input @error('password') is-invalid @enderror"
                                 required
                                 placeholder="Enter your password"
                                 autocomplete="current-password"
-                                style="padding-right: 3rem;"
+                                data-toggle="password"
                             />
-                            <button type="button" class="btn btn-link position-absolute end-0 top-50 translate-middle-y me-2" onclick="togglePassword('password')" style="border: none; background: none; color: var(--primary-color);">
+                            <button type="button" class="password-toggle-btn" onclick="togglePassword('password')" style="color: var(--primary-color);">
                                 <i class="ri-eye-line" id="password-eye"></i>
                             </button>
                         </div>
@@ -75,7 +76,7 @@
                     </div>
 
                     <button type="submit" class="btn btn-custom btn-lg w-100 mb-3">
-                        <i class="ri-login-circle-line me-2"></i>Login
+                        <i class="ri-login-circle-line me-2"></i>Login to Portal
                     </button>
                 </form>
 

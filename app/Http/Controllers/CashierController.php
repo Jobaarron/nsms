@@ -147,6 +147,10 @@ class CashierController extends Controller
             $query->where('payment_method', $request->payment_method);
         }
 
+        if ($request->filled('payment_mode')) {
+            $query->where('payment_mode', $request->payment_mode);
+        }
+
         if ($request->filled('date_from')) {
             $query->whereDate('created_at', '>=', $request->date_from);
         }
@@ -160,11 +164,15 @@ class CashierController extends Controller
             $query->where(function($q) use ($search) {
                 $q->where('transaction_id', 'like', "%{$search}%")
                   ->orWhere('reference_number', 'like', "%{$search}%")
-                  ->orWhereHasMorph('payable', [Student::class, Enrollee::class], function($q) use ($search) {
-                      $q->where('first_name', 'like', "%{$search}%")
-                        ->orWhere('last_name', 'like', "%{$search}%")
-                        ->orWhere('student_id', 'like', "%{$search}%")
-                        ->orWhere('application_id', 'like', "%{$search}%");
+                  ->orWhereHasMorph('payable', [Student::class, Enrollee::class], function($subQuery, $type) use ($search) {
+                      $subQuery->where('first_name', 'like', "%{$search}%")
+                               ->orWhere('last_name', 'like', "%{$search}%");
+                      
+                      if ($type === Student::class) {
+                          $subQuery->orWhere('student_id', 'like', "%{$search}%");
+                      } elseif ($type === Enrollee::class) {
+                          $subQuery->orWhere('application_id', 'like', "%{$search}%");
+                      }
                   });
             });
         }

@@ -740,6 +740,13 @@ class EnrolleeController extends Controller
                 'application_id' => $enrollee->application_id
             ]);
             
+            // Store credentials in session for display after page refresh
+            session()->flash('new_student_credentials', [
+                'student_id' => $studentId,
+                'password' => $password,
+                'show_modal' => true
+            ]);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Pre-registration completed successfully!',

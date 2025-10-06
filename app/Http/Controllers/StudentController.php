@@ -216,6 +216,17 @@ class StudentController extends Controller
             return redirect()->route('student.login');
         }
 
+        // Check if student already has payment schedules
+        $existingSchedules = Payment::where('payable_type', Student::class)
+            ->where('payable_id', $student->id)
+            ->exists();
+            
+        if ($existingSchedules) {
+            return back()->withErrors([
+                'error' => 'You have already submitted a payment schedule. Please contact the cashier\'s office to make changes.'
+            ]);
+        }
+
         $request->validate([
             'payment_mode' => 'required|in:full,quarterly,monthly'
         ]);
@@ -300,6 +311,17 @@ class StudentController extends Controller
         
         if (!$student) {
             return redirect()->route('student.login');
+        }
+
+        // Check if student has submitted payment schedules
+        $hasSubmittedSchedule = Payment::where('payable_type', Student::class)
+            ->where('payable_id', $student->id)
+            ->exists();
+
+        if ($hasSubmittedSchedule) {
+            return back()->withErrors([
+                'error' => 'Cannot change payment mode. You have already submitted a payment schedule. Please contact the cashier\'s office to make changes.'
+            ]);
         }
 
         $request->validate([

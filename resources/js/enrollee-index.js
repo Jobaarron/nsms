@@ -31,7 +31,7 @@ function preRegisterStudent() {
             showCredentialsModal(data.student_id, data.password);
             
             // Update the timeline immediately without page reload
-            updateTimelineAfterPreRegistration(data.student_id);
+            updateTimelineAfterPreRegistration(data.student_id, data.password);
         } else {
             // Show error message
             showAlert(data.message || 'Pre-registration failed. Please try again.', 'danger');
@@ -165,7 +165,7 @@ function showAlert(message, type = 'info') {
 }
 
 // Update timeline after pre-registration
-function updateTimelineAfterPreRegistration(studentId) {
+function updateTimelineAfterPreRegistration(studentId, password) {
     // Find the pre-register timeline item and replace it
     const preRegisterItem = document.querySelector('#preRegisterBtn')?.closest('.timeline-item');
     if (preRegisterItem) {
@@ -179,7 +179,7 @@ function updateTimelineAfterPreRegistration(studentId) {
                     <p class="text-muted mb-0">Student ID: <strong>${studentId}</strong></p>
                     <small class="text-success">You can now access the student portal for enrollment and payment processing.</small>
                     <div class="mt-2">
-                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="showCredentialsModal('${studentId}', 'password')">
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="showCredentialsModal('${studentId}', '${password}')">
                             <i class="ri-key-line me-1"></i>View Credentials
                         </button>
                     </div>
@@ -195,5 +195,6 @@ function updateTimelineAfterPreRegistration(studentId) {
 
 // Make functions globally available
 window.preRegisterStudent = preRegisterStudent;
+window.showCredentialsModal = showCredentialsModal;
 window.copyToClipboard = copyToClipboard;
 window.updateTimelineAfterPreRegistration = updateTimelineAfterPreRegistration;

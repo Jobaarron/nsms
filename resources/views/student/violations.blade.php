@@ -45,10 +45,6 @@
               <div class="card-body d-flex align-items-center">
                 <i class="ri-information-line display-6 me-3 text-white"></i>
                 <div>
-                  <div>Minor</div>
-                  <h3>{{ $violations->where('effective_severity', 'minor')->count() }}</h3>
-                  @if($violations->where('escalated', true)->count() > 0)
-                    <small class="text-muted">({{ $violations->where('severity', 'minor')->where('escalated', false)->count() }} original)</small>
                   <div class="text-white">Minor</div>
                   <h3 class="text-white">{{ $violations->where('effective_severity', 'minor')->count() }}</h3>
                   @if($violations->where('escalated', true)->count() > 0)
@@ -63,10 +59,6 @@
               <div class="card-body d-flex align-items-center">
                 <i class="ri-alert-line display-6 me-3 text-white"></i>
                 <div>
-                  <div>Major</div>
-                  <h3>{{ $violations->where('effective_severity', 'major')->count() }}</h3>
-                  @if($violations->where('escalated', true)->count() > 0)
-                    <small class="text-warning">({{ $violations->where('escalated', true)->count() }} escalated)</small>
                   <div class="text-white">Major</div>
                   <h3 class="text-white">{{ $violations->where('effective_severity', 'major')->count() }}</h3>
                   @if($violations->where('escalated', true)->count() > 0)

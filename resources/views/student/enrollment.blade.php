@@ -70,7 +70,7 @@
                                     <table class="table table-hover">
                                         <thead>
                                             <tr>
-                                                <th>Subject Code</th>
+                                                <th>Category</th>
                                                 <th>Subject Name</th>
                                                 <th>Grade Level</th>
                                                 @if($student->grade_level === 'Grade 11' || $student->grade_level === 'Grade 12')
@@ -81,7 +81,11 @@
                                         <tbody>
                                             @foreach($subjects as $subject)
                                                 <tr>
-                                                    <td class="fw-semibold">{{ $subject->subject_code }}</td>
+                                                    <td class="fw-semibold">
+                                                        <span class="badge bg-{{ $subject->category === 'core' ? 'secondary' : 'primary' }}">
+                                                            {{ ucfirst($subject->category) }}
+                                                        </span>
+                                                    </td>
                                                     <td>{{ $subject->subject_name }}</td>
                                                     <td>{{ $subject->grade_level }}</td>
                                                     @if($student->grade_level === 'Grade 11' || $student->grade_level === 'Grade 12')

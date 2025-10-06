@@ -2,7 +2,6 @@
 
   @vite(['resources/js/app.js', 'resources/css/index_discipline.css', 'resources/js/discipline_violations.js'])
 
-  <!-- MAIN CONTENT -->
   <main class="col-12 col-md-10 px-4 py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h1 class="section-title mb-0">Violations Management</h1>

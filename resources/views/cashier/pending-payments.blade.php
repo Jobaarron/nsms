@@ -260,6 +260,30 @@
         <script>
             let currentPaymentId = null;
 
+            function confirmPayment(paymentId) {
+                currentPaymentId = paymentId;
+                const modal = new bootstrap.Modal(document.getElementById('confirmPaymentModal'));
+                modal.show();
+            }
+
+            function rejectPayment(paymentId) {
+                currentPaymentId = paymentId;
+                const modal = new bootstrap.Modal(document.getElementById('rejectPaymentModal'));
+                modal.show();
+            }
+
+            function confirmFromModal() {
+                if (currentPaymentId) {
+                    confirmPayment(currentPaymentId);
+                }
+            }
+
+            function rejectFromModal() {
+                if (currentPaymentId) {
+                    rejectPayment(currentPaymentId);
+                }
+            }
+
             function viewPaymentDetails(paymentId) {
                 fetch(`/cashier/payments/${paymentId}/details`)
                     .then(response => response.json())

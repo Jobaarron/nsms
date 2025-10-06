@@ -32,7 +32,7 @@
                 <div class="card-body">
                     <form method="GET" action="{{ route('cashier.payment-history') }}">
                         <div class="row g-3">
-                            <div class="col-md-2">
+                            <div class="col-lg-2 col-md-4">
                                 <label for="status" class="form-label">Status</label>
                                 <select class="form-select" id="status" name="status">
                                     <option value="">All Status</option>
@@ -41,32 +41,40 @@
                                     <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>Rejected</option>
                                 </select>
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-lg-2 col-md-4">
                                 <label for="payment_method" class="form-label">Payment Method</label>
                                 <select class="form-select" id="payment_method" name="payment_method">
                                     <option value="">All Methods</option>
                                     <option value="cash" {{ request('payment_method') == 'cash' ? 'selected' : '' }}>Cash</option>
+                                    <option value="online" {{ request('payment_method') == 'online' ? 'selected' : '' }}>Online</option>
                                     <option value="bank_transfer" {{ request('payment_method') == 'bank_transfer' ? 'selected' : '' }}>Bank Transfer</option>
-                                    <option value="gcash" {{ request('payment_method') == 'gcash' ? 'selected' : '' }}>GCash</option>
-                                    <option value="paymaya" {{ request('payment_method') == 'paymaya' ? 'selected' : '' }}>PayMaya</option>
                                 </select>
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-lg-2 col-md-4">
+                                <label for="payment_mode" class="form-label">Payment Mode</label>
+                                <select class="form-select" id="payment_mode" name="payment_mode">
+                                    <option value="">All Modes</option>
+                                    <option value="full" {{ request('payment_mode') == 'full' ? 'selected' : '' }}>Full Payment</option>
+                                    <option value="quarterly" {{ request('payment_mode') == 'quarterly' ? 'selected' : '' }}>Quarterly</option>
+                                    <option value="monthly" {{ request('payment_mode') == 'monthly' ? 'selected' : '' }}>Monthly</option>
+                                </select>
+                            </div>
+                            <div class="col-lg-2 col-md-6">
                                 <label for="date_from" class="form-label">Date From</label>
                                 <input type="date" class="form-control" id="date_from" name="date_from" 
                                        value="{{ request('date_from') }}">
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-lg-2 col-md-6">
                                 <label for="date_to" class="form-label">Date To</label>
                                 <input type="date" class="form-control" id="date_to" name="date_to" 
                                        value="{{ request('date_to') }}">
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-lg-2 col-md-8">
                                 <label for="search" class="form-label">Search</label>
                                 <input type="text" class="form-control" id="search" name="search" 
                                        value="{{ request('search') }}" placeholder="Transaction ID, Name, Student ID...">
                             </div>
-                            <div class="col-md-1">
+                            <div class="col-lg-12 col-md-4">
                                 <label class="form-label">&nbsp;</label>
                                 <div class="d-flex gap-2">
                                     <button type="submit" class="btn btn-primary">
