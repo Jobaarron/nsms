@@ -1,616 +1,708 @@
-// Guidance Case Meetings JavaScript
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Case Meetings page loaded');
-    
-    // Initialize page functionality
-    initializeCaseMeetings();
-});
+    // Initialize modal event listeners
+    setTimeout(function() {
+      initializeModalEventListeners();
+    }, 100);
 
-// Initialize case meetings functionality
-function initializeCaseMeetings() {
-    // Set up form validation
-    setupFormValidation();
-    
-    // Set up date/time constraints
-    setupDateTimeConstraints();
-}
-
-// Setup form validation
-function setupFormValidation() {
-    const form = document.getElementById('scheduleCaseMeetingForm');
-    if (form) {
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            submitCaseMeeting(e);
+    function initializeModalEventListeners() {
+      // Add close button functionality to all modals
+      document.querySelectorAll('.modal').forEach(modal => {
+        const closeButtons = modal.querySelectorAll('[data-bs-dismiss="modal"], .btn-close');
+        closeButtons.forEach(button => {
+          button.addEventListener('click', function() {
+            hideModal(modal.id);
+          });
         });
+        
+        // Close on backdrop click
+        modal.addEventListener('click', function(e) {
+          if (e.target === modal) {
+            hideModal(modal.id);
+          }
+        });
+      });
+      
+      // Global ESC key listener
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+          window.ModalManager.hideAll();
+        }
+      });
     }
-}
-
-// Setup date/time constraints
-function setupDateTimeConstraints() {
-    const dateInput = document.querySelector('input[name="scheduled_date"]');
-    if (dateInput) {
-        // Set minimum date to today
-        const today = new Date().toISOString().split('T')[0];
-        dateInput.min = today;
+    // Search and filter functionality
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    const severityFilter = document.getElementById('severityFilter');
+    const typeFilter = document.getElementById('typeFilter');
+    const dateFilter = document.getElementById('dateFilter');
+    
+    function filterTable() {
+      const searchTerm = searchInput.value.toLowerCase();
+      const statusValue = statusFilter.value;
+      const severityValue = severityFilter.value;
+      const typeValue = typeFilter.value;
+      const dateValue = dateFilter.value;
+      const rows = document.querySelectorAll('#violationsTable tbody tr');
+      
+      rows.forEach(row => {
+        if (row.cells.length < 8) return; // Skip empty rows
+        
+        const student = row.cells[1].textContent.toLowerCase();
+        const violation = row.cells[2].textContent.toLowerCase();
+        const type = row.cells[3].textContent.toLowerCase();
+        const severity = row.cells[4].textContent.toLowerCase();
+        const date = row.cells[5].textContent;
+        const status = row.cells[6].textContent.toLowerCase();
+        
+        const matchesSearch = student.includes(searchTerm) || violation.includes(searchTerm);
+        const matchesStatus = !statusValue || status.includes(statusValue);
+        const matchesSeverity = !severityValue || severity.includes(severityValue);
+        const matchesType = !typeValue || type.includes(typeValue);
+        const matchesDate = !dateValue || date.includes(new Date(dateValue).toLocaleDateString());
+        
+        row.style.display = matchesSearch && matchesStatus && matchesSeverity && matchesType && matchesDate ? '' : 'none';
+      });
     }
-}
-
-// Submit case meeting form
-function submitCaseMeeting(event) {
-    event.preventDefault();
     
-    const form = event.target;
-    const formData = new FormData(form);
-    const submitBtn = form.querySelector('button[type="submit"]');
-    
-    // Show loading state
-    const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="ri-loader-4-line me-2 spinner-border spinner-border-sm"></i>Scheduling...';
-    submitBtn.disabled = true;
-    
-    fetch('/guidance/case-meetings', {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-        }
-    })
-    .then(response => response.json().then(data => ({ response, data })))
-    .then(({ response, data }) => {
-        if (!response.ok) {
-            showAlert(data.message || 'Request failed', 'danger');
-            return;
-        }
-
-        if (data.success) {
-            showAlert('Case meeting scheduled successfully!', 'success');
-            setTimeout(() => {
-                window.location.reload();
-            }, 1500);
-        } else {
-            showAlert(data.message || 'Failed to schedule case meeting', 'danger');
-        }
-    })
-    .catch(error => {
-        console.error('Error scheduling case meeting:', error);
-        showAlert('An error occurred while scheduling the meeting', 'danger');
-    })
-    .finally(() => {
-        // Restore button state
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
+    [searchInput, statusFilter, severityFilter, typeFilter, dateFilter].forEach(element => {
+      element.addEventListener('input', filterTable);
+      element.addEventListener('change', filterTable);
     });
-}
+  });
 
-// View case meeting details
-function viewCaseMeeting(meetingId) {
-    fetch(`/guidance/case-meetings/${meetingId}`, {
-        method: 'GET',
-        headers: {
-            'Accept': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showCaseMeetingModal(data.meeting);
-        } else {
-            showAlert('Failed to load meeting details', 'danger');
-        }
-    })
-    .catch(error => {
-        console.error('Error loading meeting:', error);
-        showAlert('Error loading meeting details', 'danger');
-    });
-}
-
-// Show case meeting details modal
-function showCaseMeetingModal(meeting) {
-    const modalHtml = `
-        <div class="modal fade" id="viewCaseMeetingModal" tabindex="-1">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Case Meeting Details</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Student</label>
-                                <p class="form-control-plaintext">${meeting.student_name}</p>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Meeting Type</label>
-                                <p class="form-control-plaintext">
-                                    <span class="badge ${meeting.meeting_type === 'house_visit' ? 'bg-info' : 'bg-primary'}">
-                                        ${meeting.meeting_type_display}
-                                    </span>
-                                </p>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Date & Time</label>
-                                <p class="form-control-plaintext">${meeting.scheduled_date} at ${meeting.scheduled_time}</p>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Location</label>
-                                <p class="form-control-plaintext">${meeting.location || 'TBD'}</p>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Status</label>
-                                <p class="form-control-plaintext">
-                                    <span class="badge ${meeting.status_class}">${meeting.status_text}</span>
-                                </p>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Urgency Level</label>
-                                <p class="form-control-plaintext">
-                                    ${meeting.urgency_level ? `<span class="badge bg-${meeting.urgency_color}">${meeting.urgency_level}</span>` : 'Normal'}
-                                </p>
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label fw-bold">Reason</label>
-                                <p class="form-control-plaintext">${meeting.reason}</p>
-                            </div>
-                            ${meeting.notes ? `
-                            <div class="col-12">
-                                <label class="form-label fw-bold">Notes</label>
-                                <p class="form-control-plaintext">${meeting.notes}</p>
-                            </div>
-                            ` : ''}
-                            ${meeting.summary ? `
-                            <div class="col-12">
-                                <label class="form-label fw-bold">Summary</label>
-                                <p class="form-control-plaintext">${meeting.summary}</p>
-                            </div>
-                            ` : ''}
-                            ${meeting.sanction ? `
-                            <div class="col-12">
-                                <label class="form-label fw-bold">Sanction</label>
-                                <p class="form-control-plaintext">${meeting.sanction}</p>
-                            </div>
-                            ` : ''}
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        ${['scheduled', 'in_progress'].includes(meeting.status) ? `
-                            <button type="button" class="btn btn-success" onclick="completeCaseMeeting(${meeting.id}); closeModal('viewCaseMeetingModal');">
-                                <i class="ri-check-line me-2"></i>Mark Complete
-                            </button>
-                            <button type="button" class="btn btn-warning" onclick="forwardToPresident(${meeting.id}); closeModal('viewCaseMeetingModal');">
-                                <i class="ri-send-plane-line me-2"></i>Forward to President
-                            </button>
-                        ` : ''}
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    </div>
-                </div>
+// Global functions for CRUD operations (must be in global scope)
+window.viewViolation = function(violationId) {
+    // Fetch violation data from server
+    fetch(`/guidance/violations/${violationId}`)
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById('viewViolationModalBody').innerHTML = `
+          <div class="row">
+            <div class="col-md-6">
+              <h6>Student Information</h6>
+              <table class="table table-sm">
+                <tbody>
+                  <tr><td><strong>Name:</strong></td><td>${data.student.first_name} ${data.student.last_name}</td></tr>
+                  <tr><td><strong>Student ID:</strong></td><td>${data.student.student_id || 'N/A'}</td></tr>
+                  <tr><td><strong>Grade Level:</strong></td><td>${data.student.grade_level || 'N/A'}</td></tr>
+                  <tr><td><strong>Section:</strong></td><td>${data.student.section || 'N/A'}</td></tr>
+                </tbody>
+              </table>
+              
+              <h6 class="mt-3">Violation Details</h6>
+              <table class="table table-sm">
+                <tbody>
+                  <tr><td><strong>Type:</strong></td><td>
+                    <span class="badge bg-secondary">${data.violation_type ? data.violation_type.charAt(0).toUpperCase() + data.violation_type.slice(1) : 'N/A'}</span>
+                  </td></tr>
+                  <tr><td><strong>Severity:</strong></td><td>
+                    <span class="badge bg-${data.severity === 'minor' ? 'success' : (data.severity === 'major' ? 'warning' : 'danger')}">
+                      ${data.severity ? data.severity.charAt(0).toUpperCase() + data.severity.slice(1) : 'N/A'}
+                    </span>
+                  </td></tr>
+                  <tr><td><strong>Status:</strong></td><td>
+                    <span class="badge bg-${data.status === 'pending' ? 'warning' : (data.status === 'resolved' ? 'success' : 'info')}">
+                      ${data.status ? data.status.charAt(0).toUpperCase() + data.status.slice(1) : 'N/A'}
+                    </span>
+                  </td></tr>
+                  <tr><td><strong>Date:</strong></td><td>${new Date(data.violation_date).toLocaleDateString()}</td></tr>
+                  <tr><td><strong>Time:</strong></td><td>${data.violation_time ? (data.violation_time.length > 5 ? data.violation_time.substring(0, 5) : data.violation_time) : 'N/A'}</td></tr>
+                  <tr><td><strong>Location:</strong></td><td>${data.location || 'N/A'}</td></tr>
+                </tbody>
+              </table>
             </div>
-        </div>
-    `;
-    
-    // Remove existing modal if any
-    const existingModal = document.getElementById('viewCaseMeetingModal');
-    if (existingModal) {
-        existingModal.remove();
-    }
-    
-    // Add new modal to body
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
-    
-    // Show modal
-    const modal = new bootstrap.Modal(document.getElementById('viewCaseMeetingModal'));
-    modal.show();
-}
+            <div class="col-md-6">
+              <h6>Violation Information</h6>
+              <div class="mb-3">
+                <label class="form-label fw-bold">Title:</label>
+                <p>${data.title}</p>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-bold">Description:</label>
+                <p>${data.description}</p>
+              </div>
+              
+              ${data.witnesses && data.witnesses.length > 0 ? `
+                <div class="mb-3">
+                  <label class="form-label fw-bold">Witnesses:</label>
+                  <ul class="list-unstyled">
+                    ${data.witnesses.map(witness => `<li>• ${witness}</li>`).join('')}
+                  </ul>
+                </div>
+              ` : ''}
+              
+              
+              ${data.resolution ? `
+                <div class="mb-3">
+                  <label class="form-label fw-bold">Resolution:</label>
+                  <p>${data.resolution}</p>
+                </div>
+              ` : ''}
+              
+              ${data.disciplinary_action ? `
+                <div class="mb-3">
+                  <label class="form-label fw-bold">Disciplinary Action:</label>
+                  <p>${data.disciplinary_action}</p>
+                </div>
+              ` : ''}
+              
+              ${data.notes ? `
+                <div class="mb-3">
+                  <label class="form-label fw-bold">Notes:</label>
+                  <p>${data.notes}</p>
+                </div>
+              ` : ''}
+              
+              <div class="mb-3">
+                <label class="form-label fw-bold">Reported By:</label>
+                <p>${data.reported_by ? (data.reported_by.first_name + ' ' + data.reported_by.last_name) : 'N/A'}</p>
+              </div>
+              
+              <div class="mb-3">
+                <label class="form-label fw-bold">Reported On:</label>
+                <p>${new Date(data.created_at).toLocaleDateString()} at ${new Date(data.created_at).toLocaleTimeString()}</p>
+              </div>
+              
+              ${data.resolved_by ? `
+                <div class="mb-3">
+                  <label class="form-label fw-bold">Resolved By:</label>
+                  <p>${data.resolved_by.first_name} ${data.resolved_by.last_name}</p>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label fw-bold">Resolved On:</label>
+                  <p>${new Date(data.resolved_at).toLocaleDateString()} at ${new Date(data.resolved_at).toLocaleTimeString()}</p>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        `;
+        showModal('viewViolationModal');
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Error loading violation details');
+      });
+  }
 
-// Complete case meeting
-function completeCaseMeeting(meetingId) {
-    if (!confirm('Mark this case meeting as completed?')) {
-        return;
-    }
-    
-    fetch(`/guidance/case-meetings/${meetingId}/complete`, {
-        method: 'POST',
-        headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showAlert('Case meeting marked as completed', 'success');
-            setTimeout(() => {
-                window.location.reload();
-            }, 1500);
-        } else {
-            showAlert(data.message || 'Failed to complete meeting', 'danger');
-        }
-    })
-    .catch(error => {
-        console.error('Error completing meeting:', error);
-        showAlert('Error completing meeting', 'danger');
-    });
-}
+window.editViolation = function(violationId) {
+    // Fetch violation data for editing
+    fetch(`/guidance/violations/${violationId}/edit`)
+      .then(response => response.json())
+      .then(data => {
+        const violation = data.violation;
+        const students = data.students;
+        
+        document.getElementById('editViolationForm').action = `/guidance/violations/${violationId}`;
+        
+        document.getElementById('editViolationModalBody').innerHTML = `
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="edit_student_id" class="form-label">Student <span class="text-danger">*</span></label>
+                <select class="form-select" id="edit_student_id" name="student_id" required>
+                  ${students.map(student => `
+                    <option value="${student.id}" ${student.id === violation.student_id ? 'selected' : ''}>
+                      ${student.first_name} ${student.last_name} (${student.student_id || 'No ID'})
+                    </option>
+                  `).join('')}
+                </select>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="edit_violation_type" class="form-label">Violation Type <span class="text-danger">*</span></label>
+                <select class="form-select" id="edit_violation_type" name="violation_type" required>
+                  <option value="late" ${violation.violation_type === 'late' ? 'selected' : ''}>Late Arrival</option>
+                  <option value="uniform" ${violation.violation_type === 'uniform' ? 'selected' : ''}>Uniform Violation</option>
+                  <option value="misconduct" ${violation.violation_type === 'misconduct' ? 'selected' : ''}>Misconduct</option>
+                  <option value="academic" ${violation.violation_type === 'academic' ? 'selected' : ''}>Academic Dishonesty</option>
+                  <option value="other" ${violation.violation_type === 'other' ? 'selected' : ''}>Other</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <label for="edit_title" class="form-label">Title <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="edit_title" name="title" value="${violation.title}" required>
+          </div>
+          
+          <div class="mb-3">
+            <label for="edit_description" class="form-label">Description <span class="text-danger">*</span></label>
+            <textarea class="form-control" id="edit_description" name="description" rows="3" required>${violation.description}</textarea>
+          </div>
+          
+          <div class="row">
+            <div class="col-md-3">
+              <div class="mb-3">
+                <label for="edit_severity" class="form-label">Severity <span class="text-danger">*</span></label>
+                <select class="form-select" id="edit_severity" name="severity" required>
+                  <option value="minor" ${violation.severity === 'minor' ? 'selected' : ''}>Minor</option>
+                  <option value="major" ${violation.severity === 'major' ? 'selected' : ''}>Major</option>
+                  <option value="severe" ${violation.severity === 'severe' ? 'selected' : ''}>Severe</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="mb-3">
+                <label for="edit_violation_date" class="form-label">Date <span class="text-danger">*</span></label>
+                <input type="date" class="form-control" id="edit_violation_date" name="violation_date" value="${violation.violation_date ? (violation.violation_date.includes('T') ? violation.violation_date.split('T')[0] : violation.violation_date) : ''}" required>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="mb-3">
+                <label for="edit_violation_time" class="form-label">Time</label>
+                <input type="time" class="form-control" id="edit_violation_time" name="violation_time" value="${violation.violation_time ? (violation.violation_time.length > 5 ? violation.violation_time.substring(0, 5) : violation.violation_time) : ''}">
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="mb-3">
+                <label for="edit_status" class="form-label">Status <span class="text-danger">*</span></label>
+                <select class="form-select" id="edit_status" name="status" required>
+                  <option value="pending" ${violation.status === 'pending' ? 'selected' : ''}>Pending</option>
+                  <option value="investigating" ${violation.status === 'investigating' ? 'selected' : ''}>Investigating</option>
+                  <option value="resolved" ${violation.status === 'resolved' ? 'selected' : ''}>Resolved</option>
+                  <option value="dismissed" ${violation.status === 'dismissed' ? 'selected' : ''}>Dismissed</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <label for="edit_location" class="form-label">Location</label>
+            <input type="text" class="form-control" id="edit_location" name="location" value="${violation.location || ''}">
+          </div>
+          
+          <div class="mb-3">
+            <label for="edit_witnesses" class="form-label">Witnesses</label>
+            <textarea class="form-control" id="edit_witnesses" name="witnesses" rows="2">${violation.witnesses ? violation.witnesses.join('\n') : ''}</textarea>
+          </div>
+          
+          
+          <div class="mb-3">
+            <label for="edit_resolution" class="form-label">Resolution</label>
+            <textarea class="form-control" id="edit_resolution" name="resolution" rows="2">${violation.resolution || ''}</textarea>
+          </div>
+          
+          <div class="mb-3">
+            <label for="edit_student_statement" class="form-label">Student Statement</label>
+            <textarea class="form-control" id="edit_student_statement" name="student_statement" rows="2">${violation.student_statement || ''}</textarea>
+          </div>
+          
+          <div class="mb-3">
+            <label for="edit_disciplinary_action" class="form-label">Disciplinary Action</label>
+            <textarea class="form-control" id="edit_disciplinary_action" name="disciplinary_action" rows="2">${violation.disciplinary_action || ''}</textarea>
+          </div>
+          
+          <div class="mb-3">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="edit_parent_notified" name="parent_notified" value="1" ${violation.parent_notified ? 'checked' : ''}>
+              <label class="form-check-label" for="edit_parent_notified">
+                Parent/Guardian Notified
+              </label>
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <label for="edit_notes" class="form-label">Additional Notes</label>
+            <textarea class="form-control" id="edit_notes" name="notes" rows="2">${violation.notes || ''}</textarea>
+          </div>
+        `;
+        
+        showModal('editViolationModal');
+        
+        // Add form submission handler
+        const form = document.getElementById('editViolationForm');
+        const currentViolationId = violationId; // Store violation ID in closure
+        form.onsubmit = function(e) {
+          e.preventDefault();
+          const formData = new FormData(form);
+          const submitBtn = form.querySelector('button[type="submit"]');
+          const originalText = submitBtn.innerHTML;
+          
+          // Add CSRF token and method spoofing
+          formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+          formData.append('_method', 'PUT');
+          
+          // Handle checkbox explicitly
+          const parentNotifiedCheckbox = form.querySelector('#edit_parent_notified');
+          if (parentNotifiedCheckbox) {
+            formData.set('parent_notified', parentNotifiedCheckbox.checked ? '1' : '0');
+          }
+          
 
-// Forward case to president
-function forwardToPresident(meetingId) {
-    // First, fetch the meeting details to check for summary and sanction
-    fetch(`/guidance/case-meetings/${meetingId}`, {
-        method: 'GET',
-        headers: {
-            'Accept': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            const meeting = data.meeting;
-            
-            // Check if a summary exists and if sanctions have been set
-            console.log('Forward check:', { summary: meeting.summary, sanctions: meeting.sanctions });
-            if (meeting.summary && meeting.sanctions && meeting.sanctions.length > 0) {
-                // Both conditions met - proceed with forwarding
-                const reason = prompt('Please confirm if you would like to forward this case to the President for review:');
-                if (!reason || reason.trim() === '') {
-                    return;
-                }
-
-                // Proceed with the forwarding request
-                proceedWithForwarding(meetingId, reason.trim());
-            } else {
-                // Conditions not met - show appropriate error message
-                let errorMessage = 'Action blocked: ';
-
-                if (!meeting.summary && (!meeting.sanctions || meeting.sanctions.length === 0)) {
-                    errorMessage += 'Please ensure a summary report has been created and sanctions have been set before forwarding.';
-                } else if (!meeting.summary) {
-                    errorMessage += 'Please ensure a summary report has been created before forwarding.';
-                } else if (!meeting.sanctions || meeting.sanctions.length === 0) {
-                    errorMessage += 'Please ensure sanctions have been set before forwarding.';
-                }
-
-                showAlert(errorMessage, 'danger');
-
-                // Optionally, open the summary modal if no summary exists
-                if (!meeting.summary) {
-                    closeModal('viewCaseMeetingModal'); // Close view modal if open
-                    setTimeout(() => {
-                        openCreateSummaryModal(meetingId);
-                    }, 500);
-                }
+          
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<i class="ri-loader-line me-2 spinner-border spinner-border-sm"></i>Updating...';
+          
+          fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+              'X-Requested-With': 'XMLHttpRequest',
+              'Accept': 'application/json'
             }
-        } else {
-            showAlert('Failed to load meeting details', 'danger');
-        }
-    })
-    .catch(error => {
-        console.error('Error loading meeting:', error);
-        showAlert('Error loading meeting details', 'danger');
-    });
-}
+          })
+          .then(response => {
+            if (response.ok) {
+              return response.json();
+            } else {
+              return response.json().then(errorData => {
+                let errorMsg = 'Update failed with status: ' + response.status;
+                if (errorData.errors) {
+                  errorMsg += '\\n\\nValidation errors:';
+                  Object.keys(errorData.errors).forEach(field => {
+                    errorMsg += '\\n- ' + field + ': ' + errorData.errors[field].join(', ');
+                  });
+                }
+                if (errorData.message) {
+                  errorMsg += '\\n\\nMessage: ' + errorData.message;
+                }
+                throw new Error(errorMsg);
+              });
+            }
+          })
+          .then(data => {
+            if (data.success) {
+              hideModal('editViolationModal');
+              
+              // Show success message
+              const alertDiv = document.createElement('div');
+              alertDiv.className = 'alert alert-success alert-dismissible fade show';
+              alertDiv.innerHTML = `
+                <strong>Success!</strong> ${data.message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              `;
+              
+              const mainContent = document.querySelector('main');
+              mainContent.insertBefore(alertDiv, mainContent.firstChild);
+              
+              // Auto-dismiss after 3 seconds
+              setTimeout(() => {
+                if (alertDiv.parentNode) {
+                  alertDiv.remove();
+                }
+              }, 3000);
+              
+              // Update the row in the table instead of full reload
+              updateViolationRow(currentViolationId, data.violation);
+            } else {
+              throw new Error(data.message || 'Update failed');
+            }
+          })
+          .catch(error => {
+            console.error('Error:', error);
+            
+            // Show error message
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+            alertDiv.innerHTML = `
+              <strong>Error!</strong> ${error.message}
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            const modalBody = document.getElementById('editViolationModalBody');
+            modalBody.insertBefore(alertDiv, modalBody.firstChild);
+            
+            // Auto-dismiss after 5 seconds
+            setTimeout(() => {
+              if (alertDiv.parentNode) {
+                alertDiv.remove();
+              }
+            }, 5000);
+          })
+          .finally(() => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+          });
+        };
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Error loading violation for editing');
+      });
+  }
 
-// Helper function to handle the actual forwarding request
-function proceedWithForwarding(meetingId, reason) {
-    fetch(`/guidance/case-meetings/${meetingId}/forward`, {
+window.deleteViolation = function(violationId) {
+    if (confirm('Are you sure you want to delete this violation? This action cannot be undone.')) {
+      // Show loading state
+      const button = event.target.closest('button');
+      const originalHTML = button.innerHTML;
+      button.innerHTML = '<i class="ri-loader-line spinner-border spinner-border-sm"></i>';
+      button.disabled = true;
+      
+      // Use AJAX for better UX
+      fetch(`/guidance/violations/${violationId}`, {
         method: 'POST',
         headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
         },
         body: JSON.stringify({
-            reason: reason
+          '_method': 'DELETE',
+          '_token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
         })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showAlert('Case forwarded to president successfully', 'success');
-            setTimeout(() => {
-                window.location.reload();
-            }, 1500);
+      })
+      .then(response => {
+        if (response.ok) {
+          return response.json();
         } else {
-            showAlert(data.message || 'Failed to forward case', 'danger');
+          throw new Error('Delete failed with status: ' + response.status);
         }
-    })
-    .catch(error => {
-        console.error('Error forwarding case:', error);
-        showAlert('Error forwarding case', 'danger');
-    });
-}
-
-// Edit case meeting
-function editCaseMeeting(meetingId) {
-    // Fetch meeting data and populate edit modal
-    fetch(`/guidance/case-meetings/${meetingId}`, {
-        method: 'GET',
-        headers: {
-            'Accept': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
+      })
+      .then(data => {
         if (data.success) {
-            populateEditModal(data.meeting);
-            const modal = new bootstrap.Modal(document.getElementById('editCaseMeetingModal'));
-            modal.show();
-        } else {
-            showAlert('Failed to load meeting details', 'danger');
-        }
-    })
-    .catch(error => {
-        console.error('Error loading meeting:', error);
-        showAlert('Error loading meeting details', 'danger');
-    });
-}
-
-function populateEditModal(meeting) {
-    const studentIdElem = document.getElementById('edit_student_id');
-    const meetingTypeElem = document.getElementById('edit_meeting_type');
-    const scheduledDateElem = document.getElementById('edit_scheduled_date');
-    const scheduledTimeElem = document.getElementById('edit_scheduled_time');
-    const locationElem = document.getElementById('edit_location');
-    const urgencyLevelElem = document.getElementById('edit_urgency_level');
-    const reasonElem = document.getElementById('edit_reason');
-    const notesElem = document.getElementById('edit_notes');
-    const form = document.getElementById('editCaseMeetingForm');
-
-    if (studentIdElem) studentIdElem.value = meeting.student_id || '';
-    if (meetingTypeElem) meetingTypeElem.value = meeting.meeting_type || '';
-    if (scheduledDateElem) scheduledDateElem.value = meeting.scheduled_date || '';
-    if (scheduledTimeElem) scheduledTimeElem.value = meeting.scheduled_time ? meeting.scheduled_time.substring(0, 5) : '';
-    if (locationElem) locationElem.value = meeting.location || '';
-    if (urgencyLevelElem) urgencyLevelElem.value = meeting.urgency_level || '';
-    if (reasonElem) reasonElem.value = meeting.reason || '';
-    if (notesElem) notesElem.value = meeting.notes || '';
-    if (form) form.setAttribute('data-meeting-id', meeting.id);
-}
-
-// Submit edit case meeting form
-function submitEditCaseMeeting(event) {
-    event.preventDefault();
-
-    const form = event.target;
-    const meetingId = form.getAttribute('data-meeting-id');
-    const formData = new FormData(form);
-    const submitBtn = form.querySelector('button[type="submit"]');
-
-    // Show loading state
-    const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="ri-loader-4-line me-2 spinner-border spinner-border-sm"></i>Updating...';
-    submitBtn.disabled = true;
-
-    fetch(`/guidance/case-meetings/${meetingId}`, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-            'X-HTTP-Method-Override': 'PUT'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showAlert('Case meeting updated successfully!', 'success');
-            closeModal('editCaseMeetingModal');
-            form.reset();
-            setTimeout(() => {
-                window.location.reload();
-            }, 1500);
-        } else {
-            showAlert(data.message || 'Failed to update case meeting', 'danger');
-        }
-    })
-    .catch(error => {
-        console.error('Error updating case meeting:', error);
-        showAlert('An error occurred while updating the meeting', 'danger');
-    })
-    .finally(() => {
-        // Restore button state
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
-    });
-}
-
-// Filter case meetings
-function filterCaseMeetings() {
-    const status = document.getElementById('status-filter')?.value || '';
-    const type = document.getElementById('type-filter')?.value || '';
-    const date = document.getElementById('date-filter')?.value || '';
-    const search = document.getElementById('search-filter')?.value || '';
-    
-    const params = new URLSearchParams();
-    if (status) params.append('status', status);
-    if (type) params.append('type', type);
-    if (date) params.append('date', date);
-    if (search) params.append('search', search);
-    
-    const url = `/guidance/case-meetings${params.toString() ? '?' + params.toString() : ''}`;
-    window.location.href = url;
-}
-
-// Clear filters
-function clearFilters() {
-    const statusFilter = document.getElementById('status-filter');
-    const typeFilter = document.getElementById('type-filter');
-    const dateFilter = document.getElementById('date-filter');
-    const searchFilter = document.getElementById('search-filter');
-    
-    if (statusFilter) statusFilter.value = '';
-    if (typeFilter) typeFilter.value = '';
-    if (dateFilter) dateFilter.value = '';
-    if (searchFilter) searchFilter.value = '';
-    
-    window.location.href = '/guidance/case-meetings';
-}
-
-// Refresh case meetings
-function refreshCaseMeetings() {
-    window.location.reload();
-}
-
-// Export case meetings
-function exportCaseMeetings() {
-    window.open('/guidance/case-meetings/export', '_blank');
-}
-
-// Print case meetings
-function printCaseMeetings() {
-    window.print();
-}
-
-// Close modal helper
-function closeModal(modalId) {
-    const modal = bootstrap.Modal.getInstance(document.getElementById(modalId));
-    if (modal) {
-        modal.hide();
-    }
-}
-
-// Show alert helper
-function showAlert(message, type = 'info') {
-    // Create alert element
-    const alertHtml = `
-        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-            <i class="ri-information-line me-2"></i>${message}
+          // Remove the row from table
+          const rows = document.querySelectorAll('#violationsTable tbody tr');
+          rows.forEach(row => {
+            const idCell = row.cells[0];
+            if (idCell && idCell.textContent.includes('#' + violationId)) {
+              row.remove();
+            }
+          });
+          
+          // Show success message
+          const alertDiv = document.createElement('div');
+          alertDiv.className = 'alert alert-success alert-dismissible fade show';
+          alertDiv.innerHTML = `
+            <strong>Success!</strong> ${data.message}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    `;
-    
-    // Find or create alert container
-    let container = document.getElementById('alert-container');
-    if (!container) {
-        container = document.createElement('div');
-        container.id = 'alert-container';
-        container.className = 'position-fixed top-0 end-0 p-3';
-        container.style.zIndex = '9999';
-        document.body.appendChild(container);
-    }
-    
-    // Add alert
-    container.insertAdjacentHTML('beforeend', alertHtml);
-    
-    // Auto-remove after 5 seconds
-    setTimeout(() => {
-        const alerts = container.querySelectorAll('.alert');
-        if (alerts.length > 0) {
-            alerts[0].remove();
-        }
-    }, 5000);
-}
-
-function openScheduleMeetingModal(studentId) {
-    // Open the schedule case meeting modal programmatically
-    const modalElement = document.getElementById('scheduleCaseMeetingModal');
-    if (!modalElement) return;
-
-    // Reset the form
-    const form = document.getElementById('scheduleCaseMeetingForm');
-    if (form) {
-        form.reset();
-        // Set the student select field to the given studentId
-        const studentSelect = form.querySelector('select[name="student_id"]');
-        if (studentSelect) {
-            studentSelect.value = studentId;
-        }
-    }
-
-    // Show the modal using Bootstrap's modal API
-    const modal = new bootstrap.Modal(modalElement);
-    modal.show();
-}
-
-// Open create summary modal
-function openCreateSummaryModal(meetingId) {
-    const modalElement = document.getElementById('createCaseSummaryModal');
-    if (!modalElement) return;
-
-    // Reset the form
-    const form = document.getElementById('createCaseSummaryForm');
-    if (form) {
-        form.reset();
-        // Set the meeting ID in a hidden field or data attribute
-        form.setAttribute('data-meeting-id', meetingId);
-    }
-
-    // Show the modal using Bootstrap's modal API
-    const modal = new bootstrap.Modal(modalElement);
-    modal.show();
-}
-
-// Submit case summary form
-function submitCaseSummary(event) {
-    event.preventDefault();
-
-    const form = event.target;
-    const meetingId = form.getAttribute('data-meeting-id');
-    const formData = new FormData(form);
-    const submitBtn = form.querySelector('button[type="submit"]');
-
-    // Show loading state
-    const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="ri-loader-4-line me-2 spinner-border spinner-border-sm"></i>Saving...';
-    submitBtn.disabled = true;
-
-    fetch(`/guidance/case-meetings/${meetingId}/summary`, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showAlert('Case summary created successfully!', 'success');
-            closeModal('createCaseSummaryModal');
-            form.reset();
-            setTimeout(() => {
-                window.location.reload();
-            }, 1500);
+          `;
+          
+          const mainContent = document.querySelector('main');
+          mainContent.insertBefore(alertDiv, mainContent.firstChild);
+          
+          // Auto-dismiss after 3 seconds
+          setTimeout(() => {
+            if (alertDiv.parentNode) {
+              alertDiv.remove();
+            }
+          }, 3000);
         } else {
-            showAlert(data.message || 'Failed to create case summary', 'danger');
+          throw new Error(data.message || 'Delete failed');
         }
-    })
-    .catch(error => {
-        console.error('Error creating case summary:', error);
-        showAlert('An error occurred while creating the summary', 'danger');
-    })
-    .finally(() => {
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        
         // Restore button state
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
+        button.innerHTML = originalHTML;
+        button.disabled = false;
+        
+        // Show error message
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+        alertDiv.innerHTML = `
+          <strong>Error!</strong> Failed to delete violation: ${error.message}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        const mainContent = document.querySelector('main');
+        mainContent.insertBefore(alertDiv, mainContent.firstChild);
+        
+        // Auto dismiss after 5 seconds
+        setTimeout(() => {
+          if (alertDiv.parentNode) {
+            alertDiv.remove();
+          }
+        }, 5000);
+      });
+    }
+  }
+
+// Helper function to update violation row in table
+window.updateViolationRow = function(violationId, violation) {
+    const rows = document.querySelectorAll('#violationsTable tbody tr');
+    rows.forEach(row => {
+      const idCell = row.cells[0];
+      if (idCell && idCell.textContent.includes('#' + violationId)) {
+        // Update severity
+        const severityCell = row.cells[4];
+        const severityClass = violation.severity === 'minor' ? 'success' : 
+                             (violation.severity === 'major' ? 'warning' : 'danger');
+        severityCell.innerHTML = `<span class="badge bg-${severityClass}">${violation.severity.charAt(0).toUpperCase() + violation.severity.slice(1)}</span>`;
+        
+        // Update status
+        const statusCell = row.cells[6];
+        const statusClass = violation.status === 'pending' ? 'warning' : 
+                           (violation.status === 'resolved' ? 'success' : 'info');
+        statusCell.innerHTML = `<span class="badge bg-${statusClass}">${violation.status.charAt(0).toUpperCase() + violation.status.slice(1)}</span>`;
+        
+        // Update violation info if title changed
+        const violationCell = row.cells[2];
+        const titleElement = violationCell.querySelector('strong');
+        if (titleElement) {
+          titleElement.textContent = violation.title;
+        }
+        
+        // Add visual feedback
+        row.style.backgroundColor = '#d4edda';
+        setTimeout(() => {
+          row.style.backgroundColor = '';
+        }, 2000);
+      }
     });
+  }
+
+  // Comprehensive modal management system
+  window.ModalManager = {
+    activeModals: new Set(),
+    
+    show: function(modalId) {
+      try {
+        const modalElement = document.getElementById(modalId);
+        if (!modalElement) {
+          console.error('Modal not found:', modalId);
+          return false;
+        }
+
+        // Try Bootstrap first
+        if (typeof window.bootstrap !== 'undefined' && window.bootstrap.Modal) {
+          const modal = new window.bootstrap.Modal(modalElement, {
+            backdrop: true,
+            keyboard: true,
+            focus: true
+          });
+          modal.show();
+          this.activeModals.add(modalId);
+          
+          // Add event listeners for proper cleanup
+          modalElement.addEventListener('hidden.bs.modal', () => {
+            this.activeModals.delete(modalId);
+          }, { once: true });
+          
+          return true;
+        }
+        
+        // Fallback implementation
+        return this.showFallback(modalId);
+        
+      } catch (error) {
+        console.error('Error showing modal:', error);
+        return this.showFallback(modalId);
+      }
+    },
+    
+    hide: function(modalId) {
+      try {
+        const modalElement = document.getElementById(modalId);
+        if (!modalElement) return false;
+
+        // Try Bootstrap first
+        if (typeof window.bootstrap !== 'undefined') {
+          const modal = window.bootstrap.Modal.getInstance(modalElement);
+          if (modal) {
+            modal.hide();
+            return true;
+          }
+        }
+        
+        // Fallback implementation
+        return this.hideFallback(modalId);
+        
+      } catch (error) {
+        console.error('Error hiding modal:', error);
+        return this.hideFallback(modalId);
+      }
+    },
+    
+    showFallback: function(modalId) {
+      const modalElement = document.getElementById(modalId);
+      const backdrop = this.createBackdrop(modalId);
+      
+      modalElement.style.display = 'block';
+      modalElement.classList.add('show');
+      modalElement.setAttribute('aria-hidden', 'false');
+      modalElement.setAttribute('aria-modal', 'true');
+      modalElement.setAttribute('role', 'dialog');
+      
+      document.body.classList.add('modal-open');
+      document.body.appendChild(backdrop);
+      
+      this.activeModals.add(modalId);
+      this.addFallbackEventListeners(modalId);
+      
+      return true;
+    },
+    
+    hideFallback: function(modalId) {
+      const modalElement = document.getElementById(modalId);
+      const backdrop = document.getElementById(modalId + '-backdrop');
+      
+      modalElement.style.display = 'none';
+      modalElement.classList.remove('show');
+      modalElement.setAttribute('aria-hidden', 'true');
+      modalElement.removeAttribute('aria-modal');
+      modalElement.removeAttribute('role');
+      
+      if (backdrop) backdrop.remove();
+      
+      if (this.activeModals.size <= 1) {
+        document.body.classList.remove('modal-open');
+      }
+      
+      this.activeModals.delete(modalId);
+      return true;
+    },
+    
+    createBackdrop: function(modalId) {
+      // Remove existing backdrop
+      const existingBackdrop = document.getElementById(modalId + '-backdrop');
+      if (existingBackdrop) existingBackdrop.remove();
+      
+      const backdrop = document.createElement('div');
+      backdrop.className = 'modal-backdrop fade show';
+      backdrop.id = modalId + '-backdrop';
+      backdrop.style.zIndex = '1040';
+      
+      // Click to close
+      backdrop.addEventListener('click', () => this.hide(modalId));
+      
+      return backdrop;
+    },
+    
+    addFallbackEventListeners: function(modalId) {
+      const modalElement = document.getElementById(modalId);
+      
+      // ESC key to close
+      const escHandler = (e) => {
+        if (e.key === 'Escape' && this.activeModals.has(modalId)) {
+          this.hide(modalId);
+          document.removeEventListener('keydown', escHandler);
+        }
+      };
+      document.addEventListener('keydown', escHandler);
+      
+      // Close buttons
+      const closeButtons = modalElement.querySelectorAll('[data-bs-dismiss="modal"], .btn-close');
+      closeButtons.forEach(button => {
+        button.addEventListener('click', () => this.hide(modalId));
+      });
+      
+      // Click outside to close
+      modalElement.addEventListener('click', (e) => {
+        if (e.target === modalElement) {
+          this.hide(modalId);
+        }
+      });
+    },
+    
+    hideAll: function() {
+      this.activeModals.forEach(modalId => this.hide(modalId));
+    }
+  };
+
+// Convenient wrapper functions
+window.showModal = function(modalId) {
+  return window.ModalManager.show(modalId);
 }
 
-// Expose functions to global scope for onclick handlers
-window.submitCaseMeeting = submitCaseMeeting;
-window.viewCaseMeeting = viewCaseMeeting;
-window.completeCaseMeeting = completeCaseMeeting;
-window.forwardToPresident = forwardToPresident;
-window.editCaseMeeting = editCaseMeeting;
-window.populateEditModal = populateEditModal;
-window.submitEditCaseMeeting = submitEditCaseMeeting;
-window.filterCaseMeetings = filterCaseMeetings;
-window.clearFilters = clearFilters;
-window.refreshCaseMeetings = refreshCaseMeetings;
-window.exportCaseMeetings = exportCaseMeetings;
-window.printCaseMeetings = printCaseMeetings;
-window.closeModal = closeModal;
-window.openScheduleMeetingModal = openScheduleMeetingModal;
-window.openCreateSummaryModal = openCreateSummaryModal;
-window.submitCaseSummary = submitCaseSummary;
-window.proceedWithForwarding = proceedWithForwarding;
+window.hideModal = function(modalId) {
+  return window.ModalManager.hide(modalId);
+}
+
+  // (Functions moved to global scope above)
+  
+  // Functions are now in global scope above

@@ -140,4 +140,76 @@ class CaseMeeting extends Model
             default => ['text' => ucfirst($this->status), 'class' => 'badge bg-secondary']
         };
     }
+
+    /**
+     * Map case meeting status to violation status.
+     *
+     * @param string $caseMeetingStatus
+     * @return string|null
+     */
+    public static function mapStatusToViolationStatus(string $caseMeetingStatus): ?string
+    {
+        return match($caseMeetingStatus) {
+            'scheduled' => 'scheduled',
+            'in_progress' => 'in_progress',
+            'pre_completed' => 'pre_completed',
+            'completed' => 'completed',
+            'forwarded' => 'in_progress',
+            'cancelled' => 'pending', // Return to pending if cancelled
+            default => null
+        };
+    }
+
+    /**
+     * Update related violation statuses for this case meeting.
+     *
+     * @param string $newStatus
+     * @return void
+     */
+    public function updateRelatedViolationStatuses(string $newStatus): void
+    {
+        try {
+            // Load sanctions with related violations
+            $this->load('sanctions.violation');
+
+            foreach ($this->sanctions as $sanction) {
+                $violation = $sanction->violation;
+                if ($violation) {
+                    $violation->status = $newStatus;
+                    if ($newStatus === 'completed') {
+                        $violation->resolved_at = now();
+                        // Note: resolved_by might need to be set if there's a current user, but in model events, auth might not be available
+                    }
+                    $violation->save();
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::error('Update Related Violation Statuses: Exception', [
+                'case_meeting_id' => $this->id,
+                'new_status' => $newStatus,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            // Don't throw the exception to prevent breaking the case meeting creation/update
+        }
+    }
+
+    /**
+     * Boot the model.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::updated(function ($caseMeeting) {
+            // Check if status was changed
+            if ($caseMeeting->wasChanged('status')) {
+                $newStatus = $caseMeeting->status;
+                $violationStatus = self::mapStatusToViolationStatus($newStatus);
+                if ($violationStatus) {
+                    $caseMeeting->updateRelatedViolationStatuses($violationStatus);
+                }
+            }
+        });
+    }
 }

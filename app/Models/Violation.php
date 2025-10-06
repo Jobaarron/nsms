@@ -33,6 +33,7 @@ class Violation extends Model
         'parent_notification_date',
         'notes',
         'sanction',
+        'urgency_level',
     ];
 
     protected $casts = [

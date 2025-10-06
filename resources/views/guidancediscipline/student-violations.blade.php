@@ -133,6 +133,7 @@
                     <th>Violation</th>
                     <th>Type</th>
                     <th>Severity</th>
+                    <th>Urgency</th>
                     <th>Date</th>
                     <th>Status</th>
                     <th>Actions</th>
@@ -161,16 +162,67 @@
                       </span>
                     </td>
                     <td>
+                      @if($violation->urgency_level)
+                        <span class="badge bg-{{ $violation->urgency_level === 'low' ? 'success' : ($violation->urgency_level === 'medium' ? 'warning' : 'danger') }}">
+                          {{ ucfirst($violation->urgency_level) }}
+                        </span>
+                      @else
+                        <span class="text-muted">-</span>
+                      @endif
+                    </td>
+                    <td>
                       {{ $violation->violation_date->format('M d, Y') }}
                       @if($violation->violation_time)
                         <br><small class="text-muted">{{ date('h:i A', strtotime($violation->violation_time)) }}</small>
                       @endif
                     </td>
-                    <td>
-                      <span class="badge bg-{{ $violation->status === 'pending' ? 'warning' : ($violation->status === 'resolved' ? 'success' : 'info') }}">
-                        {{ ucfirst($violation->status) }}
-                      </span>
-                    </td>
+<td>
+  @php
+    // Use case meeting status if available, else fallback to violation status
+    $caseMeetingStatus = $violation->caseMeeting->status ?? null;
+    $statusToShow = $caseMeetingStatus ?? $violation->status;
+
+    // Map status to badge class similar to case meetings
+    $badgeClass = 'secondary';
+    switch ($statusToShow) {
+      case 'scheduled':
+        $badgeClass = 'primary';
+        break;
+      case 'in_progress':
+        $badgeClass = 'info';
+        break;
+      case 'pre_completed':
+        $badgeClass = 'warning';
+        break;
+      case 'completed':
+        $badgeClass = 'success';
+        break;
+      case 'cancelled':
+        $badgeClass = 'danger';
+        break;
+      case 'forwarded':
+        $badgeClass = 'warning';
+        break;
+      case 'pending':
+        $badgeClass = 'warning';
+        break;
+      case 'investigating':
+        $badgeClass = 'info';
+        break;
+      case 'resolved':
+        $badgeClass = 'success';
+        break;
+      case 'dismissed':
+        $badgeClass = 'secondary';
+        break;
+      default:
+        $badgeClass = 'secondary';
+    }
+  @endphp
+  <span class="badge bg-{{ $badgeClass }}">
+    {{ ucfirst(str_replace('_', ' ', $statusToShow)) }}
+  </span>
+</td>
                     <td>
                       <div class="btn-group" role="group">
                         <button type="button" class="btn btn-sm btn-outline-primary" 
@@ -195,7 +247,7 @@
                   </tr>
                   @empty
                   <tr>
-                    <td colspan="8" class="text-center py-5">
+                    <td colspan="9" class="text-center py-5">
                       <i class="ri-alert-line display-4 text-muted"></i>
                       <p class="text-muted mt-2">No violations found</p>
                     </td>
@@ -327,7 +379,7 @@
             </div>
             
             <div class="row">
-              <div class="col-md-4">
+              <div class="col-md-6">
                 <div class="mb-3">
                   <label for="severity" class="form-label">Severity <span class="text-danger">*</span></label>
                   <select class="form-select" id="severity" name="severity" required>
@@ -337,14 +389,28 @@
                   </select>
                 </div>
               </div>
-              <div class="col-md-4">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="urgency_level" class="form-label">Urgency Level</label>
+                  <select class="form-select" id="urgency_level" name="urgency_level">
+                    <option value="">Select Urgency</option>
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="urgent">Urgent</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-6">
                 <div class="mb-3">
                   <label for="violation_date" class="form-label">Date <span class="text-danger">*</span></label>
-                  <input type="date" class="form-control" id="violation_date" name="violation_date" 
+                  <input type="date" class="form-control" id="violation_date" name="violation_date"
                          value="{{ date('Y-m-d') }}" required>
                 </div>
               </div>
-              <div class="col-md-4">
+              <div class="col-md-6">
                 <div class="mb-3">
                   <label for="violation_time" class="form-label">Time</label>
                   <input type="time" class="form-control" id="violation_time" name="violation_time">

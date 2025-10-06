@@ -185,8 +185,8 @@
                                                 <i class="ri-user-line text-primary"></i>
                                             </div>
                                             <div>
-                                                <div class="fw-semibold">{{ $meeting->student->full_name ?? 'N/A' }}</div>
-                                                <small class="text-muted">{{ $meeting->student->student_id ?? 'N/A' }}</small>
+                                                <div class="fw-semibold">{{ $meeting->student ? $meeting->student->full_name : 'N/A' }}</div>
+                                                <small class="text-muted">{{ $meeting->student ? $meeting->student->student_id : 'N/A' }}</small>
                                             </div>
                                         </div>
                                     </td>
@@ -219,7 +219,7 @@
                                             </button>
                                             
                                             <!-- Schedule Button - Always Available -->
-                                            <button class="btn btn-outline-primary" onclick="openScheduleMeetingModal({{ $meeting->student->id }})" title="Schedule Meeting">
+                                            <button class="btn btn-outline-primary" onclick="openScheduleMeetingModal({{ $meeting->student ? $meeting->student->id : 0 }})" title="Schedule Meeting">
                                                 <i class="ri-calendar-event-line"></i>
                                             </button>
 
