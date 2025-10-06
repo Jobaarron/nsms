@@ -49,6 +49,7 @@ class DisciplineController extends Controller
             if ($user->isDisciplineStaff()) {
                 Auth::login($user);
                 $user->updateLastLogin(); // Update last login timestamp
+                session()->forget('guidance_user'); // Clear guidance user session flag
                 session(['discipline_user' => true]); // Mark as discipline user
 
                 // Create discipline record if not exists
@@ -119,6 +120,7 @@ class DisciplineController extends Controller
     public function logout(Request $request)
     {
         session()->forget('discipline_user');
+        session()->forget('guidance_user'); // Clear guidance user session flag on logout
         Auth::logout();
         return redirect()->route('discipline.login');
     }
