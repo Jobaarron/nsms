@@ -49,26 +49,29 @@ Route::post('/contact', [ContactController::class, 'store'])->name('contact.stor
 Route::get('/generate-admin', [AdminController::class, 'showGeneratorForm'])->name('show.admin.generator');
 Route::post('/generate-admin', [AdminController::class, 'generateAdmin'])->name('generate.admin');
 
-// Admin routes
 Route::prefix('admin')->group(function () {
     // Admin login routes (public)
     Route::get('/login', [AdminController::class, 'showLoginForm'])->name('admin.login');
     Route::post('/login', [AdminController::class, 'login'])->name('admin.login.submit');
-    
+
     // Protected admin routes - use auth middleware
     Route::middleware(['auth'])->group(function () {
         // Dashboard
-        
+
         Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
             Route::get('/dashboard', [AdminController::class, 'index'])->name('dashboard');
             Route::get('/dashboard/stats', [AdminController::class, 'getStats'])->name('dashboard.stats');
+
+            // Forwarded Case Meetings for President (Admin)
+            Route::get('/forwarded-cases', [AdminController::class, 'forwardedCases'])->name('forwarded.cases');
+
+            // Approve sanction for a case meeting
+            Route::post('/sanctions/{sanction}/approve', [AdminController::class, 'approveSanction'])->name('sanctions.approve');
         });
+
         Route::get('/', [AdminController::class, 'index'])->name('admin.dashboard');
         Route::post('/logout', [AdminController::class, 'logout'])->name('admin.logout');
-        
-       
-     
-        
+
         // User Management - Use your custom permission middleware
         Route::middleware(['can:Manage Roles'])->group(function () {
             Route::get('/manage-users', [UserManagementController::class, 'index'])->name('admin.manage.users');
@@ -81,10 +84,10 @@ Route::prefix('admin')->group(function () {
             Route::put('/permissions/{id}', [AdminController::class, 'updatePermission'])->name('admin.update.permission');
             Route::delete('/permissions/{id}', [AdminController::class, 'deletePermission'])->name('admin.delete.permission');
             Route::get('/users/{user}/roles', [AdminController::class, 'getUserRoles'])->name('admin.user.roles');
-            
+
             // User Management
             Route::get('/user-management', [UserManagementController::class, 'index'])->name('admin.user.management');
-            
+
             // User CRUD operations
             Route::get('/users/{id}', [UserManagementController::class, 'show'])->name('admin.users.show');
             Route::put('/users/{id}', [UserManagementController::class, 'update'])->name('admin.users.update');
@@ -99,44 +102,44 @@ Route::prefix('admin')->group(function () {
             Route::post('/users/cashier', [UserManagementController::class, 'createCashier'])->name('admin.users.store.cashier');
             Route::post('/users/faculty-head', [UserManagementController::class, 'createFacultyHead'])->name('admin.users.store.faculty_head');
             Route::get('/users/stats', [UserManagementController::class, 'getStats'])->name('admin.users.stats');
-            
+
             // Enrollments management 
             Route::get('/enrollments', [AdminEnrollmentController::class, 'index'])->name('admin.enrollments');
-            
+
             // Enrollment API routes
             Route::prefix('enrollments')->name('admin.enrollments.')->group(function () {
                 Route::get('/applications', [AdminEnrollmentController::class, 'getApplications'])->name('applications');
                 Route::get('/applications/{id}', [AdminEnrollmentController::class, 'getApplication'])->name('application');
                 Route::post('/applications/{id}/status', [AdminEnrollmentController::class, 'updateApplicationStatus'])->name('application.status');
-                
+
                 // Application actions
                 Route::post('/applications/{id}/approve', [AdminEnrollmentController::class, 'approveApplication'])->name('application.approve');
                 Route::post('/applications/{id}/decline', [AdminEnrollmentController::class, 'declineApplication'])->name('application.decline');
                 Route::delete('/applications/{id}', [AdminEnrollmentController::class, 'deleteApplication'])->name('application.delete');
-                
+
                 // Bulk actions
                 Route::post('/applications/bulk-approve', [AdminEnrollmentController::class, 'bulkApprove'])->name('applications.bulk-approve');
                 Route::post('/applications/bulk-decline', [AdminEnrollmentController::class, 'bulkDecline'])->name('applications.bulk-decline');
                 Route::post('/applications/bulk-delete', [AdminEnrollmentController::class, 'bulkDelete'])->name('applications.bulk-delete');
-                
+
                 Route::get('/documents', [AdminEnrollmentController::class, 'getDocuments'])->name('documents');
                 Route::get('/applications/{applicationId}/documents', [AdminEnrollmentController::class, 'getApplicationDocuments'])->name('application.documents');
                 Route::get('/documents/{enrolleeId}/{documentIndex}', [AdminEnrollmentController::class, 'getDocument'])->name('document');
                 Route::get('/documents/{enrolleeId}/{documentIndex}/view', [AdminEnrollmentController::class, 'viewDocument'])->name('document.view');
                 Route::get('/documents/{enrolleeId}/{documentIndex}/download', [AdminEnrollmentController::class, 'downloadDocument'])->name('document.download');
                 Route::post('/documents/{enrolleeId}/{documentIndex}/status', [AdminEnrollmentController::class, 'updateDocumentStatus'])->name('document.status');
-                
+
                 Route::get('/appointments', [AdminEnrollmentController::class, 'getAppointments'])->name('appointments');
                 Route::post('/applications/{applicationId}/appointment', [AdminEnrollmentController::class, 'updateAppointment'])->name('application.appointment');
-        
+
                 Route::get('/notices', [AdminEnrollmentController::class, 'getNotices'])->name('notices');
                 Route::post('/notices', [AdminEnrollmentController::class, 'createNotice'])->name('notices.create');
                 Route::post('/notices/bulk', [AdminEnrollmentController::class, 'sendBulkNotices'])->name('notices.bulk');
                 Route::delete('/notices/{noticeId}', [AdminEnrollmentController::class, 'deleteNotice'])->name('notices.delete');
-                
+
                 Route::get('/export', [AdminEnrollmentController::class, 'export'])->name('export');
             });
-            
+
             // Contact Messages Management
             Route::get('/contact-messages', [ContactController::class, 'adminIndex'])->name('admin.contact.messages');
             Route::get('/contact-messages/{message}', [ContactController::class, 'show'])->name('admin.contact.show');
@@ -303,6 +306,9 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
             Route::get('/{caseMeeting}/edit', [App\Http\Controllers\GuidanceController::class, 'editCaseMeeting'])
                 ->name('edit');
 
+            Route::put('/{caseMeeting}', [App\Http\Controllers\GuidanceController::class, 'updateCaseMeeting'])
+                ->name('update');
+
             Route::get('/export', [App\Http\Controllers\GuidanceController::class, 'exportCaseMeetings'])
                 ->name('export');
 
@@ -372,13 +378,9 @@ Route::prefix('enrollee')->name('enrollee.')->group(function () {
     // Enrollee login routes (public)
     Route::get('/login', [EnrolleeController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [EnrolleeController::class, 'login'])->name('login.submit');
-    
+
     // Protected enrollee routes
-    Route::middleware(['auth:enrollee'])->group(function () {
-        // Dashboard
-        Route::get('/', [EnrolleeController::class, 'index'])->name('dashboard');
-        
-        // Application management
+    Route::middleware('auth:enrollee')->group(function () {
         Route::get('/application', [EnrolleeController::class, 'application'])->name('application');
         
         // Document management
