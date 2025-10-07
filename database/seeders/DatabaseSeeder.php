@@ -28,13 +28,10 @@ class DatabaseSeeder extends Seeder
             FeesTableSeeder::class,
             SubjectSeeder::class,
             CashierSeeder::class,
-            // RegistrarSeeder::class,
-
-
-            TestStudentSeeder::class, // Added test student data for login testing
-            // EnrolleeSeeder::class, // Added enrollee test data
             SanctionsSeeder::class,
             ViolationListSeeder::class,
+            // TestStudentSeeder::class, // Added test student data for login testing - AlvinTheKings
+            // EnrolleeSeeder::class, // Added enrollee test data / Do no touch, it's still error. - Job 
         ]);
     }
 }

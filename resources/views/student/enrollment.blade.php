@@ -23,17 +23,60 @@
         </div>
 
         @if($student->enrollment_status === 'enrolled')
+            @php
+                $paymentScheduleStatus = \App\Models\Payment::where('payable_type', \App\Models\Student::class)
+                    ->where('payable_id', $student->id)
+                    ->first();
+            @endphp
+            
             <div class="row mb-4">
                 <div class="col-12">
-                    <div class="alert alert-success border-0 shadow-sm">
-                        <div class="d-flex align-items-center">
-                            <i class="ri-check-line fs-4 me-3"></i>
-                            <div>
-                                <h6 class="alert-heading mb-1">Enrollment Complete</h6>
-                                <p class="mb-0">You have successfully completed your enrollment. You can now proceed to payment.</p>
+                    @if($paymentScheduleStatus)
+                        @if($paymentScheduleStatus->confirmation_status === 'pending')
+                            <div class="alert alert-warning border-0 shadow-sm">
+                                <div class="d-flex align-items-center">
+                                    <i class="ri-time-line fs-4 me-3"></i>
+                                    <div>
+                                        <h6 class="alert-heading mb-1">Payment Schedule Submitted</h6>
+                                        <p class="mb-0">Your payment schedule is pending approval from the cashier's office. You will be notified once it's reviewed.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        @elseif($paymentScheduleStatus->confirmation_status === 'confirmed')
+                            <div class="alert alert-success border-0 shadow-sm">
+                                <div class="d-flex align-items-center">
+                                    <i class="ri-check-line fs-4 me-3"></i>
+                                    <div>
+                                        <h6 class="alert-heading mb-1">Payment Schedule Approved</h6>
+                                        <p class="mb-0">Your payment schedule has been approved! You can now proceed to make payments according to your schedule.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        @elseif(in_array($paymentScheduleStatus->confirmation_status, ['rejected', 'declined']))
+                            <div class="alert alert-danger border-0 shadow-sm">
+                                <div class="d-flex align-items-center">
+                                    <i class="ri-close-line fs-4 me-3"></i>
+                                    <div>
+                                        <h6 class="alert-heading mb-1">Payment Schedule Rejected</h6>
+                                        <p class="mb-0">Your payment schedule was rejected. Please review the feedback and submit a new schedule.</p>
+                                        @if($paymentScheduleStatus->cashier_notes)
+                                            <small class="text-muted"><strong>Reason:</strong> {{ $paymentScheduleStatus->cashier_notes }}</small>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+                    @else
+                        <div class="alert alert-info border-0 shadow-sm">
+                            <div class="d-flex align-items-center">
+                                <i class="ri-info-line fs-4 me-3"></i>
+                                <div>
+                                    <h6 class="alert-heading mb-1">Enrollment Complete</h6>
+                                    <p class="mb-0">You have successfully completed your enrollment. Please submit your payment schedule below.</p>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    @endif
                 </div>
             </div>
         @endif
@@ -70,7 +113,7 @@
                                     <table class="table table-hover">
                                         <thead>
                                             <tr>
-                                                <th>Subject Code</th>
+                                                <th>Category</th>
                                                 <th>Subject Name</th>
                                                 <th>Grade Level</th>
                                                 @if($student->grade_level === 'Grade 11' || $student->grade_level === 'Grade 12')
@@ -81,7 +124,11 @@
                                         <tbody>
                                             @foreach($subjects as $subject)
                                                 <tr>
-                                                    <td class="fw-semibold">{{ $subject->subject_code }}</td>
+                                                    <td class="fw-semibold">
+                                                        <span class="badge bg-{{ $subject->category === 'core' ? 'secondary' : 'primary' }}">
+                                                            {{ ucfirst($subject->category) }}
+                                                        </span>
+                                                    </td>
                                                     <td>{{ $subject->subject_name }}</td>
                                                     <td>{{ $subject->grade_level }}</td>
                                                     @if($student->grade_level === 'Grade 11' || $student->grade_level === 'Grade 12')
@@ -385,6 +432,37 @@
                                 <label class="form-label">Additional Notes (Optional)</label>
                                 <textarea class="form-control" name="payment_notes" rows="3" placeholder="Any additional information about your payment schedule..."></textarea>
                             </div>
+
+                            <!-- Debug Button (Remove in production) -->
+                            {{-- <div class="mt-3">
+                                <button type="button" class="btn btn-sm btn-outline-info" onclick="console.log('Button clicked'); console.log('Function exists:', typeof window.populatePaymentDates); if(window.populatePaymentDates) window.populatePaymentDates(); else console.error('Function not found');">
+                                    <i class="ri-refresh-line me-1"></i>Auto-fill Dates (Debug)
+                                </button>
+                                <small class="text-muted ms-2">Click to manually populate dates from preferred schedule</small>
+                            </div> --}}
+
+                            <!-- Action Buttons -->
+                            <div class="mt-4">
+                                @if($student->enrollment_status !== 'enrolled')
+                                    <div class="d-grid gap-2">
+                                        <button type="submit" class="btn btn-primary btn-lg" id="enrollBtn">
+                                            <i class="ri-send-plane-line me-2"></i>Submit Payment Schedule
+                                        </button>
+                                        <a href="{{ route('student.dashboard') }}" class="btn btn-outline-secondary">
+                                            <i class="ri-arrow-left-line me-2"></i>Back to Dashboard
+                                        </a>
+                                    </div>
+                                @else
+                                    <div class="d-grid gap-2">
+                                        <a href="{{ route('student.payments') }}" class="btn btn-success btn-lg">
+                                            <i class="ri-money-dollar-circle-line me-2"></i>Proceed to Payment
+                                        </a>
+                                        <a href="{{ route('student.dashboard') }}" class="btn btn-outline-secondary">
+                                            <i class="ri-arrow-left-line me-2"></i>Back to Dashboard
+                                        </a>
+                                    </div>
+                                @endif
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -483,26 +561,6 @@
                         </div>
                     </div>
 
-                    <!-- Action Buttons -->
-                    @if($student->enrollment_status !== 'enrolled')
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary btn-lg" id="enrollBtn">
-                                <i class="ri-send-plane-line me-2"></i>Submit Payment Schedule
-                            </button>
-                            <a href="{{ route('student.dashboard') }}" class="btn btn-outline-secondary">
-                                <i class="ri-arrow-left-line me-2"></i>Back to Dashboard
-                            </a>
-                        </div>
-                    @else
-                        <div class="d-grid gap-2">
-                            <a href="{{ route('student.payments') }}" class="btn btn-success btn-lg">
-                                <i class="ri-money-dollar-circle-line me-2"></i>Proceed to Payment
-                            </a>
-                            <a href="{{ route('student.dashboard') }}" class="btn btn-outline-secondary">
-                                <i class="ri-arrow-left-line me-2"></i>Back to Dashboard
-                            </a>
-                        </div>
-                    @endif
                 </div>
             </div>
         </form>
@@ -510,18 +568,154 @@
     @push('scripts')
         @vite('resources/js/student-enrollment.js')
         <script>
-            // Payment schedule calculation
+            // Global variables
             const totalAmount = {{ $totalAmount ?? 0 }};
+            const preferredScheduleDate = @if($student->enrollee && $student->enrollee->preferred_schedule) 
+                '{{ $student->enrollee->preferred_schedule->format('Y-m-d') }}'
+            @else 
+                '{{ now()->addDays(7)->format('Y-m-d') }}'
+            @endif;
+            
+            console.log('Preferred schedule date loaded:', preferredScheduleDate);
+            console.log('Student enrollee data:', @json($student->enrollee ? ['id' => $student->enrollee->id, 'preferred_schedule' => $student->enrollee->preferred_schedule] : null));
+            
+            // Define functions globally FIRST so they can be accessed by onclick handlers
+            window.populatePaymentDates = function() {
+                console.log('Populating payment dates with preferred schedule:', preferredScheduleDate);
+                const baseDate = new Date(preferredScheduleDate);
+                
+                // Add a small delay to ensure elements are visible
+                setTimeout(() => {
+                    // Full payment date
+                    const fullPaymentDate = document.querySelector('input[name="full_payment_date"]');
+                    if (fullPaymentDate) {
+                        fullPaymentDate.value = preferredScheduleDate;
+                        console.log('Set full payment date to:', preferredScheduleDate);
+                    } else {
+                        console.log('Full payment date input not found');
+                    }
+                    
+                    // Quarterly payment dates
+                    for (let i = 1; i <= 4; i++) {
+                        const quarterlyDate = document.querySelector(`input[name="quarterly_date_${i}"]`);
+                        if (quarterlyDate) {
+                            const date = new Date(baseDate);
+                            date.setMonth(date.getMonth() + (i - 1) * 3);
+                            const formattedDate = date.toISOString().split('T')[0];
+                            quarterlyDate.value = formattedDate;
+                            console.log(`Set quarterly date ${i} to:`, formattedDate);
+                        } else {
+                            console.log(`Quarterly date ${i} input not found`);
+                        }
+                    }
+                    
+                    // Monthly payment dates
+                    for (let i = 1; i <= 10; i++) {
+                        const monthlyDate = document.querySelector(`input[name="monthly_date_${i}"]`);
+                        if (monthlyDate) {
+                            const date = new Date(baseDate);
+                            date.setMonth(date.getMonth() + (i - 1));
+                            const formattedDate = date.toISOString().split('T')[0];
+                            monthlyDate.value = formattedDate;
+                            console.log(`Set monthly date ${i} to:`, formattedDate);
+                        } else {
+                            console.log(`Monthly date ${i} input not found`);
+                        }
+                    }
+                    
+                    // Auto-populate amounts
+                window.populatePaymentAmounts();
+            }, 100); // 100ms delay to ensure elements are rendered
+        }
+        
+        // Verify function is defined
+        console.log('populatePaymentDates function defined:', typeof window.populatePaymentDates);
+
+        window.populatePaymentAmounts = function() {
+                // Full payment amount
+                const fullPaymentAmount = document.querySelector('input[name="full_payment_amount"]');
+                if (fullPaymentAmount) {
+                    fullPaymentAmount.value = totalAmount.toFixed(2);
+                }
+                
+                // Quarterly amounts
+                const quarterlyAmount = (totalAmount / 4).toFixed(2);
+                for (let i = 1; i <= 4; i++) {
+                    const quarterlyAmountInput = document.querySelector(`input[name="quarterly_amount_${i}"]`);
+                    if (quarterlyAmountInput) {
+                        quarterlyAmountInput.value = quarterlyAmount;
+                    }
+                }
+                
+                // Monthly amounts
+                const monthlyAmount = (totalAmount / 10).toFixed(2);
+                for (let i = 1; i <= 10; i++) {
+                    const monthlyAmountInput = document.querySelector(`input[name="monthly_amount_${i}"]`);
+                    if (monthlyAmountInput) {
+                        monthlyAmountInput.value = monthlyAmount;
+                    }
+                }
+                
+                // Update display amounts
+                document.querySelectorAll('.quarterly-amount').forEach(el => {
+                    el.textContent = parseFloat(quarterlyAmount).toLocaleString('en-US', {minimumFractionDigits: 2});
+                });
+                
+                document.querySelectorAll('.monthly-amount').forEach(el => {
+                    el.textContent = parseFloat(monthlyAmount).toLocaleString('en-US', {minimumFractionDigits: 2});
+                });
+                
+                // Update breakdown totals
+                const fullTotalElement = document.getElementById('full-total-amount');
+                const quarterlyTotalElement = document.getElementById('quarterly-total-amount');
+                const quarterlyPerPaymentElement = document.getElementById('quarterly-per-payment');
+                const monthlyTotalElement = document.getElementById('monthly-total-amount');
+                const monthlyPerPaymentElement = document.getElementById('monthly-per-payment');
+                
+                if (fullTotalElement) fullTotalElement.textContent = totalAmount.toLocaleString('en-US', {minimumFractionDigits: 2});
+                if (quarterlyTotalElement) quarterlyTotalElement.textContent = totalAmount.toLocaleString('en-US', {minimumFractionDigits: 2});
+                if (quarterlyPerPaymentElement) quarterlyPerPaymentElement.textContent = parseFloat(quarterlyAmount).toLocaleString('en-US', {minimumFractionDigits: 2});
+                if (monthlyTotalElement) monthlyTotalElement.textContent = totalAmount.toLocaleString('en-US', {minimumFractionDigits: 2});
+                if (monthlyPerPaymentElement) monthlyPerPaymentElement.textContent = parseFloat(monthlyAmount).toLocaleString('en-US', {minimumFractionDigits: 2});
+            }
+
+            window.showPaymentScheduleCard = function(mode) {
+                // Show the payment schedule card
+                const paymentScheduleCard = document.getElementById('payment-schedule-card');
+                if (paymentScheduleCard) {
+                    paymentScheduleCard.style.display = 'block';
+                }
+                
+                // Hide all payment breakdowns first
+                document.querySelectorAll('.payment-breakdown').forEach(breakdown => {
+                    breakdown.style.display = 'none';
+                });
+                
+                // Show the selected payment breakdown
+                const selectedBreakdown = document.getElementById(`${mode}-payment-breakdown`);
+                if (selectedBreakdown) {
+                    selectedBreakdown.style.display = 'block';
+                }
+            }
             
             document.addEventListener('DOMContentLoaded', function() {
                 const paymentOptions = document.querySelectorAll('input[name="payment_mode"]');
                 const scheduleDiv = document.getElementById('payment-schedule');
                 const scheduleContent = document.getElementById('schedule-content');
                 
+                // Auto-populate payment dates based on preferred schedule
+                window.populatePaymentDates();
+                
                 paymentOptions.forEach(option => {
                     option.addEventListener('change', function() {
+                        console.log('Payment mode changed to:', this.value);
                         updatePaymentSchedule(this.value);
                         updatePaymentOptionStyles();
+                        window.showPaymentScheduleCard(this.value);
+                        // Populate dates after showing the card with a longer delay
+                        setTimeout(() => {
+                            window.populatePaymentDates();
+                        }, 200);
                     });
                 });
                 
@@ -530,6 +724,112 @@
                 if (selectedOption) {
                     updatePaymentSchedule(selectedOption.value);
                     updatePaymentOptionStyles();
+                    window.showPaymentScheduleCard(selectedOption.value);
+                    window.populatePaymentDates(); // Populate dates on initialization
+                }
+                
+                function updatePaymentSchedule(mode) {
+                    if (totalAmount <= 0) return;
+                    
+                    scheduleDiv.style.display = 'block';
+                    let html = '';
+                    
+                    switch(mode) {
+                        case 'full':
+                            html = `
+                                <div class="alert alert-success">
+                                    <strong>Full Payment:</strong> ₱${totalAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}
+                                    <br><small>Pay the entire amount upon enrollment</small>
+                                </div>
+                            `;
+                            break;
+                        case 'quarterly':
+                            const quarterlyAmount = totalAmount / 4;
+                            html = `
+                                <div class="alert alert-warning">
+                                    <strong>Quarterly Payment:</strong> ₱${quarterlyAmount.toLocaleString('en-US', {minimumFractionDigits: 2})} per quarter
+                                    <br><small>4 payments throughout the academic year</small>
+                                </div>
+                                <div class="small">
+                                    <div class="d-flex justify-content-between py-1">
+                                        <span>1st Quarter:</span>
+                                        <span>₱${quarterlyAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between py-1">
+                                        <span>2nd Quarter:</span>
+                                        <span>₱${quarterlyAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between py-1">
+                                        <span>3rd Quarter:</span>
+                                        <span>₱${quarterlyAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between py-1">
+                                        <span>4th Quarter:</span>
+                                        <span>₱${quarterlyAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                                    </div>
+                                </div>
+                            `;
+                            break;
+                        case 'monthly':
+                            const monthlyAmount = totalAmount / 10;
+                            html = `
+                                <div class="alert alert-info">
+                                    <strong>Monthly Payment:</strong> ₱${monthlyAmount.toLocaleString('en-US', {minimumFractionDigits: 2})} per month
+                                    <br><small>10 payments throughout the academic year</small>
+                                </div>
+                                <div class="small">
+                                    <div class="d-flex justify-content-between py-1">
+                                        <span>Monthly (10 months):</span>
+                                        <span>₱${monthlyAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                                    </div>
+                                </div>
+                            `;
+                            break;
+                    }
+                    
+                    scheduleContent.innerHTML = html;
+                }
+                
+                function populatePaymentAmounts() {
+                    // Full payment amount
+                    const fullPaymentAmount = document.querySelector('input[name="full_payment_amount"]');
+                    if (fullPaymentAmount) {
+                        fullPaymentAmount.value = totalAmount.toFixed(2);
+                    }
+                    
+                    // Quarterly amounts
+                    const quarterlyAmount = (totalAmount / 4).toFixed(2);
+                    for (let i = 1; i <= 4; i++) {
+                        const quarterlyAmountInput = document.querySelector(`input[name="quarterly_amount_${i}"]`);
+                        if (quarterlyAmountInput) {
+                            quarterlyAmountInput.value = quarterlyAmount;
+                        }
+                    }
+                    
+                    // Monthly amounts
+                    const monthlyAmount = (totalAmount / 10).toFixed(2);
+                    for (let i = 1; i <= 10; i++) {
+                        const monthlyAmountInput = document.querySelector(`input[name="monthly_amount_${i}"]`);
+                        if (monthlyAmountInput) {
+                            monthlyAmountInput.value = monthlyAmount;
+                        }
+                    }
+                    
+                    // Update display amounts
+                    document.querySelectorAll('.quarterly-amount').forEach(el => {
+                        el.textContent = parseFloat(quarterlyAmount).toLocaleString('en-US', {minimumFractionDigits: 2});
+                    });
+                    
+                    document.querySelectorAll('.monthly-amount').forEach(el => {
+                        el.textContent = parseFloat(monthlyAmount).toLocaleString('en-US', {minimumFractionDigits: 2});
+                    });
+                    
+                    // Update breakdown totals
+                    document.getElementById('full-total-amount').textContent = totalAmount.toLocaleString('en-US', {minimumFractionDigits: 2});
+                    document.getElementById('quarterly-total-amount').textContent = totalAmount.toLocaleString('en-US', {minimumFractionDigits: 2});
+                    document.getElementById('quarterly-per-payment').textContent = parseFloat(quarterlyAmount).toLocaleString('en-US', {minimumFractionDigits: 2});
+                    document.getElementById('monthly-total-amount').textContent = totalAmount.toLocaleString('en-US', {minimumFractionDigits: 2});
+                    document.getElementById('monthly-per-payment').textContent = parseFloat(monthlyAmount).toLocaleString('en-US', {minimumFractionDigits: 2});
                 }
                 
                 function updatePaymentSchedule(mode) {

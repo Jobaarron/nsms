@@ -33,6 +33,18 @@ class PaymentScheduleController extends Controller
 
             $student = Auth::guard('student')->user();
             
+            // Check if student already has payment schedules
+            $existingSchedules = Payment::where('payable_type', Student::class)
+                ->where('payable_id', $student->id)
+                ->exists();
+                
+            if ($existingSchedules) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You have already submitted a payment schedule. Please contact the cashier\'s office to make changes.'
+                ], 422);
+            }
+            
             // Generate unique transaction ID
             $transactionId = 'TXN-' . $student->student_id . '-' . now()->format('YmdHis');
 

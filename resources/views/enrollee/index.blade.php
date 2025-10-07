@@ -215,6 +215,13 @@
                                 <h6 class="mb-1">Pre-Registration Complete</h6>
                                 <p class="text-muted mb-0">Student ID: <strong>{{ $enrollee->student_id }}</strong></p>
                                 <small class="text-success">You can now access the student portal for enrollment and payment processing.</small>
+                                <br>
+                                <small class="text-success">You may also access your email address and check your credentials if "Show Credentials" takes too long.</small>
+                                <div class="mt-2">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="showCredentialsModal('{{ $enrollee->student_id }}', '{{ $enrollee->application_id }}')">
+                                        <i class="ri-key-line me-1"></i>View Credentials
+                                    </button>
+                                </div>
                             </div>
                             <small class="text-muted">{{ $enrollee->updated_at->format('M d, Y') }}</small>
                         </div>
@@ -258,4 +265,16 @@
     </div>
 
     @vite(['resources/js/enrollee-index.js'])
+
+    @if(session('new_student_credentials'))
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const credentials = @json(session('new_student_credentials'));
+                if (credentials && credentials.show_modal) {
+                    // Show the credentials modal automatically
+                    showCredentialsModal(credentials.student_id, credentials.password);
+                }
+            });
+        </script>
+    @endif
 </x-enrollee-layout>

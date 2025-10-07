@@ -45,7 +45,7 @@
                     <i class="ri-key-line me-2"></i>Manage Permissions
                 </button>
             </li>
-            <li class="nav-item" role="presentation">
+            {{-- <li class="nav-item" role="presentation">
                 <button class="nav-link" id="manage-admins-tab" data-bs-toggle="tab" data-bs-target="#manage-admins" type="button" role="tab">
                     <i class="ri-admin-line me-2"></i>Admins
                 </button>
@@ -59,7 +59,7 @@
                 <button class="nav-link" id="manage-guidance-discipline-tab" data-bs-toggle="tab" data-bs-target="#manage-guidance-discipline" type="button" role="tab">
                     <i class="ri-heart-pulse-line me-2"></i>Guidance & Discipline
                 </button>
-            </li>
+            </li> --}}
         </ul>
 
         <!-- Tab Content -->

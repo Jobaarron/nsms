@@ -79,7 +79,8 @@
         </div>
     </div>
 
-    <!-- Regular Payments Table -->
+    {{-- Regular Payments Table - Commented out --}}
+    {{--
     <div class="row">
         <div class="col-12">
             <div class="card border-0 shadow-sm">
@@ -179,6 +180,7 @@
             </div>
         </div>
     </div>
+    --}}
 
     <!-- Payment Details Modal -->
     <div class="modal fade" id="paymentDetailsModal" tabindex="-1">
@@ -259,6 +261,30 @@
     @push('scripts')
         <script>
             let currentPaymentId = null;
+
+            function confirmPayment(paymentId) {
+                currentPaymentId = paymentId;
+                const modal = new bootstrap.Modal(document.getElementById('confirmPaymentModal'));
+                modal.show();
+            }
+
+            function rejectPayment(paymentId) {
+                currentPaymentId = paymentId;
+                const modal = new bootstrap.Modal(document.getElementById('rejectPaymentModal'));
+                modal.show();
+            }
+
+            function confirmFromModal() {
+                if (currentPaymentId) {
+                    confirmPayment(currentPaymentId);
+                }
+            }
+
+            function rejectFromModal() {
+                if (currentPaymentId) {
+                    rejectPayment(currentPaymentId);
+                }
+            }
 
             function viewPaymentDetails(paymentId) {
                 fetch(`/cashier/payments/${paymentId}/details`)

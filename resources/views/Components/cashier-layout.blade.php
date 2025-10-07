@@ -130,5 +130,11 @@
       </main>
     </div>
   </div>
+
+  <!-- Bootstrap JS -->
+  @vite(['resources/js/app.js'])
+  
+  <!-- Additional Scripts -->
+  @stack('scripts')
 </body>
 </html>

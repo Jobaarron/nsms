@@ -50,7 +50,7 @@
                             <i class="ri-star-line fs-2"></i>
                         </div>
                         <div class="flex-grow-1">
-                            <h3 class="fw-bold fs-4 mb-0 text-white">{{ $subjects->whereNull('strand')->count() }}</h3>
+                            <h3 class="fw-bold fs-4 mb-0 text-white">{{ $subjects->where('category', 'core')->count() }}</h3>
                             <small class="text-white">Core Subjects</small>
                         </div>
                     </div>
@@ -63,7 +63,7 @@
                             <i class="ri-focus-line fs-2"></i>
                         </div>
                         <div class="flex-grow-1">
-                            <h3 class="fw-bold fs-4 mb-0 text-white">{{ $subjects->whereNotNull('strand')->count() }}</h3>
+                            <h3 class="fw-bold fs-4 mb-0 text-white">{{ $subjects->where('category', 'specialized')->count() }}</h3>
                             <small class="text-white">Specialized</small>
                         </div>
                     </div>
@@ -115,7 +115,7 @@
                                 <table class="table table-hover" id="subjectsTable">
                                     <thead>
                                         <tr>
-                                            <th>Subject Code</th>
+                                            <th>Category</th>
                                             <th>Subject Name</th>
                                             <th>Grade Level</th>
                                             @if($student->grade_level === 'Grade 11' || $student->grade_level === 'Grade 12')
@@ -126,8 +126,12 @@
                                     </thead>
                                     <tbody>
                                         @foreach($subjects as $subject)
-                                            <tr class="subject-row" data-type="{{ $subject->strand ? 'specialized' : 'core' }}">
-                                                <td class="fw-semibold">{{ $subject->subject_code }}</td>
+                                            <tr class="subject-row" data-type="{{ $subject->category }}">
+                                                <td class="fw-semibold">
+                                                    <span class="badge bg-{{ $subject->category === 'core' ? 'secondary' : 'primary' }}">
+                                                        {{ ucfirst($subject->category) }}
+                                                    </span>
+                                                </td>
                                                 <td>{{ $subject->subject_name }}</td>
                                                 <td>{{ $subject->grade_level }}</td>
                                                 @if($student->grade_level === 'Grade 11' || $student->grade_level === 'Grade 12')
@@ -162,7 +166,7 @@
                 @if($subjects->count() > 0)
                     <div class="row">
                         <!-- Core Subjects -->
-                        @if($subjects->whereNull('strand')->count() > 0)
+                        @if($subjects->where('category', 'core')->count() > 0)
                             <div class="col-md-6 mb-4">
                                 <div class="card border-0 shadow-sm h-100">
                                     <div class="card-header bg-light border-0">
@@ -172,12 +176,12 @@
                                     </div>
                                     <div class="card-body">
                                         <div class="list-group list-group-flush">
-                                            @foreach($subjects->whereNull('strand') as $subject)
+                                            @foreach($subjects->where('category', 'core') as $subject)
                                                 <div class="list-group-item border-0 px-0">
                                                     <div class="d-flex justify-content-between align-items-center">
                                                         <div>
                                                             <h6 class="mb-1">{{ $subject->subject_name }}</h6>
-                                                            <small class="text-muted">{{ $subject->subject_code }}</small>
+                                                            <small class="text-muted">{{ $subject->semester ?? 'All Year' }}</small>
                                                         </div>
                                                         <span class="badge bg-secondary">Core</span>
                                                     </div>
@@ -190,7 +194,7 @@
                         @endif
 
                         <!-- Specialized Subjects -->
-                        @if($subjects->whereNotNull('strand')->count() > 0)
+                        @if($subjects->where('category', 'specialized')->count() > 0)
                             <div class="col-md-6 mb-4">
                                 <div class="card border-0 shadow-sm h-100">
                                     <div class="card-header bg-light border-0">
@@ -200,12 +204,12 @@
                                     </div>
                                     <div class="card-body">
                                         <div class="list-group list-group-flush">
-                                            @foreach($subjects->whereNotNull('strand') as $subject)
+                                            @foreach($subjects->where('category', 'specialized') as $subject)
                                                 <div class="list-group-item border-0 px-0">
                                                     <div class="d-flex justify-content-between align-items-center">
                                                         <div>
                                                             <h6 class="mb-1">{{ $subject->subject_name }}</h6>
-                                                            <small class="text-muted">{{ $subject->subject_code }}</small>
+                                                            <small class="text-muted">{{ $subject->semester ?? 'All Year' }}</small>
                                                         </div>
                                                         <div>
                                                             <span class="badge bg-primary">{{ $subject->strand }}</span>

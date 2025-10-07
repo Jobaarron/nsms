@@ -15,9 +15,9 @@ class EnrollStudentRequest extends FormRequest
     {
         return [
             // File Uploads
-            'id_photo'           => 'required|image|mimes:jpeg,png,jpg|max:2048',
+            'id_photo'           => 'required|image|mimes:jpeg,png,jpg|max:5120', // 5MB limit
             'documents'          => 'required|array|min:1',
-            'documents.*'        => 'file|mimes:pdf,docx,jpeg,png,jpg|max:4096',
+            'documents.*'        => 'file|mimes:pdf,docx,jpeg,png,jpg|max:8192', // 8MB limit
 
             // Enrollee Info
             'lrn'                => 'nullable|string|max:12|unique:enrollees,lrn',

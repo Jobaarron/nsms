@@ -280,9 +280,10 @@ function displayPaymentDetailsModal(payment) {
                     <p><strong>Transaction ID:</strong> ${payment.transaction_id}</p>
                     <p><strong>Amount:</strong> ₱${formatNumber(payment.amount)}</p>
                     <p><strong>Payment Method:</strong> ${payment.payment_method.replace('_', ' ').toUpperCase()}</p>
-                    <p><strong>Payment Mode:</strong> ${payment.payment_mode}</p>
+                    <p><strong>Payment Mode:</strong> ${payment.payment_mode || 'N/A'}</p>
                     <p><strong>Period:</strong> ${payment.period_name}</p>
                     <p><strong>Scheduled Date:</strong> ${formatDate(payment.scheduled_date)}</p>
+                    ${payment.reference_number ? `<p><strong>Reference Number:</strong> ${payment.reference_number}</p>` : ''}
                     <p><strong>Status:</strong> ${getStatusBadge(payment.confirmation_status)}</p>
                 </div>
             </div>
@@ -290,9 +291,32 @@ function displayPaymentDetailsModal(payment) {
         `;
     }
     
-    // Show modal
-    const bsModal = new bootstrap.Modal(modal);
-    bsModal.show();
+    // Show modal - check if Bootstrap is available
+    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+        const bsModal = new bootstrap.Modal(modal);
+        bsModal.show();
+    } else {
+        // Fallback: add modal classes manually
+        modal.classList.add('show');
+        modal.style.display = 'block';
+        document.body.classList.add('modal-open');
+        
+        // Add backdrop
+        const backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop fade show';
+        document.body.appendChild(backdrop);
+        
+        // Close modal functionality
+        const closeButtons = modal.querySelectorAll('[data-bs-dismiss="modal"], .btn-close');
+        closeButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                modal.classList.remove('show');
+                modal.style.display = 'none';
+                document.body.classList.remove('modal-open');
+                document.body.removeChild(backdrop);
+            });
+        });
+    }
 }
 
 function createPaymentDetailsModal() {

@@ -38,7 +38,7 @@
                     {{-- Excluded Button --}}
                     
                     <li class="nav-item dropdown-elegant">
-                        <a href="#" class="btn btn-custom me-2 dropdown-toggle {{ request()->is('student/login*') || request()->is('teacher/login*') || request()->is('guidance/login*') || request()->is('admin/login*') || request()->is('enrollee/login*') ? 'active' : '' }}">
+                        <a href="#" class="btn btn-custom me-2 dropdown-toggle {{ request()->is('student/login*') || request()->is('teacher/login*') || request()->is('guidance/login*') || request()->is('discipline/login*') || request()->is('cashier/login*') || request()->is('admin/login*') || request()->is('enrollee/login*') || request()->is('registrar/login*') ? 'active' : '' }}">
                             Portal Login
                         </a>
                         <div class="dropdown-menu">
@@ -55,7 +55,28 @@
                                 <i class="ri-building-line"></i>
                                 Registrar Portal
                             </a>
-                          
+                            <div class="dropdown-divider"></div>
+                            <a href="/teacher/login" class="dropdown-item {{ request()->is('teacher/login*') ? 'active' : '' }}">
+                                <i class="ri-user-3-line"></i>
+                                Teacher Portal
+                            </a>
+                            <a href="/guidance/login" class="dropdown-item {{ request()->is('guidance/login*') ? 'active' : '' }}">
+                                <i class="ri-heart-pulse-line"></i>
+                                Guidance Portal
+                            </a>
+                            <a href="/discipline/login" class="dropdown-item {{ request()->is('discipline/login*') ? 'active' : '' }}">
+                                <i class="ri-shield-user-line"></i>
+                                Discipline Portal
+                            </a>
+                            <a href="/cashier/login" class="dropdown-item {{ request()->is('cashier/login*') ? 'active' : '' }}">
+                                <i class="ri-money-dollar-circle-line"></i>
+                                Cashier Portal
+                            </a>
+                            <div class="dropdown-divider"></div>
+                            <a href="/admin/login" class="dropdown-item {{ request()->is('admin/login*') ? 'active' : '' }}">
+                                <i class="ri-admin-line"></i>
+                                Admin Portal
+                            </a>
                         </div>
                     </li>
                 </ul>

@@ -147,7 +147,7 @@
                                     <tr>
                                         <th>Transaction ID</th>
                                         <th>Student/Enrollee</th>
-                                        <th>Fee Type</th>
+{{-- <th>Fee Type</th> --}}
                                         <th>Amount</th>
                                         <th>Payment Method</th>
                                         <th>Status</th>
@@ -176,16 +176,23 @@
                                                     <span class="text-muted">N/A</span>
                                                 @endif
                                             </td>
-                                            <td>{{ $payment->fee->name ?? 'N/A' }}</td>
                                             <td>
                                                 <span class="fw-bold text-success">
                                                     ₱{{ number_format($payment->amount, 2) }}
                                                 </span>
                                             </td>
                                             <td>
-                                                <span class="badge bg-info">
-                                                    {{ ucfirst(str_replace('_', ' ', $payment->payment_method ?? 'N/A')) }}
-                                                </span>
+                                                @if($payment->payment_method)
+                                                    <span class="badge bg-info">
+                                                        {{ ucfirst(str_replace('_', ' ', $payment->payment_method)) }}
+                                                    </span>
+{{-- @if($payment->reference_number)
+                                                        <br>
+                                                        <small class="text-muted">Ref: {{ $payment->reference_number }}</small>
+                                                    @endif --}}
+                                                @else
+                                                    <span class="badge bg-secondary">Not Specified</span>
+                                                @endif
                                             </td>
                                             <td>
                                                 @php

@@ -1,5 +1,5 @@
 <x-layout>
-    @vite('resources/css/enroll.css')
+    @vite(['resources/css/enroll.css', 'resources/css/password-field.css'])
     <div class="row justify-content-center">
         <div class="col-lg-6 col-md-8">
             <div class="content-card p-5">
@@ -38,6 +38,7 @@
                             value="{{ old('student_id') }}"
                             required
                             placeholder="NS-25001"
+                            autofocus
                             style="text-transform: uppercase;"
                         />
                         @error('student_id')
@@ -49,17 +50,20 @@
                         <label for="password" class="form-label fw-semibold" style="color: var(--primary-color);">
                             <i class="ri-lock-line me-2"></i>Password
                         </label>
-                        <div class="position-relative">
+                        <div class="password-input-container">
                             <input
                                 type="password"
                                 id="password"
                                 name="password"
-                                class="form-control form-control-lg @error('password') is-invalid @enderror"
+                                class="form-control form-control-lg custom-password-input @error('password') is-invalid @enderror"
                                 required
                                 placeholder="Enter your password"
-                                style="padding-right: 3rem;"
+                                autocomplete="current-password"
+                                data-toggle="password"
                             />
-                            
+                            <button type="button" class="password-toggle-btn" onclick="togglePassword('password')" style="color: var(--primary-color);">
+                                <i class="ri-eye-line" id="password-eye"></i>
+                            </button>
                         </div>
                         @error('password')
                             <div class="invalid-feedback">{{ $message }}</div>
@@ -72,16 +76,16 @@
                     </div>
 
                     <button type="submit" class="btn btn-custom btn-lg w-100 mb-3">
-                        <i class="ri-login-circle-line me-2"></i>Login
+                        <i class="ri-login-circle-line me-2"></i>Login to Portal
                     </button>
                 </form>
 
-                <div class="text-center">
+                {{-- <div class="text-center">
                     <p class="text-muted">
                         Don't have an account? 
                         <a href="{{ route('enroll.create') }}" style="color: var(--primary-color);">Enroll now</a>
                     </p>
-                </div>
+                </div> --}}
             </div>
         </div>
     </div>
