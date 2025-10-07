@@ -36,6 +36,10 @@ class Violation extends Model
         'urgency_level',
     ];
 
+    protected $attributes = [
+        'urgency_level' => 'medium',
+    ];
+
     protected $casts = [
         'violation_date' => 'date',
         'resolved_at' => 'date',

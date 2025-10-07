@@ -255,6 +255,11 @@ class DisciplineController extends Controller
             'urgency_level' => 'nullable|in:low,medium,high,urgent',
         ]);
 
+        // Set default urgency_level if not provided
+        if (!isset($validatedData['urgency_level']) || $validatedData['urgency_level'] === null) {
+            $validatedData['urgency_level'] = 'medium';
+        }
+
         // Automatically calculate sanction based on severity and major_category
         $sanctionDetails = $this->calculateSanction($validatedData['student_id'], $validatedData['severity'], $validatedData['major_category'] ?? null);
         if ($sanctionDetails) {

@@ -4,6 +4,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize modals
     initializeModals();
+
+    // Initialize flatpickr for date inputs in schedule meeting modal
+    if (typeof flatpickr !== 'undefined') {
+        flatpickr("#scheduleCaseMeetingModal input[name='scheduled_date']", {
+            dateFormat: "Y-m-d",
+            minDate: "today",
+            allowInput: true,
+        });
+
+        flatpickr("#editCaseMeetingModal input[name='scheduled_date']", {
+            dateFormat: "Y-m-d",
+            minDate: "today",
+            allowInput: true,
+        });
+    }
 });
 
 function initializeFilters() {
@@ -70,8 +85,162 @@ window.clearFilters = function() {
 };
 
 window.viewCaseMeeting = function(meetingId) {
-    // Redirect to view page or open modal
-    window.location.href = `/guidance/case-meetings/${meetingId}`;
+    // Fetch meeting data and populate view modal
+    fetch(`/guidance/case-meetings/${meetingId}`, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const meeting = data.meeting;
+
+            // Populate modal fields
+            document.getElementById('view_student_name').textContent = meeting.student_name || 'N/A';
+            document.getElementById('view_student_id').textContent = meeting.student_id || 'N/A';
+            document.getElementById('view_counselor_name').textContent = meeting.counselor_name || 'N/A';
+            document.getElementById('view_meeting_type').textContent = meeting.meeting_type_display || 'N/A';
+            document.getElementById('view_status').textContent = meeting.status_text || 'N/A';
+            document.getElementById('view_status').className = `badge ${meeting.status_class || 'bg-secondary'}`;
+            document.getElementById('view_scheduled_date').textContent = meeting.scheduled_date || 'TBD';
+            document.getElementById('view_scheduled_time').textContent = meeting.scheduled_time || 'TBD';
+            document.getElementById('view_urgency_level').textContent = meeting.urgency_level ? ucfirst(meeting.urgency_level) : 'N/A';
+            document.getElementById('view_urgency_level').className = `badge bg-${meeting.urgency_color || 'secondary'}`;
+            document.getElementById('view_reason').textContent = meeting.reason || 'N/A';
+
+            // Handle optional fields
+            const locationContainer = document.getElementById('view_location_container');
+            const locationSpan = document.getElementById('view_location');
+            if (meeting.location) {
+                locationSpan.textContent = meeting.location;
+                locationContainer.style.display = '';
+            } else {
+                locationContainer.style.display = 'none';
+            }
+
+            const completedAtContainer = document.getElementById('view_completed_at_container');
+            const completedAtSpan = document.getElementById('view_completed_at');
+            if (meeting.completed_at) {
+                completedAtSpan.textContent = new Date(meeting.completed_at).toLocaleString();
+                completedAtContainer.style.display = '';
+            } else {
+                completedAtContainer.style.display = 'none';
+            }
+
+            const notesContainer = document.getElementById('view_notes_container');
+            const notesDiv = document.getElementById('view_notes');
+            if (meeting.notes) {
+                notesDiv.textContent = meeting.notes;
+                notesContainer.style.display = '';
+            } else {
+                notesContainer.style.display = 'none';
+            }
+
+            const summaryContainer = document.getElementById('view_summary_container');
+            const summaryDiv = document.getElementById('view_summary');
+            if (meeting.summary) {
+                summaryDiv.textContent = meeting.summary;
+                summaryContainer.style.display = '';
+            } else {
+                summaryContainer.style.display = 'none';
+            }
+
+            const recommendationsContainer = document.getElementById('view_recommendations_container');
+            const recommendationsDiv = document.getElementById('view_recommendations');
+            if (meeting.recommendations) {
+                recommendationsDiv.textContent = meeting.recommendations;
+                recommendationsContainer.style.display = '';
+            } else {
+                recommendationsContainer.style.display = 'none';
+            }
+
+            const followUpContainer = document.getElementById('view_follow_up_container');
+            const followUpText = document.getElementById('view_follow_up_text');
+            if (meeting.follow_up_required) {
+                followUpText.textContent = meeting.follow_up_date ? `Scheduled for ${new Date(meeting.follow_up_date).toLocaleDateString()}` : 'Required';
+                followUpContainer.style.display = '';
+            } else {
+                followUpContainer.style.display = 'none';
+            }
+
+            // Handle sanctions
+            const sanctionsContainer = document.getElementById('view_sanctions_container');
+            const sanctionsList = document.getElementById('view_sanctions_list');
+            sanctionsList.innerHTML = '';
+            if (meeting.sanctions && meeting.sanctions.length > 0) {
+                meeting.sanctions.forEach(sanction => {
+                    const sanctionItem = document.createElement('div');
+                    sanctionItem.className = 'list-group-item px-0';
+                    sanctionItem.innerHTML = `
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="fw-semibold">${sanction.type}</div>
+                                ${sanction.description ? `<small class="text-muted">${sanction.description}</small>` : ''}
+                                <div class="small text-muted mt-1">
+                                    <i class="ri-calendar-line me-1"></i>${new Date(sanction.created_at).toLocaleDateString()}
+                                </div>
+                            </div>
+                            <span class="badge bg-${getSanctionStatusColor(sanction.status || 'pending')}">${ucfirst(sanction.status || 'pending')}</span>
+                        </div>
+                    `;
+                    sanctionsList.appendChild(sanctionItem);
+                });
+                sanctionsContainer.style.display = '';
+            } else {
+                sanctionsContainer.style.display = 'none';
+            }
+
+            // Handle actions
+            const actionsContainer = document.getElementById('view_actions_container');
+            actionsContainer.innerHTML = '';
+
+            // Complete button
+            if (meeting.status === 'scheduled' || meeting.status === 'in_progress') {
+                const completeBtn = document.createElement('button');
+                completeBtn.className = 'btn btn-success';
+                completeBtn.onclick = () => completeCaseMeeting(meeting.id);
+                completeBtn.innerHTML = '<i class="ri-checkbox-circle-line me-2"></i>Mark as Completed';
+                actionsContainer.appendChild(completeBtn);
+            }
+
+            // Create summary button
+            if (!meeting.summary) {
+                const summaryBtn = document.createElement('button');
+                summaryBtn.className = 'btn btn-info';
+                summaryBtn.onclick = () => openCreateSummaryModal(meeting.id);
+                summaryBtn.innerHTML = '<i class="ri-file-text-line me-2"></i>Create Summary';
+                actionsContainer.appendChild(summaryBtn);
+            }
+
+            // Forward button
+            if (meeting.summary && meeting.sanctions && meeting.sanctions.length > 0 && !meeting.forwarded_to_president) {
+                const forwardBtn = document.createElement('button');
+                forwardBtn.className = 'btn btn-warning';
+                forwardBtn.onclick = () => forwardToPresident(meeting.id);
+                forwardBtn.innerHTML = '<i class="ri-send-plane-line me-2"></i>Forward to President';
+                actionsContainer.appendChild(forwardBtn);
+            }
+
+            // // Edit button
+            // const editBtn = document.createElement('button');
+            // editBtn.className = 'btn btn-outline-primary';
+            // editBtn.onclick = () => editCaseMeeting(meeting.id);
+            // editBtn.innerHTML = '<i class="ri-edit-line me-2"></i>Edit Meeting';
+            // actionsContainer.appendChild(editBtn);
+
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('viewCaseMeetingModal'));
+            modal.show();
+        } else {
+            showAlert('danger', 'Failed to load meeting details');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('danger', 'Error loading meeting details');
+    });
 };
 
 window.openScheduleMeetingModal = function(studentId = 0) {
@@ -84,10 +253,15 @@ window.openScheduleMeetingModal = function(studentId = 0) {
         document.querySelectorAll('#scheduleCaseMeetingModal .schedule-field').forEach(el => el.style.display = 'none');
         // Set default values for hidden fields
         document.querySelector('#scheduleCaseMeetingModal select[name="meeting_type"]').value = 'case_meeting';
-        document.querySelector('#scheduleCaseMeetingModal input[name="location"]').value = '';
         document.querySelector('#scheduleCaseMeetingModal select[name="urgency_level"]').value = '';
         document.querySelector('#scheduleCaseMeetingModal textarea[name="reason"]').value = 'Scheduled meeting';
         document.querySelector('#scheduleCaseMeetingModal textarea[name="notes"]').value = '';
+    } else {
+        // Show all fields when no studentId is provided (normal schedule meeting)
+        document.querySelectorAll('#scheduleCaseMeetingModal .schedule-field').forEach(el => el.style.display = '');
+        // Reset form fields
+        const form = document.getElementById('scheduleCaseMeetingForm');
+        if (form) form.reset();
     }
 
     modal.show();
@@ -158,18 +332,22 @@ window.submitCaseMeeting = function(event) {
 
 window.editCaseMeeting = function(meetingId) {
     // Fetch meeting data and populate edit modal
-    fetch(`/guidance/case-meetings/${meetingId}/edit`)
-        .then(response => response.json())
-        .then(data => {
+    fetch(`/guidance/case-meetings/${meetingId}/edit`, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
             const meeting = data.meeting;
-            const students = data.students;
 
             // Populate form
             document.getElementById('edit_student_id').value = meeting.student_id;
             document.getElementById('edit_meeting_type').value = meeting.meeting_type;
-            document.getElementById('edit_scheduled_date').value = meeting.scheduled_date ? meeting.scheduled_date.split(' ')[0] : '';
-            document.getElementById('edit_scheduled_time').value = meeting.scheduled_time ? meeting.scheduled_time.substring(0, 5) : '';
-            document.getElementById('edit_location').value = meeting.location || '';
+            document.getElementById('edit_scheduled_date').value = meeting.scheduled_date || '';
+            document.getElementById('edit_scheduled_time').value = meeting.scheduled_time || '';
             document.getElementById('edit_urgency_level').value = meeting.urgency_level || '';
             document.getElementById('edit_reason').value = meeting.reason || '';
             document.getElementById('edit_notes').value = meeting.notes || '';
@@ -180,11 +358,14 @@ window.editCaseMeeting = function(meetingId) {
             // Show modal
             const modal = new bootstrap.Modal(document.getElementById('editCaseMeetingModal'));
             modal.show();
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showAlert('danger', 'Error loading meeting for editing');
-        });
+        } else {
+            showAlert('danger', 'Failed to load meeting details');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('danger', 'Error loading meeting for editing');
+    });
 };
 
 window.submitEditCaseMeeting = function(event) {
@@ -251,18 +432,46 @@ window.submitEditCaseMeeting = function(event) {
     });
 };
 
+window.completeCaseMeeting = function(meetingId) {
+    if (confirm('Are you sure you want to mark this case meeting as completed?')) {
+        const formData = new FormData();
+        formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+        formData.append('_method', 'PATCH');
+
+        fetch(`/guidance/case-meetings/${meetingId}/complete`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('success', data.message);
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert('danger', data.message || 'Failed to complete case meeting');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('danger', 'Error completing case meeting');
+        });
+    }
+};
+
 window.forwardToPresident = function(meetingId) {
     if (confirm('Are you sure you want to forward this case to the president?')) {
+        const formData = new FormData();
+        formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+
         fetch(`/guidance/case-meetings/${meetingId}/forward`, {
             method: 'POST',
+            body: formData,
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                 'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                '_token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            })
+            }
         })
         .then(response => response.json())
         .then(data => {
@@ -359,6 +568,20 @@ window.exportCaseMeetings = function() {
 window.printCaseMeetings = function() {
     window.print();
 };
+
+// Helper functions
+function ucfirst(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+function getSanctionStatusColor(status) {
+    switch (status.toLowerCase()) {
+        case 'approved': return 'success';
+        case 'rejected': return 'danger';
+        case 'pending': return 'warning';
+        default: return 'secondary';
+    }
+}
 
 // Helper function to show alerts
 function showAlert(type, message) {

@@ -53,15 +53,20 @@ Route::prefix('admin')->group(function () {
     // Protected admin routes - use auth middleware
     Route::middleware(['auth'])->group(function () {
         // Dashboard
-        Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+        Route::middleware(['auth', 'role:admin'])->name('admin.')->group(function () {
             Route::get('/dashboard', [AdminController::class, 'index'])->name('dashboard');
             Route::get('/dashboard/stats', [AdminController::class, 'getStats'])->name('dashboard.stats');
 
             // Forwarded Case Meetings for President (Admin)
             Route::get('/forwarded-cases', [AdminController::class, 'forwardedCases'])->name('forwarded.cases');
 
-            // Approve sanction for a case meeting
+            // Sanction actions for forwarded cases
             Route::post('/sanctions/{sanction}/approve', [AdminController::class, 'approveSanction'])->name('sanctions.approve');
+            Route::post('/sanctions/{sanction}/reject', [AdminController::class, 'rejectSanction'])->name('sanctions.reject');
+            Route::post('/sanctions/{sanction}/revise', [AdminController::class, 'reviseSanction'])->name('sanctions.revise');
+
+            // View summary report for case meeting
+            Route::get('/case-meetings/{caseMeeting}/summary', [AdminController::class, 'viewSummaryReport'])->name('case-meetings.summary');
         });
 
         Route::get('/', [AdminController::class, 'index'])->name('admin.dashboard');
@@ -220,8 +225,15 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
         Route::prefix('counseling-sessions')->name('counseling-sessions.')->group(function () {
             Route::get('/', [App\Http\Controllers\GuidanceController::class, 'counselingSessionsIndex'])->name('index');
             Route::post('/', [App\Http\Controllers\GuidanceController::class, 'scheduleCounselingSession'])->name('schedule');
-            Route::post('/{counselingSession}/schedule-recommended', [App\Http\Controllers\GuidanceController::class, 'scheduleRecommendedSession'])->name('schedule-recommended');
+            Route::get('/{counselingSession}', [App\Http\Controllers\GuidanceController::class, 'showCounselingSession'])->name('show');
+            Route::get('/{counselingSession}/edit', [App\Http\Controllers\GuidanceController::class, 'editCounselingSession'])->name('edit');
+            Route::put('/{counselingSession}', [App\Http\Controllers\GuidanceController::class, 'updateCounselingSession'])->name('update');
+            Route::post('/{counselingSession}/complete', [App\Http\Controllers\GuidanceController::class, 'completeCounselingSession'])->name('complete');
+            Route::post('/{counselingSession}/reschedule', [App\Http\Controllers\GuidanceController::class, 'rescheduleCounselingSession'])->name('reschedule');
+ Route::post('/{id}/schedule-inline', [App\Http\Controllers\GuidanceController::class, 'scheduleInline'])
+            ->name('schedule-inline');            Route::post('/{counselingSession}/schedule-recommended', [App\Http\Controllers\GuidanceController::class, 'scheduleRecommendedSession'])->name('schedule-recommended');
             Route::post('/{counselingSession}/summary', [App\Http\Controllers\GuidanceController::class, 'createCounselingSummary'])->name('summary');
+            Route::get('/export', [App\Http\Controllers\GuidanceController::class, 'exportCounselingSessions'])->name('export');
         });
         Route::prefix('api')->name('api.')->group(function () {
             Route::get('/counselors', [App\Http\Controllers\GuidanceController::class, 'getCounselors'])->name('counselors');

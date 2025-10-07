@@ -533,10 +533,9 @@ window.editViolation = function(violationId) {
             </div>
             <div class="mb-2">
                 <label class="form-label fw-bold small">Urgency Level</label>
-                <select class="form-select form-select-sm" id="edit_urgency_level" name="urgency_level">
-                    <option value="" ${violation.urgency_level === '' || !violation.urgency_level ? 'selected' : ''}>Normal</option>
+                <select class="form-select form-select-sm" id="edit_urgency_level" name="urgency_level" required>
+                    <option value="medium" ${(!violation.urgency_level || violation.urgency_level === 'medium') ? 'selected' : ''}>Normal</option>
                     <option value="low" ${violation.urgency_level === 'low' ? 'selected' : ''}>Low</option>
-                    <option value="medium" ${violation.urgency_level === 'medium' ? 'selected' : ''}>Medium</option>
                     <option value="high" ${violation.urgency_level === 'high' ? 'selected' : ''}>High</option>
                     <option value="urgent" ${violation.urgency_level === 'urgent' ? 'selected' : ''}>Urgent</option>
                 </select>
@@ -2056,7 +2055,7 @@ function showIncidentForm() {
                                 <option value="">Normal</option>
                                 <option value="low">Low</option>
                                 <option value="medium">Medium</option>
-                                <option value="high">High</option>
+                                <option value="high" selected>High</option>
                                 <option value="urgent">Urgent</option>
                             </select>
                         </div>
