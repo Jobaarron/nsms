@@ -164,7 +164,7 @@ class CounselingSession extends Model
     {
         $hours = intval($this->duration / 60);
         $minutes = $this->duration % 60;
-        
+
         if ($hours > 0 && $minutes > 0) {
             return "{$hours}h {$minutes}m";
         } elseif ($hours > 0) {
@@ -172,5 +172,13 @@ class CounselingSession extends Model
         } else {
             return "{$minutes}m";
         }
+    }
+
+    /**
+     * Get summary attribute (alias for session_summary)
+     */
+    public function getSummaryAttribute()
+    {
+        return $this->session_summary;
     }
 }

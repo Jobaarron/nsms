@@ -252,7 +252,13 @@ class DisciplineController extends Controller
             'violation_date' => 'required|date',
             'violation_time' => 'nullable',
             'status' => 'nullable|in:pending,investigating,in_progress,resolved,dismissed',
+            'urgency_level' => 'nullable|in:low,medium,high,urgent',
         ]);
+
+        // Set default urgency_level if not provided
+        if (!isset($validatedData['urgency_level']) || $validatedData['urgency_level'] === null) {
+            $validatedData['urgency_level'] = 'medium';
+        }
 
         // Automatically calculate sanction based on severity and major_category
         $sanctionDetails = $this->calculateSanction($validatedData['student_id'], $validatedData['severity'], $validatedData['major_category'] ?? null);
@@ -597,16 +603,24 @@ class DisciplineController extends Controller
                 ], 400);
             }
 
-            // Create case meeting
+            // Create case meeting with comprehensive violation data
             $caseMeeting = CaseMeeting::create([
                 'student_id' => $violation->student_id,
                 'counselor_id' => $guidanceCounselor->id,
                 'meeting_type' => 'case_meeting',
                 'location' => 'Guidance Office',
                 'reason' => 'Violation: ' . $violation->title . ' - ' . $violation->description,
-                'notes' => 'Forwarded from Discipline Office. Violation ID: ' . $violation->id . '. Severity: ' . $violation->severity,
+                'notes' => 'Forwarded from Discipline Office. ' .
+                          'Student Involved: ' . $violation->student->first_name . ' ' . $violation->student->last_name . ' (' . $violation->student->student_id . '). ' .
+                          'Date and Time: ' . $violation->violation_date . ' ' . ($violation->violation_time ?: 'N/A') . '. ' .
+                          'Incident Details: ' . $violation->description . '. ' .
+                          'Violation Information: ' . $violation->title . ' (Severity: ' . $violation->severity . '). ' .
+                          'Status: ' . $violation->status . '. ' .
+                          'Urgency Level: ' . ($violation->urgency_level ?: 'Not specified') . '. ' .
+                          'Violation ID: ' . $violation->id,
                 'status' => 'in_progress',
                 'sanction_recommendation' => $violation->sanction,
+                'urgency_level' => $violation->urgency_level,
             ]);
 
             // Update violation status to in progress

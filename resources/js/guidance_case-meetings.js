@@ -1,616 +1,604 @@
-// Guidance Case Meetings JavaScript
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Case Meetings page loaded');
-    
-    // Initialize page functionality
-    initializeCaseMeetings();
-});
+    // Initialize filters
+    initializeFilters();
 
-// Initialize case meetings functionality
-function initializeCaseMeetings() {
-    // Set up form validation
-    setupFormValidation();
-    
-    // Set up date/time constraints
-    setupDateTimeConstraints();
-}
+    // Initialize modals
+    initializeModals();
 
-// Setup form validation
-function setupFormValidation() {
-    const form = document.getElementById('scheduleCaseMeetingForm');
-    if (form) {
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            submitCaseMeeting(e);
+    // Initialize flatpickr for date inputs in schedule meeting modal
+    if (typeof flatpickr !== 'undefined') {
+        flatpickr("#scheduleCaseMeetingModal input[name='scheduled_date']", {
+            dateFormat: "Y-m-d",
+            minDate: "today",
+            allowInput: true,
+        });
+
+        flatpickr("#editCaseMeetingModal input[name='scheduled_date']", {
+            dateFormat: "Y-m-d",
+            minDate: "today",
+            allowInput: true,
         });
     }
+});
+
+function initializeFilters() {
+    // Filter functionality
+    const statusFilter = document.getElementById('status-filter');
+    const dateFilter = document.getElementById('date-filter');
+    const searchFilter = document.getElementById('search-filter');
+
+    if (statusFilter) statusFilter.addEventListener('change', filterCaseMeetings);
+    if (dateFilter) dateFilter.addEventListener('change', filterCaseMeetings);
+    if (searchFilter) searchFilter.addEventListener('input', filterCaseMeetings);
 }
 
-// Setup date/time constraints
-function setupDateTimeConstraints() {
-    const dateInput = document.querySelector('input[name="scheduled_date"]');
-    if (dateInput) {
-        // Set minimum date to today
-        const today = new Date().toISOString().split('T')[0];
-        dateInput.min = today;
-    }
-}
-
-// Submit case meeting form
-function submitCaseMeeting(event) {
-    event.preventDefault();
-    
-    const form = event.target;
-    const formData = new FormData(form);
-    const submitBtn = form.querySelector('button[type="submit"]');
-    
-    // Show loading state
-    const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="ri-loader-4-line me-2 spinner-border spinner-border-sm"></i>Scheduling...';
-    submitBtn.disabled = true;
-    
-    fetch('/guidance/case-meetings', {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-        }
-    })
-    .then(response => response.json().then(data => ({ response, data })))
-    .then(({ response, data }) => {
-        if (!response.ok) {
-            showAlert(data.message || 'Request failed', 'danger');
-            return;
-        }
-
-        if (data.success) {
-            showAlert('Case meeting scheduled successfully!', 'success');
-            setTimeout(() => {
-                window.location.reload();
-            }, 1500);
-        } else {
-            showAlert(data.message || 'Failed to schedule case meeting', 'danger');
-        }
-    })
-    .catch(error => {
-        console.error('Error scheduling case meeting:', error);
-        showAlert('An error occurred while scheduling the meeting', 'danger');
-    })
-    .finally(() => {
-        // Restore button state
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
+function initializeModals() {
+    // Reset forms when modals are hidden
+    document.querySelectorAll('.modal').forEach(modal => {
+        modal.addEventListener('hidden.bs.modal', function() {
+            const form = modal.querySelector('form');
+            if (form) {
+                form.reset();
+                // Clear any validation states
+                form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+                form.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
+            }
+            // Show all schedule fields
+            document.querySelectorAll('#scheduleCaseMeetingModal .schedule-field').forEach(el => el.style.display = '');
+        });
     });
 }
 
-// View case meeting details
-function viewCaseMeeting(meetingId) {
+// Global functions for case meetings
+window.refreshCaseMeetings = function() {
+    location.reload();
+};
+
+window.filterCaseMeetings = function() {
+    const statusValue = document.getElementById('status-filter').value;
+    const dateValue = document.getElementById('date-filter').value;
+    const searchValue = document.getElementById('search-filter').value.toLowerCase();
+
+    const rows = document.querySelectorAll('#case-meetings-table tbody tr');
+
+    rows.forEach(row => {
+        if (row.cells.length < 6) return; // Skip if not enough cells
+
+        const studentName = row.cells[0].textContent.toLowerCase();
+        const dateTime = row.cells[1].textContent.toLowerCase();
+        const location = row.cells[2].textContent.toLowerCase();
+        const status = row.cells[3].textContent.toLowerCase();
+
+        const matchesStatus = !statusValue || status.includes(statusValue.toLowerCase());
+        const matchesDate = !dateValue || dateTime.includes(new Date(dateValue).toLocaleDateString().toLowerCase());
+        const matchesSearch = !searchValue || studentName.includes(searchValue) || location.includes(searchValue);
+
+        row.style.display = matchesStatus && matchesDate && matchesSearch ? '' : 'none';
+    });
+};
+
+window.clearFilters = function() {
+    document.getElementById('status-filter').value = '';
+    document.getElementById('date-filter').value = '';
+    document.getElementById('search-filter').value = '';
+    filterCaseMeetings();
+};
+
+window.viewCaseMeeting = function(meetingId) {
+    // Fetch meeting data and populate view modal
     fetch(`/guidance/case-meetings/${meetingId}`, {
-        method: 'GET',
         headers: {
-            'Accept': 'application/json',
             'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showCaseMeetingModal(data.meeting);
-        } else {
-            showAlert('Failed to load meeting details', 'danger');
-        }
-    })
-    .catch(error => {
-        console.error('Error loading meeting:', error);
-        showAlert('Error loading meeting details', 'danger');
-    });
-}
-
-// Show case meeting details modal
-function showCaseMeetingModal(meeting) {
-    const modalHtml = `
-        <div class="modal fade" id="viewCaseMeetingModal" tabindex="-1">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Case Meeting Details</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Student</label>
-                                <p class="form-control-plaintext">${meeting.student_name}</p>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Meeting Type</label>
-                                <p class="form-control-plaintext">
-                                    <span class="badge ${meeting.meeting_type === 'house_visit' ? 'bg-info' : 'bg-primary'}">
-                                        ${meeting.meeting_type_display}
-                                    </span>
-                                </p>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Date & Time</label>
-                                <p class="form-control-plaintext">${meeting.scheduled_date} at ${meeting.scheduled_time}</p>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Location</label>
-                                <p class="form-control-plaintext">${meeting.location || 'TBD'}</p>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Status</label>
-                                <p class="form-control-plaintext">
-                                    <span class="badge ${meeting.status_class}">${meeting.status_text}</span>
-                                </p>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Urgency Level</label>
-                                <p class="form-control-plaintext">
-                                    ${meeting.urgency_level ? `<span class="badge bg-${meeting.urgency_color}">${meeting.urgency_level}</span>` : 'Normal'}
-                                </p>
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label fw-bold">Reason</label>
-                                <p class="form-control-plaintext">${meeting.reason}</p>
-                            </div>
-                            ${meeting.notes ? `
-                            <div class="col-12">
-                                <label class="form-label fw-bold">Notes</label>
-                                <p class="form-control-plaintext">${meeting.notes}</p>
-                            </div>
-                            ` : ''}
-                            ${meeting.summary ? `
-                            <div class="col-12">
-                                <label class="form-label fw-bold">Summary</label>
-                                <p class="form-control-plaintext">${meeting.summary}</p>
-                            </div>
-                            ` : ''}
-                            ${meeting.sanction ? `
-                            <div class="col-12">
-                                <label class="form-label fw-bold">Sanction</label>
-                                <p class="form-control-plaintext">${meeting.sanction}</p>
-                            </div>
-                            ` : ''}
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        ${['scheduled', 'in_progress'].includes(meeting.status) ? `
-                            <button type="button" class="btn btn-success" onclick="completeCaseMeeting(${meeting.id}); closeModal('viewCaseMeetingModal');">
-                                <i class="ri-check-line me-2"></i>Mark Complete
-                            </button>
-                            <button type="button" class="btn btn-warning" onclick="forwardToPresident(${meeting.id}); closeModal('viewCaseMeetingModal');">
-                                <i class="ri-send-plane-line me-2"></i>Forward to President
-                            </button>
-                        ` : ''}
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    // Remove existing modal if any
-    const existingModal = document.getElementById('viewCaseMeetingModal');
-    if (existingModal) {
-        existingModal.remove();
-    }
-    
-    // Add new modal to body
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
-    
-    // Show modal
-    const modal = new bootstrap.Modal(document.getElementById('viewCaseMeetingModal'));
-    modal.show();
-}
-
-// Complete case meeting
-function completeCaseMeeting(meetingId) {
-    if (!confirm('Mark this case meeting as completed?')) {
-        return;
-    }
-    
-    fetch(`/guidance/case-meetings/${meetingId}/complete`, {
-        method: 'POST',
-        headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showAlert('Case meeting marked as completed', 'success');
-            setTimeout(() => {
-                window.location.reload();
-            }, 1500);
-        } else {
-            showAlert(data.message || 'Failed to complete meeting', 'danger');
-        }
-    })
-    .catch(error => {
-        console.error('Error completing meeting:', error);
-        showAlert('Error completing meeting', 'danger');
-    });
-}
-
-// Forward case to president
-function forwardToPresident(meetingId) {
-    // First, fetch the meeting details to check for summary and sanction
-    fetch(`/guidance/case-meetings/${meetingId}`, {
-        method: 'GET',
-        headers: {
-            'Accept': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+            'Accept': 'application/json'
         }
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
             const meeting = data.meeting;
-            
-            // Check if a summary exists and if sanctions have been set
-            console.log('Forward check:', { summary: meeting.summary, sanctions: meeting.sanctions });
-            if (meeting.summary && meeting.sanctions && meeting.sanctions.length > 0) {
-                // Both conditions met - proceed with forwarding
-                const reason = prompt('Please confirm if you would like to forward this case to the President for review:');
-                if (!reason || reason.trim() === '') {
-                    return;
-                }
 
-                // Proceed with the forwarding request
-                proceedWithForwarding(meetingId, reason.trim());
+            // Populate modal fields
+            document.getElementById('view_student_name').textContent = meeting.student_name || 'N/A';
+            document.getElementById('view_student_id').textContent = meeting.student_id || 'N/A';
+            document.getElementById('view_counselor_name').textContent = meeting.counselor_name || 'N/A';
+            document.getElementById('view_meeting_type').textContent = meeting.meeting_type_display || 'N/A';
+            document.getElementById('view_status').textContent = meeting.status_text || 'N/A';
+            document.getElementById('view_status').className = `badge ${meeting.status_class || 'bg-secondary'}`;
+            document.getElementById('view_scheduled_date').textContent = meeting.scheduled_date || 'TBD';
+            document.getElementById('view_scheduled_time').textContent = meeting.scheduled_time || 'TBD';
+            document.getElementById('view_urgency_level').textContent = meeting.urgency_level ? ucfirst(meeting.urgency_level) : 'N/A';
+            document.getElementById('view_urgency_level').className = `badge bg-${meeting.urgency_color || 'secondary'}`;
+            document.getElementById('view_reason').textContent = meeting.reason || 'N/A';
+
+            // Handle optional fields
+            const locationContainer = document.getElementById('view_location_container');
+            const locationSpan = document.getElementById('view_location');
+            if (meeting.location) {
+                locationSpan.textContent = meeting.location;
+                locationContainer.style.display = '';
             } else {
-                // Conditions not met - show appropriate error message
-                let errorMessage = 'Action blocked: ';
-
-                if (!meeting.summary && (!meeting.sanctions || meeting.sanctions.length === 0)) {
-                    errorMessage += 'Please ensure a summary report has been created and sanctions have been set before forwarding.';
-                } else if (!meeting.summary) {
-                    errorMessage += 'Please ensure a summary report has been created before forwarding.';
-                } else if (!meeting.sanctions || meeting.sanctions.length === 0) {
-                    errorMessage += 'Please ensure sanctions have been set before forwarding.';
-                }
-
-                showAlert(errorMessage, 'danger');
-
-                // Optionally, open the summary modal if no summary exists
-                if (!meeting.summary) {
-                    closeModal('viewCaseMeetingModal'); // Close view modal if open
-                    setTimeout(() => {
-                        openCreateSummaryModal(meetingId);
-                    }, 500);
-                }
+                locationContainer.style.display = 'none';
             }
+
+            const completedAtContainer = document.getElementById('view_completed_at_container');
+            const completedAtSpan = document.getElementById('view_completed_at');
+            if (meeting.completed_at) {
+                completedAtSpan.textContent = new Date(meeting.completed_at).toLocaleString();
+                completedAtContainer.style.display = '';
+            } else {
+                completedAtContainer.style.display = 'none';
+            }
+
+            const notesContainer = document.getElementById('view_notes_container');
+            const notesDiv = document.getElementById('view_notes');
+            if (meeting.notes) {
+                notesDiv.textContent = meeting.notes;
+                notesContainer.style.display = '';
+            } else {
+                notesContainer.style.display = 'none';
+            }
+
+            const summaryContainer = document.getElementById('view_summary_container');
+            const summaryDiv = document.getElementById('view_summary');
+            if (meeting.summary) {
+                summaryDiv.textContent = meeting.summary;
+                summaryContainer.style.display = '';
+            } else {
+                summaryContainer.style.display = 'none';
+            }
+
+            const recommendationsContainer = document.getElementById('view_recommendations_container');
+            const recommendationsDiv = document.getElementById('view_recommendations');
+            if (meeting.recommendations) {
+                recommendationsDiv.textContent = meeting.recommendations;
+                recommendationsContainer.style.display = '';
+            } else {
+                recommendationsContainer.style.display = 'none';
+            }
+
+            const followUpContainer = document.getElementById('view_follow_up_container');
+            const followUpText = document.getElementById('view_follow_up_text');
+            if (meeting.follow_up_required) {
+                followUpText.textContent = meeting.follow_up_date ? `Scheduled for ${new Date(meeting.follow_up_date).toLocaleDateString()}` : 'Required';
+                followUpContainer.style.display = '';
+            } else {
+                followUpContainer.style.display = 'none';
+            }
+
+            // Handle sanctions
+            const sanctionsContainer = document.getElementById('view_sanctions_container');
+            const sanctionsList = document.getElementById('view_sanctions_list');
+            sanctionsList.innerHTML = '';
+            if (meeting.sanctions && meeting.sanctions.length > 0) {
+                meeting.sanctions.forEach(sanction => {
+                    const sanctionItem = document.createElement('div');
+                    sanctionItem.className = 'list-group-item px-0';
+                    sanctionItem.innerHTML = `
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="fw-semibold">${sanction.type}</div>
+                                ${sanction.description ? `<small class="text-muted">${sanction.description}</small>` : ''}
+                                <div class="small text-muted mt-1">
+                                    <i class="ri-calendar-line me-1"></i>${new Date(sanction.created_at).toLocaleDateString()}
+                                </div>
+                            </div>
+                            <span class="badge bg-${getSanctionStatusColor(sanction.status || 'pending')}">${ucfirst(sanction.status || 'pending')}</span>
+                        </div>
+                    `;
+                    sanctionsList.appendChild(sanctionItem);
+                });
+                sanctionsContainer.style.display = '';
+            } else {
+                sanctionsContainer.style.display = 'none';
+            }
+
+            // Handle actions
+            const actionsContainer = document.getElementById('view_actions_container');
+            actionsContainer.innerHTML = '';
+
+            // Complete button
+            if (meeting.status === 'scheduled' || meeting.status === 'in_progress') {
+                const completeBtn = document.createElement('button');
+                completeBtn.className = 'btn btn-success';
+                completeBtn.onclick = () => completeCaseMeeting(meeting.id);
+                completeBtn.innerHTML = '<i class="ri-checkbox-circle-line me-2"></i>Mark as Completed';
+                actionsContainer.appendChild(completeBtn);
+            }
+
+            // Create summary button
+            if (!meeting.summary) {
+                const summaryBtn = document.createElement('button');
+                summaryBtn.className = 'btn btn-info';
+                summaryBtn.onclick = () => openCreateSummaryModal(meeting.id);
+                summaryBtn.innerHTML = '<i class="ri-file-text-line me-2"></i>Create Summary';
+                actionsContainer.appendChild(summaryBtn);
+            }
+
+            // Forward button
+            if (meeting.summary && meeting.sanctions && meeting.sanctions.length > 0 && !meeting.forwarded_to_president) {
+                const forwardBtn = document.createElement('button');
+                forwardBtn.className = 'btn btn-warning';
+                forwardBtn.onclick = () => forwardToPresident(meeting.id);
+                forwardBtn.innerHTML = '<i class="ri-send-plane-line me-2"></i>Forward to President';
+                actionsContainer.appendChild(forwardBtn);
+            }
+
+            // // Edit button
+            // const editBtn = document.createElement('button');
+            // editBtn.className = 'btn btn-outline-primary';
+            // editBtn.onclick = () => editCaseMeeting(meeting.id);
+            // editBtn.innerHTML = '<i class="ri-edit-line me-2"></i>Edit Meeting';
+            // actionsContainer.appendChild(editBtn);
+
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('viewCaseMeetingModal'));
+            modal.show();
         } else {
-            showAlert('Failed to load meeting details', 'danger');
+            showAlert('danger', 'Failed to load meeting details');
         }
     })
     .catch(error => {
-        console.error('Error loading meeting:', error);
-        showAlert('Error loading meeting details', 'danger');
+        console.error('Error:', error);
+        showAlert('danger', 'Error loading meeting details');
     });
-}
+};
 
-// Helper function to handle the actual forwarding request
-function proceedWithForwarding(meetingId, reason) {
-    fetch(`/guidance/case-meetings/${meetingId}/forward`, {
+window.openScheduleMeetingModal = function(studentId = 0) {
+    const modal = new bootstrap.Modal(document.getElementById('scheduleCaseMeetingModal'));
+    const studentSelect = document.querySelector('#scheduleCaseMeetingModal select[name="student_id"]');
+
+    if (studentId > 0 && studentSelect) {
+        studentSelect.value = studentId;
+        // Hide other fields for simplified view
+        document.querySelectorAll('#scheduleCaseMeetingModal .schedule-field').forEach(el => el.style.display = 'none');
+        // Set default values for hidden fields
+        document.querySelector('#scheduleCaseMeetingModal select[name="meeting_type"]').value = 'case_meeting';
+        document.querySelector('#scheduleCaseMeetingModal select[name="urgency_level"]').value = '';
+        document.querySelector('#scheduleCaseMeetingModal textarea[name="reason"]').value = 'Scheduled meeting';
+        document.querySelector('#scheduleCaseMeetingModal textarea[name="notes"]').value = '';
+    } else {
+        // Show all fields when no studentId is provided (normal schedule meeting)
+        document.querySelectorAll('#scheduleCaseMeetingModal .schedule-field').forEach(el => el.style.display = '');
+        // Reset form fields
+        const form = document.getElementById('scheduleCaseMeetingForm');
+        if (form) form.reset();
+    }
+
+    modal.show();
+};
+
+window.submitCaseMeeting = function(event) {
+    event.preventDefault();
+
+    const form = event.target;
+    const formData = new FormData(form);
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+
+    // Add CSRF token
+    formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="ri-loader-line me-2 spinner-border spinner-border-sm"></i>Scheduling...';
+
+    fetch('/guidance/case-meetings', {
         method: 'POST',
+        body: formData,
         headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
             'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-        },
-        body: JSON.stringify({
-            reason: reason
-        })
+            'Accept': 'application/json'
+        }
     })
-    .then(response => response.json())
+    .then(response => {
+        if (response.ok) {
+            return response.json();
+        } else {
+            return response.json().then(errorData => {
+                let errorMsg = 'Failed to schedule meeting';
+                if (errorData.errors) {
+                    errorMsg += '\n\nValidation errors:';
+                    Object.keys(errorData.errors).forEach(field => {
+                        errorMsg += '\n- ' + field + ': ' + errorData.errors[field].join(', ');
+                    });
+                }
+                throw new Error(errorMsg);
+            });
+        }
+    })
     .then(data => {
         if (data.success) {
-            showAlert('Case forwarded to president successfully', 'success');
-            setTimeout(() => {
-                window.location.reload();
-            }, 1500);
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('scheduleCaseMeetingModal'));
+            modal.hide();
+
+            // Show success message
+            showAlert('success', data.message);
+
+            // Reload page to show new meeting
+            setTimeout(() => location.reload(), 1500);
         } else {
-            showAlert(data.message || 'Failed to forward case', 'danger');
+            throw new Error(data.message || 'Failed to schedule meeting');
         }
     })
     .catch(error => {
-        console.error('Error forwarding case:', error);
-        showAlert('Error forwarding case', 'danger');
+        console.error('Error:', error);
+        showAlert('danger', error.message);
+    })
+    .finally(() => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
     });
-}
+};
 
-// Edit case meeting
-function editCaseMeeting(meetingId) {
+window.editCaseMeeting = function(meetingId) {
     // Fetch meeting data and populate edit modal
-    fetch(`/guidance/case-meetings/${meetingId}`, {
-        method: 'GET',
+    fetch(`/guidance/case-meetings/${meetingId}/edit`, {
         headers: {
-            'Accept': 'application/json',
             'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+            'Accept': 'application/json'
         }
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            populateEditModal(data.meeting);
+            const meeting = data.meeting;
+
+            // Populate form
+            document.getElementById('edit_student_id').value = meeting.student_id;
+            document.getElementById('edit_meeting_type').value = meeting.meeting_type;
+            document.getElementById('edit_scheduled_date').value = meeting.scheduled_date || '';
+            document.getElementById('edit_scheduled_time').value = meeting.scheduled_time || '';
+            document.getElementById('edit_urgency_level').value = meeting.urgency_level || '';
+            document.getElementById('edit_reason').value = meeting.reason || '';
+            document.getElementById('edit_notes').value = meeting.notes || '';
+
+            // Set form action
+            document.getElementById('editCaseMeetingForm').action = `/guidance/case-meetings/${meetingId}`;
+
+            // Show modal
             const modal = new bootstrap.Modal(document.getElementById('editCaseMeetingModal'));
             modal.show();
         } else {
-            showAlert('Failed to load meeting details', 'danger');
+            showAlert('danger', 'Failed to load meeting details');
         }
     })
     .catch(error => {
-        console.error('Error loading meeting:', error);
-        showAlert('Error loading meeting details', 'danger');
+        console.error('Error:', error);
+        showAlert('danger', 'Error loading meeting for editing');
     });
-}
+};
 
-function populateEditModal(meeting) {
-    const studentIdElem = document.getElementById('edit_student_id');
-    const meetingTypeElem = document.getElementById('edit_meeting_type');
-    const scheduledDateElem = document.getElementById('edit_scheduled_date');
-    const scheduledTimeElem = document.getElementById('edit_scheduled_time');
-    const locationElem = document.getElementById('edit_location');
-    const urgencyLevelElem = document.getElementById('edit_urgency_level');
-    const reasonElem = document.getElementById('edit_reason');
-    const notesElem = document.getElementById('edit_notes');
-    const form = document.getElementById('editCaseMeetingForm');
-
-    if (studentIdElem) studentIdElem.value = meeting.student_id || '';
-    if (meetingTypeElem) meetingTypeElem.value = meeting.meeting_type || '';
-    if (scheduledDateElem) scheduledDateElem.value = meeting.scheduled_date || '';
-    if (scheduledTimeElem) scheduledTimeElem.value = meeting.scheduled_time ? meeting.scheduled_time.substring(0, 5) : '';
-    if (locationElem) locationElem.value = meeting.location || '';
-    if (urgencyLevelElem) urgencyLevelElem.value = meeting.urgency_level || '';
-    if (reasonElem) reasonElem.value = meeting.reason || '';
-    if (notesElem) notesElem.value = meeting.notes || '';
-    if (form) form.setAttribute('data-meeting-id', meeting.id);
-}
-
-// Submit edit case meeting form
-function submitEditCaseMeeting(event) {
+window.submitEditCaseMeeting = function(event) {
     event.preventDefault();
 
     const form = event.target;
-    const meetingId = form.getAttribute('data-meeting-id');
     const formData = new FormData(form);
     const submitBtn = form.querySelector('button[type="submit"]');
-
-    // Show loading state
     const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="ri-loader-4-line me-2 spinner-border spinner-border-sm"></i>Updating...';
-    submitBtn.disabled = true;
 
-    fetch(`/guidance/case-meetings/${meetingId}`, {
+    // Add CSRF token and method
+    formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+    formData.append('_method', 'PUT');
+
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="ri-loader-line me-2 spinner-border spinner-border-sm"></i>Updating...';
+
+    fetch(form.action, {
         method: 'POST',
         body: formData,
         headers: {
             'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-            'X-HTTP-Method-Override': 'PUT'
+            'Accept': 'application/json'
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        if (response.ok) {
+            return response.json();
+        } else {
+            return response.json().then(errorData => {
+                let errorMsg = 'Failed to update meeting';
+                if (errorData.errors) {
+                    errorMsg += '\n\nValidation errors:';
+                    Object.keys(errorData.errors).forEach(field => {
+                        errorMsg += '\n- ' + field + ': ' + errorData.errors[field].join(', ');
+                    });
+                }
+                throw new Error(errorMsg);
+            });
+        }
+    })
     .then(data => {
         if (data.success) {
-            showAlert('Case meeting updated successfully!', 'success');
-            closeModal('editCaseMeetingModal');
-            form.reset();
-            setTimeout(() => {
-                window.location.reload();
-            }, 1500);
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editCaseMeetingModal'));
+            modal.hide();
+
+            // Show success message
+            showAlert('success', data.message);
+
+            // Reload page to show updated meeting
+            setTimeout(() => location.reload(), 1500);
         } else {
-            showAlert(data.message || 'Failed to update case meeting', 'danger');
+            throw new Error(data.message || 'Failed to update meeting');
         }
     })
     .catch(error => {
-        console.error('Error updating case meeting:', error);
-        showAlert('An error occurred while updating the meeting', 'danger');
+        console.error('Error:', error);
+        showAlert('danger', error.message);
     })
     .finally(() => {
-        // Restore button state
-        submitBtn.innerHTML = originalText;
         submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
     });
-}
+};
 
-// Filter case meetings
-function filterCaseMeetings() {
-    const status = document.getElementById('status-filter')?.value || '';
-    const type = document.getElementById('type-filter')?.value || '';
-    const date = document.getElementById('date-filter')?.value || '';
-    const search = document.getElementById('search-filter')?.value || '';
-    
-    const params = new URLSearchParams();
-    if (status) params.append('status', status);
-    if (type) params.append('type', type);
-    if (date) params.append('date', date);
-    if (search) params.append('search', search);
-    
-    const url = `/guidance/case-meetings${params.toString() ? '?' + params.toString() : ''}`;
-    window.location.href = url;
-}
+window.completeCaseMeeting = function(meetingId) {
+    if (confirm('Are you sure you want to mark this case meeting as completed?')) {
+        const formData = new FormData();
+        formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+        formData.append('_method', 'PATCH');
 
-// Clear filters
-function clearFilters() {
-    const statusFilter = document.getElementById('status-filter');
-    const typeFilter = document.getElementById('type-filter');
-    const dateFilter = document.getElementById('date-filter');
-    const searchFilter = document.getElementById('search-filter');
-    
-    if (statusFilter) statusFilter.value = '';
-    if (typeFilter) typeFilter.value = '';
-    if (dateFilter) dateFilter.value = '';
-    if (searchFilter) searchFilter.value = '';
-    
-    window.location.href = '/guidance/case-meetings';
-}
+        fetch(`/guidance/case-meetings/${meetingId}/complete`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('success', data.message);
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert('danger', data.message || 'Failed to complete case meeting');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('danger', 'Error completing case meeting');
+        });
+    }
+};
 
-// Refresh case meetings
-function refreshCaseMeetings() {
-    window.location.reload();
-}
+window.forwardToPresident = function(meetingId) {
+    if (confirm('Are you sure you want to forward this case to the president?')) {
+        const formData = new FormData();
+        formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
 
-// Export case meetings
-function exportCaseMeetings() {
-    window.open('/guidance/case-meetings/export', '_blank');
-}
+        fetch(`/guidance/case-meetings/${meetingId}/forward`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('success', data.message);
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert('danger', data.message || 'Failed to forward case');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('danger', 'Error forwarding case to president');
+        });
+    }
+};
 
-// Print case meetings
-function printCaseMeetings() {
+window.openCreateSummaryModal = function(meetingId) {
+    // Set form action
+    document.getElementById('createCaseSummaryForm').action = `/guidance/case-meetings/${meetingId}/summary`;
+
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('createCaseSummaryModal'));
+    modal.show();
+};
+
+window.submitCaseSummary = function(event) {
+    event.preventDefault();
+
+    const form = event.target;
+    const formData = new FormData(form);
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+
+    // Add CSRF token
+    formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="ri-loader-line me-2 spinner-border spinner-border-sm"></i>Saving...';
+
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            return response.json();
+        } else {
+            return response.json().then(errorData => {
+                let errorMsg = 'Failed to save summary';
+                if (errorData.errors) {
+                    errorMsg += '\n\nValidation errors:';
+                    Object.keys(errorData.errors).forEach(field => {
+                        errorMsg += '\n- ' + field + ': ' + errorData.errors[field].join(', ');
+                    });
+                }
+                throw new Error(errorMsg);
+            });
+        }
+    })
+    .then(data => {
+        if (data.success) {
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('createCaseSummaryModal'));
+            modal.hide();
+
+            // Show success message
+            showAlert('success', data.message);
+
+            // Reload page to show updated meeting
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            throw new Error(data.message || 'Failed to save summary');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('danger', error.message);
+    })
+    .finally(() => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+    });
+};
+
+window.exportCaseMeetings = function() {
+    window.location.href = '/guidance/case-meetings/export';
+};
+
+window.printCaseMeetings = function() {
     window.print();
+};
+
+// Helper functions
+function ucfirst(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-// Close modal helper
-function closeModal(modalId) {
-    const modal = bootstrap.Modal.getInstance(document.getElementById(modalId));
-    if (modal) {
-        modal.hide();
+function getSanctionStatusColor(status) {
+    switch (status.toLowerCase()) {
+        case 'approved': return 'success';
+        case 'rejected': return 'danger';
+        case 'pending': return 'warning';
+        default: return 'secondary';
     }
 }
 
-// Show alert helper
-function showAlert(message, type = 'info') {
-    // Create alert element
-    const alertHtml = `
-        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-            <i class="ri-information-line me-2"></i>${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
+// Helper function to show alerts
+function showAlert(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        <strong>${type === 'success' ? 'Success!' : 'Error!'}</strong> ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     `;
-    
-    // Find or create alert container
-    let container = document.getElementById('alert-container');
-    if (!container) {
-        container = document.createElement('div');
-        container.id = 'alert-container';
-        container.className = 'position-fixed top-0 end-0 p-3';
-        container.style.zIndex = '9999';
-        document.body.appendChild(container);
-    }
-    
-    // Add alert
-    container.insertAdjacentHTML('beforeend', alertHtml);
-    
-    // Auto-remove after 5 seconds
+
+    const mainContent = document.querySelector('main') || document.body;
+    mainContent.insertBefore(alertDiv, mainContent.firstChild);
+
+    // Auto-dismiss after 5 seconds
     setTimeout(() => {
-        const alerts = container.querySelectorAll('.alert');
-        if (alerts.length > 0) {
-            alerts[0].remove();
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
         }
     }, 5000);
 }
-
-function openScheduleMeetingModal(studentId) {
-    // Open the schedule case meeting modal programmatically
-    const modalElement = document.getElementById('scheduleCaseMeetingModal');
-    if (!modalElement) return;
-
-    // Reset the form
-    const form = document.getElementById('scheduleCaseMeetingForm');
-    if (form) {
-        form.reset();
-        // Set the student select field to the given studentId
-        const studentSelect = form.querySelector('select[name="student_id"]');
-        if (studentSelect) {
-            studentSelect.value = studentId;
-        }
-    }
-
-    // Show the modal using Bootstrap's modal API
-    const modal = new bootstrap.Modal(modalElement);
-    modal.show();
-}
-
-// Open create summary modal
-function openCreateSummaryModal(meetingId) {
-    const modalElement = document.getElementById('createCaseSummaryModal');
-    if (!modalElement) return;
-
-    // Reset the form
-    const form = document.getElementById('createCaseSummaryForm');
-    if (form) {
-        form.reset();
-        // Set the meeting ID in a hidden field or data attribute
-        form.setAttribute('data-meeting-id', meetingId);
-    }
-
-    // Show the modal using Bootstrap's modal API
-    const modal = new bootstrap.Modal(modalElement);
-    modal.show();
-}
-
-// Submit case summary form
-function submitCaseSummary(event) {
-    event.preventDefault();
-
-    const form = event.target;
-    const meetingId = form.getAttribute('data-meeting-id');
-    const formData = new FormData(form);
-    const submitBtn = form.querySelector('button[type="submit"]');
-
-    // Show loading state
-    const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="ri-loader-4-line me-2 spinner-border spinner-border-sm"></i>Saving...';
-    submitBtn.disabled = true;
-
-    fetch(`/guidance/case-meetings/${meetingId}/summary`, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showAlert('Case summary created successfully!', 'success');
-            closeModal('createCaseSummaryModal');
-            form.reset();
-            setTimeout(() => {
-                window.location.reload();
-            }, 1500);
-        } else {
-            showAlert(data.message || 'Failed to create case summary', 'danger');
-        }
-    })
-    .catch(error => {
-        console.error('Error creating case summary:', error);
-        showAlert('An error occurred while creating the summary', 'danger');
-    })
-    .finally(() => {
-        // Restore button state
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
-    });
-}
-
-// Expose functions to global scope for onclick handlers
-window.submitCaseMeeting = submitCaseMeeting;
-window.viewCaseMeeting = viewCaseMeeting;
-window.completeCaseMeeting = completeCaseMeeting;
-window.forwardToPresident = forwardToPresident;
-window.editCaseMeeting = editCaseMeeting;
-window.populateEditModal = populateEditModal;
-window.submitEditCaseMeeting = submitEditCaseMeeting;
-window.filterCaseMeetings = filterCaseMeetings;
-window.clearFilters = clearFilters;
-window.refreshCaseMeetings = refreshCaseMeetings;
-window.exportCaseMeetings = exportCaseMeetings;
-window.printCaseMeetings = printCaseMeetings;
-window.closeModal = closeModal;
-window.openScheduleMeetingModal = openScheduleMeetingModal;
-window.openCreateSummaryModal = openCreateSummaryModal;
-window.submitCaseSummary = submitCaseSummary;
-window.proceedWithForwarding = proceedWithForwarding;

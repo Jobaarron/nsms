@@ -326,43 +326,63 @@ class GuidanceController extends Controller
      * Show case meeting details
      */
     public function showCaseMeeting(CaseMeeting $caseMeeting)
-{
-    $caseMeeting->load(['student', 'counselor', 'sanctions']);
+    {
+        $caseMeeting->load(['student', 'counselor', 'sanctions']);
 
-    if (request()->ajax()) {
-        return response()->json([
-            'success' => true,
-            'meeting' => [
-                'id' => $caseMeeting->id,
-                'student_name' => $caseMeeting->student ? $caseMeeting->student->full_name : 'Unknown',
-                'meeting_type' => $caseMeeting->meeting_type,
-                'meeting_type_display' => ucwords(str_replace('_', ' ', $caseMeeting->meeting_type)),
-                'scheduled_date' => $caseMeeting->scheduled_date,
-                'scheduled_time' => $caseMeeting->scheduled_time,
-                'location' => $caseMeeting->location,
-                'status' => $caseMeeting->status,
-                'status_text' => ucfirst($caseMeeting->status),
-                'status_class' => $this->getStatusClass($caseMeeting->status),
-                'urgency_level' => $caseMeeting->urgency_level,
-                'urgency_color' => $this->getUrgencyColor($caseMeeting->urgency_level),
-                'reason' => $caseMeeting->reason,
-                'notes' => $caseMeeting->notes,
-                'summary' => $caseMeeting->summary,
-                // ✅ include sanctions
-                'sanctions' => $caseMeeting->sanctions->map(function ($sanction) {
-                    return [
-                        'id' => $sanction->id,
-                        'type' => $sanction->sanction,
-                        'description' => $sanction->notes,
-                        'created_at' => $sanction->created_at->format('Y-m-d H:i'),
-                    ];
-                }),
-            ]
+        if (request()->ajax()) {
+            return response()->json([
+                'success' => true,
+                'meeting' => [
+                    'id' => $caseMeeting->id,
+                    'student_name' => $caseMeeting->student ? $caseMeeting->student->full_name : 'Unknown',
+                    'student_id' => $caseMeeting->student ? $caseMeeting->student->student_id : 'Unknown',
+                    'counselor_name' => $caseMeeting->counselor ? $caseMeeting->counselor->name : 'Unknown',
+                    'meeting_type' => $caseMeeting->meeting_type,
+                    'meeting_type_display' => ucwords(str_replace('_', ' ', $caseMeeting->meeting_type)),
+                    'scheduled_date' => $caseMeeting->scheduled_date ? $caseMeeting->scheduled_date->format('M d, Y') : null,
+                    'scheduled_time' => $caseMeeting->scheduled_time ? $caseMeeting->scheduled_time->format('h:i A') : null,
+                    'location' => $caseMeeting->location,
+                    'status' => $caseMeeting->status,
+                    'status_text' => ucfirst($caseMeeting->status),
+                    'status_class' => $this->getStatusClass($caseMeeting->status),
+                    'urgency_level' => $caseMeeting->urgency_level,
+                    'urgency_color' => $this->getUrgencyColor($caseMeeting->urgency_level),
+                    'reason' => $caseMeeting->reason,
+                    'notes' => $caseMeeting->notes,
+                    'summary' => $caseMeeting->summary,
+                    'recommendations' => $caseMeeting->recommendations,
+                    'follow_up_required' => $caseMeeting->follow_up_required,
+                    'follow_up_date' => $caseMeeting->follow_up_date ? $caseMeeting->follow_up_date->format('M d, Y') : null,
+                    'completed_at' => $caseMeeting->completed_at ? $caseMeeting->completed_at->format('M d, Y h:i A') : null,
+                    'forwarded_to_president' => $caseMeeting->forwarded_to_president,
+                    'sanctions' => $caseMeeting->sanctions->map(function ($sanction) {
+                        return [
+                            'id' => $sanction->id,
+                            'type' => $sanction->sanction,
+                            'description' => $sanction->notes,
+                            'status' => $sanction->status,
+                            'created_at' => $sanction->created_at->format('Y-m-d H:i:s'),
+                        ];
+                    }),
+                ]
+            ]);
+        }
+
+        $caseMeetings = CaseMeeting::with(['student', 'counselor', 'sanctions'])
+            ->orderBy('scheduled_date', 'desc')
+            ->paginate(20);
+
+        $students = Student::select('id', 'first_name', 'last_name', 'student_id')
+            ->orderBy('last_name', 'asc')
+            ->get();
+
+        return view('guidance.case-meetings', [
+            'caseMeeting' => $caseMeeting,
+            'caseMeetings' => $caseMeetings,
+            'students' => $students,
+            'showDetail' => true
         ]);
     }
-
-    return view('guidance.case-meeting-detail', compact('caseMeeting'));
-}
 
 
     /**
@@ -374,6 +394,29 @@ class GuidanceController extends Controller
         $students = Student::select('id', 'first_name', 'last_name', 'student_id')
             ->orderBy('last_name', 'asc')
             ->get();
+
+        if (request()->ajax()) {
+            return response()->json([
+                'success' => true,
+                'meeting' => [
+                    'id' => $caseMeeting->id,
+                    'student_id' => $caseMeeting->student_id,
+                    'meeting_type' => $caseMeeting->meeting_type,
+                    'scheduled_date' => $caseMeeting->scheduled_date ? $caseMeeting->scheduled_date->format('Y-m-d') : null,
+                    'scheduled_time' => $caseMeeting->scheduled_time ? $caseMeeting->scheduled_time->format('H:i') : null,
+                    'location' => $caseMeeting->location,
+                    'urgency_level' => $caseMeeting->urgency_level,
+                    'reason' => $caseMeeting->reason,
+                    'notes' => $caseMeeting->notes,
+                ],
+                'students' => $students->map(function ($student) {
+                    return [
+                        'id' => $student->id,
+                        'name' => $student->full_name . ' (' . $student->student_id . ')',
+                    ];
+                })
+            ]);
+        }
 
         return view('guidance.edit-case-meeting', compact('caseMeeting', 'students'));
     }
@@ -548,7 +591,12 @@ class GuidanceController extends Controller
             ->orderBy('last_name', 'asc')
             ->get();
 
-        return view('guidance.counseling-sessions', compact('counselingSessions', 'students'));
+        $counselors = Guidance::where('is_active', true)
+            ->orderBy('last_name')
+            ->orderBy('first_name')
+            ->get();
+
+        return view('guidance.counseling-sessions', compact('counselingSessions', 'students', 'counselors'));
     }
 
     /**
@@ -620,6 +668,44 @@ class GuidanceController extends Controller
         ]);
     }
 
+
+
+
+    public function scheduleInline(Request $request, $id)
+{
+    try {
+        $session = CounselingSession::findOrFail($id);
+
+        $request->validate([
+            'scheduled_date' => 'required|date',
+            'scheduled_time' => 'required',
+            'location' => 'nullable|string|max:255',
+            'notes' => 'nullable|string',
+        ]);
+
+        $session->update([
+            'scheduled_date' => $request->scheduled_date,
+            'scheduled_time' => $request->scheduled_time,
+            'location' => $request->location,
+            'notes' => $request->notes,
+            'status' => 'Scheduled',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Counseling session scheduled successfully!',
+            'data' => $session
+        ]);
+    } catch (\Exception $e) {
+        \Log::error('Error scheduling session inline: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to schedule counseling session.'
+        ], 500);
+    }
+}
+
+
     /**
      * Create counseling summary
      */
@@ -650,6 +736,257 @@ class GuidanceController extends Controller
     }
 
     /**
+     * Show counseling session details
+     */
+    public function showCounselingSession(CounselingSession $counselingSession)
+    {
+        $counselingSession->load(['student', 'counselor', 'recommender']);
+
+        if (request()->ajax()) {
+            return response()->json([
+                'success' => true,
+                'session' => [
+                    'id' => $counselingSession->id,
+                    'student_name' => $counselingSession->student ? $counselingSession->student->full_name : 'Unknown',
+                    'student_id' => $counselingSession->student ? $counselingSession->student->student_id : 'Unknown',
+                    'counselor_name' => $counselingSession->counselor ? $counselingSession->counselor->name : 'Unknown',
+                    'session_type' => $counselingSession->session_type,
+                    'session_type_text' => ucwords(str_replace('_', ' ', $counselingSession->session_type)),
+                    'session_type_icon' => $this->getSessionTypeIcon($counselingSession->session_type),
+                    'session_type_class' => $this->getSessionTypeClass($counselingSession->session_type),
+                    'scheduled_date' => $counselingSession->scheduled_date ? $counselingSession->scheduled_date->format('M d, Y') : null,
+                    'scheduled_time' => $counselingSession->scheduled_time ? $counselingSession->scheduled_time->format('h:i A') : null,
+                    'duration' => $counselingSession->duration,
+                    'location' => $counselingSession->location,
+                    'status' => $counselingSession->status,
+                    'status_text' => ucfirst($counselingSession->status),
+                    'status_class' => $this->getStatusClass($counselingSession->status),
+                    'reason' => $counselingSession->reason,
+                    'notes' => $counselingSession->notes,
+                    'summary' => $counselingSession->session_summary,
+                    'follow_up_required' => $counselingSession->follow_up_required,
+                    'follow_up_date' => $counselingSession->follow_up_date ? $counselingSession->follow_up_date->format('M d, Y') : null,
+                    'completed_at' => $counselingSession->completed_at ? $counselingSession->completed_at->format('M d, Y h:i A') : null,
+                ]
+            ]);
+        }
+
+        $counselingSessions = CounselingSession::with(['student', 'counselor', 'recommender'])
+            ->orderByRaw("CASE WHEN status = 'recommended' THEN 0 ELSE 1 END, scheduled_date DESC")
+            ->paginate(20);
+
+        $students = Student::select('id', 'first_name', 'last_name', 'student_id')
+            ->orderBy('last_name', 'asc')
+            ->get();
+
+        return view('guidance.counseling-sessions', [
+            'counselingSession' => $counselingSession,
+            'counselingSessions' => $counselingSessions,
+            'students' => $students,
+            'showDetail' => true
+        ]);
+    }
+
+    /**
+     * Edit counseling session
+     */
+    public function editCounselingSession(CounselingSession $counselingSession)
+    {
+        $counselingSession->load(['student', 'counselor']);
+        $students = Student::select('id', 'first_name', 'last_name', 'student_id')
+            ->orderBy('last_name', 'asc')
+            ->get();
+
+        if (request()->ajax()) {
+            return response()->json([
+                'success' => true,
+                'session' => [
+                    'id' => $counselingSession->id,
+                    'student_id' => $counselingSession->student_id,
+                    'session_type' => $counselingSession->session_type,
+                    'scheduled_date' => $counselingSession->scheduled_date ? $counselingSession->scheduled_date->format('Y-m-d') : null,
+                    'scheduled_time' => $counselingSession->scheduled_time ? $counselingSession->scheduled_time->format('H:i') : null,
+                    'duration' => $counselingSession->duration,
+                    'location' => $counselingSession->location,
+                    'reason' => $counselingSession->reason,
+                    'notes' => $counselingSession->notes,
+                ],
+                'students' => $students->map(function ($student) {
+                    return [
+                        'id' => $student->id,
+                        'name' => $student->full_name . ' (' . $student->student_id . ')',
+                    ];
+                })
+            ]);
+        }
+
+        return view('guidance.edit-counseling-session', compact('counselingSession', 'students'));
+    }
+
+    /**
+     * Update counseling session
+     */
+    public function updateCounselingSession(Request $request, CounselingSession $counselingSession)
+    {
+        $validatedData = $request->validate([
+            'student_id' => 'required|exists:students,id',
+            'session_type' => 'required|in:individual,group,family,career',
+            'scheduled_date' => 'required|date|after_or_equal:today',
+            'scheduled_time' => 'required',
+            'duration' => 'required|integer|min:15|max:240',
+            'location' => 'nullable|string|max:255',
+            'reason' => 'required|string',
+            'notes' => 'nullable|string',
+        ]);
+
+        $counselingSession->update($validatedData);
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Counseling session updated successfully.',
+                'session' => $counselingSession->load(['student', 'counselor'])
+            ]);
+        }
+
+        return redirect()->route('guidance.counseling-sessions.index')
+            ->with('success', 'Counseling session updated successfully.');
+    }
+
+    /**
+     * Complete counseling session
+     */
+    public function completeCounselingSession(Request $request, CounselingSession $counselingSession)
+    {
+        $validatedData = $request->validate([
+            'summary' => 'required|string',
+        ]);
+
+        $counselingSession->update([
+            'session_summary' => $validatedData['summary'],
+            'status' => 'completed',
+            'completed_at' => now(),
+        ]);
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Counseling session marked as completed.',
+                'counselingSession' => $counselingSession
+            ]);
+        }
+
+        return redirect()->route('guidance.counseling-sessions.index')
+            ->with('success', 'Counseling session marked as completed.');
+    }
+
+    /**
+     * Reschedule counseling session
+     */
+    public function rescheduleCounselingSession(Request $request, CounselingSession $counselingSession)
+    {
+        $validatedData = $request->validate([
+            'scheduled_date' => 'required|date|after_or_equal:today',
+            'scheduled_time' => 'required|date_format:H:i',
+        ]);
+
+        $counselingSession->update([
+            'scheduled_date' => $validatedData['scheduled_date'],
+            'scheduled_time' => $validatedData['scheduled_time'],
+            'status' => 'rescheduled',
+        ]);
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Counseling session rescheduled successfully.',
+                'counselingSession' => $counselingSession
+            ]);
+        }
+
+        return redirect()->route('guidance.counseling-sessions.index')
+            ->with('success', 'Counseling session rescheduled successfully.');
+    }
+
+    /**
+     * Export counseling sessions
+     */
+    public function exportCounselingSessions(Request $request)
+    {
+        $query = CounselingSession::with(['student', 'counselor', 'recommender']);
+
+        // Apply filters if provided
+        if ($request->has('status') && $request->status) {
+            $query->where('status', $request->status);
+        }
+        if ($request->has('type') && $request->type) {
+            $query->where('session_type', $request->type);
+        }
+        if ($request->has('date') && $request->date) {
+            $query->whereDate('scheduled_date', $request->date);
+        }
+        if ($request->has('search') && $request->search) {
+            $search = $request->search;
+            $query->whereHas('student', function($q) use ($search) {
+                $q->where('first_name', 'like', "%{$search}%")
+                  ->orWhere('last_name', 'like', "%{$search}%")
+                  ->orWhere('student_id', 'like', "%{$search}%");
+            });
+        }
+
+        $counselingSessions = $query->orderBy('scheduled_date', 'desc')->get();
+
+        $filename = 'counseling_sessions_' . now()->format('Y-m-d_H-i-s') . '.csv';
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function() use ($counselingSessions) {
+            $file = fopen('php://output', 'w');
+
+            // CSV headers
+            fputcsv($file, [
+                'Student ID',
+                'Student Name',
+                'Session Type',
+                'Scheduled Date',
+                'Scheduled Time',
+                'Duration',
+                'Location',
+                'Status',
+                'Reason',
+                'Counselor',
+                'Recommender',
+                'Created At'
+            ]);
+
+            // CSV data
+            foreach ($counselingSessions as $session) {
+                fputcsv($file, [
+                    $session->student ? $session->student->student_id : '',
+                    $session->student ? $session->student->full_name : '',
+                    ucwords(str_replace('_', ' ', $session->session_type)),
+                    $session->scheduled_date,
+                    $session->scheduled_time,
+                    $session->duration,
+                    $session->location ?: '',
+                    ucfirst($session->status),
+                    $session->reason,
+                    $session->counselor ? $session->counselor->name : '',
+                    $session->recommender ? $session->recommender->name : '',
+                    $session->created_at->format('Y-m-d H:i:s')
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
      * Get status class for badges
      */
     private function getStatusClass($status)
@@ -669,10 +1006,16 @@ class GuidanceController extends Controller
      */
     public function getCounselors()
     {
-        $counselors = Guidance::select('id', 'name')
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get();
+        $counselors = Guidance::where('is_active', true)
+            ->orderBy('last_name')
+            ->orderBy('first_name')
+            ->get()
+            ->map(function ($counselor) {
+                return [
+                    'id' => $counselor->id,
+                    'name' => $counselor->full_name,
+                ];
+            });
 
         return response()->json([
             'success' => true,
@@ -691,6 +1034,34 @@ class GuidanceController extends Controller
             'high' => 'danger',
             'urgent' => 'danger',
             default => 'secondary'
+        };
+    }
+
+    /**
+     * Get session type icon
+     */
+    private function getSessionTypeIcon($type)
+    {
+        return match($type) {
+            'individual' => 'ri-user-heart-line',
+            'group' => 'ri-group-line',
+            'family' => 'ri-home-heart-line',
+            'career' => 'ri-briefcase-line',
+            default => 'ri-heart-pulse-line'
+        };
+    }
+
+    /**
+     * Get session type class
+     */
+    private function getSessionTypeClass($type)
+    {
+        return match($type) {
+            'individual' => 'bg-primary',
+            'group' => 'bg-info',
+            'family' => 'bg-success',
+            'career' => 'bg-warning',
+            default => 'bg-secondary'
         };
     }
 }

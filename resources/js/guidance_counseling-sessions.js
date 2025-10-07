@@ -123,7 +123,16 @@ function viewCounselingSession(sessionId) {
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            if (response.status === 404) {
+                showAlert('Counseling session not found', 'warning');
+                return;
+            }
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             showCounselingSessionModal(data.session);
@@ -354,7 +363,7 @@ function scheduleRecommendedSession(sessionId) {
 
 // Load counselors for the dropdown
 function loadCounselors() {
-    fetch('/api/guidance/counselors', {
+    fetch('/guidance/api/counselors', {
         method: 'GET',
         headers: {
             'Accept': 'application/json',
@@ -565,6 +574,121 @@ function showAlert(message, type = 'info') {
     }, 5000);
 }
 
+
+
+// Start inline scheduling for a session
+function startInlineScheduling(sessionId) {
+    const row = document.querySelector(`tr[data-session-id="${sessionId}"]`);
+    if (!row) return;
+
+    // Hide action buttons, show edit buttons
+    const actionButtons = row.querySelector('.action-buttons');
+    const editButtons = row.querySelector('.edit-buttons');
+    if (actionButtons) actionButtons.classList.add('d-none');
+    if (editButtons) editButtons.classList.remove('d-none');
+
+    // Show edit inputs, hide display values
+    const editableCells = row.querySelectorAll('.editable-cell');
+    editableCells.forEach(cell => {
+        const displayValue = cell.querySelector('.display-value');
+        const editInput = cell.querySelector('.edit-input');
+        if (displayValue) displayValue.classList.add('d-none');
+        if (editInput) editInput.classList.remove('d-none');
+    });
+}
+
+// Save inline scheduling changes
+function saveInlineScheduling(sessionId) {
+    const row = document.querySelector(`tr[data-session-id="${sessionId}"]`);
+    if (!row) return;
+
+    const dateInput = row.querySelector('input[name="scheduled_date"]');
+    const timeInput = row.querySelector('input[name="scheduled_time"]');
+
+    const scheduledDate = dateInput ? dateInput.value : '';
+    const scheduledTime = timeInput ? timeInput.value : '';
+
+    // Basic validation
+    if (!scheduledDate || !scheduledTime) {
+        showAlert('Please provide both date and time', 'warning');
+        return;
+    }
+
+    fetch(`/guidance/counseling-sessions/${sessionId}/schedule-inline`, {
+        method: 'POST',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+        },
+        body: JSON.stringify({
+            scheduled_date: scheduledDate,
+            scheduled_time: scheduledTime
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('Counseling session scheduled successfully!', 'success');
+            // Update display values
+            const dateCell = row.querySelector('.editable-cell[data-field="scheduled_date"]');
+            const timeCell = row.querySelector('.editable-cell[data-field="scheduled_time"]');
+            if (dateCell) {
+                const displayValue = dateCell.querySelector('.display-value');
+                if (displayValue) {
+                    const date = new Date(scheduledDate);
+                    displayValue.textContent = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                }
+            }
+            if (timeCell) {
+                const displayValue = timeCell.querySelector('.display-value');
+                if (displayValue) {
+                    const [hours, minutes] = scheduledTime.split(':');
+                    const time = new Date();
+                    time.setHours(hours, minutes);
+                    displayValue.textContent = time.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                }
+            }
+            // Update status
+            const statusCell = row.querySelector('td:nth-child(6) .badge');
+            if (statusCell) {
+                statusCell.className = 'badge bg-primary';
+                statusCell.textContent = 'Scheduled';
+            }
+            row.setAttribute('data-status', 'scheduled');
+            cancelInlineScheduling(sessionId); // Revert to display mode
+        } else {
+            showAlert(data.message || 'Failed to schedule session', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error scheduling session:', error);
+        showAlert('Error scheduling session', 'danger');
+    });
+}
+
+// Cancel inline scheduling
+function cancelInlineScheduling(sessionId) {
+    const row = document.querySelector(`tr[data-session-id="${sessionId}"]`);
+    if (!row) return;
+
+    // Show action buttons, hide edit buttons
+    const actionButtons = row.querySelector('.action-buttons');
+    const editButtons = row.querySelector('.edit-buttons');
+    if (actionButtons) actionButtons.classList.remove('d-none');
+    if (editButtons) editButtons.classList.add('d-none');
+
+    // Show display values, hide edit inputs
+    const editableCells = row.querySelectorAll('.editable-cell');
+    editableCells.forEach(cell => {
+        const displayValue = cell.querySelector('.display-value');
+        const editInput = cell.querySelector('.edit-input');
+        if (displayValue) displayValue.classList.remove('d-none');
+        if (editInput) editInput.classList.add('d-none');
+    });
+}
+
 // Expose functions to global scope for onclick handlers
 window.submitCounselingSession = submitCounselingSession;
 window.viewCounselingSession = viewCounselingSession;
@@ -577,4 +701,6 @@ window.clearFilters = clearFilters;
 window.refreshCounselingSessions = refreshCounselingSessions;
 window.exportCounselingSessions = exportCounselingSessions;
 window.printCounselingSessions = printCounselingSessions;
-window.closeModal = closeModal;
+window.startInlineScheduling = startInlineScheduling;
+window.saveInlineScheduling = saveInlineScheduling;
+window.cancelInlineScheduling = cancelInlineScheduling;

@@ -536,59 +536,167 @@ public function forwardedCases()
         return $response;
     }
 
-    $caseMeetings = \App\Models\CaseMeeting::with(['student', 'sanctions'])
+    $caseMeetings = \App\Models\CaseMeeting::with(['student', 'sanctions.violation'])
         ->where('status', 'forwarded')
         ->paginate(10);
 
     return view('admin.forwarded-cases', compact('caseMeetings'));
 }
 
-public function approveSanction(\App\Models\Sanction $sanction)
-{
-    $user = auth()->user();
+    public function approveSanction(\App\Models\Sanction $sanction)
+    {
+        $user = auth()->user();
 
-    if (!$user->hasRole('admin')) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Unauthorized. Only admins can approve sanctions.'
-        ], 403);
+        if (!$user->hasRole('admin')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized. Only admins can approve sanctions.'
+            ], 403);
+        }
+
+        if ($sanction->is_approved) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Sanction is already approved.'
+            ], 400);
+        }
+
+        try {
+            $sanction->update([
+                'is_approved' => true,
+                'approved_by' => $user->id,
+                'approved_at' => now(),
+            ]);
+
+            // Mark the related case meeting as completed
+            $caseMeeting = $sanction->caseMeeting;
+            if ($caseMeeting) {
+                $caseMeeting->update([
+                    'status' => 'completed',
+                    'completed_at' => now(),
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Sanction approved and case meeting marked as completed.'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error approving sanction: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while approving the sanction.'
+            ], 500);
+        }
     }
 
-    if ($sanction->is_approved) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Sanction is already approved.'
-        ], 400);
+    public function rejectSanction(\App\Models\Sanction $sanction)
+    {
+        $user = auth()->user();
+
+        if (!$user->hasRole('admin')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized. Only admins can reject sanctions.'
+            ], 403);
+        }
+
+        if ($sanction->is_approved) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot reject an already approved sanction.'
+            ], 400);
+        }
+
+        try {
+            $sanction->update([
+                'is_approved' => false,
+                'approved_by' => null,
+                'approved_at' => null,
+                'notes' => ($sanction->notes ? $sanction->notes . "\n" : '') . 'Rejected by admin on ' . now()->toDateTimeString(),
+            ]);
+
+            // Optionally, update related case meeting status to 'forwarded' or other appropriate status
+            $caseMeeting = $sanction->caseMeeting;
+            if ($caseMeeting) {
+                $caseMeeting->update([
+                    'status' => 'forwarded',
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Sanction rejected successfully.'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error rejecting sanction: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while rejecting the sanction.'
+            ], 500);
+        }
     }
 
-    try {
-        $sanction->update([
-            'is_approved' => true,
-            'approved_by' => $user->id,
-            'approved_at' => now(),
+    public function reviseSanction(\App\Models\Sanction $sanction, Request $request)
+    {
+        $user = auth()->user();
+
+        if (!$user->hasRole('admin')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized. Only admins can revise sanctions.'
+            ], 403);
+        }
+
+        $request->validate([
+            'sanction' => 'required|string|max:1000',
+            'notes' => 'nullable|string|max:2000',
         ]);
 
-        // Mark the related case meeting as completed
-        $caseMeeting = $sanction->caseMeeting;
-        if ($caseMeeting) {
-            $caseMeeting->update([
-                'status' => 'completed',
-                'completed_at' => now(),
-            ]);
+        if ($sanction->is_approved) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot revise an already approved sanction.'
+            ], 400);
         }
+
+        try {
+            $sanction->update([
+                'sanction' => $request->input('sanction'),
+                'notes' => ($sanction->notes ? $sanction->notes . "\n" : '') . 'Revised by admin on ' . now()->toDateTimeString() . '. Notes: ' . $request->input('notes', ''),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Sanction revised successfully.'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error revising sanction: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while revising the sanction.'
+            ], 500);
+        }
+    }
+
+    public function viewSummaryReport(\App\Models\CaseMeeting $caseMeeting)
+    {
+        $user = auth()->user();
+
+        if (!$user->hasRole('admin')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized access.'
+            ], 403);
+        }
+
+        $caseMeeting->load(['student', 'counselor', 'sanctions']);
 
         return response()->json([
             'success' => true,
-            'message' => 'Sanction approved and case meeting marked as completed.'
+            'meeting' => $caseMeeting
         ]);
-    } catch (\Exception $e) {
-        \Log::error('Error approving sanction: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'An error occurred while approving the sanction.'
-        ], 500);
     }
-}
 // REMOVED: generateAdmin() method
 // This functionality has been moved to UserManagementController->storeAdmin()
 // The admin-generator.blade.php view is no longer needed as admin creation

@@ -43,23 +43,24 @@ document.addEventListener('DOMContentLoaded', function() {
       const typeValue = typeFilter.value;
       const dateValue = dateFilter.value;
       const rows = document.querySelectorAll('#violationsTable tbody tr');
-      
+
       rows.forEach(row => {
-        if (row.cells.length < 8) return; // Skip empty rows
-        
+        if (row.cells.length < 9) return; // Skip empty rows
+
         const student = row.cells[1].textContent.toLowerCase();
         const violation = row.cells[2].textContent.toLowerCase();
         const type = row.cells[3].textContent.toLowerCase();
         const severity = row.cells[4].textContent.toLowerCase();
-        const date = row.cells[5].textContent;
-        const status = row.cells[6].textContent.toLowerCase();
-        
+        const urgency = row.cells[5].textContent.toLowerCase();
+        const date = row.cells[6].textContent;
+        const status = row.cells[7].textContent.toLowerCase();
+
         const matchesSearch = student.includes(searchTerm) || violation.includes(searchTerm);
         const matchesStatus = !statusValue || status.includes(statusValue);
         const matchesSeverity = !severityValue || severity.includes(severityValue);
         const matchesType = !typeValue || type.includes(typeValue);
         const matchesDate = !dateValue || date.includes(new Date(dateValue).toLocaleDateString());
-        
+
         row.style.display = matchesSearch && matchesStatus && matchesSeverity && matchesType && matchesDate ? '' : 'none';
       });
     }
@@ -98,6 +99,11 @@ window.viewViolation = function(violationId) {
                   <tr><td><strong>Severity:</strong></td><td>
                     <span class="badge bg-${data.severity === 'minor' ? 'success' : (data.severity === 'major' ? 'warning' : 'danger')}">
                       ${data.severity ? data.severity.charAt(0).toUpperCase() + data.severity.slice(1) : 'N/A'}
+                    </span>
+                  </td></tr>
+                  <tr><td><strong>Urgency Level:</strong></td><td>
+                    <span class="badge bg-${data.urgency_level === 'low' ? 'success' : (data.urgency_level === 'medium' ? 'warning' : 'danger')}">
+                      ${data.urgency_level ? data.urgency_level.charAt(0).toUpperCase() + data.urgency_level.slice(1) : 'N/A'}
                     </span>
                   </td></tr>
                   <tr><td><strong>Status:</strong></td><td>
@@ -245,17 +251,29 @@ window.editViolation = function(violationId) {
             </div>
             <div class="col-md-3">
               <div class="mb-3">
+                <label for="edit_urgency_level" class="form-label">Urgency Level</label>
+                <select class="form-select" id="edit_urgency_level" name="urgency_level">
+                  <option value="" ${!violation.urgency_level ? 'selected' : ''}>Select Urgency</option>
+                  <option value="low" ${violation.urgency_level === 'low' ? 'selected' : ''}>Low</option>
+                  <option value="medium" ${violation.urgency_level === 'medium' ? 'selected' : ''}>Medium</option>
+                  <option value="high" ${violation.urgency_level === 'high' ? 'selected' : ''}>High</option>
+                  <option value="urgent" ${violation.urgency_level === 'urgent' ? 'selected' : ''}>Urgent</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-2">
+              <div class="mb-3">
                 <label for="edit_violation_date" class="form-label">Date <span class="text-danger">*</span></label>
                 <input type="date" class="form-control" id="edit_violation_date" name="violation_date" value="${violation.violation_date ? (violation.violation_date.includes('T') ? violation.violation_date.split('T')[0] : violation.violation_date) : ''}" required>
               </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
               <div class="mb-3">
                 <label for="edit_violation_time" class="form-label">Time</label>
                 <input type="time" class="form-control" id="edit_violation_time" name="violation_time" value="${violation.violation_time ? (violation.violation_time.length > 5 ? violation.violation_time.substring(0, 5) : violation.violation_time) : ''}">
               </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
               <div class="mb-3">
                 <label for="edit_status" class="form-label">Status <span class="text-danger">*</span></label>
                 <select class="form-select" id="edit_status" name="status" required>
