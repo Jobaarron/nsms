@@ -147,7 +147,7 @@
                                     <tr>
                                         <th>Transaction ID</th>
                                         <th>Student/Enrollee</th>
-                                        <th>Fee Type</th>
+{{-- <th>Fee Type</th> --}}
                                         <th>Amount</th>
                                         <th>Payment Method</th>
                                         <th>Status</th>
@@ -177,21 +177,6 @@
                                                 @endif
                                             </td>
                                             <td>
-                                                @if($payment->fee)
-                                                    <div>
-                                                        <span class="fw-bold">{{ $payment->fee->name }}</span>
-                                                        <br>
-                                                        <small class="text-muted">{{ ucfirst($payment->fee->fee_category) }}</small>
-                                                    </div>
-                                                @else
-                                                    <div>
-                                                        <span class="text-muted">General Payment</span>
-                                                        <br>
-                                                        <small class="text-muted">{{ $payment->period_name ?? 'Unspecified' }}</small>
-                                                    </div>
-                                                @endif
-                                            </td>
-                                            <td>
                                                 <span class="fw-bold text-success">
                                                     ₱{{ number_format($payment->amount, 2) }}
                                                 </span>
@@ -201,10 +186,10 @@
                                                     <span class="badge bg-info">
                                                         {{ ucfirst(str_replace('_', ' ', $payment->payment_method)) }}
                                                     </span>
-                                                    @if($payment->reference_number)
+{{-- @if($payment->reference_number)
                                                         <br>
                                                         <small class="text-muted">Ref: {{ $payment->reference_number }}</small>
-                                                    @endif
+                                                    @endif --}}
                                                 @else
                                                     <span class="badge bg-secondary">Not Specified</span>
                                                 @endif

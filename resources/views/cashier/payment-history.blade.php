@@ -114,7 +114,7 @@
                                     <tr>
                                         <th>Transaction ID</th>
                                         <th>Student/Enrollee</th>
-                                        <th>Fee Type</th>
+{{-- <th>Fee Type</th> --}}
                                         <th>Amount</th>
                                         <th>Payment Method</th>
                                         <th>Status</th>
@@ -144,7 +144,7 @@
                                                     <span class="text-muted">N/A</span>
                                                 @endif
                                             </td>
-                                            <td>{{ $payment->fee->name ?? 'N/A' }}</td>
+{{-- <td>{{ $payment->fee->name ?? 'N/A' }}</td> --}}
                                             <td>
                                                 <span class="fw-bold text-success">
                                                     ₱{{ number_format($payment->amount, 2) }}

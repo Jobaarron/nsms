@@ -79,7 +79,8 @@
         </div>
     </div>
 
-    <!-- Regular Payments Table -->
+    {{-- Regular Payments Table - Commented out --}}
+    {{--
     <div class="row">
         <div class="col-12">
             <div class="card border-0 shadow-sm">
@@ -179,6 +180,7 @@
             </div>
         </div>
     </div>
+    --}}
 
     <!-- Payment Details Modal -->
     <div class="modal fade" id="paymentDetailsModal" tabindex="-1">
