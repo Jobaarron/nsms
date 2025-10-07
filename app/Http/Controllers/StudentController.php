@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use App\Models\Student;
 use App\Models\Violation;
 use Illuminate\Support\Facades\Validator;
@@ -422,54 +423,79 @@ class StudentController extends Controller
         
         return view('student.face-registration', compact('student'));
     }
+public function saveFaceRegistration(Request $request)
+{
+    try {
+        $studentId = auth()->user()->id ?? $request->input('student_id');
 
-    public function saveFaceRegistration(Request $request)
-    {
-        $student = Auth::guard('student')->user();
-        
-        if (!$student) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
-        }
+        // ✅ Check if student already has a registered face
+        $existing = DB::table('face_registrations')
+            ->where('student_id', $studentId)
+            ->where('is_active', 1)
+            ->first();
 
-        $request->validate([
-            'face_images' => 'required|array|min:1',
-            'face_images.*' => 'required|string',
-            'source' => 'required|string'
-        ]);
-
-        try {
-            DB::beginTransaction();
-
-            // Deactivate existing face registrations
-            $student->faceRegistrations()->update(['is_active' => false]);
-
-            // Save the first (best) image as the active registration
-            $faceImage = $request->face_images[0];
-            
-            FaceRegistration::create([
-                'student_id' => $student->id,
-                'face_image_data' => $faceImage,
-                'face_image_mime_type' => 'image/jpeg',
-                'source' => $request->source,
-                'registered_at' => now(),
-                'is_active' => true
-            ]);
-
-            DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Face registration saved successfully!'
-            ]);
-        } catch (\Exception $e) {
-            DB::rollback();
-            Log::error('Face registration failed: ' . $e->getMessage());
+        if ($existing) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to save face registration'
-            ], 500);
+                'message' => 'This student’s face is already registered.'
+            ], 400);
         }
+
+        $faceEncoding = $request->input('face_encoding');
+        $confidenceScore = $request->input('confidence_score', 0.7);
+        $faceLandmarks = $request->input('face_landmarks');
+        $source = $request->input('source', 'webcam');
+
+        // ✅ Ensure face landmarks are not null
+        if (empty($faceLandmarks) || $faceLandmarks === 'null' || $faceLandmarks === null) {
+            $faceLandmarks = '[]';
+        }
+
+        // ✅ Handle face image upload
+        $faceImageData = null;
+        $faceImageMime = null;
+
+        if ($request->hasFile('face_image')) {
+            $file = $request->file('face_image');
+            $faceImageMime = $file->getMimeType();
+            $faceImageData = base64_encode(file_get_contents($file->getRealPath()));
+        } elseif ($request->filled('face_image_base64')) {
+            // ✅ If image is sent as base64 from JS instead of file
+            $base64 = $request->input('face_image_base64');
+            if (preg_match('/^data:(.*?);base64,(.*)$/', $base64, $matches)) {
+                $faceImageMime = $matches[1];
+                $faceImageData = $matches[2];
+            }
+        }
+
+        DB::table('face_registrations')->insert([
+            'student_id' => $studentId,
+            'face_encoding' => $faceEncoding,
+            'face_image_data' => $faceImageData,
+            'face_image_mime_type' => $faceImageMime,
+            'confidence_score' => $confidenceScore,
+            'face_landmarks' => $faceLandmarks,
+            'source' => $source,
+            'registered_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+            'is_active' => 1,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Face registered successfully.'
+        ]);
+
+    } catch (\Throwable $e) {
+        Log::error('Face registration failed', ['error' => $e->getMessage()]);
+        return response()->json([
+            'success' => false,
+            'message' => $e->getMessage()
+        ], 500);
     }
+}
+
 
     public function deleteFaceRegistration()
     {
