@@ -10,7 +10,7 @@
                 <th>Offense</th>
                 <th>Scheduled Date</th>
                 <th>Scheduled Time</th>
-                <th>Urgency</th>
+
                 <th>Status</th>
                 <th>Sanctions</th>
                 <th>Actions</th>
@@ -29,15 +29,7 @@
                 </td>
                 <td>{{ $meeting->scheduled_date->format('Y-m-d') }}</td>
                 <td>{{ $meeting->scheduled_time->format('H:i') }}</td>
-                <td>
-                    @if($meeting->urgency_level)
-                        <span class="badge bg-{{ $meeting->urgency_level === 'urgent' ? 'danger' : ($meeting->urgency_level === 'high' ? 'warning' : ($meeting->urgency_level === 'medium' ? 'secondary' : 'success')) }}">
-                            {{ ucfirst($meeting->urgency_level) }}
-                        </span>
-                    @else
-                        <span class="text-muted">-</span>
-                    @endif
-                </td>
+
                 <td><span class="badge bg-warning">{{ ucfirst($meeting->status) }}</span></td>
                 <td>
                     <ul>
@@ -342,7 +334,7 @@ function generateSummaryHTML(meeting) {
                     <div class="col-md-6">
                         <p><strong>Location:</strong> ${meeting.location || 'TBD'}</p>
                         <p><strong>Counselor:</strong> ${meeting.counselor ? meeting.counselor.full_name : 'Unassigned'}</p>
-                        <p><strong>Urgency Level:</strong> ${meeting.urgency_level ? `<span class="badge bg-${meeting.urgency_level === 'urgent' ? 'danger' : (meeting.urgency_level === 'high' ? 'warning' : 'secondary')}">${meeting.urgency_level.charAt(0).toUpperCase() + meeting.urgency_level.slice(1)}</span>` : '<span class="text-muted">Not specified</span>'}</p>
+
                     </div>
                 </div>
             </div>

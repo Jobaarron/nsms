@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const violation = row.cells[2].textContent.toLowerCase();
         const type = row.cells[3].textContent.toLowerCase();
         const severity = row.cells[4].textContent.toLowerCase();
-        const urgency = row.cells[5].textContent.toLowerCase();
+
         const date = row.cells[6].textContent;
         const status = row.cells[7].textContent.toLowerCase();
 
@@ -101,11 +101,7 @@ window.viewViolation = function(violationId) {
                       ${data.severity ? data.severity.charAt(0).toUpperCase() + data.severity.slice(1) : 'N/A'}
                     </span>
                   </td></tr>
-                  <tr><td><strong>Urgency Level:</strong></td><td>
-                    <span class="badge bg-${data.urgency_level === 'low' ? 'success' : (data.urgency_level === 'medium' ? 'warning' : 'danger')}">
-                      ${data.urgency_level ? data.urgency_level.charAt(0).toUpperCase() + data.urgency_level.slice(1) : 'N/A'}
-                    </span>
-                  </td></tr>
+
                   <tr><td><strong>Status:</strong></td><td>
                     <span class="badge bg-${data.status === 'pending' ? 'warning' : (data.status === 'resolved' ? 'success' : 'info')}">
                       ${data.status ? data.status.charAt(0).toUpperCase() + data.status.slice(1) : 'N/A'}
@@ -249,18 +245,7 @@ window.editViolation = function(violationId) {
                 </select>
               </div>
             </div>
-            <div class="col-md-3">
-              <div class="mb-3">
-                <label for="edit_urgency_level" class="form-label">Urgency Level</label>
-                <select class="form-select" id="edit_urgency_level" name="urgency_level">
-                  <option value="" ${!violation.urgency_level ? 'selected' : ''}>Select Urgency</option>
-                  <option value="low" ${violation.urgency_level === 'low' ? 'selected' : ''}>Low</option>
-                  <option value="medium" ${violation.urgency_level === 'medium' ? 'selected' : ''}>Medium</option>
-                  <option value="high" ${violation.urgency_level === 'high' ? 'selected' : ''}>High</option>
-                  <option value="urgent" ${violation.urgency_level === 'urgent' ? 'selected' : ''}>Urgent</option>
-                </select>
-              </div>
-            </div>
+
             <div class="col-md-2">
               <div class="mb-3">
                 <label for="edit_violation_date" class="form-label">Date <span class="text-danger">*</span></label>

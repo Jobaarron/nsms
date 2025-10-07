@@ -133,7 +133,7 @@
                     <th>Violation</th>
                     <th>Type</th>
                     <th>Severity</th>
-                    <th>Urgency</th>
+
                     <th>Date</th>
                     <th>Status</th>
                     <th>Actions</th>
@@ -161,15 +161,7 @@
                         {{ ucfirst($violation->severity) }}
                       </span>
                     </td>
-                    <td>
-                      @if($violation->urgency_level)
-                        <span class="badge bg-{{ $violation->urgency_level === 'low' ? 'success' : ($violation->urgency_level === 'medium' ? 'warning' : 'danger') }}">
-                          {{ ucfirst($violation->urgency_level) }}
-                        </span>
-                      @else
-                        <span class="text-muted">-</span>
-                      @endif
-                    </td>
+
                     <td>
                       {{ $violation->violation_date->format('M d, Y') }}
                       @if($violation->violation_time)
@@ -389,18 +381,7 @@
                   </select>
                 </div>
               </div>
-              <div class="col-md-6">
-                <div class="mb-3">
-                  <label for="urgency_level" class="form-label">Urgency Level</label>
-                  <select class="form-select" id="urgency_level" name="urgency_level">
-                    <option value="">Select Urgency</option>
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                    <option value="urgent">Urgent</option>
-                  </select>
-                </div>
-              </div>
+
             </div>
             <div class="row">
               <div class="col-md-6">

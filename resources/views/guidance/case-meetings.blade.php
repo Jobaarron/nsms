@@ -79,18 +79,7 @@
                                 </small>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Urgency Level</label>
-                            <div>
-                                @if($caseMeeting->urgency_level)
-                                    <span class="badge bg-{{ $caseMeeting->urgency_level === 'urgent' ? 'danger' : ($caseMeeting->urgency_level === 'high' ? 'warning' : 'secondary') }}">
-                                        {{ ucfirst($caseMeeting->urgency_level) }}
-                                    </span>
-                                @else
-                                    <span class="text-muted">-</span>
-                                @endif
-                            </div>
-                        </div>
+
                         @if($caseMeeting->location)
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Location</label>
@@ -472,7 +461,7 @@
                                     <th>Student</th>
                                     <th>Date & Time</th>
                                     <th>Meeting Status</th>
-                                    <th>Urgency</th>
+
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -499,15 +488,7 @@
                                             {{ $meeting->status_display['text'] }}
                                         </span>
                                     </td>
-                                    <td>
-                                        @if($meeting->urgency_level)
-                                            <span class="badge bg-{{ $meeting->urgency_level === 'urgent' ? 'danger' : ($meeting->urgency_level === 'high' ? 'warning' : 'secondary') }}">
-                                                {{ ucfirst($meeting->urgency_level) }}
-                                            </span>
-                                        @else
-                                            <span class="text-muted">-</span>
-                                        @endif
-                                    </td>
+
                                     <td>
                                         <div class="btn-group btn-group-sm">
                                             <!-- View Button - Always Available -->
@@ -602,16 +583,7 @@
                                 <label class="form-label">Time <span class="text-danger">*</span></label>
                                 <input type="time" class="form-control" name="scheduled_time" required>
                             </div>
-                            <div class="col-md-6 schedule-field">
-                                <label class="form-label">Urgency Level</label>
-                                <select class="form-select" name="urgency_level">
-                                    <option value="">Select Urgency</option>
-                                    <option value="low">Low</option>
-                                    <option value="medium">Medium</option>
-                                    <option value="high">High</option>
-                                    <option value="urgent">Urgent</option>
-                                </select>
-                            </div>
+
                             <div class="col-12 schedule-field">
                                 <label class="form-label">Reason <span class="text-danger">*</span></label>
                                 <textarea class="form-control" name="reason" rows="3" required placeholder="Describe the reason for this meeting..."></textarea>
@@ -730,12 +702,7 @@
                                 <small class="text-muted" id="view_scheduled_time">TBD</small>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Urgency Level</label>
-                            <div>
-                                <span class="badge" id="view_urgency_level">N/A</span>
-                            </div>
-                        </div>
+
                         <div class="col-md-6" id="view_location_container" style="display: none;">
                             <label class="form-label fw-semibold">Location</label>
                             <div>
@@ -828,16 +795,7 @@
                                 <label class="form-label">Time <span class="text-danger">*</span></label>
                                 <input type="time" class="form-control" name="scheduled_time" id="edit_scheduled_time" required>
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Urgency Level</label>
-                                <select class="form-select" name="urgency_level" id="edit_urgency_level">
-                                    <option value="">Select Urgency</option>
-                                    <option value="low">Low</option>
-                                    <option value="medium">Medium</option>
-                                    <option value="high">High</option>
-                                    <option value="urgent">Urgent</option>
-                                </select>
-                            </div>
+
                             <div class="col-12">
                                 <label class="form-label">Reason <span class="text-danger">*</span></label>
                                 <textarea class="form-control" name="reason" id="edit_reason" rows="3" required placeholder="Describe the reason for this meeting..."></textarea>
