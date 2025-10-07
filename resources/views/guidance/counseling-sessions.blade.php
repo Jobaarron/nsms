@@ -1,5 +1,8 @@
 <x-guidance-layout>
     @vite('resources/css/index_guidance.css')
+
+    <!-- Flatpickr CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     
     <!-- Header -->
     <div class="row mb-4">
@@ -164,16 +167,15 @@
                                         <th>Student</th>
                                         <th>Recommended By</th>
                                         <th>Session Type</th>
-                                        <th>Date & Time</th>
-                                        <th>Duration</th>
-                                        <th>Location</th>
+                                        <th>Date</th>
+                                        <th>Time</th>
                                         <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @forelse($counselingSessions as $session)
-                                    <tr>
+                                    <tr data-session-id="{{ $session->id }}" data-status="{{ $session->status }}">
                                         <td>
                                             <div class="d-flex align-items-center">
                                                 <div class="avatar-sm bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3">
@@ -199,19 +201,23 @@
                                                 {{ $session->session_type_display['text'] }}
                                             </span>
                                         </td>
-                                        <td>
+                                        <td class="editable-cell" data-field="scheduled_date" data-session-id="{{ $session->id }}">
                                             @if($session->scheduled_date)
-                                                <div>{{ $session->scheduled_date->format('M d, Y') }}</div>
-                                                <small class="text-muted">{{ $session->scheduled_time->format('h:i A') }}</small>
+                                                <div class="display-value">{{ $session->scheduled_date->format('M d, Y') }}</div>
+                                                <input type="date" class="form-control edit-input d-none" name="scheduled_date" value="{{ $session->scheduled_date->format('Y-m-d') }}" min="{{ date('Y-m-d') }}">
                                             @else
-                                                <span class="text-muted">Not scheduled</span>
+                                                <span class="text-muted display-value">Not scheduled</span>
+                                                <input type="date" class="form-control edit-input d-none" name="scheduled_date" min="{{ date('Y-m-d') }}">
                                             @endif
                                         </td>
-                                        <td>
-                                            <span class="text-muted">{{ $session->duration }} min</span>
-                                        </td>
-                                        <td>
-                                            <span class="text-muted">{{ $session->location ?: 'TBD' }}</span>
+                                        <td class="editable-cell" data-field="scheduled_time" data-session-id="{{ $session->id }}">
+                                            @if($session->scheduled_time)
+                                                <div class="display-value">{{ $session->scheduled_time->format('h:i A') }}</div>
+                                                <input type="time" class="form-control edit-input d-none" name="scheduled_time" value="{{ $session->scheduled_time->format('H:i') }}">
+                                            @else
+                                                <span class="text-muted display-value">-</span>
+                                                <input type="time" class="form-control edit-input d-none" name="scheduled_time">
+                                            @endif
                                         </td>
                                         <td>
                                             <span class="badge {{ $session->status_display['class'] }}">
@@ -219,12 +225,12 @@
                                             </span>
                                         </td>
                                         <td>
-                                            <div class="btn-group btn-group-sm">
+                                            <div class="btn-group btn-group-sm action-buttons">
                                                 <button class="btn btn-outline-primary" onclick="viewCounselingSession({{ $session->id }})" title="View Details">
                                                     <i class="ri-eye-line"></i>
                                                 </button>
                                                 @if($session->status === 'recommended')
-                                                    <button class="btn btn-outline-success" onclick="scheduleRecommendedSession({{ $session->id }})" title="Schedule Session">
+                                                    <button class="btn btn-outline-success schedule-btn" onclick="startInlineScheduling({{ $session->id }})" title="Schedule Session">
                                                         <i class="ri-calendar-check-line"></i>
                                                     </button>
                                                 @elseif($session->status === 'scheduled')
@@ -239,11 +245,19 @@
                                                     <i class="ri-edit-line"></i>
                                                 </button>
                                             </div>
+                                            <div class="btn-group btn-group-sm edit-buttons d-none">
+                                                <button class="btn btn-success btn-sm save-btn" onclick="saveInlineScheduling({{ $session->id }})" title="Save">
+                                                    <i class="ri-check-line"></i>
+                                                </button>
+                                                <button class="btn btn-secondary btn-sm cancel-btn" onclick="cancelInlineScheduling({{ $session->id }})" title="Cancel">
+                                                    <i class="ri-close-line"></i>
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                     @empty
                                     <tr>
-                                        <td colspan="8" class="text-center py-4">
+                                        <td colspan="7" class="text-center py-4">
                                             <div class="text-muted">
                                                 <i class="ri-heart-pulse-line fs-1 d-block mb-2"></i>
                                                 <p>No counseling sessions found</p>
@@ -353,4 +367,7 @@
     </div>
 
     @vite('resources/js/guidance_counseling-sessions.js')
+
+    <!-- Flatpickr JS -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 </x-guidance-layout>
