@@ -2,6 +2,16 @@
     @vite('resources/css/index_guidance.css')
 
     @if(isset($showDetail))
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Automatically open the PDF modal when viewing details
+        var caseMeetingId = {{ $caseMeeting->id }};
+        var pdfUrl = `/storage/incident_forms/case_meeting_${caseMeetingId}.pdf`;
+        document.getElementById('incidentFormPdfIframe').src = pdfUrl;
+        var modal = new bootstrap.Modal(document.getElementById('incidentFormPdfPreviewModal'));
+        modal.show();
+    });
+    </script>
     <!-- Case Meeting Detail View -->
     <!-- Header -->
     <div class="row mb-4">
@@ -19,6 +29,36 @@
                     <p class="text-muted">Meeting ID: {{ $caseMeeting->id }}</p>
                 </div>
                 <div class="d-flex gap-2">
+                    <button class="btn btn-outline-info" onclick="openIncidentFormPdfPreview({{ $caseMeeting->id }})">
+                        <i class="ri-file-pdf-line me-2"></i>View Incident PDF
+                    </button>
+    <!-- INCIDENT FORM PDF PREVIEW MODAL (READ-ONLY) -->
+    <div class="modal fade" id="incidentFormPdfPreviewModal" tabindex="-1" aria-labelledby="incidentFormPdfPreviewModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="incidentFormPdfPreviewModalLabel">Incident Form PDF Preview</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="background: #fff; min-height: 600px;">
+                    <iframe id="incidentFormPdfIframe" src="" width="100%" height="600px" style="border: none;"></iframe>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+    function openIncidentFormPdfPreview(caseMeetingId) {
+        // You should generate the correct PDF URL for the case meeting here
+        // Example: `/storage/incident_forms/case_meeting_${caseMeetingId}.pdf`
+        var pdfUrl = `/storage/incident_forms/case_meeting_${caseMeetingId}.pdf`;
+        document.getElementById('incidentFormPdfIframe').src = pdfUrl;
+        var modal = new bootstrap.Modal(document.getElementById('incidentFormPdfPreviewModal'));
+        modal.show();
+    }
+    </script>
                     <a href="{{ route('guidance.case-meetings.index') }}" class="btn btn-outline-secondary">
                         <i class="ri-arrow-left-line me-2"></i>Back to List
                     </a>

@@ -666,9 +666,17 @@ class StudentController extends Controller
             'source' => $request->input('source', 'camera_capture'),
         ]);
 
+        // Ensure face_encoding is always stored as an array
+        $faceEncoding = $request->input('face_encoding');
+        if (is_string($faceEncoding)) {
+            $decoded = json_decode($faceEncoding, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                $faceEncoding = $decoded;
+            }
+        }
         \App\Models\FaceRegistration::create([
             'student_id' => $studentId,
-            'face_encoding' => $request->input('face_encoding'),
+            'face_encoding' => $faceEncoding,
             'confidence_score' => $request->input('confidence_score'),
             'face_landmarks' => $request->input('face_landmarks'),
             'face_image_data' => $faceImageData,
