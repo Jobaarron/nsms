@@ -22,57 +22,39 @@
             </div>
         </div>
 
-        @if($student->enrollment_status === 'enrolled')
-            @php
-                $paymentScheduleStatus = \App\Models\Payment::where('payable_type', \App\Models\Student::class)
-                    ->where('payable_id', $student->id)
-                    ->first();
-            @endphp
-            
+        @if($paymentScheduleStatus)
             <div class="row mb-4">
                 <div class="col-12">
-                    @if($paymentScheduleStatus)
-                        @if($paymentScheduleStatus->confirmation_status === 'pending')
-                            <div class="alert alert-warning border-0 shadow-sm">
-                                <div class="d-flex align-items-center">
-                                    <i class="ri-time-line fs-4 me-3"></i>
-                                    <div>
-                                        <h6 class="alert-heading mb-1">Payment Schedule Submitted</h6>
-                                        <p class="mb-0">Your payment schedule is pending approval from the cashier's office. You will be notified once it's reviewed.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        @elseif($paymentScheduleStatus->confirmation_status === 'confirmed')
-                            <div class="alert alert-success border-0 shadow-sm">
-                                <div class="d-flex align-items-center">
-                                    <i class="ri-check-line fs-4 me-3"></i>
-                                    <div>
-                                        <h6 class="alert-heading mb-1">Payment Schedule Approved</h6>
-                                        <p class="mb-0">Your payment schedule has been approved! You can now proceed to make payments according to your schedule.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        @elseif(in_array($paymentScheduleStatus->confirmation_status, ['rejected', 'declined']))
-                            <div class="alert alert-danger border-0 shadow-sm">
-                                <div class="d-flex align-items-center">
-                                    <i class="ri-close-line fs-4 me-3"></i>
-                                    <div>
-                                        <h6 class="alert-heading mb-1">Payment Schedule Rejected</h6>
-                                        <p class="mb-0">Your payment schedule was rejected. Please review the feedback and submit a new schedule.</p>
-                                        @if($paymentScheduleStatus->cashier_notes)
-                                            <small class="text-muted"><strong>Reason:</strong> {{ $paymentScheduleStatus->cashier_notes }}</small>
-                                        @endif
-                                    </div>
-                                </div>
-                            </div>
-                        @endif
-                    @else
-                        <div class="alert alert-info border-0 shadow-sm">
+                    @if($paymentScheduleStatus->confirmation_status === 'pending')
+                        <div class="alert alert-warning border-0 shadow-sm">
                             <div class="d-flex align-items-center">
-                                <i class="ri-info-line fs-4 me-3"></i>
+                                <i class="ri-time-line fs-4 me-3"></i>
                                 <div>
-                                    <h6 class="alert-heading mb-1">Enrollment Complete</h6>
-                                    <p class="mb-0">You have successfully completed your enrollment. Please submit your payment schedule below.</p>
+                                    <h6 class="alert-heading mb-1">Payment Schedule Submitted</h6>
+                                    <p class="mb-0">Your payment schedule is pending approval from the cashier's office. You will be notified once it's reviewed.</p>
+                                </div>
+                            </div>
+                        </div>
+                    @elseif($paymentScheduleStatus->confirmation_status === 'confirmed')
+                        <div class="alert alert-success border-0 shadow-sm">
+                            <div class="d-flex align-items-center">
+                                <i class="ri-check-line fs-4 me-3"></i>
+                                <div>
+                                    <h6 class="alert-heading mb-1">Payment Schedule Approved</h6>
+                                    <p class="mb-0">Your payment schedule has been approved! You are now fully enrolled and can proceed to make payments.</p>
+                                </div>
+                            </div>
+                        </div>
+                    @elseif(in_array($paymentScheduleStatus->confirmation_status, ['rejected', 'declined']))
+                        <div class="alert alert-danger border-0 shadow-sm">
+                            <div class="d-flex align-items-center">
+                                <i class="ri-close-line fs-4 me-3"></i>
+                                <div>
+                                    <h6 class="alert-heading mb-1">Payment Schedule Rejected</h6>
+                                    <p class="mb-0">Your payment schedule was rejected. Please review the feedback and submit a new schedule.</p>
+                                    @if($paymentScheduleStatus->cashier_notes)
+                                        <small class="text-muted"><strong>Reason:</strong> {{ $paymentScheduleStatus->cashier_notes }}</small>
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -101,11 +83,8 @@
                         </div>
                         <div class="card-body">
                             @php
-                                $subjects = \App\Models\Subject::getSubjectsForStudent(
-                                    $student->grade_level,
-                                    $student->strand,
-                                    $student->track
-                                );
+                                // Use subjects passed from controller
+                                $subjects = $currentSubjects ?? collect();
                             @endphp
                             
                             @if($subjects->count() > 0)
@@ -153,11 +132,11 @@
                                             <small class="text-muted">Total Subjects</small>
                                         </div>
                                         <div class="col-md-4">
-                                            <h6 class="fw-bold text-success">{{ $subjects->whereNull('strand')->count() }}</h6>
+                                            <h6 class="fw-bold text-success">{{ $subjects->where('category', 'core')->count() }}</h6>
                                             <small class="text-muted">Core Subjects</small>
                                         </div>
                                         <div class="col-md-4">
-                                            <h6 class="fw-bold text-info">{{ $subjects->whereNotNull('strand')->count() }}</h6>
+                                            <h6 class="fw-bold text-info">{{ $subjects->where('category', 'specialized')->count() }}</h6>
                                             <small class="text-muted">Specialized</small>
                                         </div>
                                     </div>
@@ -255,13 +234,13 @@
                                     <div class="row">
                                         <div class="col-md-6">
                                             <label class="form-label">Payment Date</label>
-                                            <input type="date" class="form-control" name="full_payment_date" min="{{ date('Y-m-d') }}">
+                                            <input type="date" class="form-control" name="full_payment_date" min="{{ date('Y-m-d') }}" value="{{ date('Y-m-d', strtotime('+7 days')) }}">
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Amount to Pay</label>
                                             <div class="input-group">
                                                 <span class="input-group-text">₱</span>
-                                                <input type="number" class="form-control" name="full_payment_amount" step="0.01" min="0" placeholder="0.00">
+                                                <input type="number" class="form-control" name="full_payment_amount" step="0.01" min="0" value="{{ number_format($totalAmount, 2, '.', '') }}" placeholder="0.00">
                                             </div>
                                         </div>
                                     </div>
@@ -277,22 +256,26 @@
                                             <span><strong>Total Amount:</strong></span>
                                             <span class="fw-bold">₱<span id="quarterly-total-amount">0.00</span></span>
                                         </div>
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <span><strong>Per Quarter:</strong></span>
-                                            <span class="fw-bold">₱<span id="quarterly-per-payment">0.00</span></span>
-                                        </div>
                                         <small class="text-muted">4 payments throughout the academic year</small>
                                     </div>
                                     <div class="row g-3">
+                                        @php
+                                            $quarterlyAmount = $totalAmount / 4;
+                                            $quarterDates = [
+                                                date('Y-m-d', strtotime('+1 month')),
+                                                date('Y-m-d', strtotime('+4 months')),
+                                                date('Y-m-d', strtotime('+7 months')),
+                                                date('Y-m-d', strtotime('+10 months'))
+                                            ];
+                                        @endphp
                                         <div class="col-md-6 col-lg-3">
                                             <div class="card bg-light">
                                                 <div class="card-body p-3">
                                                     <h6 class="card-title mb-2">1st Quarter</h6>
-                                                    <p class="mb-2">₱<span class="quarterly-amount">0.00</span></p>
-                                                    <input type="date" class="form-control form-control-sm mb-2" name="quarterly_date_1" min="{{ date('Y-m-d') }}">
+                                                    <input type="date" class="form-control form-control-sm mb-2" name="quarterly_date_1" min="{{ date('Y-m-d') }}" value="{{ $quarterDates[0] }}">
                                                     <div class="input-group input-group-sm">
                                                         <span class="input-group-text">₱</span>
-                                                        <input type="number" class="form-control" name="quarterly_amount_1" step="0.01" min="0" placeholder="0.00">
+                                                        <input type="number" class="form-control" name="quarterly_amount_1" step="0.01" min="0" value="{{ number_format($quarterlyAmount, 2, '.', '') }}" placeholder="0.00">
                                                     </div>
                                                 </div>
                                             </div>
@@ -301,11 +284,10 @@
                                             <div class="card bg-light">
                                                 <div class="card-body p-3">
                                                     <h6 class="card-title mb-2">2nd Quarter</h6>
-                                                    <p class="mb-2">₱<span class="quarterly-amount">0.00</span></p>
-                                                    <input type="date" class="form-control form-control-sm mb-2" name="quarterly_date_2" min="{{ date('Y-m-d') }}">
+                                                    <input type="date" class="form-control form-control-sm mb-2" name="quarterly_date_2" min="{{ date('Y-m-d') }}" value="{{ $quarterDates[1] }}">
                                                     <div class="input-group input-group-sm">
                                                         <span class="input-group-text">₱</span>
-                                                        <input type="number" class="form-control" name="quarterly_amount_2" step="0.01" min="0" placeholder="0.00">
+                                                        <input type="number" class="form-control" name="quarterly_amount_2" step="0.01" min="0" value="{{ number_format($quarterlyAmount, 2, '.', '') }}" placeholder="0.00">
                                                     </div>
                                                 </div>
                                             </div>
@@ -314,11 +296,10 @@
                                             <div class="card bg-light">
                                                 <div class="card-body p-3">
                                                     <h6 class="card-title mb-2">3rd Quarter</h6>
-                                                    <p class="mb-2">₱<span class="quarterly-amount">0.00</span></p>
-                                                    <input type="date" class="form-control form-control-sm mb-2" name="quarterly_date_3" min="{{ date('Y-m-d') }}">
+                                                    <input type="date" class="form-control form-control-sm mb-2" name="quarterly_date_3" min="{{ date('Y-m-d') }}" value="{{ $quarterDates[2] }}">
                                                     <div class="input-group input-group-sm">
                                                         <span class="input-group-text">₱</span>
-                                                        <input type="number" class="form-control" name="quarterly_amount_3" step="0.01" min="0" placeholder="0.00">
+                                                        <input type="number" class="form-control" name="quarterly_amount_3" step="0.01" min="0" value="{{ number_format($quarterlyAmount, 2, '.', '') }}" placeholder="0.00">
                                                     </div>
                                                 </div>
                                             </div>
@@ -327,11 +308,10 @@
                                             <div class="card bg-light">
                                                 <div class="card-body p-3">
                                                     <h6 class="card-title mb-2">4th Quarter</h6>
-                                                    <p class="mb-2">₱<span class="quarterly-amount">0.00</span></p>
-                                                    <input type="date" class="form-control form-control-sm mb-2" name="quarterly_date_4" min="{{ date('Y-m-d') }}">
+                                                    <input type="date" class="form-control form-control-sm mb-2" name="quarterly_date_4" min="{{ date('Y-m-d') }}" value="{{ $quarterDates[3] }}">
                                                     <div class="input-group input-group-sm">
                                                         <span class="input-group-text">₱</span>
-                                                        <input type="number" class="form-control" name="quarterly_amount_4" step="0.01" min="0" placeholder="0.00">
+                                                        <input type="number" class="form-control" name="quarterly_amount_4" step="0.01" min="0" value="{{ number_format($quarterlyAmount, 2, '.', '') }}" placeholder="0.00">
                                                     </div>
                                                 </div>
                                             </div>
@@ -349,83 +329,42 @@
                                             <span><strong>Total Amount:</strong></span>
                                             <span class="fw-bold">₱<span id="monthly-total-amount">0.00</span></span>
                                         </div>
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <span><strong>Per Month:</strong></span>
-                                            <span class="fw-bold">₱<span id="monthly-per-payment">0.00</span></span>
-                                        </div>
                                         <small class="text-muted">10 payments throughout the academic year (excluding vacation months)</small>
                                     </div>
                                     <div class="row g-2">
                                         @php
-                                            $months = [
-                                                'June', 'July', 'August', 'September', 'October',
-                                                'November', 'December', 'January', 'February', 'March'
+                                            $monthlyAmount = $totalAmount / 10;
+                                            $monthDates = [
+                                                date('Y-m-d', strtotime('+1 month')),
+                                                date('Y-m-d', strtotime('+2 months')),
+                                                date('Y-m-d', strtotime('+3 months')),
+                                                date('Y-m-d', strtotime('+4 months')),
+                                                date('Y-m-d', strtotime('+5 months')),
+                                                date('Y-m-d', strtotime('+6 months')),
+                                                date('Y-m-d', strtotime('+7 months')),
+                                                date('Y-m-d', strtotime('+8 months')),
+                                                date('Y-m-d', strtotime('+9 months')),
+                                                date('Y-m-d', strtotime('+10 months'))
                                             ];
                                         @endphp
-                                        @foreach($months as $index => $month)
+                                        @for($i = 1; $i <= 10; $i++)
                                             <div class="col-md-6 col-lg-4 col-xl-3">
                                                 <div class="card bg-light">
                                                     <div class="card-body p-2">
-                                                        <h6 class="card-title mb-1 small">{{ $month }}</h6>
-                                                        <p class="mb-1 small">₱<span class="monthly-amount">0.00</span></p>
-                                                        <input type="date" class="form-control form-control-sm mb-1" name="monthly_date_{{ $index + 1 }}" min="{{ date('Y-m-d') }}">
+                                                        <h6 class="card-title mb-1 small">Payment {{ $i }}</h6>
+                                                        <input type="date" class="form-control form-control-sm mb-1" name="monthly_date_{{ $i }}" min="{{ date('Y-m-d') }}" value="{{ $monthDates[$i-1] }}">
                                                         <div class="input-group input-group-sm">
                                                             <span class="input-group-text">₱</span>
-                                                            <input type="number" class="form-control" name="monthly_amount_{{ $index + 1 }}" step="0.01" min="0" placeholder="0.00">
+                                                            <input type="number" class="form-control" name="monthly_amount_{{ $i }}" step="0.01" min="0" value="{{ number_format($monthlyAmount, 2, '.', '') }}" placeholder="0.00">
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                        @endforeach
+                                        @endfor
                                     </div>
                                 </div>
                             </div>
-
-                            <!-- Payment Method Selection -->
-                            <div class="mt-4">
-                                <h6 class="fw-bold mb-3">Payment Mode</h6>
-                                <div class="row g-3">
-                                    <div class="col-md-4">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="payment_method" id="cash" value="cash">
-                                            <label class="form-check-label w-100" for="cash">
-                                                <div class="card border-2 h-100">
-                                                    <div class="card-body text-center py-3">
-                                                        <i class="ri-money-dollar-box-line fs-3 text-success mb-2"></i>
-                                                        <h6 class="fw-bold mb-0">Cash</h6>
-                                                    </div>
-                                                </div>
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="payment_method" id="bank_transfer" value="bank_transfer">
-                                            <label class="form-check-label w-100" for="bank_transfer">
-                                                <div class="card border-2 h-100">
-                                                    <div class="card-body text-center py-3">
-                                                        <i class="ri-bank-line fs-3 text-primary mb-2"></i>
-                                                        <h6 class="fw-bold mb-0">Bank Transfer</h6>
-                                                    </div>
-                                                </div>
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="payment_method" id="online_payment" value="online_payment">
-                                            <label class="form-check-label w-100" for="online_payment">
-                                                <div class="card border-2 h-100">
-                                                    <div class="card-body text-center py-3">
-                                                        <i class="ri-smartphone-line fs-3 text-info mb-2"></i>
-                                                        <h6 class="fw-bold mb-0">Online Payment</h6>
-                                                    </div>
-                                                </div>
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            {{-- Payment method will be determined by cashier when processing payments --}}
 
                             <!-- Notes Section -->
                             <div class="mt-4">
@@ -434,29 +373,44 @@
                             </div>
 
                             <!-- Debug Button (Remove in production) -->
-                            {{-- <div class="mt-3">
-                                <button type="button" class="btn btn-sm btn-outline-info" onclick="console.log('Button clicked'); console.log('Function exists:', typeof window.populatePaymentDates); if(window.populatePaymentDates) window.populatePaymentDates(); else console.error('Function not found');">
-                                    <i class="ri-refresh-line me-1"></i>Auto-fill Dates (Debug)
-                                </button>
-                                <small class="text-muted ms-2">Click to manually populate dates from preferred schedule</small>
-                            </div> --}}
+                           
 
                             <!-- Action Buttons -->
                             <div class="mt-4">
-                                @if($student->enrollment_status !== 'enrolled')
+                                @if($paymentScheduleStatus)
+                                    @if($paymentScheduleStatus->confirmation_status === 'pending')
+                                        <div class="d-grid gap-2">
+                                            <button type="button" class="btn btn-secondary btn-lg" disabled>
+                                                <i class="ri-time-line me-2"></i>Payment Schedule Pending Approval
+                                            </button>
+                                            <a href="{{ route('student.dashboard') }}" class="btn btn-outline-secondary">
+                                                <i class="ri-arrow-left-line me-2"></i>Back to Dashboard
+                                            </a>
+                                        </div>
+                                    @elseif($paymentScheduleStatus->confirmation_status === 'confirmed')
+                                        <div class="d-grid gap-2">
+                                            <a href="{{ route('student.payments') }}" class="btn btn-success btn-lg">
+                                                <i class="ri-money-dollar-circle-line me-2"></i>Proceed to Payment
+                                            </a>
+                                            <a href="{{ route('student.dashboard') }}" class="btn btn-outline-secondary">
+                                                <i class="ri-arrow-left-line me-2"></i>Back to Dashboard
+                                            </a>
+                                        </div>
+                                    @elseif(in_array($paymentScheduleStatus->confirmation_status, ['rejected', 'declined']))
+                                        <div class="d-grid gap-2">
+                                            <button type="submit" class="btn btn-primary btn-lg" id="enrollBtn">
+                                                <i class="ri-send-plane-line me-2"></i>Resubmit Payment Schedule
+                                            </button>
+                                            <a href="{{ route('student.dashboard') }}" class="btn btn-outline-secondary">
+                                                <i class="ri-arrow-left-line me-2"></i>Back to Dashboard
+                                            </a>
+                                        </div>
+                                    @endif
+                                @else
                                     <div class="d-grid gap-2">
                                         <button type="submit" class="btn btn-primary btn-lg" id="enrollBtn">
                                             <i class="ri-send-plane-line me-2"></i>Submit Payment Schedule
                                         </button>
-                                        <a href="{{ route('student.dashboard') }}" class="btn btn-outline-secondary">
-                                            <i class="ri-arrow-left-line me-2"></i>Back to Dashboard
-                                        </a>
-                                    </div>
-                                @else
-                                    <div class="d-grid gap-2">
-                                        <a href="{{ route('student.payments') }}" class="btn btn-success btn-lg">
-                                            <i class="ri-money-dollar-circle-line me-2"></i>Proceed to Payment
-                                        </a>
                                         <a href="{{ route('student.dashboard') }}" class="btn btn-outline-secondary">
                                             <i class="ri-arrow-left-line me-2"></i>Back to Dashboard
                                         </a>

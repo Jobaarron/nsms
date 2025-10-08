@@ -75,4 +75,54 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 3000);
         }
     }
+
+    // Data Change Request functionality
+    const fieldSelect = document.getElementById('field_name');
+    const currentValueInput = document.getElementById('current_value');
+    const oldValueInput = document.getElementById('old_value');
+    
+    console.log('Field select element:', fieldSelect);
+    console.log('Current value input:', currentValueInput);
+    console.log('Old value input:', oldValueInput);
+    console.log('Available enrollee data:', window.enrolleeData);
+    
+    if (fieldSelect && currentValueInput) {
+        // Get enrollee data from the page
+        const enrolleeData = window.enrolleeData || {};
+        
+        fieldSelect.addEventListener('change', function() {
+            const selectedField = this.value;
+            console.log('Selected field:', selectedField);
+            console.log('Enrollee data keys:', Object.keys(enrolleeData));
+            console.log('Field exists in data:', selectedField in enrolleeData);
+            
+            if (selectedField && selectedField in enrolleeData) {
+                const currentValue = enrolleeData[selectedField];
+                console.log('Raw current value for', selectedField, ':', currentValue);
+                
+                // Handle different data types and null/empty values
+                let displayValue = '';
+                if (currentValue === null || currentValue === undefined || currentValue === '') {
+                    displayValue = 'Not provided';
+                } else {
+                    displayValue = String(currentValue);
+                }
+                
+                console.log('Display value:', displayValue);
+                
+                currentValueInput.value = displayValue;
+                if (oldValueInput) {
+                    oldValueInput.value = displayValue;
+                }
+            } else {
+                console.log('Field not found in enrollee data or no field selected');
+                currentValueInput.value = 'Not provided';
+                if (oldValueInput) {
+                    oldValueInput.value = 'Not provided';
+                }
+            }
+        });
+    } else {
+        console.error('Required elements not found for data change request functionality');
+    }
 });

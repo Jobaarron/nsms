@@ -103,6 +103,11 @@
             </a>
           </li>
           
+          <li class="nav-item mb-2">
+            <a class="nav-link {{ request()->routeIs('cashier.fees*') ? 'active' : '' }}" href="{{ route('cashier.fees') }}">
+              <i class="ri-money-dollar-circle-line me-2"></i>Fee Management
+            </a>
+          </li>
           {{-- <li class="nav-item mb-2">
             <a class="nav-link {{ request()->routeIs('cashier.reports') ? 'active' : '' }}" href="{{ route('cashier.reports') }}">
               <i class="ri-bar-chart-line me-2"></i>Reports

@@ -183,6 +183,11 @@ class Enrollee extends Authenticatable
         return $this->hasMany(Notice::class);
     }
 
+    public function dataChangeRequests()
+    {
+        return $this->hasMany(DataChangeRequest::class);
+    }
+
     // Evaluation tracking relationships
     public function firstViewedBy()
     {

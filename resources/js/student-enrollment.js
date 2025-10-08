@@ -172,22 +172,7 @@ function setupFormValidation() {
     form.addEventListener('submit', function(e) {
         const selectedMode = document.querySelector('input[name="payment_mode"]:checked');
         
-        if (!selectedMode) {
-            e.preventDefault();
-            showAlert('Please select a payment mode before continuing.', 'warning');
-            
-            // Scroll to payment mode section
-            const paymentModeInput = document.querySelector('input[name="payment_mode"]');
-            const paymentSection = paymentModeInput ? paymentModeInput.closest('.card') : null;
-            if (paymentSection) {
-                paymentSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                paymentSection.classList.add('border-warning');
-                setTimeout(() => {
-                    paymentSection.classList.remove('border-warning');
-                }, 3000);
-            }
-            return false;
-        }
+        // Payment mode validation removed - user can submit without selecting mode
         
         // Show loading state
         const submitBtn = document.getElementById('enrollBtn');
@@ -206,21 +191,17 @@ function setupFormSubmission() {
     form.addEventListener('submit', function(e) {
         e.preventDefault(); // Always prevent default form submission
         
-        const selectedMethod = document.querySelector('input[name="payment_mode"]:checked');
-        const selectedMode = document.querySelector('input[name="payment_method"]:checked');
+        const selectedMode = document.querySelector('input[name="payment_mode"]:checked');
         
-        if (!selectedMethod) {
-            showAlert('Please select a payment method.', 'warning');
-            return;
+        // Payment method validation removed - not needed in current form
+        
+        // Payment mode validation removed - selectedMode can be null
+        
+        let modeName = 'Full Payment'; // Default
+        if (selectedMode) {
+            const modeLabel = selectedMode.closest('label');
+            modeName = modeLabel ? modeLabel.querySelector('h6')?.textContent || selectedMode.value : selectedMode.value;
         }
-        
-        if (!selectedMode) {
-            showAlert('Please select a payment mode.', 'warning');
-            return;
-        }
-        
-        const modeLabel = selectedMode.closest('label');
-        const modeName = modeLabel ? modeLabel.querySelector('h6')?.textContent || selectedMode.value : selectedMode.value;
         
         if (!confirm(`Are you sure you want to submit your payment schedule with ${modeName}? This will be sent to the cashier for confirmation.`)) {
             return;
@@ -256,15 +237,30 @@ function submitPaymentSchedule() {
         return;
     }
     
-    fetch('/student/payment-schedule', {
+    fetch('/student/enrollment', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': csrfToken.getAttribute('content')
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRF-TOKEN': csrfToken.getAttribute('content'),
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
         },
-        body: JSON.stringify(formData)
+        body: new URLSearchParams(formData)
     })
-    .then(response => response.json())
+    .then(response => {
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            return response.json();
+        } else {
+            // If not JSON, it might be a redirect - treat as success
+            if (response.ok) {
+                return { success: true, message: 'Payment schedule submitted successfully!', redirect_url: '/student/dashboard' };
+            } else {
+                throw new Error('Server returned non-JSON response');
+            }
+        }
+    })
     .then(data => {
         if (data.success) {
             showAlert(data.message, 'success');
@@ -290,15 +286,11 @@ function submitPaymentSchedule() {
 }
 
 function collectFormData() {
-    const selectedMethod = document.querySelector('input[name="payment_mode"]:checked');
-    const selectedMode = document.querySelector('input[name="payment_method"]:checked');
+    const selectedMode = document.querySelector('input[name="payment_mode"]:checked');
     const totalAmountElement = document.querySelector('h5.text-primary');
     const notesElement = document.querySelector('textarea[name="payment_notes"]');
     
-    // Validate required selections
-    if (!selectedMethod || !selectedMode) {
-        throw new Error('Payment method and mode must be selected');
-    }
+    // No validation needed - payment mode is optional, payment method determined by cashier
     
     // Get total amount
     let totalAmount = 0;
@@ -307,12 +299,15 @@ function collectFormData() {
         totalAmount = parseFloat(amountText) || 0;
     }
     
-    // Collect scheduled payments based on method
-    const scheduledPayments = collectScheduledPayments(selectedMethod.value, totalAmount);
+    // Use selected mode or default to 'full'
+    const paymentMode = selectedMode ? selectedMode.value : 'full';
+    
+    // Collect scheduled payments based on mode
+    const scheduledPayments = collectScheduledPayments(paymentMode, totalAmount);
     
     return {
-        payment_method: selectedMethod.value,
-        payment_mode: selectedMode.value,
+        payment_method: 'cash', // Default payment method, will be determined by cashier
+        payment_mode: paymentMode,
         total_amount: totalAmount,
         payment_notes: notesElement ? notesElement.value : '',
         scheduled_payments: scheduledPayments
@@ -446,23 +441,50 @@ function showPaymentBreakdown(method) {
 
 function updateAmountDisplays(totalAmount) {
     // Update full payment amounts
-    document.getElementById('full-total-amount').textContent = totalAmount.toFixed(2);
+    const fullTotalElement = document.getElementById('full-total-amount');
+    if (fullTotalElement) {
+        fullTotalElement.textContent = totalAmount.toFixed(2);
+    }
     
     // Update quarterly payment amounts
     const quarterlyAmount = totalAmount / 4;
-    document.getElementById('quarterly-total-amount').textContent = totalAmount.toFixed(2);
-    document.getElementById('quarterly-per-payment').textContent = quarterlyAmount.toFixed(2);
-    document.querySelectorAll('.quarterly-amount').forEach(element => {
-        element.textContent = quarterlyAmount.toFixed(2);
-    });
+    const quarterlyTotalElement = document.getElementById('quarterly-total-amount');
+    const quarterlyPerElement = document.getElementById('quarterly-per-payment');
+    
+    if (quarterlyTotalElement) {
+        quarterlyTotalElement.textContent = totalAmount.toFixed(2);
+    }
+    if (quarterlyPerElement) {
+        quarterlyPerElement.textContent = quarterlyAmount.toFixed(2);
+    }
+    
+    // Update quarterly input amounts
+    for (let i = 1; i <= 4; i++) {
+        const quarterlyAmountInput = document.querySelector(`input[name="quarterly_amount_${i}"]`);
+        if (quarterlyAmountInput && !quarterlyAmountInput.value) {
+            quarterlyAmountInput.value = quarterlyAmount.toFixed(2);
+        }
+    }
     
     // Update monthly payment amounts
     const monthlyAmount = totalAmount / 10;
-    document.getElementById('monthly-total-amount').textContent = totalAmount.toFixed(2);
-    document.getElementById('monthly-per-payment').textContent = monthlyAmount.toFixed(2);
-    document.querySelectorAll('.monthly-amount').forEach(element => {
-        element.textContent = monthlyAmount.toFixed(2);
-    });
+    const monthlyTotalElement = document.getElementById('monthly-total-amount');
+    const monthlyPerElement = document.getElementById('monthly-per-payment');
+    
+    if (monthlyTotalElement) {
+        monthlyTotalElement.textContent = totalAmount.toFixed(2);
+    }
+    if (monthlyPerElement) {
+        monthlyPerElement.textContent = monthlyAmount.toFixed(2);
+    }
+    
+    // Update monthly input amounts
+    for (let i = 1; i <= 10; i++) {
+        const monthlyAmountInput = document.querySelector(`input[name="monthly_amount_${i}"]`);
+        if (monthlyAmountInput && !monthlyAmountInput.value) {
+            monthlyAmountInput.value = monthlyAmount.toFixed(2);
+        }
+    }
 }
 
 function setupPaymentMethodSelection() {

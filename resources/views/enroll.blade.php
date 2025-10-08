@@ -6,7 +6,7 @@
             <div class="content-card p-5">
                 <div class="text-center mb-4">
                     <i class="ri-user-add-line" style="font-size: 4rem; color: var(--primary-color);"></i>
-                    <h2 class="page-header mb-2">Student Enrollment</h2>
+                    <h2 class="page-header mb-2">Student Admission</h2>
                     <br><br>
                     <p class="text-muted">Please fill out the form below to apply</p>
                 </div>
@@ -586,7 +586,7 @@
                             {{-- </select>
                             @error('payment_mode') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div> --}}
-                        <div class="col-md-6">
+                        {{-- <div class="col-md-6">
                             <label for="preferred_schedule" class="form-label fw-semibold" style="color: var(--primary-color);">
                                 Preferred Schedule
                             </label>
@@ -598,11 +598,11 @@
                                 value="{{ old('preferred_schedule') }}"
                             >
                             @error('preferred_schedule') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                        </div>
+                        </div> --}}
                     </div>
 
                     <button type="submit" class="btn btn-custom btn-lg w-100 mb-3">
-                        <i class="ri-send-plane-line me-2"></i>Enroll Now
+                        <i class="ri-send-plane-line me-2"></i>Apply now
                     </button>
                 </form>
             </div>

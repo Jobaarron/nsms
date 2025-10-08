@@ -195,12 +195,12 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-success" onclick="confirmFromModal()">
+                    {{-- <button type="button" class="btn btn-success" onclick="confirmFromModal()">
                         <i class="ri-check-line me-2"></i>Confirm Payment
                     </button>
                     <button type="button" class="btn btn-danger" onclick="rejectFromModal()">
                         <i class="ri-close-line me-2"></i>Reject Payment
-                    </button>
+                    </button> --}}
                 </div>
             </div>
         </div>

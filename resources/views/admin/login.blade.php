@@ -5,7 +5,7 @@
             <div class="content-card p-5">
                 <div class="text-center mb-4">
                     <i class="ri-admin-line" style="font-size: 4rem; color: var(--primary-color);"></i>
-                    <h2 class="page-header mb-2">Registrar & Admin Login</h2>
+                    <h2 class="page-header mb-2">Admin Login</h2>
                     <p class="text-muted">Login to access the admin panel</p>
                 </div>
 

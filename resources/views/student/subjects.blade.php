@@ -31,11 +31,8 @@
                         </div>
                         <div class="flex-grow-1">
                             @php
-                                $subjects = \App\Models\Subject::getSubjectsForStudent(
-                                    $student->grade_level,
-                                    $student->strand,
-                                    $student->track
-                                );
+                                // Use subjects filtered by controller (includes semester filtering for SHS)
+                                $subjects = $currentSubjects;
                             @endphp
                             <h3 class="fw-bold fs-4 mb-0 text-white">{{ $subjects->count() }}</h3>
                             <small class="text-white">Total Subjects</small>
@@ -92,12 +89,11 @@
                     <div class="card-header bg-white border-0 pb-0">
                         <div class="d-flex justify-content-between align-items-center">
                             <h5 class="card-title mb-0">
-                                <i class="ri-book-open-line me-2"></i>Subjects for {{ $student->grade_level }}
-                                @if($student->strand)
-                                    - {{ $student->strand }}
-                                @endif
-                                @if($student->track)
-                                    ({{ $student->track }})
+                                <i class="ri-book-line me-2"></i>My Subjects
+                                @if(in_array($student->grade_level, ['Grade 11', 'Grade 12']))
+                                    <small class="text-muted d-block">{{ $currentSemester }} - {{ $student->strand }}{{ $student->track ? ' (' . $student->track . ')' : '' }}</small>
+                                @else
+                                    <small class="text-muted d-block">{{ $currentGradingPeriod }}</small>
                                 @endif
                             </h5>
                             <div class="btn-group" role="group">
@@ -111,14 +107,23 @@
                     </div>
                     <div class="card-body">
                         @if($subjects->count() > 0)
+                            <div class="alert alert-info mb-3">
+                                <i class="ri-information-line me-2"></i>
+                                <strong>Academic Year {{ $student->academic_year ?? '2024-2025' }}</strong>
+                                @if(in_array($student->grade_level, ['Grade 11', 'Grade 12']))
+                                    <br><small>Showing only {{ $currentSemester }} subjects that you will take this academic year</small>
+                                @else
+                                    <br><small>Showing all subjects you will take this academic year</small>
+                                @endif
+                            </div>
                             <div class="table-responsive">
                                 <table class="table table-hover" id="subjectsTable">
                                     <thead>
                                         <tr>
                                             <th>Category</th>
                                             <th>Subject Name</th>
-                                            <th>Grade Level</th>
-                                            @if($student->grade_level === 'Grade 11' || $student->grade_level === 'Grade 12')
+                                            @if(in_array($student->grade_level, ['Grade 11', 'Grade 12']))
+                                                <th>Semester</th>
                                                 <th>Type</th>
                                             @endif
                                             <th>Academic Year</th>
@@ -126,15 +131,17 @@
                                     </thead>
                                     <tbody>
                                         @foreach($subjects as $subject)
-                                            <tr class="subject-row" data-type="{{ $subject->category }}">
+                                            <tr class="subject-row" data-type="{{ $subject->category ?? 'core' }}">
                                                 <td class="fw-semibold">
-                                                    <span class="badge bg-{{ $subject->category === 'core' ? 'secondary' : 'primary' }}">
-                                                        {{ ucfirst($subject->category) }}
+                                                    <span class="badge bg-{{ ($subject->category ?? 'core') === 'core' ? 'secondary' : 'primary' }}">
+                                                        {{ ucfirst($subject->category ?? 'core') }}
                                                     </span>
                                                 </td>
-                                                <td>{{ $subject->subject_name }}</td>
-                                                <td>{{ $subject->grade_level }}</td>
-                                                @if($student->grade_level === 'Grade 11' || $student->grade_level === 'Grade 12')
+                                                <td class="fw-medium">{{ $subject->subject_name }}</td>
+                                                @if(in_array($student->grade_level, ['Grade 11', 'Grade 12']))
+                                                    <td>
+                                                        <span class="badge bg-success">{{ $subject->semester ?? 'All Year' }}</span>
+                                                    </td>
                                                     <td>
                                                         @if($subject->strand)
                                                             <span class="badge bg-primary">{{ $subject->strand }}</span>
@@ -142,7 +149,7 @@
                                                                 <span class="badge bg-info">{{ $subject->track }}</span>
                                                             @endif
                                                         @else
-                                                            <span class="badge bg-secondary">Core</span>
+                                                            <span class="badge bg-secondary">Core Subject</span>
                                                         @endif
                                                     </td>
                                                 @endif
