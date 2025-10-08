@@ -106,11 +106,40 @@
                 <div class="card border-0 shadow-sm card-summary card-gpa h-100">
                     <div class="card-body d-flex align-items-center">
                         <div class="flex-shrink-0 me-3">
-                            <i class="ri-calendar-line fs-2"></i>
+                            @php
+                                $pendingCount = $paymentSchedules->where('confirmation_status', 'pending')->count();
+                                $confirmedCount = $paymentSchedules->where('confirmation_status', 'confirmed')->count();
+                                $rejectedCount = $paymentSchedules->where('confirmation_status', 'rejected')->count();
+                                $hasSchedule = $paymentSchedules->count() > 0;
+                            @endphp
+                            
+                            @if($confirmedCount > 0)
+                                <i class="ri-check-double-line fs-2"></i>
+                            @elseif($rejectedCount > 0)
+                                <i class="ri-close-circle-line fs-2"></i>
+                            @elseif($pendingCount > 0)
+                                <i class="ri-time-line fs-2"></i>
+                            @else
+                                <i class="ri-calendar-line fs-2"></i>
+                            @endif
                         </div>
                         <div class="flex-grow-1">
-                            <h3 class="fw-bold fs-4 mb-0 text-white">Automated Schedule</h3>
-                            <small class="text-white">Based on Enrollment Date</small>
+                            @if($confirmedCount > 0)
+                                <h3 class="fw-bold fs-4 mb-0 text-white">Schedule Approved</h3>
+                                <small class="text-white">Confirmed by Cashier</small>
+                            @elseif($rejectedCount > 0)
+                                <h3 class="fw-bold fs-4 mb-0 text-white">Schedule Rejected</h3>
+                                <small class="text-white">Contact Cashier Office</small>
+                            @elseif($pendingCount > 0)
+                                <h3 class="fw-bold fs-4 mb-0 text-white">Pending Review</h3>
+                                <small class="text-white">Awaiting Cashier Approval</small>
+                            @elseif($hasSchedule)
+                                <h3 class="fw-bold fs-4 mb-0 text-white">Schedule Submitted</h3>
+                                <small class="text-white">Under Processing</small>
+                            @else
+                                <h3 class="fw-bold fs-4 mb-0 text-white">No Schedule</h3>
+                                <small class="text-white">Submit Payment Schedule</small>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -250,7 +279,7 @@
                 @endif
 
                 <!-- Payment History -->
-                <div class="card border-0 shadow-sm mb-4">
+                <!-- <div class="card border-0 shadow-sm mb-4">
                     <div class="card-header bg-white border-0 pb-0">
                         <h5 class="card-title mb-0">
                             <i class="ri-history-line me-2"></i>Payment History
@@ -296,7 +325,7 @@
                             </div>
                         @endif
                     </div>
-                </div>
+                </div> -->
             </div>
 
             <!-- Right Column -->
@@ -360,7 +389,7 @@
                 </div>
 
                 <!-- Payment Methods -->
-                <div class="card border-0 shadow-sm mb-4">
+                <!-- <div class="card border-0 shadow-sm mb-4">
                     <div class="card-header bg-white border-0 pb-0">
                         <h6 class="card-title mb-0">
                             <i class="ri-bank-card-line me-2"></i>Payment Mode
@@ -397,7 +426,7 @@
                             </div>
                         </div>
                     </div>
-                </div>
+                </div> -->
 
                 <!-- Payment Mode Change -->
                 @php

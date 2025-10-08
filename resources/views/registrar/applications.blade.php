@@ -10,6 +10,7 @@
     
     @vite(['resources/js/registrar-applications.js'])
     @vite(['resources/js/registrar-data-change-requests.js'])
+    @vite(['resources/js/registrar-document-management.js'])
     @vite(['resources/css/index_registrar.css'])
     
     @include('registrar.enrollment-modals')
@@ -95,7 +96,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-6 col-lg-3">
+            <!-- <div class="col-6 col-lg-3">
                 <div class="card border-0 shadow-sm h-100">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
@@ -109,7 +110,7 @@
                         </div>
                     </div>
                 </div>
-            </div>
+            </div> -->
         </div>
 
         <!-- Navigation Tabs -->
@@ -167,7 +168,7 @@
                                 </div>
                                 <div class="col-md-3">
                                     <select class="form-select" name="grade_level" onchange="this.form.submit()">
-                                        <option value="">All Grades</option>
+                                        <option value="">All Grade Level</option>
                                         <option value="Nursery" {{ request('grade_level') === 'Nursery' ? 'selected' : '' }}>Nursery</option>
                                         <option value="Junior Casa" {{ request('grade_level') === 'Junior Casa' ? 'selected' : '' }}>Junior Casa</option>
                                         <option value="Senior Casa" {{ request('grade_level') === 'Senior Casa' ? 'selected' : '' }}>Senior Casa</option>
@@ -297,6 +298,9 @@
                                             </button>
                                             <button type="button" class="btn btn-warning btn-sm" onclick="bulkDecline()">
                                                 <i class="ri-close-line me-1"></i>Decline
+                                            </button>
+                                            <button type="button" class="btn btn-info btn-sm" onclick="bulkSendNotice()">
+                                                <i class="ri-mail-send-line me-1"></i>Send Notice
                                             </button>
                                             <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearAllSelections()">
                                                 <i class="ri-close-circle-line me-1"></i>Clear
@@ -634,11 +638,11 @@
                                                                 <i class="ri-close-line"></i>
                                                             </button>
                                                         @endif
-                                                        <button type="button" class="btn btn-outline-primary" 
+                                                        <!-- <button type="button" class="btn btn-outline-primary" 
                                                                 onclick="scheduleAppointment('{{ $appointment->application_id }}')" 
                                                                 title="Schedule/Reschedule">
                                                             <i class="ri-calendar-event-line"></i>
-                                                        </button>
+                                                        </button> -->
                                                     </div>
                                                 </td>
                                             </tr>
@@ -668,15 +672,13 @@
                     <div class="card-body">
                         <!-- Notice Actions -->
                         <div class="row mb-4">
-                            <div class="col-md-6">
-                                {{-- <button class="btn btn-primary" onclick="openCreateNoticeModal()">
-                                    <i class="ri-add-line me-1"></i>Create Notice
-                                </button> --}}
-                                {{-- <button class="btn btn-outline-info ms-2" onclick="openBulkNoticeModal()">
-                                    <i class="ri-mail-send-line me-1"></i>Bulk Notice
-                                </button> --}}
+                            <div class="col-md-8">
+                                <button class="btn btn-primary" onclick="openStudentSelectionModal()">
+                                    <i class="ri-user-search-line me-2"></i>Send Notice to Student
+                                </button>
+                                <small class="text-muted d-block mt-2">Select a student to send a personalized notice</small>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <form method="GET" action="{{ route('registrar.applications') }}" class="d-flex">
                                     <input type="hidden" name="tab" value="notices">
                                     <select class="form-select me-2" name="notice_priority" onchange="this.form.submit()">
@@ -692,116 +694,60 @@
                             </div>
                         </div>
 
-                        @php
-                            // Get notices data
-                            $noticesQuery = \App\Models\Notice::with('enrollee:id,application_id,first_name,last_name,email')
-                                ->orderBy('created_at', 'desc');
-                            
-                            // Apply priority filter
-                            if (request('notice_priority')) {
-                                $noticesQuery->where('priority', request('notice_priority'));
-                            }
-                            
-                            $notices = $noticesQuery->get();
-                        @endphp
+                        <!-- Loading State -->
+                        <div id="notices-loading" class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="text-muted mt-2">Loading notices...</p>
+                        </div>
 
-                        @if($notices->count() > 0)
+                        <!-- Notices Content -->
+                        <div id="notices-content" style="display: none;">
                             <div class="table-responsive">
                                 <table class="table table-hover">
                                     <thead class="table-light">
                                         <tr>
                                             <th>Title</th>
                                             <th>Recipient</th>
-                                            <th>Type</th>
                                             <th>Priority</th>
                                             <th>Date Sent</th>
                                             <th>Status</th>
                                             <th>Actions</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
-                                        @foreach($notices as $notice)
-                                            <tr>
-                                                <td>{{ $notice->title }}</td>
-                                                <td>
-                                                    @if($notice->is_global)
-                                                        <span class="badge bg-info">All Applicants</span>
-                                                    @elseif($notice->enrollee)
-                                                        {{ $notice->enrollee->first_name }} {{ $notice->enrollee->last_name }}
-                                                        <br><small class="text-muted">({{ $notice->enrollee->application_id }})</small>
-                                                    @else
-                                                        <span class="text-muted">Unknown</span>
-                                                    @endif
-                                                </td>
-                                                <td>
-                                                    @php
-                                                        $typeClasses = [
-                                                            'info' => 'bg-info',
-                                                            'success' => 'bg-success',
-                                                            'warning' => 'bg-warning text-dark',
-                                                            'error' => 'bg-danger'
-                                                        ];
-                                                        $typeClass = $typeClasses[$notice->type] ?? 'bg-secondary';
-                                                    @endphp
-                                                    <span class="badge {{ $typeClass }}">
-                                                        {{ ucfirst($notice->type) }}
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    @php
-                                                        $priorityClasses = [
-                                                            'normal' => 'bg-secondary',
-                                                            'high' => 'bg-warning text-dark',
-                                                            'urgent' => 'bg-danger'
-                                                        ];
-                                                        $priorityClass = $priorityClasses[$notice->priority] ?? 'bg-secondary';
-                                                    @endphp
-                                                    <span class="badge {{ $priorityClass }}">
-                                                        {{ ucfirst($notice->priority) }}
-                                                    </span>
-                                                </td>
-                                                <td>{{ $notice->created_at->format('M d, Y g:i A') }}</td>
-                                                <td>
-                                                    @if($notice->read_at)
-                                                        <span class="badge bg-success">Read</span>
-                                                        <br><small class="text-muted">{{ $notice->read_at->format('M d, Y') }}</small>
-                                                    @else
-                                                        <span class="badge bg-warning text-dark">Unread</span>
-                                                    @endif
-                                                </td>
-                                                <td>
-                                                    <div class="btn-group btn-group-sm" role="group">
-                                                        <button type="button" class="btn btn-outline-primary" 
-                                                                onclick="viewNotice({{ $notice->id }})" 
-                                                                title="View Notice">
-                                                            <i class="ri-eye-line"></i>
-                                                        </button>
-                                                        @if(!$notice->is_global && $notice->enrollee)
-                                                            <button type="button" class="btn btn-outline-info" 
-                                                                    onclick="sendNoticeToApplicant('{{ $notice->enrollee->application_id }}')" 
-                                                                    title="Send Another Notice">
-                                                                <i class="ri-mail-send-line"></i>
-                                                            </button>
-                                                        @endif
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        @endforeach
+                                    <tbody id="notices-table-body">
+                                        <!-- Notices will be loaded here -->
                                     </tbody>
                                 </table>
                             </div>
-                        @else
-                            <div class="text-center py-4">
-                                <i class="ri-notification-line fs-1 text-muted d-block mb-2"></i>
-                                <p class="text-muted">No notices found</p>
-                                <button class="btn btn-primary" onclick="openCreateNoticeModal()">
-                                    <i class="ri-add-line me-1"></i>Create First Notice
-                                </button>
-                            </div>
-                        @endif
+                        </div>
+
+                        <!-- Empty State -->
+                        <div id="notices-empty" class="text-center py-4" style="display: none;">
+                            <i class="ri-notification-line fs-1 text-muted d-block mb-2"></i>
+                            <p class="text-muted">No notices sent yet</p>
+                            <small class="text-muted">Notices sent to students will appear here</small>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            <script>
+                // Load notices data when page loads if notices tab is active
+                document.addEventListener('DOMContentLoaded', function() {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const activeTab = urlParams.get('tab');
+                    if (activeTab === 'notices') {
+                        // Small delay to ensure DOM is ready
+                        setTimeout(() => {
+                            if (typeof loadNoticesData === 'function') {
+                                loadNoticesData();
+                            }
+                        }, 100);
+                    }
+                });
+            </script>
 
             <!-- Data Change Request Tab -->
             <div class="tab-pane fade" id="data-change-requests" role="tabpanel">
@@ -816,9 +762,9 @@
                         <!-- Test Button -->
                         <div class="row mb-3">
                             <div class="col-12">
-                                <button class="btn btn-outline-info btn-sm" onclick="testDataChangeRequests()">
+                                <!-- <button class="btn btn-outline-info btn-sm" onclick="testDataChangeRequests()">
                                     <i class="ri-bug-line me-1"></i>Test Connection
-                                </button>
+                                </button> -->
                                 <span id="testResult" class="ms-2"></span>
                             </div>
                         </div>
@@ -874,11 +820,11 @@
                         </div>
 
                         <!-- Empty State -->
-                        <div id="changeRequestsEmptyState" class="text-center py-4">
+                        <!-- <div id="changeRequestsEmptyState" class="text-center py-4">
                             <i class="ri-file-edit-line fs-1 text-muted d-block mb-2"></i>
                             <p class="text-muted">No change requests found</p>
                             <small class="text-muted">Change requests will appear here when students submit them</small>
-                        </div>
+                        </div> -->
                     </div>
                 </div>
             </div>
@@ -1014,15 +960,6 @@
                             </select>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="notice-type" class="form-label">Notice Type</label>
-                            <select class="form-select" id="notice-type" required>
-                                <option value="info">Information</option>
-                                <option value="success">Success</option>
-                                <option value="warning">Warning</option>
-                                <option value="error">Error</option>
-                            </select>
-                        </div>
 
                         <div class="mb-3">
                             <label for="notice-message" class="form-label">Message</label>
@@ -1110,15 +1047,6 @@
                             </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="bulk-notice-type" class="form-label">Notice Type</label>
-                            <select class="form-select" id="bulk-notice-type" required>
-                                <option value="info">Information</option>
-                                <option value="success">Success</option>
-                                <option value="warning">Warning</option>
-                                <option value="error">Error</option>
-                            </select>
-                        </div>
 
                         <div class="mb-3">
                             <label for="bulk-notice-message" class="form-label">Message</label>
@@ -1154,7 +1082,6 @@
                         <div class="card-body">
                             <div class="row mb-3">
                                 <div class="col-md-6">
-                                    <p><strong>Type:</strong> <span id="view-notice-type" class="badge"></span></p>
                                     <p><strong>Priority:</strong> <span id="view-notice-priority" class="badge"></span></p>
                                 </div>
                                 <div class="col-md-6">

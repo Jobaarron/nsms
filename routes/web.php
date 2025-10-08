@@ -512,6 +512,7 @@ Route::prefix('registrar')->name('registrar.')->group(function () {
         
         // Applications management
         Route::get('/applications', [RegistrarController::class, 'applications'])->name('applications');
+        Route::get('/applications/data', [RegistrarController::class, 'getApplicationsData'])->name('applications.data');
         Route::get('/applications/{id}', [RegistrarController::class, 'getApplication'])->name('applications.get');
         Route::post('/applications/{id}/approve', [RegistrarController::class, 'approveApplication'])->name('applications.approve');
         Route::post('/applications/{id}/decline', [RegistrarController::class, 'declineApplication'])->name('applications.decline');
@@ -612,10 +613,13 @@ Route::middleware(['auth:student'])->prefix('student')->name('student.')->group(
 Route::middleware(['auth:cashier'])->prefix('cashier/api')->name('cashier.api.')->group(function () {
     Route::get('/payment-schedules', [PaymentScheduleController::class, 'getAllPaymentSchedules'])->name('payment-schedules.all');
     Route::get('/payment-schedules/{paymentId}', [PaymentScheduleController::class, 'getPaymentDetails'])->name('payment-schedules.details');
+    Route::get('/payment-schedules/student/{studentId}/{paymentMethod}', [PaymentScheduleController::class, 'getStudentPaymentSchedule'])->name('payment-schedules.student');
+    Route::post('/payment-schedules/student/{studentId}/{paymentMethod}/process', [PaymentScheduleController::class, 'processStudentPaymentSchedule'])->name('payment-schedules.student.process');
     Route::get('/payment-schedules/pending', [PaymentScheduleController::class, 'getPendingPaymentSchedules'])->name('payment-schedules.pending');
     Route::get('/payment-schedules/due', [PaymentScheduleController::class, 'getDuePaymentSchedules'])->name('payment-schedules.due');
     Route::post('/payment-schedules/{paymentId}/process', [PaymentScheduleController::class, 'processPayment'])->name('payment-schedules.process');
     Route::get('/payment-statistics', [PaymentScheduleController::class, 'getPaymentStatistics'])->name('payment-statistics');
+    Route::get('/payment-history', [PaymentScheduleController::class, 'getPaymentHistory'])->name('payment-history');
 });
 
 // ===== CASHIER ROUTES =====
@@ -660,4 +664,3 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::post('/logout', [CashierController::class, 'logout'])->name('logout');
     });
 });
-

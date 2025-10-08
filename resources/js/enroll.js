@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-  const dob = document.getElementById('dob');
+  const dob = document.getElementById('date_of_birth');
   if (!dob) return;
   // prevent selecting a future date
   dob.max = new Date().toISOString().split('T')[0];

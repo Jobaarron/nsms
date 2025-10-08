@@ -40,13 +40,12 @@
                             <table class="table table-hover">
                                 <thead>
                                     <tr>
+                                        <th>Priority</th>
                                         <th>Transaction ID</th>
-                                        <th>Student/Enrollee</th>
-{{-- <th>Fee Type</th> --}}
+                                        <th>Student ID</th>
                                         <th>Amount</th>
-                                        <th>Payment Method</th>
-                                        <th>Processed By</th>
-                                        <th>Confirmed Date</th>
+                                        <th>Scheduled Date</th>
+                                        <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -77,11 +76,12 @@
                                                     ₱{{ number_format($payment->amount, 2) }}
                                                 </span>
                                             </td>
-                                            <td>
+                                            <!-- Payment method badge removed for on-site processing -->
+                                            <!-- <td>
                                                 <span class="badge bg-info">
                                                     {{ ucfirst($payment->payment_method) }}
                                                 </span>
-                                            </td>
+                                            </td> -->
                                             <td>
                                                 @if($payment->cashier)
                                                     <div>
@@ -194,7 +194,7 @@
                             <p><strong>Name:</strong> ${payment.payable ? payment.payable.first_name + ' ' + payment.payable.last_name : 'N/A'}</p>
                             <p><strong>ID:</strong> ${payment.payable ? (payment.payable.student_id || payment.payable.application_id) : 'N/A'}</p>
                             <p><strong>Fee Type:</strong> ${payment.fee ? payment.fee.name : 'N/A'}</p>
-                            <p><strong>Status:</strong> <span class="badge bg-success">${payment.confirmation_status}</span></p>
+                            <p><strong>Status:</strong> <span class="badge bg-success">Paid</span></p>
                             ${payment.cashier ? `<p><strong>Processed By:</strong> ${payment.cashier.full_name} (${payment.cashier.employee_id})</p>` : ''}
                         </div>
                     </div>

@@ -23,7 +23,7 @@ return new class extends Migration
 
             $table->decimal('amount', 10, 2);
             $table->enum('status', ['pending', 'paid', 'failed', 'refunded'])->default('pending');
-            $table->enum('payment_method', ['cash', 'online_payment', 'scholarship', 'voucher']);
+            $table->enum('payment_method', ['full', 'quarterly', 'monthly'])->default('full');
             $table->string('reference_number')->nullable();
             $table->text('notes')->nullable();
             $table->timestamp('paid_at')->nullable();

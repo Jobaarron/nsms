@@ -24,7 +24,7 @@ function initializeEnrollment() {
 }
 
 function setupPaymentModeSelection() {
-    const paymentOptions = document.querySelectorAll('input[name="payment_mode"]');
+    const paymentOptions = document.querySelectorAll('input[name="payment_method"]');
     
     paymentOptions.forEach(option => {
         option.addEventListener('change', function() {
@@ -63,7 +63,7 @@ function updatePaymentModeStyles() {
     });
     
     // Add active style to selected card
-    const selectedInput = document.querySelector('input[name="payment_mode"]:checked');
+    const selectedInput = document.querySelector('input[name="payment_method"]:checked');
     if (selectedInput) {
         const selectedCard = selectedInput.closest('.form-check').querySelector('.payment-option');
         selectedCard.classList.remove('border-secondary');
@@ -72,7 +72,7 @@ function updatePaymentModeStyles() {
 }
 
 function updatePaymentScheduleDisplay() {
-    const selectedMode = document.querySelector('input[name="payment_mode"]:checked');
+    const selectedMode = document.querySelector('input[name="payment_method"]:checked');
     const scheduleDiv = document.getElementById('payment-schedule');
     const scheduleContent = document.getElementById('schedule-content');
     
@@ -170,7 +170,7 @@ function setupFormValidation() {
     if (!form) return;
     
     form.addEventListener('submit', function(e) {
-        const selectedMode = document.querySelector('input[name="payment_mode"]:checked');
+        const selectedMode = document.querySelector('input[name="payment_method"]:checked');
         
         // Payment mode validation removed - user can submit without selecting mode
         
@@ -191,7 +191,7 @@ function setupFormSubmission() {
     form.addEventListener('submit', function(e) {
         e.preventDefault(); // Always prevent default form submission
         
-        const selectedMode = document.querySelector('input[name="payment_mode"]:checked');
+        const selectedMode = document.querySelector('input[name="payment_method"]:checked');
         
         // Payment method validation removed - not needed in current form
         
@@ -286,7 +286,7 @@ function submitPaymentSchedule() {
 }
 
 function collectFormData() {
-    const selectedMode = document.querySelector('input[name="payment_mode"]:checked');
+    const selectedMode = document.querySelector('input[name="payment_method"]:checked');
     const totalAmountElement = document.querySelector('h5.text-primary');
     const notesElement = document.querySelector('textarea[name="payment_notes"]');
     
@@ -306,8 +306,7 @@ function collectFormData() {
     const scheduledPayments = collectScheduledPayments(paymentMode, totalAmount);
     
     return {
-        payment_method: 'cash', // Default payment method, will be determined by cashier
-        payment_mode: paymentMode,
+        payment_method: paymentMode, // Payment schedule type: full, quarterly, monthly
         total_amount: totalAmount,
         payment_notes: notesElement ? notesElement.value : '',
         scheduled_payments: scheduledPayments
@@ -412,7 +411,7 @@ function showAlert(message, type = 'info') {
 }
 
 function showPaymentScheduleCard() {
-    const selectedMethod = document.querySelector('input[name="payment_mode"]:checked');
+    const selectedMethod = document.querySelector('input[name="payment_method"]:checked');
     const scheduleCard = document.getElementById('payment-schedule-card');
     
     if (!scheduleCard) return;
