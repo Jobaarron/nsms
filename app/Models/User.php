@@ -90,7 +90,8 @@ class User extends Authenticatable
 
     public function isAdmin()
     {
-        return $this->admin()->exists() && $this->admin->is_active;
+        $admin = $this->admin;
+        return $admin && $admin->is_active;
     }
 
     public function teacher()
@@ -130,12 +131,16 @@ class User extends Authenticatable
 
     public function isStudent()
     {
-        return $this->student()->exists() && $this->student->is_active;
+        $student = $this->student;
+        return $student && $student->is_active;
     }
 
     public function getUserRole()
     {
         if ($this->isAdmin()) return 'admin';
+        //add disciplinestaffhere
+        if ($this->isDisciplineStaff()) return 'discipline_officer';
+        if ($this->isGuidanceStaff()) return 'guidance_counselor';
         // if ($this->isTeacher()) return 'teacher';
         // if ($this->isGuidanceCounsellor()) return 'guidance_counsellor';
         // if ($this->isDisciplineOfficer()) return 'discipline_officer';
@@ -148,7 +153,8 @@ class User extends Authenticatable
      */
     public function isGuidanceStaff()
     {
-        return ($this->guidance()->exists() && $this->guidance->is_active) || $this->guidanceDiscipline()->exists();
+        $guidance = $this->guidance;
+        return ($guidance && $guidance->is_active) || $this->guidanceDiscipline()->exists();
     }
 
     /**
@@ -156,7 +162,9 @@ class User extends Authenticatable
      */
     public function isDisciplineStaff()
     {
-        return $this->discipline()->exists() && $this->discipline->is_active;
+    $discipline = $this->discipline;
+    // Defensive: check for null and property
+    return ($discipline && (property_exists($discipline, 'is_active') ? $discipline->is_active : true));
     }
 
     /**

@@ -63,21 +63,19 @@ Route::prefix('admin')->group(function () {
         // Dashboard
         Route::middleware(['auth', 'role:admin'])->name('admin.')->group(function () {
         
-        Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-            Route::get('/dashboard', [AdminController::class, 'index'])->name('dashboard');
-            Route::get('/dashboard/stats', [AdminController::class, 'getStats'])->name('dashboard.stats');
+        Route::get('/dashboard', [AdminController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard/stats', [AdminController::class, 'getStats'])->name('dashboard.stats');
 
-            // Forwarded Case Meetings for President (Admin)
-            Route::get('/forwarded-cases', [AdminController::class, 'forwardedCases'])->name('forwarded.cases');
+        // Forwarded Case Meetings for President (Admin)
+        Route::get('/forwarded-cases', [AdminController::class, 'forwardedCases'])->name('forwarded.cases');
 
-            // Sanction actions for forwarded cases
-            Route::post('/sanctions/{sanction}/approve', [AdminController::class, 'approveSanction'])->name('sanctions.approve');
-            Route::post('/sanctions/{sanction}/reject', [AdminController::class, 'rejectSanction'])->name('sanctions.reject');
-            Route::post('/sanctions/{sanction}/revise', [AdminController::class, 'reviseSanction'])->name('sanctions.revise');
+        // Sanction actions for forwarded cases
+        Route::post('/sanctions/{sanction}/approve', [AdminController::class, 'approveSanction'])->name('sanctions.approve');
+        Route::post('/sanctions/{sanction}/reject', [AdminController::class, 'rejectSanction'])->name('sanctions.reject');
+        Route::post('/sanctions/{sanction}/revise', [AdminController::class, 'reviseSanction'])->name('sanctions.revise');
 
-            // View summary report for case meeting
-            Route::get('/case-meetings/{caseMeeting}/summary', [AdminController::class, 'viewSummaryReport'])->name('case-meetings.summary');
-        });
+        // View summary report for case meeting
+        Route::get('/case-meetings/{caseMeeting}/summary', [AdminController::class, 'viewSummaryReport'])->name('case-meetings.summary');
         Route::get('/', [AdminController::class, 'index'])->name('admin.dashboard');
         Route::post('/logout', [AdminController::class, 'logout'])->name('admin.logout');
         
@@ -85,35 +83,35 @@ Route::prefix('admin')->group(function () {
      
         
         // User Management - Use your custom permission middleware
-        Route::middleware(['can:Manage Roles'])->group(function () {
-            Route::get('/manage-users', [UserManagementController::class, 'index'])->name('admin.manage.users');
-            Route::post('/assign-role', [AdminController::class, 'assignRole'])->name('admin.assign.role');
-            Route::post('/remove-role', [AdminController::class, 'removeRole'])->name('admin.remove.role');
-            Route::post('/create-role', [AdminController::class, 'createRole'])->name('admin.create.role');
-            Route::put('/roles/{id}', [AdminController::class, 'updateRole'])->name('admin.update.role');
-            Route::delete('/roles/{id}', [AdminController::class, 'deleteRole'])->name('admin.delete.role');
-            Route::post('/create-permission', [AdminController::class, 'createPermission'])->name('admin.create.permission');
-            Route::put('/permissions/{id}', [AdminController::class, 'updatePermission'])->name('admin.update.permission');
-            Route::delete('/permissions/{id}', [AdminController::class, 'deletePermission'])->name('admin.delete.permission');
-            Route::get('/users/{user}/roles', [AdminController::class, 'getUserRoles'])->name('admin.user.roles');
-            
+        Route::middleware(['permission:Manage Users'])->group(function () {
+            Route::get('/manage-users', [UserManagementController::class, 'index'])->name('manage.users');
+            Route::post('/assign-role', [AdminController::class, 'assignRole'])->name('assign.role');
+            Route::post('/remove-role', [AdminController::class, 'removeRole'])->name('remove.role');
+            Route::post('/create-role', [AdminController::class, 'createRole'])->name('create.role');
+            Route::put('/roles/{id}', [AdminController::class, 'updateRole'])->name('update.role');
+            Route::delete('/roles/{id}', [AdminController::class, 'deleteRole'])->name('delete.role');
+            Route::post('/create-permission', [AdminController::class, 'createPermission'])->name('create.permission');
+            Route::put('/permissions/{id}', [AdminController::class, 'updatePermission'])->name('update.permission');
+            Route::delete('/permissions/{id}', [AdminController::class, 'deletePermission'])->name('delete.permission');
+            Route::get('/users/{user}/roles', [AdminController::class, 'getUserRoles'])->name('user.roles');
+
             // User Management
-            Route::get('/user-management', [UserManagementController::class, 'index'])->name('admin.user.management');
-            
+            Route::get('/user-management', [UserManagementController::class, 'index'])->name('user.management');
+
             // User CRUD operations
-            Route::get('/users/{id}', [UserManagementController::class, 'show'])->name('admin.users.show');
-            Route::put('/users/{id}', [UserManagementController::class, 'update'])->name('admin.users.update');
-            Route::delete('/users/{id}', [UserManagementController::class, 'destroy'])->name('admin.users.destroy');
-            Route::post('/users/admin', [UserManagementController::class, 'storeAdmin'])->name('admin.users.store.admin');
-            Route::post('/users/teacher', [UserManagementController::class, 'storeTeacher'])->name('admin.users.store.teacher');
-            Route::post('/users/guidance', [UserManagementController::class, 'storeGuidance'])->name('admin.users.store.guidance');
-            Route::post('/users/discipline', [UserManagementController::class, 'storeDiscipline'])->name('admin.users.store.discipline');
-            Route::post('/users/guidance-counselor', [UserManagementController::class, 'createGuidanceCounselor'])->name('admin.users.store.guidance_counselor');
-            Route::post('/users/discipline-head', [UserManagementController::class, 'createDisciplineHead'])->name('admin.users.store.discipline_head');
-            Route::post('/users/discipline-officer', [UserManagementController::class, 'createDisciplineOfficer'])->name('admin.users.store.discipline_officer');
-            Route::post('/users/cashier', [UserManagementController::class, 'createCashier'])->name('admin.users.store.cashier');
-            Route::post('/users/faculty-head', [UserManagementController::class, 'createFacultyHead'])->name('admin.users.store.faculty_head');
-            Route::get('/users/stats', [UserManagementController::class, 'getStats'])->name('admin.users.stats');
+            Route::get('/users/{id}', [UserManagementController::class, 'show'])->name('users.show');
+            Route::put('/users/{id}', [UserManagementController::class, 'update'])->name('users.update');
+            Route::delete('/users/{id}', [UserManagementController::class, 'destroy'])->name('users.destroy');
+            Route::post('/users/admin', [UserManagementController::class, 'storeAdmin'])->name('users.store.admin');
+            Route::post('/users/teacher', [UserManagementController::class, 'storeTeacher'])->name('users.store.teacher');
+            Route::post('/users/guidance', [UserManagementController::class, 'storeGuidance'])->name('users.store.guidance');
+            Route::post('/users/discipline', [UserManagementController::class, 'storeDiscipline'])->name('users.store.discipline');
+            Route::post('/users/guidance-counselor', [UserManagementController::class, 'createGuidanceCounselor'])->name('users.store.guidance_counselor');
+            Route::post('/users/discipline-head', [UserManagementController::class, 'createDisciplineHead'])->name('users.store.discipline_head');
+            Route::post('/users/discipline-officer', [UserManagementController::class, 'createDisciplineOfficer'])->name('users.store.discipline_officer');
+            Route::post('/users/cashier', [UserManagementController::class, 'createCashier'])->name('users.store.cashier');
+            Route::post('/users/faculty-head', [UserManagementController::class, 'createFacultyHead'])->name('users.store.faculty_head');
+            Route::get('/users/stats', [UserManagementController::class, 'getStats'])->name('users.stats');
             
             // Enrollments management 
             Route::get('/enrollments', [AdminEnrollmentController::class, 'index'])->name('admin.enrollments');
@@ -176,13 +174,13 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/logout', [AdminController::class, 'logout'])->name('admin.logout');
     
     // User management - requires 'Manage users' permission
-    Route::middleware(['permissions:Manage users'])->group(function () {
+    Route::middleware(['permission:Manage users'])->group(function () {
       
         // Other user routes...
     });
     
     // Role management - requires 'Roles & Access' permission
-    Route::middleware(['permissions:Roles & Access'])->group(function () {
+    Route::middleware(['permission:Roles & Access'])->group(function () {
      
         // Other role routes...
     });

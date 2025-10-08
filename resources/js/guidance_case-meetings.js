@@ -106,8 +106,8 @@ window.viewCaseMeeting = function(meetingId) {
             document.getElementById('view_status').className = `badge ${meeting.status_class || 'bg-secondary'}`;
             document.getElementById('view_scheduled_date').textContent = meeting.scheduled_date || 'TBD';
             document.getElementById('view_scheduled_time').textContent = meeting.scheduled_time || 'TBD';
-            document.getElementById('view_urgency_level').textContent = meeting.urgency_level ? ucfirst(meeting.urgency_level) : 'N/A';
-            document.getElementById('view_urgency_level').className = `badge bg-${meeting.urgency_color || 'secondary'}`;
+
+
             document.getElementById('view_reason').textContent = meeting.reason || 'N/A';
 
             // Handle optional fields
@@ -253,7 +253,7 @@ window.openScheduleMeetingModal = function(studentId = 0) {
         document.querySelectorAll('#scheduleCaseMeetingModal .schedule-field').forEach(el => el.style.display = 'none');
         // Set default values for hidden fields
         document.querySelector('#scheduleCaseMeetingModal select[name="meeting_type"]').value = 'case_meeting';
-        document.querySelector('#scheduleCaseMeetingModal select[name="urgency_level"]').value = '';
+
         document.querySelector('#scheduleCaseMeetingModal textarea[name="reason"]').value = 'Scheduled meeting';
         document.querySelector('#scheduleCaseMeetingModal textarea[name="notes"]').value = '';
     } else {
@@ -348,7 +348,7 @@ window.editCaseMeeting = function(meetingId) {
             document.getElementById('edit_meeting_type').value = meeting.meeting_type;
             document.getElementById('edit_scheduled_date').value = meeting.scheduled_date || '';
             document.getElementById('edit_scheduled_time').value = meeting.scheduled_time || '';
-            document.getElementById('edit_urgency_level').value = meeting.urgency_level || '';
+
             document.getElementById('edit_reason').value = meeting.reason || '';
             document.getElementById('edit_notes').value = meeting.notes || '';
 
