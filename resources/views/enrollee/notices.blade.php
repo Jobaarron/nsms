@@ -82,7 +82,7 @@
                                                 @if($notice->created_by)
                                                     <small class="text-muted">
                                                         <i class="ri-user-line me-1"></i>
-                                                        From: {{ $notice->creator_name ?? 'Admin' }}
+                                                        From: {{ $notice->creator_name ?? 'Registrar' }}
                                                     </small>
                                                 @endif
                                             </td>

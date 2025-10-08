@@ -89,7 +89,7 @@
     </div>
 
     <!-- Quick Actions -->
-    <div class="row mb-4">
+    <!-- <div class="row mb-4">
         <div class="col-12">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white border-0 pb-0">
@@ -123,7 +123,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </div> -->
 
     <!-- Payment Analytics Dashboard -->
     <div class="row mb-4">

@@ -344,44 +344,6 @@ class SubjectSeeder extends Seeder
             ]);
         }
 
-        // Grade 12 ABM First Semester - Core Subjects
-        $g12AbmFirstSemCore = [
-            'Physical Science',
-            'Intro to Philosophy of the Human Person',
-            'Physical Education and Health 3',
-        ];
-
-        foreach ($g12AbmFirstSemCore as $subjectName) {
-            Subject::create([
-                'subject_name' => $subjectName,
-                'grade_level' => 'Grade 12',
-                'strand' => 'ABM',
-                'semester' => 'First Semester',
-                'academic_year' => $academicYear,
-                'category' => 'core'
-            ]);
-        }
-
-        // Grade 12 ABM First Semester - Specialized Subjects
-        $g12AbmFirstSemSpecialized = [
-            'English for Academic and Professional Purposes',
-            'Research in Daily Life 2 (Quantitative Research)',
-            'Filipino sa Piling Larangan',
-            'Entrepreneurship',
-            'FABM 2',
-            'Business Finance',
-        ];
-
-        foreach ($g12AbmFirstSemSpecialized as $subjectName) {
-            Subject::create([
-                'subject_name' => $subjectName,
-                'grade_level' => 'Grade 12',
-                'strand' => 'ABM',
-                'semester' => 'First Semester',
-                'academic_year' => $academicYear,
-                'category' => 'specialized'
-            ]);
-        }
 
         // Grade 12 HUMSS First Semester - Core Subjects
         $g12HumssFirstSemCore = [

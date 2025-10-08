@@ -596,27 +596,39 @@ class EnrolleeController extends Controller
         try {
             $enrollee = Auth::guard('enrollee')->user();
             
-            // Mark all unread notices for this enrollee
-            Notice::where(function($query) use ($enrollee) {
+            if (!$enrollee) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not authenticated'
+                ], 401);
+            }
+            
+            // Get all unread notices for this enrollee
+            $notices = Notice::where(function($query) use ($enrollee) {
                 $query->where('enrollee_id', $enrollee->id)
                       ->orWhere('is_global', true);
             })
             ->where('is_read', false)
-            ->update([
-                'is_read' => true,
-                'read_at' => now()
-            ]);
+            ->get();
+
+            // Mark each notice as read using the model method
+            $updatedCount = 0;
+            foreach ($notices as $notice) {
+                $notice->markAsRead();
+                $updatedCount++;
+            }
 
             return response()->json([
                 'success' => true,
-                'message' => 'All notices marked as read'
+                'message' => "All notices marked as read ({$updatedCount} notices updated)"
             ]);
 
         } catch (\Exception $e) {
             \Log::error('Error marking all notices as read: ' . $e->getMessage());
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
             return response()->json([
                 'success' => false,
-                'message' => 'Error updating notices'
+                'message' => 'Error updating notices: ' . $e->getMessage()
             ], 500);
         }
     }

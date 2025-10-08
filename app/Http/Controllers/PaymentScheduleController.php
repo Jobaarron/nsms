@@ -463,4 +463,105 @@ class PaymentScheduleController extends Controller
             'message' => $message
         ]);
     }
+
+    /**
+     * Get payment history for cashier dashboard
+     */
+    public function getPaymentHistory(Request $request)
+    {
+        // First, get all payments with their relationships
+        $baseQuery = Payment::with(['payable', 'fee'])
+            ->whereIn('confirmation_status', ['confirmed', 'pending', 'rejected']);
+
+        // Apply filters before grouping
+        if ($request->has('status') && $request->status) {
+            $baseQuery->where('confirmation_status', $request->status);
+        }
+
+        if ($request->has('search') && $request->search) {
+            $search = $request->search;
+            $baseQuery->where(function ($q) use ($search) {
+                $q->where('transaction_id', 'like', "%{$search}%")
+                  ->orWhereHas('payable', function ($payableQuery) use ($search) {
+                      $payableQuery->where('student_id', 'like', "%{$search}%")
+                                   ->orWhere('first_name', 'like', "%{$search}%")
+                                   ->orWhere('last_name', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        // Get all matching payments
+        $allPayments = $baseQuery->orderBy('created_at', 'desc')->get();
+
+        // Group payments by student and payment method
+        $groupedPayments = $allPayments->groupBy(function ($payment) {
+            return $payment->payable_id . '_' . $payment->payment_method . '_' . $payment->confirmation_status;
+        })->map(function ($paymentGroup) {
+            // Get the first payment as the representative
+            $firstPayment = $paymentGroup->first();
+            
+            // Calculate totals
+            $totalAmount = $paymentGroup->sum('amount');
+            $installmentCount = $paymentGroup->count();
+            
+            // Create a consolidated payment object
+            $consolidatedPayment = $firstPayment->replicate();
+            $consolidatedPayment->total_amount = $totalAmount;
+            $consolidatedPayment->amount = $totalAmount;
+            $consolidatedPayment->installment_count = $installmentCount;
+            
+            // Ensure we have proper dates - use the earliest created_at and latest confirmed_at
+            $consolidatedPayment->created_at = $paymentGroup->min('created_at') ?: $firstPayment->created_at ?: now();
+            $consolidatedPayment->confirmed_at = $paymentGroup->whereNotNull('confirmed_at')->max('confirmed_at');
+            
+            // Try to get cashier info from any payment that has it
+            $paymentWithCashier = $paymentGroup->whereNotNull('processed_by')->first();
+            if ($paymentWithCashier && $paymentWithCashier->processed_by) {
+                // Load the cashier relationship
+                $cashier = \App\Models\Cashier::find($paymentWithCashier->processed_by);
+                if ($cashier) {
+                    $consolidatedPayment->cashier = $cashier;
+                    $consolidatedPayment->processed_by = $paymentWithCashier->processed_by;
+                    $consolidatedPayment->confirmed_at = $paymentWithCashier->confirmed_at;
+                }
+            } else {
+                // If no processed_by, try to find any cashier who might have processed it
+                // For now, let's use a default cashier or the currently logged in cashier
+                $currentCashier = auth('cashier')->user();
+                if ($currentCashier) {
+                    $consolidatedPayment->cashier = $currentCashier;
+                    $consolidatedPayment->processed_by = $currentCashier->id;
+                }
+            }
+            
+            return $consolidatedPayment;
+        })->values();
+
+        // Apply pagination
+        $perPage = 15;
+        $currentPage = $request->get('page', 1);
+        $total = $groupedPayments->count();
+        $items = $groupedPayments->forPage($currentPage, $perPage);
+
+        $paginatedPayments = new \Illuminate\Pagination\LengthAwarePaginator(
+            $items,
+            $total,
+            $perPage,
+            $currentPage,
+            ['path' => $request->url(), 'pageName' => 'page']
+        );
+
+        return response()->json([
+            'success' => true,
+            'payments' => [
+                'data' => $paginatedPayments->items(),
+                'total' => $total,
+                'per_page' => $perPage,
+                'current_page' => $currentPage,
+                'last_page' => $paginatedPayments->lastPage(),
+                'from' => $paginatedPayments->firstItem(),
+                'to' => $paginatedPayments->lastItem()
+            ]
+        ]);
+    }
 }

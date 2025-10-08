@@ -619,6 +619,7 @@ Route::middleware(['auth:cashier'])->prefix('cashier/api')->name('cashier.api.')
     Route::get('/payment-schedules/due', [PaymentScheduleController::class, 'getDuePaymentSchedules'])->name('payment-schedules.due');
     Route::post('/payment-schedules/{paymentId}/process', [PaymentScheduleController::class, 'processPayment'])->name('payment-schedules.process');
     Route::get('/payment-statistics', [PaymentScheduleController::class, 'getPaymentStatistics'])->name('payment-statistics');
+    Route::get('/payment-history', [PaymentScheduleController::class, 'getPaymentHistory'])->name('payment-history');
 });
 
 // ===== CASHIER ROUTES =====
@@ -663,4 +664,3 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::post('/logout', [CashierController::class, 'logout'])->name('logout');
     });
 });
-

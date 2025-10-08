@@ -20,13 +20,17 @@ class Notice extends Model
         'read_at',
         'is_global',
         'target_status',
-        'target_grade_level'
+        'target_grade_level',
+        'sent_via_email',
+        'email_sent_at'
     ];
 
     protected $casts = [
         'is_read' => 'boolean',
         'is_global' => 'boolean',
+        'sent_via_email' => 'boolean',
         'read_at' => 'datetime',
+        'email_sent_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime'
     ];
@@ -69,10 +73,10 @@ class Notice extends Model
         // Fall back to admin user
         $user = $this->createdBy;
         if ($user) {
-            return $user->name ?? $user->email ?? 'Administrator';
+            return $user->name ?? $user->email ?? 'Registrar';
         }
         
-        return 'System';
+        return 'Registrar';
     }
 
     /**

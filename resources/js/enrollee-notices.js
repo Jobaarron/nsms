@@ -48,7 +48,7 @@ function populateNoticeModal(notice) {
     document.getElementById('notice-modal-title').textContent = notice.title;
     document.getElementById('notice-modal-message').innerHTML = notice.message.replace(/\n/g, '<br>');
     document.getElementById('notice-modal-date').textContent = notice.formatted_date;
-    document.getElementById('notice-modal-from').textContent = notice.created_by_name || 'School Administration';
+    document.getElementById('notice-modal-from').textContent = notice.creator_name || 'Registrar';
     
     // Set priority badge
     const priorityBadge = document.getElementById('notice-modal-priority');
@@ -71,14 +71,29 @@ function populateNoticeModal(notice) {
 
 // Mark single notice as read
 function markAsRead(noticeId, showAlert = true) {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]');
+    if (!csrfToken) {
+        showAlert('CSRF token not found. Please refresh the page.', 'danger');
+        return;
+    }
+
     fetch(`/enrollee/notices/${noticeId}/mark-read`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            'X-CSRF-TOKEN': csrfToken.getAttribute('content'),
+            'Accept': 'application/json'
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            return response.text().then(text => {
+                console.error('Single notice response text:', text);
+                throw new Error(`HTTP error! status: ${response.status} - ${text}`);
+            });
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             // Update UI
@@ -113,14 +128,29 @@ function markAsReadFromModal() {
 // Mark all notices as read
 function markAllAsRead() {
     if (confirm('Are you sure you want to mark all notices as read?')) {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]');
+        if (!csrfToken) {
+            showAlert('CSRF token not found. Please refresh the page.', 'danger');
+            return;
+        }
+
         fetch('/enrollee/notices/mark-all-read', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                'X-CSRF-TOKEN': csrfToken.getAttribute('content'),
+                'Accept': 'application/json'
             }
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(text => {
+                    console.error('Response text:', text);
+                    throw new Error(`HTTP error! status: ${response.status} - ${text}`);
+                });
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
                 // Update all unread rows
@@ -130,6 +160,11 @@ function markAllAsRead() {
                     const markReadBtn = row.querySelector('.btn-outline-success');
                     if (markReadBtn) {
                         markReadBtn.remove();
+                    }
+                    // Remove unread indicator
+                    const unreadIcon = row.querySelector('.ri-notification-2-fill');
+                    if (unreadIcon) {
+                        unreadIcon.remove();
                     }
                 });
                 
@@ -141,7 +176,7 @@ function markAllAsRead() {
         })
         .catch(error => {
             console.error('Error marking all notices as read:', error);
-            showAlert('Error updating notices', 'danger');
+            showAlert('Error updating notices. Please try again.', 'danger');
         });
     }
 }
@@ -180,10 +215,10 @@ function updateUnreadCount() {
         headerBadge.innerHTML = `<i class="ri-notification-line me-1"></i>${unreadCount} Unread`;
     }
     
-    // Update sidebar statistics
-    const sidebarUnreadElement = document.querySelector('.text-warning').previousElementSibling;
-    if (sidebarUnreadElement) {
-        sidebarUnreadElement.textContent = unreadCount;
+    // Update sidebar statistics (only if it exists)
+    const sidebarWarningElement = document.querySelector('.text-warning');
+    if (sidebarWarningElement && sidebarWarningElement.previousElementSibling) {
+        sidebarWarningElement.previousElementSibling.textContent = unreadCount;
     }
 }
 
