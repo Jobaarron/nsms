@@ -387,7 +387,7 @@
                     </div>
                     <div class="flex-grow-1">
                         <div class="fw-bold fs-4" id="forwarded-cases">{{ $caseMeetings->where('forwarded_to_president', true)->count() }}</div>
-                        <div class="text-muted small">Forwarded</div>
+                        <div class="text-muted small">Submitted</div>
                     </div>
                 </div>
             </div>
@@ -413,7 +413,11 @@
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Date Range</label>
-                            <input type="date" class="form-control" id="date-filter">
+                            <div class="input-group">
+                                <input type="date" class="form-control" id="date-filter-start" placeholder="From">
+                                <span class="input-group-text">to</span>
+                                <input type="date" class="form-control" id="date-filter-end" placeholder="To">
+                            </div>
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Search</label>
