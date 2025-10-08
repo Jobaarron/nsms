@@ -13,105 +13,6 @@ use Carbon\Carbon;
 class PaymentScheduleController extends Controller
 {
     /**
-     * Create a payment schedule from student enrollment
-     */
-    public function createPaymentSchedule(Request $request)
-    {
-        // This method would be implemented for student enrollment
-        // For now, return a simple response
-        return response()->json([
-            'success' => true,
-            'message' => 'Payment schedule creation not implemented yet'
-        ]);
-    }
-
-    /**
-     * Get payment schedule for a student
-     */
-    public function getPaymentSchedule($studentId)
-    {
-        // This method would return payment schedule for a specific student
-        return response()->json([
-            'success' => true,
-            'schedule' => []
-        ]);
-    }
-
-    /**
-     * Get individual payment details for cashier
-     */
-    public function getPaymentDetails($paymentId)
-    {
-        $payment = Payment::with(['payable', 'fee'])
-            ->where('id', $paymentId)
-            ->first();
-
-        if (!$payment) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Payment not found'
-            ], 404);
-        }
-
-        return response()->json([
-            'success' => true,
-            'payment' => [
-                'id' => $payment->id,
-                'transaction_id' => $payment->transaction_id,
-                'amount' => $payment->amount,
-                'status' => $payment->status,
-                'confirmation_status' => $payment->confirmation_status,
-                'payment_method' => $payment->payment_method,
-                'scheduled_date' => $payment->scheduled_date,
-                'created_at' => $payment->created_at,
-                'confirmed_at' => $payment->confirmed_at,
-                'payable' => $payment->payable,
-                'fee' => $payment->fee ? [
-                    'name' => $payment->fee->name,
-                    'amount' => $payment->fee->amount,
-                    'fee_category' => $payment->fee->fee_category,
-                ] : null
-            ]
-        ]);
-    }
-
-    /**
-     * Process payment (for cashier)
-     */
-    public function processPayment(Request $request, $paymentId)
-    {
-        $request->validate([
-            'action' => 'required|in:confirm,reject',
-            'cashier_notes' => 'nullable|string|max:1000',
-        ]);
-
-        $payment = Payment::find($paymentId);
-        if (!$payment) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Payment not found'
-            ], 404);
-        }
-
-        $cashier = Auth::guard('cashier')->user();
-        $action = $request->action;
-
-        $payment->update([
-            'confirmation_status' => $action === 'confirm' ? 'confirmed' : 'rejected',
-            'status' => $action === 'confirm' ? 'paid' : 'failed',
-            'processed_by' => $cashier->id,
-            'confirmed_at' => now(),
-            'cashier_notes' => $request->cashier_notes,
-            'paid_at' => $action === 'confirm' ? now() : null,
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Payment ' . ($action === 'confirm' ? 'confirmed' : 'rejected') . ' successfully'
-        ]);
-    }
-
-    /**
      * Get payment statistics for dashboard
      */
     public function getPaymentStatistics()
@@ -294,25 +195,9 @@ class PaymentScheduleController extends Controller
      */
     public function getStudentPaymentSchedule($studentId, $paymentMethod)
     {
-        // Find student by student_id (like "NS-25001") or database ID
-        if (is_numeric($studentId)) {
-            // If numeric, treat as database ID
-            $student = Student::find($studentId);
-        } else {
-            // If not numeric, treat as student_id
-            $student = Student::where('student_id', $studentId)->first();
-        }
-        
-        if (!$student) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Student not found with ID: ' . $studentId
-            ], 404);
-        }
-
         $payments = Payment::with(['payable'])
             ->where('payable_type', 'App\\Models\\Student')
-            ->where('payable_id', $student->id)
+            ->where('payable_id', $studentId)
             ->where('payment_method', $paymentMethod)
             ->orderBy('scheduled_date')
             ->get();
@@ -354,25 +239,10 @@ class PaymentScheduleController extends Controller
      */
     public function processStudentPaymentSchedule(Request $request, $studentId, $paymentMethod)
     {
-        // Debug logging
-        \Log::info('processStudentPaymentSchedule called', [
-            'studentId' => $studentId,
-            'paymentMethod' => $paymentMethod,
-            'request_data' => $request->all()
+        $request->validate([
+            'action' => 'required|in:approve,reject',
+            'reason' => 'required_if:action,reject|string|max:1000'
         ]);
-
-        try {
-            $request->validate([
-                'action' => 'required|in:approve,reject',
-                'reason' => 'required_if:action,reject|nullable|string|max:1000'
-            ]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            \Log::error('Validation failed', ['errors' => $e->errors()]);
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed: ' . implode(', ', $e->validator->errors()->all())
-            ], 422);
-        }
 
         $cashier = Auth::guard('cashier')->user();
         
@@ -383,28 +253,9 @@ class PaymentScheduleController extends Controller
             ], 401);
         }
         
-        // Find student by student_id (like "NS-25001") or database ID
-        if (is_numeric($studentId)) {
-            // If numeric, treat as database ID
-            $student = Student::find($studentId);
-        } else {
-            // If not numeric, treat as student_id
-            $student = Student::where('student_id', $studentId)->first();
-        }
-        
-        if (!$student) {
-            \Log::error('Student not found', ['studentId' => $studentId]);
-            return response()->json([
-                'success' => false,
-                'message' => 'Student not found with ID: ' . $studentId
-            ], 404);
-        }
-
-        \Log::info('Student found', ['student' => $student->toArray()]);
-
         // Get all payments for this student and payment method
         $payments = Payment::where('payable_type', 'App\\Models\\Student')
-            ->where('payable_id', $student->id)
+            ->where('payable_id', $studentId)
             ->where('payment_method', $paymentMethod)
             ->where('confirmation_status', 'pending')
             ->get();
@@ -434,10 +285,12 @@ class PaymentScheduleController extends Controller
 
         // Update student record if approved
         if ($action === 'approve') {
-            $totalPaid = Payment::where('payable_type', 'App\\Models\\Student')
-                ->where('payable_id', $student->id)
-                ->where('confirmation_status', 'confirmed')
-                ->sum('amount');
+            $student = Student::find($studentId);
+            if ($student) {
+                $totalPaid = Payment::where('payable_type', 'App\\Models\\Student')
+                    ->where('payable_id', $studentId)
+                    ->where('confirmation_status', 'confirmed')
+                    ->sum('amount');
                 
                 $isFullyPaid = $totalPaid >= ($student->total_fees_due ?? 0);
                 
@@ -447,16 +300,12 @@ class PaymentScheduleController extends Controller
                     'is_paid' => $isFullyPaid,
                     'payment_completed_at' => $isFullyPaid ? now() : null
                 ]);
+            }
         }
 
         $message = $action === 'approve' 
             ? 'Payment schedule approved successfully. All payments have been confirmed.'
             : 'Payment schedule rejected. Reason: ' . $request->reason;
-
-        \Log::info('Payment schedule processed successfully', [
-            'action' => $action,
-            'message' => $message
-        ]);
 
         return response()->json([
             'success' => true,

@@ -162,7 +162,7 @@
                             <div class="row g-3">
                                 <div class="col-md-4">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="payment_mode" id="full_payment" value="full" {{ old('payment_mode', $student->payment_mode) === 'full' ? 'checked' : '' }}>
+                                        <input class="form-check-input" type="radio" name="payment_method" id="full_payment" value="full" {{ old('payment_method') === 'full' ? 'checked' : '' }}>
                                         <label class="form-check-label w-100" for="full_payment">
                                             <div class="card border-2 h-100 payment-option" data-mode="full">
                                                 <div class="card-body text-center">
@@ -176,7 +176,7 @@
                                 </div>
                                 <div class="col-md-4">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="payment_mode" id="quarterly" value="quarterly" {{ old('payment_mode', $student->payment_mode) === 'quarterly' ? 'checked' : '' }}>
+                                        <input class="form-check-input" type="radio" name="payment_method" id="quarterly" value="quarterly" {{ old('payment_method') === 'quarterly' ? 'checked' : '' }}>
                                         <label class="form-check-label w-100" for="quarterly">
                                             <div class="card border-2 h-100 payment-option" data-mode="quarterly">
                                                 <div class="card-body text-center">
@@ -190,7 +190,7 @@
                                 </div>
                                 <div class="col-md-4">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="payment_mode" id="monthly" value="monthly" {{ old('payment_mode', $student->payment_mode) === 'monthly' ? 'checked' : '' }}>
+                                        <input class="form-check-input" type="radio" name="payment_method" id="monthly" value="monthly" {{ old('payment_method') === 'monthly' ? 'checked' : '' }}>
                                         <label class="form-check-label w-100" for="monthly">
                                             <div class="card border-2 h-100 payment-option" data-mode="monthly">
                                                 <div class="card-body text-center">
@@ -203,7 +203,7 @@
                                     </div>
                                 </div>
                             </div>
-                            @error('payment_mode')
+                            @error('payment_method')
                                 <div class="text-danger small mt-2">{{ $message }}</div>
                             @enderror
                         </div>
@@ -653,7 +653,7 @@
             }
             
             document.addEventListener('DOMContentLoaded', function() {
-                const paymentOptions = document.querySelectorAll('input[name="payment_mode"]');
+                const paymentOptions = document.querySelectorAll('input[name="payment_method"]');
                 const scheduleDiv = document.getElementById('payment-schedule');
                 const scheduleContent = document.getElementById('schedule-content');
                 
@@ -674,7 +674,7 @@
                 });
                 
                 // Initialize with selected option
-                const selectedOption = document.querySelector('input[name="payment_mode"]:checked');
+                const selectedOption = document.querySelector('input[name="payment_method"]:checked');
                 if (selectedOption) {
                     updatePaymentSchedule(selectedOption.value);
                     updatePaymentOptionStyles();
@@ -853,7 +853,7 @@
                         card.classList.remove('border-primary', 'bg-light');
                     });
                     
-                    const selectedInput = document.querySelector('input[name="payment_mode"]:checked');
+                    const selectedInput = document.querySelector('input[name="payment_method"]:checked');
                     if (selectedInput) {
                         const selectedCard = selectedInput.closest('.form-check').querySelector('.payment-option');
                         selectedCard.classList.add('border-primary', 'bg-light');

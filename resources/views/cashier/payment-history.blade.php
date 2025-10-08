@@ -38,7 +38,6 @@
                                     <option value="">All Status</option>
                                     <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Not yet paid</option>
                                     <option value="confirmed" {{ request('status') == 'confirmed' ? 'selected' : '' }}>Paid</option>
-                                    <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>Declined</option>
                                 </select>
                             </div>
                             <!-- Payment Method filter removed for on-site processing -->
@@ -115,12 +114,12 @@
                             <table class="table table-hover">
                                 <thead>
                                     <tr>
-                                        <th>Priority</th>
                                         <th>Transaction ID</th>
-                                        <th>Student ID</th>
+                                        <th>Student</th>
                                         <th>Amount</th>
-                                        <th>Scheduled Date</th>
                                         <th>Status</th>
+                                        <th>Cashier</th>
+                                        <th>Date</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -166,8 +165,12 @@
                                                         default => 'secondary'
                                                     };
                                                 @endphp
-                                                <span class="badge bg-{{ $statusClass }}">
-                                                    {{ ucfirst($payment->confirmation_status) }}
+                                                <span class="badge bg-{{ $payment->confirmation_status === 'confirmed' ? 'success' : 'warning' }}">
+                                                    @if($payment->confirmation_status === 'confirmed')
+                                                        Paid
+                                                    @else
+                                                        Not yet paid
+                                                    @endif
                                                 </span>
                                             </td>
                                             <td>
@@ -278,13 +281,14 @@
 
             function displayPaymentDetails(payment) {
                 const content = document.getElementById('paymentDetailsContent');
-                const statusClass = payment.confirmation_status === 'confirmed' ? 'success' : 
-                                  payment.confirmation_status === 'rejected' ? 'danger' : 'warning';
+                const statusClass = payment.confirmation_status === 'confirmed' ? 'success' : 'warning';
+                
+                const statusText = payment.confirmation_status === 'confirmed' ? 'Paid' : 'Not yet paid';
                 
                 content.innerHTML = `
                     <div class="alert alert-${statusClass}">
                         <i class="ri-information-line me-2"></i>
-                        <strong>Status:</strong> ${payment.confirmation_status.charAt(0).toUpperCase() + payment.confirmation_status.slice(1)}
+                        <strong>Status:</strong> ${statusText}
                     </div>
                     <div class="row">
                         <div class="col-md-6">

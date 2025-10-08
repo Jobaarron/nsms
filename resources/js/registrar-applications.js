@@ -1037,12 +1037,35 @@ function loadNoticesData() {
                     data.notices.forEach(notice => {
                         const row = document.createElement('tr');
                         row.innerHTML = `
-                            <td>${notice.title || 'N/A'}</td>
-                            <td>${notice.enrollee ? `${notice.enrollee.full_name} (${notice.enrollee.application_id})` : 'Global Notice'}</td>
-                            <td><span class="badge bg-${getNoticeTypeColor(notice.type)}">${notice.type || 'info'}</span></td>
-                            <td><span class="badge bg-${getPriorityColor(notice.priority)}">${notice.priority || 'normal'}</span></td>
-                            <td>${notice.created_at || 'N/A'}</td>
-                            <td><span class="badge bg-${notice.read_at ? 'success' : 'warning'}">${notice.read_at ? 'Read' : 'Unread'}</span></td>
+                            <td>${escapeHtml(notice.title || 'N/A')}</td>
+                            <td>
+                                ${notice.is_global ? 
+                                    '<span class="badge bg-info">All Applicants</span>' : 
+                                    notice.enrollee ? 
+                                        `${escapeHtml(notice.enrollee.full_name)}<br><small class="text-muted">(${escapeHtml(notice.enrollee.application_id)})</small>` : 
+                                        '<span class="text-muted">Unknown</span>'
+                                }
+                            </td>
+                            <td><span class="badge bg-${getNoticeTypeColor(notice.type)}">${escapeHtml(notice.type || 'info')}</span></td>
+                            <td><span class="badge bg-${getPriorityColor(notice.priority)}">${escapeHtml(notice.priority || 'normal')}</span></td>
+                            <td>${escapeHtml(notice.created_at || 'N/A')}</td>
+                            <td><span class="badge bg-${notice.read_at ? 'success' : 'warning text-dark'}">${notice.read_at ? 'Read' : 'Unread'}</span></td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button type="button" class="btn btn-outline-primary" 
+                                            onclick="viewNotice(${notice.id})" 
+                                            title="View Notice">
+                                        <i class="ri-eye-line"></i>
+                                    </button>
+                                    ${!notice.is_global && notice.enrollee ? `
+                                        <button type="button" class="btn btn-outline-info" 
+                                                onclick="sendNoticeToApplicant('${notice.enrollee.application_id}')" 
+                                                title="Send Another Notice">
+                                            <i class="ri-mail-send-line"></i>
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            </td>
                         `;
                         tableBody.appendChild(row);
                     });
@@ -1086,21 +1109,28 @@ function getAppointmentStatusColor(status) {
 
 function getNoticeTypeColor(type) {
     switch(type) {
-        case 'success': return 'success';
-        case 'error': return 'danger';
-        case 'warning': return 'warning';
         case 'info': return 'info';
-        default: return 'secondary';
+        case 'success': return 'success';
+        case 'warning': return 'warning';
+        case 'error': return 'danger';
+        default: return 'info';
     }
 }
 
 function getPriorityColor(priority) {
     switch(priority) {
-        case 'high': return 'danger';
         case 'urgent': return 'danger';
-        case 'normal': return 'info';
+        case 'high': return 'warning';
+        case 'normal': return 'secondary';
         default: return 'secondary';
     }
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 function formatDateTime(dateTimeString) {
@@ -1317,7 +1347,81 @@ function updateDocumentStatus(documentIndex, status, notes = '') {
 
 // Send notice to applicant
 function sendNoticeToApplicant(applicationId) {
+    console.log('sendNoticeToApplicant called with:', applicationId);
+    console.log('Call stack:', new Error().stack);
+    
+    // Check if modal already exists and is visible
+    const existingModal = document.getElementById('noticeModal');
+    if (existingModal) {
+        // If modal exists, just update the title and show it
+        const titleElement = existingModal.querySelector('.modal-title');
+        if (titleElement) {
+            titleElement.textContent = `Send Notice to Applicant (${applicationId})`;
+        }
+        
+        const modalInstance = bootstrap.Modal.getOrCreateInstance(existingModal);
+        modalInstance.show();
+        
+        // Ensure event listeners are set up for reused modal
+        setTimeout(() => {
+            const subjectEl = document.getElementById('notice-subject');
+            const messageEl = document.getElementById('simple-notice-message');
+            const priorityEl = document.getElementById('notice-priority');
+            
+            // Initialize storage for form values if not exists
+            if (!window.currentFormValues) {
+                window.currentFormValues = {};
+            }
+            
+            // Only add listeners if they don't exist (prevent duplicates)
+            if (subjectEl && !subjectEl.hasAttribute('data-listener-added')) {
+                subjectEl.addEventListener('input', function() {
+                    window.currentFormValues.subject = this.value;
+                    console.log('Subject updated:', this.value);
+                });
+                subjectEl.setAttribute('data-listener-added', 'true');
+            }
+            
+            if (messageEl && !messageEl.hasAttribute('data-listener-added')) {
+                messageEl.addEventListener('input', function() {
+                    window.currentFormValues.message = this.value;
+                    console.log('Message updated:', this.value);
+                });
+                messageEl.setAttribute('data-listener-added', 'true');
+            }
+            
+            if (priorityEl && !priorityEl.hasAttribute('data-listener-added')) {
+                priorityEl.addEventListener('change', function() {
+                    window.currentFormValues.priority = this.value;
+                    console.log('Priority updated:', this.value);
+                });
+                priorityEl.setAttribute('data-listener-added', 'true');
+            }
+            
+            console.log('Event listeners ensured for reused modal');
+        }, 100);
+        
+        console.log('Reusing existing modal');
+        return; // Don't recreate, just reuse
+    }
+    
     currentApplicationId = applicationId;
+    
+    // Store existing form values if modal exists
+    let existingValues = {};
+    if (existingModal) {
+        const subjectEl = document.getElementById('notice-subject');
+        const messageEl = document.getElementById('simple-notice-message');
+        const priorityEl = document.getElementById('notice-priority');
+        
+        existingValues = {
+            subject: subjectEl?.value || '',
+            message: messageEl?.value || '',
+            priority: priorityEl?.value || 'normal'
+        };
+        
+        console.log('Preserving existing form values:', existingValues);
+    }
     
     // Create a simple notice modal
     const modalHtml = `
@@ -1325,32 +1429,32 @@ function sendNoticeToApplicant(applicationId) {
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">Send Notice to Applicant</h5>
+                        <h5 class="modal-title">Send Notice to Applicant (${applicationId})</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
                         <form id="notice-form">
                             <div class="mb-3">
                                 <label for="notice-subject" class="form-label">Subject</label>
-                                <input type="text" class="form-control" id="notice-subject" required>
+                                <input type="text" class="form-control" id="notice-subject" value="${existingValues.subject || ''}" required>
                             </div>
                             <div class="mb-3">
-                                <label for="notice-message" class="form-label">Message</label>
-                                <textarea class="form-control" id="notice-message" rows="4" required></textarea>
+                                <label for="simple-notice-message" class="form-label">Message</label>
+                                <input type="text" class="form-control" id="simple-notice-message" value="${existingValues.message || ''}" required placeholder="Enter your notice message...">
                             </div>
                             <div class="mb-3">
                                 <label for="notice-priority" class="form-label">Priority</label>
-                                <select class="form-control" id="notice-priority">
-                                    <option value="normal">Normal</option>
-                                    <option value="high">High</option>
-                                    <option value="urgent">Urgent</option>
+                                <select class="form-select" id="notice-priority" required>
+                                    <option value="normal" ${(existingValues.priority || 'normal') === 'normal' ? 'selected' : ''}>Normal</option>
+                                    <option value="high" ${existingValues.priority === 'high' ? 'selected' : ''}>High</option>
+                                    <option value="urgent" ${existingValues.priority === 'urgent' ? 'selected' : ''}>Urgent</option>
                                 </select>
                             </div>
                         </form>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" class="btn btn-primary" onclick="submitNotice()">Send Notice</button>
+                        <button type="button" class="btn btn-primary" id="submit-notice-btn" onclick="submitNotice()">Send Notice</button>
                     </div>
                 </div>
             </div>
@@ -1358,7 +1462,6 @@ function sendNoticeToApplicant(applicationId) {
     `;
     
     // Remove existing modal if any
-    const existingModal = document.getElementById('noticeModal');
     if (existingModal) {
         existingModal.remove();
     }
@@ -1368,53 +1471,380 @@ function sendNoticeToApplicant(applicationId) {
     
     // Show modal
     const modal = new bootstrap.Modal(document.getElementById('noticeModal'));
+    
+    // Add event listener to clear form when modal is hidden
+    document.getElementById('noticeModal').addEventListener('hidden.bs.modal', function() {
+        const subjectEl = document.getElementById('notice-subject');
+        const messageEl = document.getElementById('simple-notice-message');
+        const priorityEl = document.getElementById('notice-priority');
+        
+        if (subjectEl) subjectEl.value = '';
+        if (messageEl) messageEl.value = '';
+        if (priorityEl) priorityEl.value = 'normal';
+        
+        // Clear stored values
+        window.currentFormValues = {};
+        
+        console.log('Modal closed, form cleared');
+    }, { once: true }); // Only add this listener once
+    
     modal.show();
+    
+    // Add real-time value tracking
+    setTimeout(() => {
+        const subjectEl = document.getElementById('notice-subject');
+        const messageEl = document.getElementById('simple-notice-message');
+        const priorityEl = document.getElementById('notice-priority');
+        
+        // Initialize storage for form values
+        if (!window.currentFormValues) {
+            window.currentFormValues = {};
+        }
+        
+        // Track subject changes
+        if (subjectEl) {
+            subjectEl.addEventListener('input', function() {
+                window.currentFormValues.subject = this.value;
+                console.log('Subject updated:', this.value);
+            });
+        }
+        
+        // Track message changes (now using input field)
+        if (messageEl) {
+            console.log('Setting up message event listeners on:', messageEl);
+            console.log('Message element details:', {
+                id: messageEl.id,
+                tagName: messageEl.tagName,
+                type: messageEl.type,
+                value: messageEl.value,
+                className: messageEl.className
+            });
+            
+            // Test immediate value setting
+            messageEl.value = 'TEST_IMMEDIATE';
+            console.log('After setting test value:', messageEl.value);
+            messageEl.value = '';
+            
+            messageEl.addEventListener('input', function() {
+                window.currentFormValues.message = this.value;
+                console.log('Message updated via input event:', this.value);
+            });
+            
+            // Also try other events as backup
+            messageEl.addEventListener('keyup', function() {
+                console.log('Message keyup event:', this.value);
+            });
+            
+            messageEl.addEventListener('change', function() {
+                console.log('Message change event:', this.value);
+            });
+            
+            // Test focus event
+            messageEl.addEventListener('focus', function() {
+                console.log('Message field focused');
+            });
+        }
+        
+        // Track priority changes
+        if (priorityEl) {
+            priorityEl.addEventListener('change', function() {
+                window.currentFormValues.priority = this.value;
+                console.log('Priority updated:', this.value);
+            });
+        }
+        
+        console.log('Real-time value tracking enabled');
+    }, 100);
+    
+    // Ensure values are properly set after modal is shown
+    setTimeout(() => {
+        const newSubjectEl = document.getElementById('notice-subject');
+        const newMessageEl = document.getElementById('simple-notice-message');
+        const newPriorityEl = document.getElementById('notice-priority');
+        
+        if (existingValues.subject && newSubjectEl) {
+            newSubjectEl.value = existingValues.subject;
+        }
+        if (existingValues.message && newMessageEl) {
+            newMessageEl.value = existingValues.message;
+        }
+        if (existingValues.priority && newPriorityEl) {
+            newPriorityEl.value = existingValues.priority;
+        }
+        
+        console.log('Values set after modal creation:', {
+            subject: newSubjectEl?.value,
+            message: newMessageEl?.value,
+            priority: newPriorityEl?.value
+        });
+    }, 100);
+    
+    console.log('Modal created and shown with preserved values');
 }
+
+// Test function to debug textarea issues
+function testTextareaValue() {
+    const messageEl = document.getElementById('simple-notice-message');
+    if (messageEl) {
+        console.log('Testing textarea manipulation:');
+        console.log('Element found:', messageEl);
+        console.log('Before setting:', messageEl.value);
+        
+        messageEl.value = 'TEST VALUE';
+        console.log('After setting via .value:', messageEl.value);
+        
+        messageEl.textContent = 'TEST CONTENT';
+        console.log('After setting via .textContent:', messageEl.value, messageEl.textContent);
+        
+        messageEl.innerHTML = 'TEST HTML';
+        console.log('After setting via .innerHTML:', messageEl.value, messageEl.innerHTML);
+        
+        // Test if we can focus and type
+        messageEl.focus();
+        console.log('Focused on textarea');
+        
+        // Simulate typing
+        messageEl.value = 'SIMULATED TYPING';
+        messageEl.dispatchEvent(new Event('input', { bubbles: true }));
+        console.log('After simulated typing:', messageEl.value);
+        
+    } else {
+        console.log('Input field with id "simple-notice-message" not found!');
+        
+        // Check if any textarea exists
+        const allTextareas = document.querySelectorAll('textarea');
+        console.log('All textareas found:', allTextareas);
+        
+        // Check if modal exists
+        const modal = document.getElementById('noticeModal');
+        console.log('Modal found:', modal);
+        if (modal) {
+            console.log('Modal HTML:', modal.outerHTML);
+        }
+    }
+}
+
+// Check current form state
+function checkFormState() {
+    console.log('=== FORM STATE CHECK ===');
+    
+    const modal = document.getElementById('noticeModal');
+    console.log('Modal exists:', !!modal);
+    
+    const subjectEl = document.getElementById('notice-subject');
+    const messageEl = document.getElementById('simple-notice-message');
+    const priorityEl = document.getElementById('notice-priority');
+    
+    console.log('Form elements:', {
+        subject: !!subjectEl,
+        message: !!messageEl,
+        priority: !!priorityEl
+    });
+    
+    if (subjectEl) console.log('Subject value:', `"${subjectEl.value}"`);
+    if (messageEl) console.log('Message value:', `"${messageEl.value}"`);
+    if (priorityEl) console.log('Priority value:', `"${priorityEl.value}"`);
+    
+    console.log('Tracked values:', window.currentFormValues);
+    console.log('Current application ID:', currentApplicationId);
+    
+    console.log('=== END FORM STATE ===');
+}
+
 
 // Submit notice
 function submitNotice() {
-    const title = document.getElementById('notice-title')?.value;
-    const message = document.getElementById('notice-message')?.value;
-    const priority = document.getElementById('notice-priority')?.value;
-    const type = document.getElementById('notice-type')?.value;
-    const recipients = document.getElementById('notice-recipients')?.value;
-    const specificApplicant = document.getElementById('specific-applicant')?.value;
-    
-    if (!title || !message || !priority || !type || !recipients) {
-        showAlert('Please fill in all required fields', 'error');
+    // Prevent multiple submissions
+    const submitBtn = document.querySelector('#noticeModal .btn-primary');
+    if (submitBtn && submitBtn.disabled) {
+        console.log('Submit already in progress, ignoring...');
         return;
     }
     
-    // Validate specific applicant selection
-    if (recipients === 'specific' && !specificApplicant) {
-        showAlert('Please select a specific applicant', 'error');
-        return;
+    // Check if this is the simple notice modal (Send Notice to Applicant)
+    const isSimpleModal = document.getElementById('notice-subject') !== null;
+    
+    let title, message, priority, type, recipients, specificApplicant;
+    
+    if (isSimpleModal) {
+        // Simple notice modal fields
+        const subjectElement = document.getElementById('notice-subject');
+        const messageElement = document.getElementById('simple-notice-message');
+        const priorityElement = document.getElementById('notice-priority');
+        
+        console.log('Form elements found:', {
+            subjectElement: !!subjectElement,
+            messageElement: !!messageElement,
+            priorityElement: !!priorityElement
+        });
+        
+        // Manually capture current values right before validation
+        const currentSubject = subjectElement?.value?.trim() || '';
+        const currentMessage = messageElement?.value?.trim() || '';
+        const currentPriority = priorityElement?.value?.trim() || 'normal';
+        
+        console.log('Current DOM values at submit time:', {
+            subject: currentSubject,
+            message: currentMessage,
+            priority: currentPriority
+        });
+        
+        // Force update tracked values with current DOM values
+        if (!window.currentFormValues) {
+            window.currentFormValues = {};
+        }
+        
+        // Always use the most current DOM values
+        window.currentFormValues.subject = currentSubject;
+        window.currentFormValues.message = currentMessage;
+        window.currentFormValues.priority = currentPriority;
+        
+        title = currentSubject;
+        message = currentMessage;
+        priority = currentPriority;
+        
+        console.log('Using current DOM values (forced sync):', {
+            subject: title,
+            message: message,
+            priority: priority
+        });
+        
+        // Additional debugging for message field
+        console.log('Message element details:', {
+            element: messageElement,
+            value: messageElement?.value,
+            innerHTML: messageElement?.innerHTML,
+            textContent: messageElement?.textContent,
+            outerHTML: messageElement?.outerHTML
+        });
+        
+        // Try alternative methods to get textarea value
+        if (messageElement) {
+            console.log('Alternative value retrieval methods:', {
+                getAttribute: messageElement.getAttribute('value'),
+                defaultValue: messageElement.defaultValue,
+                innerText: messageElement.innerText,
+                nodeValue: messageElement.nodeValue
+            });
+        }
+        
+        // Set default values for simple modal
+        type = 'info';
+        recipients = 'specific';
+        specificApplicant = currentApplicationId;
+        
+        console.log('Simple modal values:', { 
+            title: `"${title}"`, 
+            message: `"${message}"`, 
+            priority: `"${priority}"`, 
+            specificApplicant 
+        });
+        
+        if (!title || !message || !priority) {
+            console.log('Validation failed - missing fields:', {
+                titleEmpty: !title,
+                messageEmpty: !message,
+                priorityEmpty: !priority
+            });
+            
+            // Show specific field that's missing
+            let missingFields = [];
+            if (!title) missingFields.push('Subject');
+            if (!message) missingFields.push('Message');
+            if (!priority) missingFields.push('Priority');
+            
+            showAlert(`Please fill in the following required fields: ${missingFields.join(', ')}`, 'error');
+            
+            // Focus on the first missing field
+            if (!title && subjectElement) {
+                subjectElement.focus();
+            } else if (!message && messageElement) {
+                messageElement.focus();
+            } else if (!priority && priorityElement) {
+                priorityElement.focus();
+            }
+            
+            return;
+        }
+        
+        if (!specificApplicant) {
+            console.log('Validation failed - no application ID:', {
+                currentApplicationId,
+                specificApplicant
+            });
+            showAlert('No application selected', 'error');
+            return;
+        }
+        
+        // Set loading state for submit button
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="ri-loader-4-line ri-spin me-1"></i>Sending...';
+        }
+    } else {
+        // Comprehensive create notice modal fields
+        title = document.getElementById('notice-title')?.value;
+        message = document.getElementById('notice-message')?.value;
+        priority = document.getElementById('notice-priority')?.value;
+        type = document.getElementById('notice-type')?.value;
+        recipients = document.getElementById('notice-recipients')?.value;
+        specificApplicant = document.getElementById('specific-applicant')?.value;
+        
+        if (!title || !message || !priority || !type || !recipients) {
+            showAlert('Please fill in all required fields', 'error');
+            return;
+        }
+        
+        // Validate specific applicant selection
+        if (recipients === 'specific' && !specificApplicant) {
+            showAlert('Please select a specific applicant', 'error');
+            return;
+        }
     }
     
     showLoading();
     
-    const requestData = {
-        title: title,
-        message: message,
-        priority: priority,
-        type: type,
-        recipients: recipients
-    };
+    let url, method, requestData;
     
-    // Add specific applicant if selected
-    if (recipients === 'specific' && specificApplicant) {
-        requestData.specific_applicant = specificApplicant;
+    if (isSimpleModal) {
+        // Simple notice modal - send to specific applicant
+        url = `/registrar/applications/${specificApplicant}/notice`;
+        method = 'POST';
+        requestData = {
+            subject: title,
+            message: message,
+            priority: priority
+        };
+        console.log('Simple modal request:', { url, method, requestData });
+    } else {
+        // Complex notice modal - use the original logic
+        requestData = {
+            title: title,
+            message: message,
+            priority: priority,
+            type: type,
+            recipients: recipients
+        };
+        
+        // Add specific applicant if selected
+        if (recipients === 'specific' && specificApplicant) {
+            requestData.specific_applicant = specificApplicant;
+        }
+        
+        // Determine if this is an update or create
+        const isUpdate = window.currentNoticeId;
+        url = isUpdate ? `/registrar/notices/${window.currentNoticeId}/update` : '/registrar/notices/create';
+        method = isUpdate ? 'PUT' : 'POST';
     }
     
-    // Determine if this is an update or create
-    const isUpdate = window.currentNoticeId;
-    const url = isUpdate ? `/registrar/notices/${window.currentNoticeId}/update` : '/registrar/notices/create';
-    const method = isUpdate ? 'PUT' : 'POST';
+    // Get CSRF token
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || window.csrfToken || '';
+    console.log('CSRF Token:', csrfToken ? 'Found' : 'Not found');
     
     fetch(url, {
         method: method,
         headers: {
-            'X-CSRF-TOKEN': window.csrfToken || '',
+            'X-CSRF-TOKEN': csrfToken,
             'Content-Type': 'application/json',
             'Accept': 'application/json'
         },
@@ -1423,19 +1853,27 @@ function submitNotice() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            showAlert(isUpdate ? 'Notice updated successfully' : 'Notice sent successfully', 'success');
-            const modal = bootstrap.Modal.getInstance(document.getElementById('createNoticeModal'));
-            if (modal) modal.hide();
+            showAlert('Notice sent successfully', 'success');
             
-            // Clear current notice ID
-            window.currentNoticeId = null;
+            if (isSimpleModal) {
+                // Close simple notice modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('noticeModal'));
+                if (modal) modal.hide();
+            } else {
+                // Close complex notice modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('createNoticeModal'));
+                if (modal) modal.hide();
+                
+                // Clear current notice ID
+                window.currentNoticeId = null;
+            }
             
             // Refresh notices data if on notices tab
             if (document.querySelector('.nav-link[data-bs-target="#notices-tab"]')?.classList.contains('active')) {
                 loadNoticesData();
             }
         } else {
-            showAlert(data.message || `Failed to ${isUpdate ? 'update' : 'send'} notice`, 'error');
+            showAlert(data.message || 'Failed to send notice', 'error');
         }
     })
     .catch(error => {
@@ -1444,6 +1882,12 @@ function submitNotice() {
     })
     .finally(() => {
         hideLoading();
+        
+        // Restore submit button
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Send Notice';
+        }
     });
 }
 
@@ -1469,6 +1913,69 @@ function bulkDecline() {
     
     currentBulkAction = 'decline';
     showBulkActionModal('decline', selectedApplications.length);
+}
+
+// Bulk send notice to applications
+function bulkSendNotice() {
+    if (selectedApplications.length === 0) {
+        showAlert('Please select applications to send notices to.', 'warning');
+        return;
+    }
+    
+    // Create a simple bulk notice modal
+    const modalHtml = `
+        <div class="modal fade" id="bulkNoticeModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Send Notice to Selected Students</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-info">
+                            <i class="ri-information-line me-2"></i>
+                            Sending notice to <strong>${selectedApplications.length}</strong> selected student(s)
+                        </div>
+                        <form id="bulk-notice-form">
+                            <div class="mb-3">
+                                <label for="bulk-notice-subject" class="form-label">Subject</label>
+                                <input type="text" class="form-control" id="bulk-notice-subject" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="bulk-notice-message" class="form-label">Message</label>
+                                <textarea class="form-control" id="bulk-notice-message" rows="4" required></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="bulk-notice-priority" class="form-label">Priority</label>
+                                <select class="form-select" id="bulk-notice-priority" required>
+                                    <option value="normal">Normal</option>
+                                    <option value="high">High</option>
+                                    <option value="urgent">Urgent</option>
+                                </select>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" onclick="submitBulkNotice()">Send Notices</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if any
+    const existingModal = document.getElementById('bulkNoticeModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add modal to body
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('bulkNoticeModal'));
+    modal.show();
 }
 
 // Show bulk action modal
@@ -1523,6 +2030,267 @@ function confirmBulkAction() {
         const modal = bootstrap.Modal.getInstance(document.getElementById('bulkActionModal'));
         if (modal) modal.hide();
         currentBulkAction = null;
+    });
+}
+
+// Open student selection modal for notices
+function openStudentSelectionModal() {
+    // Create student selection modal
+    const modalHtml = `
+        <div class="modal fade" id="studentSelectionModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="ri-user-search-line me-2"></i>Select Student for Notice
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="student-search" class="form-label">Search Student</label>
+                            <input type="text" class="form-control" id="student-search" placeholder="Search by name or application ID...">
+                        </div>
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table table-hover">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th>Application ID</th>
+                                        <th>Student Name</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="students-list">
+                                    <tr>
+                                        <td colspan="4" class="text-center">
+                                            <div class="spinner-border text-primary" role="status">
+                                                <span class="visually-hidden">Loading...</span>
+                                            </div>
+                                            <p class="text-muted mt-2">Loading students...</p>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if any
+    const existingModal = document.getElementById('studentSelectionModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add modal to body
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('studentSelectionModal'));
+    modal.show();
+    
+    // Load students data
+    loadStudentsForSelection();
+    
+    // Setup search functionality
+    const searchInput = document.getElementById('student-search');
+    if (searchInput) {
+        let searchTimeout;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                filterStudentsList(this.value);
+            }, 300);
+        });
+    }
+}
+
+// Load students for selection
+function loadStudentsForSelection() {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    
+    fetch('/registrar/applications/data', {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': csrfToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.applications) {
+            displayStudentsList(data.applications);
+        } else {
+            showStudentsError('Failed to load students');
+        }
+    })
+    .catch(error => {
+        console.error('Error loading students:', error);
+        showStudentsError('Failed to load students');
+    });
+}
+
+// Display students list
+function displayStudentsList(applications) {
+    const tbody = document.getElementById('students-list');
+    if (!tbody) return;
+    
+    if (!applications || applications.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="4" class="text-center py-4">
+                    <i class="ri-user-line fs-2 text-muted"></i>
+                    <p class="text-muted mt-2">No students found</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    const rows = applications.map(app => {
+        const statusClass = {
+            'pending': 'bg-warning text-dark',
+            'approved': 'bg-success',
+            'declined': 'bg-danger',
+            'rejected': 'bg-danger'
+        }[app.enrollment_status] || 'bg-secondary';
+        
+        return `
+            <tr data-student-id="${app.application_id}" data-student-name="${app.first_name} ${app.last_name}">
+                <td>${app.application_id}</td>
+                <td>
+                    <div class="fw-medium">${app.first_name} ${app.last_name}</div>
+                    <small class="text-muted">${app.email || ''}</small>
+                </td>
+                <td>
+                    <span class="badge ${statusClass}">
+                        ${app.enrollment_status ? app.enrollment_status.charAt(0).toUpperCase() + app.enrollment_status.slice(1) : 'Unknown'}
+                    </span>
+                </td>
+                <td>
+                    <button class="btn btn-primary btn-sm" onclick="selectStudentForNotice('${app.application_id}', '${app.first_name} ${app.last_name}')">
+                        <i class="ri-mail-send-line me-1"></i>Send Notice
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+    
+    tbody.innerHTML = rows;
+}
+
+// Filter students list
+function filterStudentsList(searchTerm) {
+    const rows = document.querySelectorAll('#students-list tr[data-student-id]');
+    const term = searchTerm.toLowerCase();
+    
+    rows.forEach(row => {
+        const studentId = row.getAttribute('data-student-id').toLowerCase();
+        const studentName = row.getAttribute('data-student-name').toLowerCase();
+        
+        if (studentId.includes(term) || studentName.includes(term)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+// Select student for notice
+function selectStudentForNotice(applicationId, studentName) {
+    // Close student selection modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('studentSelectionModal'));
+    if (modal) modal.hide();
+    
+    // Open notice modal for selected student
+    sendNoticeToApplicant(applicationId);
+}
+
+// Show error in students list
+function showStudentsError(message) {
+    const tbody = document.getElementById('students-list');
+    if (tbody) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="4" class="text-center py-4">
+                    <i class="ri-error-warning-line fs-2 text-danger"></i>
+                    <p class="text-danger mt-2">${message}</p>
+                    <button class="btn btn-outline-primary btn-sm" onclick="loadStudentsForSelection()">
+                        <i class="ri-refresh-line me-1"></i>Retry
+                    </button>
+                </td>
+            </tr>
+        `;
+    }
+}
+
+// Submit bulk notice
+function submitBulkNotice() {
+    const subject = document.getElementById('bulk-notice-subject')?.value;
+    const message = document.getElementById('bulk-notice-message')?.value;
+    const priority = document.getElementById('bulk-notice-priority')?.value;
+    
+    if (!subject || !message || !priority) {
+        showAlert('Please fill in all required fields', 'error');
+        return;
+    }
+    
+    if (selectedApplications.length === 0) {
+        showAlert('No applications selected', 'error');
+        return;
+    }
+    
+    // Show loading state
+    const submitBtn = document.querySelector('#bulkNoticeModal .btn-primary');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="ri-loader-4-line ri-spin me-1"></i>Sending...';
+    submitBtn.disabled = true;
+    
+    fetch('/registrar/notices/bulk', {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': window.csrfToken || '',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+            application_ids: selectedApplications,
+            title: subject,
+            message: message,
+            priority: priority,
+            type: 'info'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert(`Successfully sent notice to ${selectedApplications.length} student(s)`, 'success');
+            
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('bulkNoticeModal'));
+            if (modal) modal.hide();
+            
+            // Clear selections
+            clearAllSelections();
+        } else {
+            showAlert(data.message || 'Failed to send notices', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error sending bulk notice:', error);
+        showAlert('Failed to send notices. Please try again.', 'error');
+    })
+    .finally(() => {
+        // Restore button state
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
     });
 }
 
@@ -1859,37 +2627,6 @@ function sendBulkNotice() {
 
 
 
-
-
-// Global function assignments for onclick handlers
-window.viewApplication = viewApplication;
-window.approveApplication = approveApplication;
-window.declineApplication = declineApplication;
-window.viewDocuments = viewDocuments;
-window.scheduleAppointment = scheduleAppointment;
-window.sendNoticeToApplicant = sendNoticeToApplicant;
-window.bulkApprove = bulkApprove;
-window.bulkDecline = bulkDecline;
-window.bulkDelete = bulkDelete;
-window.exportSelected = exportSelected;
-window.clearAllSelections = clearAllSelections;
-window.refreshData = refreshData;
-window.exportData = exportData;
-window.clearFilters = clearFilters;
-window.openCreateNoticeModal = openCreateNoticeModal;
-window.openBulkNoticeModal = openBulkNoticeModal;
-window.sendNotice = sendNotice;
-window.previewRecipients = previewRecipients;
-window.sendBulkNotice = sendBulkNotice;
-window.approveApplicationFromModal = approveApplicationFromModal;
-window.declineApplicationFromModal = declineApplicationFromModal;
-window.approveDocument = approveDocument;
-window.rejectDocument = rejectDocument;
-window.updateDocumentStatus = updateDocumentStatus;
-window.viewDocumentFile = viewDocumentFile;
-window.submitNotice = submitNotice;
-window.saveAppointment = saveAppointment;
-window.confirmBulkAction = confirmBulkAction;
 window.submitDecline = submitDecline;
 window.refreshApplications = refreshApplications;
 window.exportApplications = exportApplications;
@@ -2146,6 +2883,13 @@ window.viewDocumentFile = viewDocumentFile;
 window.saveAppointment = saveAppointment;
 window.bulkApprove = bulkApprove;
 window.bulkDecline = bulkDecline;
+window.bulkSendNotice = bulkSendNotice;
+window.submitBulkNotice = submitBulkNotice;
+window.openStudentSelectionModal = openStudentSelectionModal;
+window.loadStudentsForSelection = loadStudentsForSelection;
+window.selectStudentForNotice = selectStudentForNotice;
+window.testTextareaValue = testTextareaValue;
+window.checkFormState = checkFormState;
 window.bulkDelete = bulkDelete;
 window.exportSelected = exportSelected;
 window.clearAllSelections = clearAllSelections;
@@ -2153,6 +2897,10 @@ window.refreshData = refreshData;
 window.exportData = exportData;
 window.clearFilters = clearFilters;
 window.confirmBulkAction = confirmBulkAction;
+window.approveApplicationFromModal = approveApplicationFromModal;
+window.declineApplicationFromModal = declineApplicationFromModal;
+
+// Additional utility functions
 window.submitDecline = submitDecline;
 window.refreshApplications = refreshApplications;
 window.exportApplications = exportApplications;
@@ -2166,7 +2914,6 @@ window.getStatusColor = getStatusColor;
 window.getAppointmentStatusColor = getAppointmentStatusColor;
 window.getNoticeTypeColor = getNoticeTypeColor;
 window.getPriorityColor = getPriorityColor;
-window.loadDocumentsData = loadDocumentsData;
 window.viewDocumentInTab = viewDocumentInTab;
 window.approveDocumentInTab = approveDocumentInTab;
 window.rejectDocumentInTab = rejectDocumentInTab;
@@ -2174,5 +2921,3 @@ window.formatDate = formatDate;
 window.updateDocumentStatusInTab = updateDocumentStatusInTab;
 window.setupDocumentFilters = setupDocumentFilters;
 window.handleTabSwitching = handleTabSwitching;
-window.approveApplicationFromModal = approveApplicationFromModal;
-window.declineApplicationFromModal = declineApplicationFromModal;

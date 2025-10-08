@@ -13,6 +13,7 @@ class Notice extends Model
     protected $fillable = [
         'title',
         'message',
+        'type',
         'priority',
         'enrollee_id',
         'created_by',

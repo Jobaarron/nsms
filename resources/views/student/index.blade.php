@@ -51,7 +51,7 @@
                     </div>
                 </div>
             </div>
-        @elseif($student->enrollment_status === 'payment_pending')
+        @elseif($student->enrollment_status === 'pre_registered' && \App\Models\Payment::where('payable_type', 'App\\Models\\Student')->where('payable_id', $student->id)->exists())
             <div class="row mb-4">
                 <div class="col-12">
                     <div class="alert alert-info border-0 shadow-sm">
@@ -182,12 +182,24 @@
                     <div class="card-body">
                         <div class="row g-3">
                             @if($student->enrollment_status === 'pre_registered')
-                                <div class="col-md-4">
-                                    <a href="{{ route('student.enrollment') }}" class="btn btn-outline-primary w-100 py-3">
-                                        <i class="ri-user-add-line fs-4 d-block mb-2"></i>
-                                        Complete Enrollment
-                                    </a>
-                                </div>
+                                @php
+                                    $hasPaymentSchedule = \App\Models\Payment::where('payable_type', 'App\\Models\\Student')->where('payable_id', $student->id)->exists();
+                                @endphp
+                                @if(!$hasPaymentSchedule)
+                                    <div class="col-md-4">
+                                        <a href="{{ route('student.enrollment') }}" class="btn btn-outline-primary w-100 py-3">
+                                            <i class="ri-user-add-line fs-4 d-block mb-2"></i>
+                                            Complete Enrollment
+                                        </a>
+                                    </div>
+                                @else
+                                    <div class="col-md-4">
+                                        <div class="btn btn-outline-warning w-100 py-3 disabled">
+                                            <i class="ri-time-line fs-4 d-block mb-2"></i>
+                                            Awaiting Approval
+                                        </div>
+                                    </div>
+                                @endif
                             @endif
                             <div class="col-md-4">
                                 <a href="{{ route('student.subjects') }}" class="btn btn-outline-primary w-100 py-3">
@@ -297,12 +309,23 @@
                                     {{ $student->pre_registered_at ? $student->pre_registered_at->format('M d, Y') : 'Pending' }}
                                 </small>
                             </div>
-                            <div class="timeline-item {{ $student->enrollment_status === 'enrolled' ? 'completed' : ($student->enrollment_status === 'pre_registered' ? 'active' : '') }}">
-                                <h6 class="mb-1 {{ $student->enrollment_status === 'enrolled' ? 'text-success' : ($student->enrollment_status === 'pre_registered' ? 'text-primary' : 'text-muted') }}">
+                            @php
+                                $hasPaymentSchedule = \App\Models\Payment::where('payable_type', 'App\\Models\\Student')->where('payable_id', $student->id)->exists();
+                                $enrollmentCompleted = $student->enrollment_status === 'enrolled';
+                                $enrollmentInProgress = $student->enrollment_status === 'pre_registered' && $hasPaymentSchedule;
+                            @endphp
+                            <div class="timeline-item {{ $enrollmentCompleted ? 'completed' : ($enrollmentInProgress ? 'active' : '') }}">
+                                <h6 class="mb-1 {{ $enrollmentCompleted ? 'text-success' : ($enrollmentInProgress ? 'text-warning' : 'text-muted') }}">
                                     <i class="ri-user-add-line me-1"></i>Complete Enrollment
                                 </h6>
                                 <small class="text-muted">
-                                    {{ $student->enrollment_status === 'enrolled' ? 'Completed' : ($student->enrollment_status === 'pre_registered' ? 'In Progress' : 'Pending') }}
+                                    @if($enrollmentCompleted)
+                                        Completed
+                                    @elseif($enrollmentInProgress)
+                                        Awaiting Payment Approval
+                                    @else
+                                        Pending
+                                    @endif
                                 </small>
                             </div>
                             <div class="timeline-item {{ $student->is_paid ? 'completed' : '' }}">

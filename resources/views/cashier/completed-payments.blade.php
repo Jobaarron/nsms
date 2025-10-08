@@ -194,7 +194,7 @@
                             <p><strong>Name:</strong> ${payment.payable ? payment.payable.first_name + ' ' + payment.payable.last_name : 'N/A'}</p>
                             <p><strong>ID:</strong> ${payment.payable ? (payment.payable.student_id || payment.payable.application_id) : 'N/A'}</p>
                             <p><strong>Fee Type:</strong> ${payment.fee ? payment.fee.name : 'N/A'}</p>
-                            <p><strong>Status:</strong> <span class="badge bg-success">${payment.confirmation_status}</span></p>
+                            <p><strong>Status:</strong> <span class="badge bg-success">Paid</span></p>
                             ${payment.cashier ? `<p><strong>Processed By:</strong> ${payment.cashier.full_name} (${payment.cashier.employee_id})</p>` : ''}
                         </div>
                     </div>

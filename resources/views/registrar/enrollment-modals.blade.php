@@ -364,8 +364,8 @@
     </div>
 </div>
 
-<!-- Create Notice Modal -->
-<div class="modal fade" id="createNoticeModal" tabindex="-1" aria-labelledby="createNoticeModalLabel" aria-hidden="true">
+<!-- Create Notice Modal - SIMPLIFIED: Use simple "Send Notice to Applicant" instead -->
+<!-- <div class="modal fade" id="createNoticeModal" tabindex="-1" aria-labelledby="createNoticeModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header" style="background-color: var(--primary-color); color: white;">
@@ -436,9 +436,10 @@
             </div>
         </div>
     </div>
-</div>
+</div> -->
 
-<!-- Bulk Notice Modal -->
+<!-- Bulk Notice Modal - SIMPLIFIED: Use simple bulk notice instead -->
+<!--
 <div class="modal fade" id="bulkNoticeModal" tabindex="-1" aria-labelledby="bulkNoticeModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -527,7 +528,7 @@
             </div>
         </div>
     </div>
-</div>
+</div> -->
 
 <!-- Approve Application Modal -->
 <div class="modal fade" id="approveApplicationModal" tabindex="-1" aria-labelledby="approveApplicationModalLabel" aria-hidden="true">
@@ -636,6 +637,7 @@
         </div>
     </div>
 </div>
+
 
 <!-- Loading Modal -->
 <div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">

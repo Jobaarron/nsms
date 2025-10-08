@@ -119,7 +119,7 @@ class Student extends Authenticatable
     // Relationship to enrollee record (if student was created from enrollment)
     public function enrollee()
     {
-        return $this->belongsTo(Enrollee::class);
+        return $this->belongsTo(Enrollee::class, 'enrollee_id');
     }
 
     public function getFullNameAttribute()

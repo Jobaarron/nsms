@@ -30,7 +30,14 @@ function initializeDataChangeRequests() {
  * Load enrollee data for populating current values
  */
 function loadEnrolleeData() {
-    // Get enrollee data from the page (passed from Laravel)
+    // First try to get data from window.enrolleeData (set by the Blade template)
+    if (window.enrolleeData && Object.keys(window.enrolleeData).length > 0) {
+        currentEnrolleeData = window.enrolleeData;
+        console.log('Available enrollee data:', currentEnrolleeData);
+        return;
+    }
+    
+    // Fallback: Get enrollee data from a data element (if exists)
     const enrolleeDataElement = document.getElementById('enrollee-data');
     if (enrolleeDataElement) {
         try {
@@ -40,7 +47,7 @@ function loadEnrolleeData() {
         }
     }
     
-    // If no data element, extract from the page
+    // If no data available, extract from the page
     if (Object.keys(currentEnrolleeData).length === 0) {
         extractEnrolleeDataFromPage();
     }
@@ -129,9 +136,39 @@ function handleFieldSelection(event) {
     const selectedField = event.target.value;
     const currentValueInput = document.getElementById('current_value');
     
+    console.log('Selected field:', selectedField);
+    console.log('Enrollee data keys:', Object.keys(currentEnrolleeData));
+    console.log('Field exists in data:', selectedField in currentEnrolleeData);
+    
     if (selectedField && currentValueInput) {
-        const currentValue = currentEnrolleeData[selectedField] || 'Not provided';
-        currentValueInput.value = currentValue;
+        let currentValue = currentEnrolleeData[selectedField];
+        console.log('Raw current value for', selectedField, ':', currentValue);
+        
+        // Handle different data types and null/empty values
+        let displayValue = '';
+        if (currentValue === null || currentValue === undefined || currentValue === '') {
+            displayValue = 'Not provided';
+        } else {
+            // Handle special cases for display
+            if (selectedField === 'date_of_birth' && currentValue) {
+                // Format date for display
+                try {
+                    const date = new Date(currentValue);
+                    displayValue = date.toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    });
+                } catch (e) {
+                    displayValue = String(currentValue);
+                }
+            } else {
+                displayValue = String(currentValue);
+            }
+        }
+        
+        console.log('Display value:', displayValue);
+        currentValueInput.value = displayValue;
         
         // Store the old value for the form
         const form = event.target.closest('form');
@@ -142,7 +179,12 @@ function handleFieldSelection(event) {
             oldValueInput.name = 'old_value';
             form.appendChild(oldValueInput);
         }
-        oldValueInput.value = currentValue;
+        oldValueInput.value = String(currentValue || ''); // Store raw value for form submission
+    } else {
+        console.log('Field not found in enrollee data or no field selected');
+        if (currentValueInput) {
+            currentValueInput.value = 'Not provided';
+        }
     }
 }
 

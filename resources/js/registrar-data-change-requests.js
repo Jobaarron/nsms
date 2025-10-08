@@ -59,6 +59,9 @@ function initializeDataChangeRequests() {
     
     console.log('Data change requests elements found, setting up event listeners...');
     
+    // Setup all event listeners immediately
+    setupEventListeners();
+    
     // Add tab click event listener - only load data when tab is clicked
     tab.addEventListener('click', function(e) {
         console.log('Data change requests tab clicked');
@@ -68,15 +71,6 @@ function initializeDataChangeRequests() {
             loadChangeRequestsData();
         }, 100);
     });
-    
-    // Setup search functionality
-    const searchInput = document.getElementById('changeRequestSearch');
-    if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            const searchTerm = this.value.trim();
-            searchChangeRequests(searchTerm);
-        });
-    }
 }
 
 /**
@@ -93,16 +87,24 @@ function setupCSRFToken() {
  * Setup event listeners
  */
 function setupEventListeners() {
+    console.log('Setting up event listeners for data change requests...');
+    
     // Filter buttons
     const filterButtons = document.querySelectorAll('input[name="changeRequestStatus"]');
-    filterButtons.forEach(button => {
+    console.log('Found filter buttons:', filterButtons.length);
+    
+    filterButtons.forEach((button, index) => {
+        console.log(`Filter button ${index}:`, button.id, button.value);
         button.addEventListener('change', function() {
+            console.log('Filter button clicked:', this.value);
             filterChangeRequests(this.value);
         });
     });
     
     // Search input
     const searchInput = document.getElementById('changeRequestSearch');
+    console.log('Search input found:', !!searchInput);
+    
     if (searchInput) {
         let searchTimeout;
         searchInput.addEventListener('input', function() {
@@ -264,6 +266,8 @@ function displayChangeRequests(requests) {
                 </td>
                 <td>
                     <div class="change-details">
+                        <div class="text-muted small">From:</div>
+                        <div class="small mb-1">${escapeHtml(request.old_value || 'Not provided')}</div>
                         <div class="text-muted small">To:</div>
                         <div class="fw-medium">${escapeHtml(request.new_value || 'N/A')}</div>
                         ${request.reason ? `<div class="text-muted small mt-1"><i class="ri-information-line me-1"></i>${escapeHtml(request.reason)}</div>` : ''}
@@ -300,6 +304,7 @@ function displayChangeRequests(requests) {
  */
 function filterChangeRequests(status) {
     console.log('Filtering change requests by status:', status);
+    console.log('Total change requests data:', changeRequestsData.length);
     
     if (!status) {
         filteredChangeRequests = [...changeRequestsData];
@@ -307,6 +312,7 @@ function filterChangeRequests(status) {
         filteredChangeRequests = changeRequestsData.filter(request => request.status === status);
     }
     
+    console.log('Filtered results:', filteredChangeRequests.length);
     displayChangeRequests(filteredChangeRequests);
 }
 
