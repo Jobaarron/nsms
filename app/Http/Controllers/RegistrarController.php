@@ -725,7 +725,6 @@ class RegistrarController extends Controller
                 'enrollee_id' => $application->id,
                 'title' => $request->subject,
                 'message' => $request->message,
-                'type' => 'info',
                 'priority' => $request->priority,
                 'is_global' => false,
                 'created_by' => Auth::id(),

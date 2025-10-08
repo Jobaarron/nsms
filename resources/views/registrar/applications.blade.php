@@ -10,6 +10,7 @@
     
     @vite(['resources/js/registrar-applications.js'])
     @vite(['resources/js/registrar-data-change-requests.js'])
+    @vite(['resources/js/registrar-document-management.js'])
     @vite(['resources/css/index_registrar.css'])
     
     @include('registrar.enrollment-modals')
@@ -709,7 +710,6 @@
                                         <tr>
                                             <th>Title</th>
                                             <th>Recipient</th>
-                                            <th>Type</th>
                                             <th>Priority</th>
                                             <th>Date Sent</th>
                                             <th>Status</th>
@@ -960,15 +960,6 @@
                             </select>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="notice-type" class="form-label">Notice Type</label>
-                            <select class="form-select" id="notice-type" required>
-                                <option value="info">Information</option>
-                                <option value="success">Success</option>
-                                <option value="warning">Warning</option>
-                                <option value="error">Error</option>
-                            </select>
-                        </div>
 
                         <div class="mb-3">
                             <label for="notice-message" class="form-label">Message</label>
@@ -1056,15 +1047,6 @@
                             </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="bulk-notice-type" class="form-label">Notice Type</label>
-                            <select class="form-select" id="bulk-notice-type" required>
-                                <option value="info">Information</option>
-                                <option value="success">Success</option>
-                                <option value="warning">Warning</option>
-                                <option value="error">Error</option>
-                            </select>
-                        </div>
 
                         <div class="mb-3">
                             <label for="bulk-notice-message" class="form-label">Message</label>
@@ -1100,7 +1082,6 @@
                         <div class="card-body">
                             <div class="row mb-3">
                                 <div class="col-md-6">
-                                    <p><strong>Type:</strong> <span id="view-notice-type" class="badge"></span></p>
                                     <p><strong>Priority:</strong> <span id="view-notice-priority" class="badge"></span></p>
                                 </div>
                                 <div class="col-md-6">

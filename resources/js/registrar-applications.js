@@ -605,6 +605,11 @@ function populateApplicationModal(application) {
         if (documentsInfo) documentsInfo.style.display = 'block';
         if (noDocuments) noDocuments.style.display = 'none';
         
+        // Initialize document management for this application
+        if (window.RegistrarDocumentManagement) {
+            window.RegistrarDocumentManagement.makeDocumentsClickable(application.application_id || application.id);
+        }
+        
         // Populate documents list
         if (documentsList) {
             documentsList.innerHTML = '';
@@ -613,8 +618,9 @@ function populateApplicationModal(application) {
                 docElement.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
                 docElement.innerHTML = `
                     <div>
-                        <i class="ri-file-line me-2"></i>
-                        <small>${doc.filename || `Document ${index + 1}`}</small>
+                        <i class="ri-file-text-line me-2"></i>
+                        <strong>${doc.type || 'Document'}</strong><br>
+                        <small class="text-muted">${doc.filename || 'Unknown file'}</small>
                     </div>
                     <span class="badge bg-${doc.status === 'approved' ? 'success' : doc.status === 'rejected' ? 'danger' : 'warning'}">${doc.status || 'pending'}</span>
                 `;
@@ -669,7 +675,7 @@ function approveApplicationFromModal(applicationId) {
 // Decline application
 function declineApplication(applicationId) {
     currentApplicationId = applicationId;
-    const modal = new bootstrap.Modal(document.getElementById('declineReasonModal'));
+    const modal = new bootstrap.Modal(document.getElementById('declineModal'));
     modal.show();
 }
 
@@ -680,6 +686,73 @@ function declineApplicationFromModal(applicationId) {
     if (viewModal) viewModal.hide();
     
     declineApplication(applicationId || currentApplicationId);
+}
+
+// Confirm decline with reason
+function confirmDecline() {
+    const reasonTextarea = document.getElementById('decline-reason');
+    const reason = reasonTextarea ? reasonTextarea.value.trim() : '';
+    
+    if (!reason) {
+        showAlert('Please provide a reason for declining the application', 'warning');
+        return;
+    }
+    
+    if (!currentApplicationId) {
+        showAlert('No application selected', 'error');
+        return;
+    }
+    
+    // Show loading state
+    const confirmBtn = document.querySelector('#declineModal .btn-warning');
+    if (confirmBtn) {
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = '<i class="ri-loader-4-line ri-spin me-1"></i>Declining...';
+    }
+    
+    // Make API call to decline application
+    fetch(`/registrar/applications/${currentApplicationId}/decline`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+        },
+        body: JSON.stringify({
+            reason: reason
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('Application declined successfully', 'success');
+            
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('declineModal'));
+            if (modal) modal.hide();
+            
+            // Clear form
+            if (reasonTextarea) reasonTextarea.value = '';
+            
+            // Refresh data
+            if (typeof loadApplicationsData === 'function') {
+                loadApplicationsData();
+            }
+        } else {
+            showAlert(data.message || 'Failed to decline application', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error declining application:', error);
+        showAlert('Error declining application', 'error');
+    })
+    .finally(() => {
+        // Restore button
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = '<i class="ri-close-line me-1"></i>Decline Application';
+        }
+    });
 }
 
 // Submit decline with reason
@@ -1046,7 +1119,6 @@ function loadNoticesData() {
                                         '<span class="text-muted">Unknown</span>'
                                 }
                             </td>
-                            <td><span class="badge bg-${getNoticeTypeColor(notice.type)}">${escapeHtml(notice.type || 'info')}</span></td>
                             <td><span class="badge bg-${getPriorityColor(notice.priority)}">${escapeHtml(notice.priority || 'normal')}</span></td>
                             <td>${escapeHtml(notice.created_at || 'N/A')}</td>
                             <td><span class="badge bg-${notice.read_at ? 'success' : 'warning text-dark'}">${notice.read_at ? 'Read' : 'Unread'}</span></td>
@@ -1107,15 +1179,6 @@ function getAppointmentStatusColor(status) {
     }
 }
 
-function getNoticeTypeColor(type) {
-    switch(type) {
-        case 'info': return 'info';
-        case 'success': return 'success';
-        case 'warning': return 'warning';
-        case 'error': return 'danger';
-        default: return 'info';
-    }
-}
 
 function getPriorityColor(priority) {
     switch(priority) {
@@ -2638,7 +2701,6 @@ window.getFileIcon = getFileIcon;
 window.formatDateTime = formatDateTime;
 window.getStatusColor = getStatusColor;
 window.getAppointmentStatusColor = getAppointmentStatusColor;
-window.getNoticeTypeColor = getNoticeTypeColor;
 window.getPriorityColor = getPriorityColor;
 window.loadDocumentsData = loadDocumentsData;
 window.viewDocumentInTab = viewDocumentInTab;
@@ -2899,6 +2961,7 @@ window.clearFilters = clearFilters;
 window.confirmBulkAction = confirmBulkAction;
 window.approveApplicationFromModal = approveApplicationFromModal;
 window.declineApplicationFromModal = declineApplicationFromModal;
+window.confirmDecline = confirmDecline;
 
 // Additional utility functions
 window.submitDecline = submitDecline;
@@ -2912,7 +2975,6 @@ window.getFileIcon = getFileIcon;
 window.formatDateTime = formatDateTime;
 window.getStatusColor = getStatusColor;
 window.getAppointmentStatusColor = getAppointmentStatusColor;
-window.getNoticeTypeColor = getNoticeTypeColor;
 window.getPriorityColor = getPriorityColor;
 window.viewDocumentInTab = viewDocumentInTab;
 window.approveDocumentInTab = approveDocumentInTab;

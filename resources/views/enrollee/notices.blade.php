@@ -160,7 +160,7 @@
             <!-- SIDEBAR -->
             <div class="col-lg-2">
                 <!-- NOTICE STATISTICS -->
-                <div class="card mb-4">
+                <!-- <div class="card mb-4">
                     <div class="card-header">
                         <h6 class="mb-0">
                             <i class="ri-bar-chart-line me-2"></i>
@@ -181,7 +181,7 @@
                             <small class="text-muted">Urgent</small>
                         </div>
                     </div>
-                </div>
+                </div> -->
 
                 <!-- QUICK ACTIONS -->
                 <div class="card">

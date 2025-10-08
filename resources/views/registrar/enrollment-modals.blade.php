@@ -315,14 +315,14 @@
                         <label for="decline-reason" class="form-label">Reason for Decline <span class="text-danger">*</span></label>
                         <textarea class="form-control" id="decline-reason" rows="4" placeholder="Please provide a detailed reason for declining this application..." required></textarea>
                     </div>
-                    <div class="mb-3">
+                    <!-- <div class="mb-3">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="notify-applicant" checked>
                             <label class="form-check-label" for="notify-applicant">
                                 Send notification email to applicant
                             </label>
                         </div>
-                    </div>
+                    </div> -->
                 </form>
             </div>
             <div class="modal-footer">
