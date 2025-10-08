@@ -693,6 +693,8 @@ class EnrolleeController extends Controller
                     'enrollment_status' => 'pre_registered',
                     'academic_year' => $enrollee->academic_year ?? '2024-2025',
                     'documents' => $enrollee->documents,
+                    'id_photo' => $enrollee->id_photo,
+                    'id_photo_mime_type' => $enrollee->id_photo_mime_type,
                     'id_photo_data_url' => $enrollee->id_photo_data_url,
                     'father_name' => $enrollee->father_name,
                     'father_occupation' => $enrollee->father_occupation,

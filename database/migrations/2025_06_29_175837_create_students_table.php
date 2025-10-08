@@ -76,7 +76,7 @@ return new class extends Migration
             $table->text('medical_history')->nullable();
             
             
-            $table->enum('payment_mode', ['cash', 'online payment', 'installment'])->nullable(); // Mode of payment selected during enrollment
+            // payment_mode removed - now handled by payment_method in payments table
             $table->boolean('is_paid')->default(false); // Quick status check - calculated from payments table
             $table->decimal('total_fees_due', 10, 2)->nullable(); // Total calculated from fees table
             $table->decimal('total_paid', 10, 2)->default(0); // Total calculated from payments table

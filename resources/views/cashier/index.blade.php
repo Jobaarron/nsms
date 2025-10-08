@@ -181,19 +181,16 @@
                                                     ₱{{ number_format($payment->amount, 2) }}
                                                 </span>
                                             </td>
-                                            <td>
+                                            <!-- Payment method badge removed for on-site processing -->
+                                            <!-- <td>
                                                 @if($payment->payment_method)
                                                     <span class="badge bg-info">
                                                         {{ ucfirst(str_replace('_', ' ', $payment->payment_method)) }}
                                                     </span>
-{{-- @if($payment->reference_number)
-                                                        <br>
-                                                        <small class="text-muted">Ref: {{ $payment->reference_number }}</small>
-                                                    @endif --}}
                                                 @else
                                                     <span class="badge bg-secondary">Not Specified</span>
                                                 @endif
-                                            </td>
+                                            </td> -->
                                             <td>
                                                 @php
                                                     $statusClass = match($payment->confirmation_status) {

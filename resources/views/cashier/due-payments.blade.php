@@ -37,12 +37,10 @@
                                     <tr>
                                         <th>Priority</th>
                                         <th>Transaction ID</th>
-                                        <th>Student/Enrollee</th>
-{{-- <th>Fee Type</th> --}}
+                                        <th>Student ID</th>
                                         <th>Amount</th>
-                                        <th>Payment Method</th>
-                                        <th>Days Overdue</th>
-                                        <th>Date Submitted</th>
+                                        <th>Scheduled Date</th>
+                                        <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -91,11 +89,12 @@
                                                     ₱{{ number_format($payment->amount, 2) }}
                                                 </span>
                                             </td>
-                                            <td>
+                                            <!-- Payment method badge removed for on-site processing -->
+                                            <!-- <td>
                                                 <span class="badge bg-info">
                                                     {{ ucfirst($payment->payment_method) }}
                                                 </span>
-                                            </td>
+                                            </td> -->
                                             <td>
                                                 <span class="text-{{ $priorityClass }}">
                                                     @if($daysOverdue > 0)

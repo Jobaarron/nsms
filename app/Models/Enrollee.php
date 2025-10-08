@@ -64,7 +64,7 @@ class Enrollee extends Authenticatable
         'last_school_type',
         'last_school_name',
         'medical_history',
-        'payment_mode',
+        // 'payment_mode', // Removed - now handled by payment_method in payments table
         'is_paid',
         'total_fees_due',
         'total_paid',
