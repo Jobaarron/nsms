@@ -68,8 +68,13 @@ function initializeSystem() {
                 case '#notices':
                     loadNoticesData();
                     break;
+                case '#data-change-requests':
+                    // Data change requests are handled by their own dedicated script
+                    console.log('Data change requests tab activated - handled by dedicated script');
+                    break;
                 default:
-                    location.reload();
+                    console.log('Unknown tab activated:', targetId);
+                    break;
             }
         });
     });
@@ -1585,6 +1590,10 @@ function refreshData() {
         case '#notices':
             loadNoticesData();
             break;
+        case '#data-change-requests':
+            // Data change requests are handled by their own dedicated script
+            console.log('Data change requests refresh handled by dedicated script');
+            break;
         default:
             location.reload();
     }
@@ -1624,6 +1633,9 @@ function exportData() {
             break;
         case '#notices':
             params.append('type', 'notices');
+            break;
+        case '#data-change-requests':
+            params.append('type', 'data-change-requests');
             break;
     }
     

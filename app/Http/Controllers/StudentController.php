@@ -205,7 +205,35 @@ class StudentController extends Controller
             return redirect()->route('student.login');
         }
         
-        return view('student.enrollment', compact('student'));
+        // Calculate total fees for the student
+        $feeCalculation = Fee::calculateTotalFeesForGrade($student->grade_level);
+        $totalAmount = $feeCalculation['total_amount'];
+        
+        // Check payment schedule status
+        $paymentScheduleStatus = Payment::where('payable_type', 'App\\Models\\Student')
+            ->where('payable_id', $student->id)
+            ->first();
+            
+        // Get current subjects for the student (same logic as subjects view)
+        $currentSubjects = Subject::where('grade_level', $student->grade_level)
+            ->where('academic_year', $student->academic_year ?? '2024-2025')
+            ->where('is_active', true)
+            ->when(in_array($student->grade_level, ['Grade 11', 'Grade 12']), function($query) use ($student) {
+                return $query->where(function($q) use ($student) {
+                    $q->whereNull('strand') // Core subjects for all strands
+                      ->orWhere('strand', $student->strand);
+                });
+            })
+            ->when($student->track, function($query) use ($student) {
+                return $query->where(function($q) use ($student) {
+                    $q->whereNull('track') // Subjects for all tracks in the strand
+                      ->orWhere('track', $student->track);
+                });
+            })
+            ->orderBy('subject_name')
+            ->get();
+        
+        return view('student.enrollment', compact('student', 'totalAmount', 'paymentScheduleStatus', 'currentSubjects'));
     }
 
     public function submitEnrollment(Request $request)
@@ -217,50 +245,112 @@ class StudentController extends Controller
         }
 
         // Check if student already has payment schedules that are not rejected
-        $existingSchedules = Payment::where('payable_type', Student::class)
+        $existingSchedules = Payment::where('payable_type', 'App\\Models\\Student')
             ->where('payable_id', $student->id)
             ->whereNotIn('confirmation_status', ['rejected', 'declined'])
             ->exists();
             
         if ($existingSchedules) {
-            return back()->withErrors([
-                'error' => 'You have already submitted a payment schedule. You can only re-submit if your previous schedule was rejected or declined.'
-            ]);
+            $errorMessage = 'You have already submitted a payment schedule. You can only re-submit if your previous schedule was rejected or declined.';
+            
+            // Check if this is an AJAX request
+            if ($request->expectsJson() || $request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+                return response()->json([
+                    'success' => false,
+                    'message' => $errorMessage
+                ], 400);
+            }
+            
+            return back()->withErrors(['error' => $errorMessage]);
         }
 
+        // If resubmitting after rejection, delete the old rejected payment schedules
+        Payment::where('payable_type', 'App\\Models\\Student')
+            ->where('payable_id', $student->id)
+            ->whereIn('confirmation_status', ['rejected', 'declined'])
+            ->delete();
+
         $request->validate([
-            'payment_mode' => 'required|in:full,quarterly,monthly',
-            'payment_method' => 'required|in:cash,bank_transfer,online_payment'
+            'payment_mode' => 'nullable|in:full,quarterly,monthly',
+            'payment_notes' => 'nullable|string|max:1000'
         ]);
 
+        // Set default payment mode if not provided
+        $paymentMode = $request->payment_mode ?? 'full';
+        
+        // Set default payment method (will be determined by cashier)
+        $paymentMethod = 'cash';
+
         try {
-            // Get enrollee data to fetch preferred_schedule
-            $enrollee = $student->enrollee;
-            $preferredScheduleDate = $enrollee ? $enrollee->preferred_schedule : now()->addDays(7);
+            Log::info('Starting enrollment submission for student: ' . $student->id);
             
-            // If no preferred schedule, use a default date
-            if (!$preferredScheduleDate) {
-                $preferredScheduleDate = now()->addDays(7);
+            // Get enrollee data to fetch preferred_schedule
+            $preferredScheduleDate = now()->addDays(7); // Default date
+            
+            try {
+                $enrollee = $student->enrollee;
+                if ($enrollee && $enrollee->preferred_schedule) {
+                    $preferredScheduleDate = $enrollee->preferred_schedule;
+                }
+            } catch (\Exception $e) {
+                Log::warning('Could not fetch enrollee data: ' . $e->getMessage());
+                // Continue with default date
             }
+            
+            Log::info('Preferred schedule date: ' . $preferredScheduleDate);
 
             // Calculate total fees
             $feeCalculation = Fee::calculateTotalFeesForGrade($student->grade_level);
             $totalAmount = $feeCalculation['total_amount'];
+            
+            Log::info('Total amount calculated: ' . $totalAmount);
 
             // Create payment schedules based on payment mode
-            $this->createPaymentSchedules($student, $request->payment_mode, $totalAmount, $preferredScheduleDate, $request->payment_method, $request->payment_notes);
+            Log::info('Creating payment schedules with mode: ' . $paymentMode);
+            $this->createPaymentSchedules($student, $paymentMode, $totalAmount, $preferredScheduleDate, $paymentMethod, $request->payment_notes);
+            
+            Log::info('Payment schedules created successfully');
 
             // Update student with enrollment information
+            Log::info('Updating student enrollment status');
             $student->update([
-                'payment_mode' => $request->payment_mode,
+                'payment_mode' => $paymentMode,
                 'total_fees_due' => $totalAmount,
-                'enrollment_status' => 'enrolled'
+                'enrollment_status' => 'payment_pending' // Changed from 'enrolled' to 'payment_pending'
             ]);
+            
+            Log::info('Student updated successfully');
 
+            // Check if this is an AJAX request
+            Log::info('Checking request type - AJAX headers: ' . json_encode([
+                'expectsJson' => $request->expectsJson(),
+                'ajax' => $request->ajax(),
+                'X-Requested-With' => $request->header('X-Requested-With')
+            ]));
+            
+            if ($request->expectsJson() || $request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+                Log::info('Returning JSON response');
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Payment schedule submitted successfully! Your schedule is now pending approval from the cashier\'s office.',
+                    'redirect_url' => '/student/dashboard'
+                ]);
+            }
+            
+            Log::info('Returning redirect response');
             return redirect()->route('student.dashboard')
                 ->with('success', 'Payment schedule submitted successfully! Your schedule is now pending approval from the cashier\'s office.');
         } catch (\Exception $e) {
             Log::error('Enrollment submission failed: ' . $e->getMessage());
+            
+            // Check if this is an AJAX request
+            if ($request->expectsJson() || $request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to complete enrollment. Please try again.'
+                ], 500);
+            }
+            
             return back()->withErrors(['error' => 'Failed to complete enrollment. Please try again.']);
         }
     }
@@ -307,19 +397,37 @@ class StudentController extends Controller
 
         // Create payment records
         foreach ($schedules as $schedule) {
-            Payment::create([
-                'transaction_id' => 'TXN-' . $student->student_id . '-' . time() . '-' . rand(100, 999),
-                'payable_type' => Student::class,
-                'payable_id' => $student->id,
-                'amount' => $schedule['amount'],
-                'scheduled_date' => $schedule['scheduled_date'],
-                'period_name' => $schedule['period_name'],
-                'payment_mode' => $paymentMode,
-                'payment_method' => $paymentMethod,
-                'status' => 'pending',
-                'confirmation_status' => 'pending',
-                'notes' => $notes,
-            ]);
+            try {
+                Payment::create([
+                    'transaction_id' => 'TXN-' . $student->student_id . '-' . time() . '-' . rand(100, 999),
+                    'payable_type' => 'App\\Models\\Student',
+                    'payable_id' => $student->id,
+                    'amount' => $schedule['amount'],
+                    'scheduled_date' => $schedule['scheduled_date'],
+                    'period_name' => $schedule['period_name'],
+                    'payment_mode' => $paymentMode,
+                    'payment_method' => $paymentMethod,
+                    'status' => 'pending',
+                    'confirmation_status' => 'pending',
+                    'notes' => $notes,
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Payment creation failed: ' . $e->getMessage());
+                Log::error('Payment data: ' . json_encode([
+                    'transaction_id' => 'TXN-' . $student->student_id . '-' . time() . '-' . rand(100, 999),
+                    'payable_type' => 'App\\Models\\Student',
+                    'payable_id' => $student->id,
+                    'amount' => $schedule['amount'],
+                    'scheduled_date' => $schedule['scheduled_date'],
+                    'period_name' => $schedule['period_name'],
+                    'payment_mode' => $paymentMode,
+                    'payment_method' => $paymentMethod,
+                    'status' => 'pending',
+                    'confirmation_status' => 'pending',
+                    'notes' => $notes,
+                ]));
+                throw $e;
+            }
         }
     }
 
@@ -330,8 +438,83 @@ class StudentController extends Controller
         if (!$student) {
             return redirect()->route('student.login');
         }
+
+        // Determine current grading period/semester based on date
+        $currentMonth = now()->month;
+        $currentGradingPeriod = $this->getCurrentGradingPeriod($currentMonth);
+        $currentSemester = $this->getCurrentSemester($currentMonth);
         
-        return view('student.subjects', compact('student'));
+        // Get subjects based on student's grade level
+        $query = Subject::where('grade_level', $student->grade_level)
+            ->where('academic_year', $student->academic_year ?? '2024-2025')
+            ->where('is_active', true);
+            
+        // Add strand and track filters for senior high school
+        if (in_array($student->grade_level, ['Grade 11', 'Grade 12'])) {
+            $query->where(function($q) use ($student) {
+                $q->whereNull('strand') // Core subjects for all strands
+                  ->orWhere('strand', $student->strand);
+            });
+            
+            if ($student->track) {
+                $query->where(function($q) use ($student) {
+                    $q->whereNull('track') // Subjects for all tracks in the strand
+                      ->orWhere('track', $student->track);
+                });
+            }
+        }
+        
+        $allSubjects = $query->orderBy('strand', 'asc')
+            ->orderBy('subject_name', 'asc')
+            ->get();
+            
+        // Organize subjects by current period
+        $currentSubjects = collect();
+        $otherSubjects = collect();
+        
+        foreach ($allSubjects as $subject) {
+            if (in_array($student->grade_level, ['Grade 11', 'Grade 12'])) {
+                // Senior High School - organize by semester
+                if ($subject->semester === $currentSemester) {
+                    $currentSubjects->push($subject);
+                } else {
+                    $otherSubjects->push($subject);
+                }
+            } else {
+                // Elementary/Junior High - all subjects are current (quarterly system)
+                $currentSubjects->push($subject);
+            }
+        }
+        
+        return view('student.subjects', compact(
+            'student', 
+            'currentSubjects', 
+            'otherSubjects', 
+            'currentGradingPeriod', 
+            'currentSemester'
+        ));
+    }
+    
+    private function getCurrentGradingPeriod($month)
+    {
+        if ($month >= 6 && $month <= 8) {
+            return '1st Quarter';
+        } elseif ($month >= 9 && $month <= 11) {
+            return '2nd Quarter';
+        } elseif ($month >= 12 || $month <= 2) {
+            return '3rd Quarter';
+        } else {
+            return '4th Quarter';
+        }
+    }
+    
+    private function getCurrentSemester($month)
+    {
+        if ($month >= 6 && $month <= 11) {
+            return 'First Semester';
+        } else {
+            return 'Second Semester';
+        }
     }
 
     public function payments()

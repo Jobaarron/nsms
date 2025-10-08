@@ -9,8 +9,8 @@
                     <p class="lead mb-5 fs-5">
                         Nicolites Montessori School is a non-sectarian private school offering complete Pre-school Programs, Elementary, Junior High School and Senior High School with the following strands: ABM, HUMSS, STEM and TVL. NMS was established in 2004, it is one of the fastest-growing private schools in Nasugbu, Batangas.
                     </p>
-                    <a href="/enroll"> 
-                        <button class="btn btn-custom btn-lg">ENROLL NOW!</button>
+                    <a href="/apply"> 
+                        <button class="btn btn-custom btn-lg">APPLY NOW!</button>
                       </a>
                 </div>
             </div>
@@ -440,7 +440,7 @@
                         <p class="lead mb-4">Take the first step towards your child's bright future. Enroll now and be part of the Nicolites family.</p>
                         <div class="d-flex flex-column flex-md-row gap-3 justify-content-center">
                             <a href="/enroll" class="btn btn-custom btn-lg">
-                                <i class="ri-user-add-line me-2"></i>Start Enrollment
+                                <i class="ri-user-add-line me-2"></i>Apply now
                             </a>
                             <a href="#contact" class="btn btn-outline-primary btn-lg">
                                 <i class="ri-phone-line me-2"></i>Contact Us

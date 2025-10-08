@@ -13,7 +13,19 @@ class FeesTableSeeder extends Seeder
      */
     public function run(): void
     {
-        $academicYear = date('Y') . '-' . (date('Y') + 1);
+         // Philippine academic year runs from June to March
+        // If current month is January-May, we're in the second half of the academic year
+        // If current month is June-December, we're in the first half of the academic year
+        $currentYear = date('Y');
+        $currentMonth = date('n'); // 1-12
+        
+        if ($currentMonth >= 1 && $currentMonth <= 5) {
+            // January to May - second half of academic year
+            $academicYear = ($currentYear - 1) . '-' . $currentYear;
+        } else {
+            // June to December - first half of academic year
+            $academicYear = $currentYear . '-' . ($currentYear + 1);
+        }
 
         $fees = [
             // PRESCHOOL FEES (Nursery, Junior Casa, Senior Casa)

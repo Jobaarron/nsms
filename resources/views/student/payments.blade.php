@@ -23,6 +23,44 @@
             </div>
         </div>
 
+        <!-- Payment Status Alert -->
+        @if($student->is_paid)
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="alert alert-success border-0 shadow-sm">
+                        <div class="d-flex align-items-center">
+                            <i class="ri-check-double-line fs-4 me-3"></i>
+                            <div>
+                                <h6 class="alert-heading mb-1">Payment Complete!</h6>
+                                <p class="mb-0">All payments have been confirmed by the cashier. Your enrollment is fully paid.</p>
+                                @if($student->payment_completed_at)
+                                    <small class="text-muted">Completed on: {{ $student->payment_completed_at->format('M d, Y h:i A') }}</small>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @elseif($totalPaid > 0)
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="alert alert-warning border-0 shadow-sm">
+                        <div class="d-flex align-items-center">
+                            <i class="ri-money-dollar-circle-line fs-4 me-3"></i>
+                            <div>
+                                <h6 class="alert-heading mb-1">Partial Payment Received</h6>
+                                <p class="mb-0">
+                                    Some payments have been confirmed by the cashier.
+                                    <br>
+                                    <strong>Remaining Balance: ₱{{ number_format($balanceDue, 2) }}</strong>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
+
         <!-- Payment Summary Cards -->
         <div class="row mb-4">
             <div class="col-lg-3 col-md-6 mb-3">
@@ -71,8 +109,8 @@
                             <i class="ri-calendar-line fs-2"></i>
                         </div>
                         <div class="flex-grow-1">
-                            <h3 class="fw-bold fs-4 mb-0 text-white">{{ ucfirst($student->payment_mode ?? 'Not Set') }}</h3>
-                            <small class="text-white">Payment Mode</small>
+                            <h3 class="fw-bold fs-4 mb-0 text-white">Automated Schedule</h3>
+                            <small class="text-white">Based on Enrollment Date</small>
                         </div>
                     </div>
                 </div>
@@ -90,7 +128,7 @@
                                 <h5 class="card-title mb-0">
                                     <i class="ri-calendar-check-line me-2"></i>Payment Schedule
                                 </h5>
-                                <span class="badge bg-primary">{{ ucfirst($student->payment_mode) }} Payment</span>
+                                <span class="badge bg-primary">Auto-Generated Schedule</span>
                             </div>
                         </div>
                         <div class="card-body">
@@ -384,9 +422,9 @@
                                 </div>
                                 
                                 <div class="mb-3">
-                                    <label class="form-label">Current Payment Mode</label>
+                                    <label class="form-label">Payment Schedule</label>
                                     <div class="fw-semibold text-muted">
-                                        <i class="ri-lock-line me-1"></i>{{ ucfirst($student->payment_mode ?? 'Not Set') }}
+                                        <i class="ri-calendar-check-line me-1"></i>Automatically generated based on enrollment date
                                     </div>
                                 </div>
                                 
@@ -436,20 +474,15 @@
                                 <form action="{{ route('student.payment.mode.update') }}" method="POST">
                                     @csrf
                                     <div class="mb-3">
-                                        <label class="form-label">Current Mode</label>
-                                        <div class="fw-semibold">{{ ucfirst($student->payment_mode ?? 'Not Set') }}</div>
+                                        <label class="form-label">Payment Schedule Type</label>
+                                        <div class="fw-semibold">Determined by student's choice during enrollment</div>
                                     </div>
-                                    <div class="mb-3">
-                                        <label class="form-label">New Payment Mode</label>
-                                        <select class="form-select" name="payment_mode" required>
-                                            <option value="">Select Payment Mode</option>
-                                            <option value="full" {{ $student->payment_mode === 'full' ? 'selected' : '' }}>Full Payment</option>
-                                            <option value="quarterly" {{ $student->payment_mode === 'quarterly' ? 'selected' : '' }}>Quarterly</option>
-                                            <option value="monthly" {{ $student->payment_mode === 'monthly' ? 'selected' : '' }}>Monthly</option>
-                                        </select>
+                                    <div class="alert alert-info border-0">
+                                        <i class="ri-information-line me-2"></i>
+                                        <strong>Automated Scheduling:</strong> Your payment dates are automatically calculated based on your enrollment date and preferred payment schedule. Contact the cashier's office if you need to make changes.
                                     </div>
-                                    <button type="submit" class="btn btn-primary btn-sm w-100">
-                                        <i class="ri-refresh-line me-1"></i>Update Payment Mode
+                                    <button type="button" class="btn btn-outline-primary btn-sm w-100" onclick="alert('Please contact the cashier\'s office to modify your payment schedule.')">
+                                        <i class="ri-customer-service-line me-1"></i>Contact Cashier for Changes
                                     </button>
                                 </form>
                             @endif

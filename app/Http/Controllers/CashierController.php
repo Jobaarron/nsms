@@ -201,6 +201,31 @@ class CashierController extends Controller
             'status' => 'paid',
         ]);
 
+        // Update student enrollment status and payment totals when payment schedule is approved
+        if ($payment->payable_type === 'App\\Models\\Student') {
+            $student = $payment->payable;
+            if ($student) {
+                // Calculate total paid amount from all confirmed payments
+                $totalPaid = \App\Models\Payment::where('payable_type', 'App\\Models\\Student')
+                    ->where('payable_id', $student->id)
+                    ->where('confirmation_status', 'confirmed')
+                    ->sum('amount');
+                
+                // Check if payment is complete (total paid >= total fees due)
+                $isFullyPaid = $totalPaid >= $student->total_fees_due;
+                
+                // Update student record
+                $student->update([
+                    'enrollment_status' => 'enrolled',
+                    'total_paid' => $totalPaid,
+                    'is_paid' => $isFullyPaid,
+                    'payment_completed_at' => $isFullyPaid ? now() : null
+                ]);
+                
+                Log::info("Student payment updated - ID: {$student->id}, Total Paid: {$totalPaid}, Fully Paid: " . ($isFullyPaid ? 'Yes' : 'No'));
+            }
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Payment confirmed successfully.',
@@ -292,5 +317,160 @@ class CashierController extends Controller
             'dateFrom',
             'dateTo'
         ));
+    }
+
+    /**
+     * Display fee management page.
+     */
+    public function fees()
+    {
+        $cashier = Auth::guard('cashier')->user();
+        
+        if (!$cashier) {
+            return redirect()->route('cashier.login');
+        }
+
+        $fees = Fee::orderBy('academic_year', 'desc')
+            ->orderBy('name', 'asc')
+            ->paginate(20);
+
+        return view('cashier.fees', compact('cashier', 'fees'));
+    }
+
+    /**
+     * Show create fee form.
+     */
+    public function createFee()
+    {
+        $cashier = Auth::guard('cashier')->user();
+        
+        if (!$cashier) {
+            return redirect()->route('cashier.login');
+        }
+
+        return view('cashier.fees-create', compact('cashier'));
+    }
+
+    /**
+     * Store a new fee.
+     */
+    public function storeFee(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string|max:1000',
+            'amount' => 'required|numeric',
+            'academic_year' => 'required|string|max:10',
+            'educational_level' => 'required|string|in:preschool,elementary,junior_high,senior_high',
+            'fee_category' => 'required|string|in:entrance,tuition,miscellaneous,laboratory,library,other',
+            'payment_schedule' => 'required|string|in:full_payment,pay_separate,pay_before_exam,monthly,quarterly',
+            'grade_levels' => 'required|array|min:1',
+            'grade_levels.*' => 'string',
+            'is_active' => 'boolean',
+        ]);
+
+        // Create base fee
+        $fee = Fee::create([
+            'name' => $request->name,
+            'description' => $request->description,
+            'amount' => $request->amount,
+            'academic_year' => $request->academic_year,
+            'applicable_grades' => $request->grade_levels,
+            'educational_level' => $request->educational_level,
+            'fee_category' => $request->fee_category,
+            'payment_schedule' => $request->payment_schedule,
+            'is_required' => true,
+            'payment_order' => 1,
+            'is_active' => $request->boolean('is_active', true),
+        ]);
+
+        return redirect()->route('cashier.fees')
+            ->with('success', 'Fee created successfully!');
+    }
+
+    /**
+     * Show edit fee form.
+     */
+    public function editFee(Fee $fee)
+    {
+        $cashier = Auth::guard('cashier')->user();
+        
+        if (!$cashier) {
+            return redirect()->route('cashier.login');
+        }
+
+        return view('cashier.fees-edit', compact('cashier', 'fee'));
+    }
+
+    /**
+     * Update fee.
+     */
+    public function updateFee(Request $request, Fee $fee)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string|max:1000',
+            'amount' => 'required|numeric',
+            'academic_year' => 'required|string|max:10',
+            'educational_level' => 'required|string|in:preschool,elementary,junior_high,senior_high',
+            'fee_category' => 'required|string|in:entrance,tuition,miscellaneous,laboratory,library,other',
+            'payment_schedule' => 'required|string|in:full_payment,pay_separate,pay_before_exam,monthly,quarterly',
+            'grade_levels' => 'required|array|min:1',
+            'grade_levels.*' => 'string',
+            'is_active' => 'boolean',
+        ]);
+
+        $fee->update([
+            'name' => $request->name,
+            'description' => $request->description,
+            'amount' => $request->amount,
+            'academic_year' => $request->academic_year,
+            'applicable_grades' => $request->grade_levels,
+            'educational_level' => $request->educational_level,
+            'fee_category' => $request->fee_category,
+            'payment_schedule' => $request->payment_schedule,
+            'is_active' => $request->boolean('is_active'),
+        ]);
+
+        return redirect()->route('cashier.fees')
+            ->with('success', 'Fee updated successfully!');
+    }
+
+    /**
+     * Delete fee.
+     */
+    public function destroyFee(Fee $fee)
+    {
+        // Check if fee is being used in payments
+        $paymentCount = Payment::where('fee_id', $fee->id)->count();
+        
+        if ($paymentCount > 0) {
+            return back()->withErrors([
+                'error' => 'Cannot delete fee that has associated payments. Deactivate it instead.'
+            ]);
+        }
+
+        $fee->delete();
+
+        return redirect()->route('cashier.fees')
+            ->with('success', 'Fee deleted successfully!');
+    }
+
+    /**
+     * Toggle fee active status.
+     */
+    public function toggleFeeStatus(Fee $fee)
+    {
+        $fee->update([
+            'is_active' => !$fee->is_active
+        ]);
+
+        $status = $fee->is_active ? 'activated' : 'deactivated';
+        
+        return response()->json([
+            'success' => true,
+            'message' => "Fee {$status} successfully!",
+            'is_active' => $fee->is_active
+        ]);
     }
 }

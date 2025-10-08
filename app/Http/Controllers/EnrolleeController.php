@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Enrollee;
 use App\Models\Notice;
+use App\Models\DataChangeRequest;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
@@ -759,6 +760,183 @@ class EnrolleeController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error during pre-registration: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Store a new data change request
+     */
+    public function storeDataChangeRequest(Request $request): JsonResponse
+    {
+        $request->validate([
+            'field_name' => 'required|string|max:255',
+            'new_value' => 'required|string|max:1000',
+            'old_value' => 'nullable|string|max:1000',
+            'reason' => 'nullable|string|max:1000',
+        ]);
+
+        $enrollee = Auth::guard('enrollee')->user();
+
+        // Check if enrollee can submit requests
+        if ($enrollee->enrollment_status !== 'pending') {
+            return response()->json([
+                'success' => false,
+                'message' => 'You can only submit change requests while your application is pending.'
+            ], 403);
+        }
+
+        // Check if there's already a pending request for this field
+        $existingRequest = $enrollee->dataChangeRequests()
+            ->where('field_name', $request->field_name)
+            ->where('status', 'pending')
+            ->first();
+
+        if ($existingRequest) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You already have a pending change request for this field.'
+            ], 422);
+        }
+
+        try {
+            $changeRequest = $enrollee->dataChangeRequests()->create([
+                'field_name' => $request->field_name,
+                'old_value' => $request->old_value,
+                'new_value' => $request->new_value,
+                'reason' => $request->reason,
+                'status' => 'pending',
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Data change request submitted successfully!',
+                'request' => $changeRequest
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error creating data change request: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error submitting request. Please try again.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Show a specific data change request
+     */
+    public function showDataChangeRequest($id): JsonResponse
+    {
+        $enrollee = Auth::guard('enrollee')->user();
+        
+        $request = $enrollee->dataChangeRequests()->findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'request' => [
+                'id' => $request->id,
+                'field_name' => $request->field_name,
+                'human_field_name' => $request->human_field_name,
+                'old_value' => $request->old_value,
+                'new_value' => $request->new_value,
+                'reason' => $request->reason,
+                'status' => $request->status,
+                'status_badge_class' => $request->status_badge_class,
+                'admin_notes' => $request->admin_notes,
+                'created_at' => $request->created_at,
+                'processed_at' => $request->processed_at,
+            ]
+        ]);
+    }
+
+    /**
+     * Update a data change request
+     */
+    public function updateDataChangeRequest(Request $request, $id): JsonResponse
+    {
+        $request->validate([
+            'new_value' => 'required|string|max:1000',
+            'reason' => 'nullable|string|max:1000',
+        ]);
+
+        $enrollee = Auth::guard('enrollee')->user();
+        
+        $changeRequest = $enrollee->dataChangeRequests()->findOrFail($id);
+
+        // Check if request can be updated
+        if ($changeRequest->status !== 'pending') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only pending requests can be updated.'
+            ], 403);
+        }
+
+        if ($enrollee->enrollment_status !== 'pending') {
+            return response()->json([
+                'success' => false,
+                'message' => 'You can only update requests while your application is pending.'
+            ], 403);
+        }
+
+        try {
+            $changeRequest->update([
+                'new_value' => $request->new_value,
+                'reason' => $request->reason,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Data change request updated successfully!',
+                'request' => $changeRequest
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error updating data change request: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating request. Please try again.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete a data change request
+     */
+    public function destroyDataChangeRequest($id): JsonResponse
+    {
+        $enrollee = Auth::guard('enrollee')->user();
+        
+        $changeRequest = $enrollee->dataChangeRequests()->findOrFail($id);
+
+        // Check if request can be deleted
+        if ($changeRequest->status !== 'pending') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only pending requests can be cancelled.'
+            ], 403);
+        }
+
+        if ($enrollee->enrollment_status !== 'pending') {
+            return response()->json([
+                'success' => false,
+                'message' => 'You can only cancel requests while your application is pending.'
+            ], 403);
+        }
+
+        try {
+            $changeRequest->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Data change request cancelled successfully!'
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error deleting data change request: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error cancelling request. Please try again.'
             ], 500);
         }
     }

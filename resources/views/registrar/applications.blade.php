@@ -9,6 +9,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     
     @vite(['resources/js/registrar-applications.js'])
+    @vite(['resources/js/registrar-data-change-requests.js'])
     @vite(['resources/css/index_registrar.css'])
     
     @include('registrar.enrollment-modals')
@@ -131,6 +132,11 @@
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="notices-tab" data-bs-toggle="tab" data-bs-target="#notices" type="button" role="tab">
                     <i class="ri-notification-line me-2"></i>Notices
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="data-change-requests-tab" data-bs-toggle="tab" data-bs-target="#data-change-requests" type="button" role="tab">
+                    <i class="ri-file-edit-line me-2"></i>Data Change Request
                 </button>
             </li>
         </ul>
@@ -793,6 +799,86 @@
                                 </button>
                             </div>
                         @endif
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Change Request Tab -->
+            <div class="tab-pane fade" id="data-change-requests" role="tabpanel">
+                <div class="card shadow">
+                    <div class="card-header" style="background-color: var(--dark-green); color: white;">
+                        <h5 class="mb-0">
+                            <i class="ri-file-edit-line me-2"></i>
+                            Data Change Request
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Test Button -->
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <button class="btn btn-outline-info btn-sm" onclick="testDataChangeRequests()">
+                                    <i class="ri-bug-line me-1"></i>Test Connection
+                                </button>
+                                <span id="testResult" class="ms-2"></span>
+                            </div>
+                        </div>
+
+                        <!-- Filters -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center">
+                                    <h6 class="mb-0 me-3">Filters:</h6>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <input type="radio" class="btn-check" name="changeRequestStatus" id="all-requests" value="" checked>
+                                        <label class="btn btn-outline-secondary" for="all-requests">All</label>
+                                        
+                                        <input type="radio" class="btn-check" name="changeRequestStatus" id="pending-requests" value="pending">
+                                        <label class="btn btn-outline-warning" for="pending-requests">Pending</label>
+                                        
+                                        <input type="radio" class="btn-check" name="changeRequestStatus" id="approved-requests" value="approved">
+                                        <label class="btn btn-outline-success" for="approved-requests">Approved</label>
+                                        
+                                        <input type="radio" class="btn-check" name="changeRequestStatus" id="rejected-requests" value="rejected">
+                                        <label class="btn btn-outline-danger" for="rejected-requests">Rejected</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="changeRequestSearch" placeholder="Search by student name or field...">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="searchChangeRequests()">
+                                        <i class="ri-search-line"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Data Change Requests Table -->
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="changeRequestsTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 5%">#</th>
+                                        <th style="width: 20%">Student</th>
+                                        <th style="width: 15%">Field</th>
+                                        <th style="width: 25%">Change Details</th>
+                                        <th style="width: 10%">Status</th>
+                                        <th style="width: 15%">Submitted</th>
+                                        <th style="width: 10%">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="changeRequestsTableBody">
+                                    <!-- Data will be loaded via JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Empty State -->
+                        <div id="changeRequestsEmptyState" class="text-center py-4">
+                            <i class="ri-file-edit-line fs-1 text-muted d-block mb-2"></i>
+                            <p class="text-muted">No change requests found</p>
+                            <small class="text-muted">Change requests will appear here when students submit them</small>
+                        </div>
                     </div>
                 </div>
             </div>

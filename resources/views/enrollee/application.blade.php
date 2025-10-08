@@ -1,6 +1,44 @@
 <x-enrollee-layout>
     @vite(['resources/js/enrollee-application.js'])
     
+    <script>
+        // Make enrollee data available to JavaScript
+        window.enrolleeData = {
+            first_name: @json($enrollee->first_name),
+            middle_name: @json($enrollee->middle_name),
+            last_name: @json($enrollee->last_name),
+            suffix: @json($enrollee->suffix),
+            date_of_birth: @json($enrollee->date_of_birth),
+            gender: @json($enrollee->gender),
+            nationality: @json($enrollee->nationality),
+            religion: @json($enrollee->religion),
+            email: @json($enrollee->email),
+            contact_number: @json($enrollee->contact_number),
+            address: @json($enrollee->address),
+            city: @json($enrollee->city),
+            province: @json($enrollee->province),
+            zip_code: @json($enrollee->zip_code),
+            grade_level_applied: @json($enrollee->grade_level_applied),
+            strand_applied: @json($enrollee->strand_applied),
+            track_applied: @json($enrollee->track_applied),
+            student_type: @json($enrollee->student_type),
+            last_school_name: @json($enrollee->last_school_name),
+            last_school_type: @json($enrollee->last_school_type),
+            father_name: @json($enrollee->father_name),
+            father_occupation: @json($enrollee->father_occupation),
+            father_contact: @json($enrollee->father_contact),
+            mother_name: @json($enrollee->mother_name),
+            mother_occupation: @json($enrollee->mother_occupation),
+            mother_contact: @json($enrollee->mother_contact),
+            guardian_name: @json($enrollee->guardian_name),
+            guardian_contact: @json($enrollee->guardian_contact),
+            medical_history: @json($enrollee->medical_history)
+        };
+        
+        // Debug: Log the enrollee data to console
+        console.log('Enrollee Data:', window.enrolleeData);
+    </script>
+    
     <div class="py-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1 class="section-title">My Application</h1>
@@ -491,7 +529,7 @@
                     @if($enrollee->enrollment_status === 'pending')
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h6 class="mb-0">Change Requests</h6>
-                        <button type="button" class="btn btn-primary btn-sm" id="addChangeRequestBtn">
+                        <button type="button" class="btn btn-primary btn-sm" id="addChangeRequestBtn" data-bs-toggle="modal" data-bs-target="#newChangeRequestModal">
                             <i class="ri-add-line me-1"></i>
                             New Request
                         </button>
@@ -500,51 +538,48 @@
 
                     <!-- Data Change Requests Table -->
                     <div class="table-responsive">
-                        <table class="table table-hover">
+                        <table class="table table-hover" id="changeRequestsTable">
                             <thead class="table-light">
                                 <tr>
                                     <th style="width: 5%">#</th>
-                                    <th style="width: 20%">Change In</th>
-                                    <th style="width: 35%">Details</th>
-                                    <th style="width: 15%">Approved</th>
-                                    <th style="width: 25%">Options/Actions</th>
+                                    <th style="width: 20%">Field</th>
+                                    <th style="width: 35%">Change Details</th>
+                                    <th style="width: 15%">Status</th>
+                                    <th style="width: 25%">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @php
-                                    // Sample data - replace with actual data change requests from database
-                                    $changeRequests = $enrollee->change_requests ?? [];
-                                @endphp
-                                
-                                @forelse($changeRequests as $index => $request)
+                                @forelse($enrollee->dataChangeRequests as $index => $request)
                                 <tr>
                                     <td>{{ $index + 1 }}</td>
                                     <td>
-                                        <span class="badge bg-secondary">{{ $request['field'] ?? 'N/A' }}</span>
+                                        <span class="badge bg-secondary">{{ $request->human_field_name }}</span>
                                     </td>
                                     <td>
-                                        <small class="text-muted">From:</small> {{ $request['old_value'] ?? 'N/A' }}<br>
-                                        <small class="text-muted">To:</small> <strong>{{ $request['new_value'] ?? 'N/A' }}</strong>
+                                        <small class="text-muted">From:</small> {{ Str::limit($request->old_value, 30) }}<br>
+                                        <small class="text-muted">To:</small> <strong>{{ Str::limit($request->new_value, 30) }}</strong>
+                                        @if($request->reason)
+                                        <br><small class="text-info"><i class="ri-information-line"></i> {{ Str::limit($request->reason, 50) }}</small>
+                                        @endif
                                     </td>
                                     <td>
-                                        @php
-                                            $status = $request['status'] ?? 'pending';
-                                            $badgeClass = $status === 'approved' ? 'success' : ($status === 'rejected' ? 'danger' : 'warning');
-                                        @endphp
-                                        <span class="badge bg-{{ $badgeClass }}">
-                                            {{ ucfirst($status) }}
+                                        <span class="badge bg-{{ $request->status_badge_class }}">
+                                            {{ ucfirst($request->status) }}
                                         </span>
+                                        @if($request->processed_at)
+                                        <br><small class="text-muted">{{ $request->processed_at->format('M d, Y') }}</small>
+                                        @endif
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm">
-                                            <button class="btn btn-outline-primary" title="View Details">
+                                            <button class="btn btn-outline-primary" title="View Details" onclick="viewChangeRequest({{ $request->id }})">
                                                 <i class="ri-eye-line"></i>
                                             </button>
-                                            @if($enrollee->enrollment_status === 'pending' && ($request['status'] ?? 'pending') === 'pending')
-                                            <button class="btn btn-outline-warning" title="Edit Request">
+                                            @if($enrollee->enrollment_status === 'pending' && $request->status === 'pending')
+                                            <button class="btn btn-outline-warning" title="Edit Request" onclick="editChangeRequest({{ $request->id }})">
                                                 <i class="ri-edit-line"></i>
                                             </button>
-                                            <button class="btn btn-outline-danger" title="Cancel Request">
+                                            <button class="btn btn-outline-danger" title="Cancel Request" onclick="cancelChangeRequest({{ $request->id }})">
                                                 <i class="ri-delete-bin-line"></i>
                                             </button>
                                             @endif
@@ -556,7 +591,7 @@
                                     <td colspan="5" class="text-center py-4">
                                         <div class="text-muted">
                                             <i class="ri-file-list-3-line fs-1 d-block mb-2"></i>
-                                            <p class="mb-0">List of data change requests</p>
+                                            <p class="mb-0">No data change requests submitted</p>
                                             @if($enrollee->enrollment_status === 'pending')
                                             <small>Click "New Request" to submit a change request</small>
                                             @endif
@@ -571,7 +606,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                     @if($enrollee->enrollment_status === 'pending')
-                    <button type="button" class="btn btn-primary" id="newRequestBtn">
+                    <button type="button" class="btn btn-primary" id="newRequestBtn" data-bs-toggle="modal" data-bs-target="#newChangeRequestModal">
                         <i class="ri-add-line me-1"></i>
                         New Request
                     </button>
@@ -669,5 +704,170 @@
         </div>
     </div>
 
-    
+    <!-- New Data Change Request Modal -->
+    @if($enrollee->enrollment_status === 'pending')
+    <div class="modal fade" id="newChangeRequestModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="ri-file-edit-line me-2"></i>
+                        New Data Change Request
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="newChangeRequestForm" method="POST" action="{{ route('enrollee.data-change-requests.store') }}">
+                    @csrf
+                    <div class="modal-body">
+                        <div class="alert alert-info">
+                            <i class="ri-information-line me-2"></i>
+                            <strong>Data Change Request</strong><br>
+                            Select the field you want to change and provide the new value. All requests will be reviewed by the registrar.
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="field_name" class="form-label">Field to Change <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="field_name" name="field_name" required>
+                                        <option value="">Select field to change</option>
+                                        <optgroup label="Personal Information">
+                                            <option value="first_name">First Name</option>
+                                            <option value="middle_name">Middle Name</option>
+                                            <option value="last_name">Last Name</option>
+                                            <option value="suffix">Suffix</option>
+                                            <option value="date_of_birth">Date of Birth</option>
+                                            <option value="gender">Gender</option>
+                                            <option value="nationality">Nationality</option>
+                                            <option value="religion">Religion</option>
+                                        </optgroup>
+                                        <optgroup label="Contact Information">
+                                            <option value="email">Email Address</option>
+                                            <option value="contact_number">Contact Number</option>
+                                            <option value="address">Address</option>
+                                            <option value="city">City</option>
+                                            <option value="province">Province</option>
+                                            <option value="zip_code">ZIP Code</option>
+                                        </optgroup>
+                                        <optgroup label="Academic Information">
+                                            <option value="grade_level_applied">Grade Level Applied</option>
+                                            <option value="strand_applied">Strand Applied</option>
+                                            <option value="track_applied">Track Applied</option>
+                                            <option value="student_type">Student Type</option>
+                                            <option value="last_school_name">Last School Name</option>
+                                            <option value="last_school_type">Last School Type</option>
+                                        </optgroup>
+                                        <optgroup label="Parent/Guardian Information">
+                                            <option value="father_name">Father's Name</option>
+                                            <option value="father_occupation">Father's Occupation</option>
+                                            <option value="father_contact">Father's Contact</option>
+                                            <option value="mother_name">Mother's Name</option>
+                                            <option value="mother_occupation">Mother's Occupation</option>
+                                            <option value="mother_contact">Mother's Contact</option>
+                                            <option value="guardian_name">Guardian Name</option>
+                                            <option value="guardian_contact">Guardian Contact</option>
+                                        </optgroup>
+                                        <optgroup label="Other Information">
+                                            <option value="medical_history">Medical History</option>
+                                        </optgroup>
+                                    </select>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="current_value" class="form-label">Current Value</label>
+                                    <input type="text" class="form-control" id="current_value" readonly>
+                                    <input type="hidden" id="old_value" name="old_value">
+                                    <div class="form-text">This will be automatically filled when you select a field.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="new_value" class="form-label">New Value <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="new_value" name="new_value" required>
+                            <div class="invalid-feedback"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="reason" class="form-label">Reason for Change</label>
+                            <textarea class="form-control" id="reason" name="reason" rows="3" placeholder="Please explain why you need to change this information..."></textarea>
+                            <div class="form-text">Optional: Provide a reason to help speed up the approval process.</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="ri-send-plane-line me-1"></i>
+                            Submit Request
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    <!-- View Change Request Modal -->
+    <div class="modal fade" id="viewChangeRequestModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="ri-eye-line me-2"></i>
+                        Change Request Details
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Request Information</h6>
+                            <dl class="row">
+                                <dt class="col-sm-5">Field:</dt>
+                                <dd class="col-sm-7" id="view_field_name">-</dd>
+                                <dt class="col-sm-5">Status:</dt>
+                                <dd class="col-sm-7" id="view_status">-</dd>
+                                <dt class="col-sm-5">Submitted:</dt>
+                                <dd class="col-sm-7" id="view_created_at">-</dd>
+                                <dt class="col-sm-5">Processed:</dt>
+                                <dd class="col-sm-7" id="view_processed_at">-</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Change Details</h6>
+                            <dl class="row">
+                                <dt class="col-sm-4">From:</dt>
+                                <dd class="col-sm-8" id="view_old_value">-</dd>
+                                <dt class="col-sm-4">To:</dt>
+                                <dd class="col-sm-8" id="view_new_value">-</dd>
+                            </dl>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3" id="view_reason_section" style="display: none;">
+                        <div class="col-12">
+                            <h6 class="text-muted">Reason for Change</h6>
+                            <p id="view_reason" class="text-muted">-</p>
+                        </div>
+                    </div>
+
+                    <div class="row mt-3" id="view_admin_notes_section" style="display: none;">
+                        <div class="col-12">
+                            <h6 class="text-muted">Registrar Notes</h6>
+                            <div class="alert alert-info">
+                                <p id="view_admin_notes" class="mb-0">-</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @vite(['resources/js/enrollee-data-change-requests.js'])
 </x-enrollee-layout>

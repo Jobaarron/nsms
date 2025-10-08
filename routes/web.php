@@ -19,6 +19,7 @@ use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DisciplineController;
 use App\Http\Controllers\PaymentScheduleController;
 use App\Http\Controllers\CashierController;
+use App\Http\Controllers\DataChangeRequestController;
 
 
 
@@ -28,7 +29,7 @@ Route::get('/', function () {
 });
 
 // Enrollment side
-Route::get('/enroll', function () {
+Route::get('/apply', function () {
     return view('enroll');
 });
 
@@ -460,6 +461,12 @@ Route::prefix('enrollee')->name('enrollee.')->group(function () {
         // Pre-registration
         Route::post('/pre-register', [EnrolleeController::class, 'preRegister'])->name('pre-register');
         
+        // Data Change Requests
+        Route::post('/data-change-requests', [EnrolleeController::class, 'storeDataChangeRequest'])->name('data-change-requests.store');
+        Route::get('/data-change-requests/{id}', [EnrolleeController::class, 'showDataChangeRequest'])->name('data-change-requests.show');
+        Route::put('/data-change-requests/{id}', [EnrolleeController::class, 'updateDataChangeRequest'])->name('data-change-requests.update');
+        Route::delete('/data-change-requests/{id}', [EnrolleeController::class, 'destroyDataChangeRequest'])->name('data-change-requests.destroy');
+        
         // Logout
         Route::post('/logout', [EnrolleeController::class, 'logout'])->name('logout');
     });
@@ -551,6 +558,39 @@ Route::prefix('registrar')->name('registrar.')->group(function () {
         // Reports
         Route::get('/reports', [RegistrarController::class, 'reports'])->name('reports');
         
+        // Data Change Requests
+        Route::get('/data-change-requests', [DataChangeRequestController::class, 'getDataChangeRequests'])->name('data-change-requests.index');
+        Route::get('/data-change-requests/{id}', [DataChangeRequestController::class, 'getDataChangeRequest'])->name('data-change-requests.show');
+        Route::post('/data-change-requests/{id}/process', [DataChangeRequestController::class, 'processDataChangeRequest'])->name('data-change-requests.process');
+        
+        // Test route for debugging
+        Route::get('/test-data-change-requests', function() {
+            $count = \App\Models\DataChangeRequest::count();
+            $enrolleeCount = \App\Models\Enrollee::count();
+            
+            // Create a test data change request if none exist and there are enrollees
+            if ($count === 0 && $enrolleeCount > 0) {
+                $enrollee = \App\Models\Enrollee::first();
+                \App\Models\DataChangeRequest::create([
+                    'enrollee_id' => $enrollee->id,
+                    'field_name' => 'first_name',
+                    'old_value' => $enrollee->first_name,
+                    'new_value' => 'Updated Name',
+                    'reason' => 'Test data change request',
+                    'status' => 'pending'
+                ]);
+                $count = 1;
+            }
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Test route working',
+                'total_requests' => $count,
+                'total_enrollees' => $enrolleeCount,
+                'auth_user' => auth()->guard('registrar')->user() ? auth()->guard('registrar')->user()->name : 'Not authenticated'
+            ]);
+        })->name('test-data-change-requests');
+        
         // Logout
         Route::post('/logout', function(Request $request) {
             Auth::guard('registrar')->logout();
@@ -605,6 +645,15 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::post('/payments/{payment}/confirm', [CashierController::class, 'confirmPayment'])->name('payments.confirm');
         Route::post('/payments/{payment}/reject', [CashierController::class, 'rejectPayment'])->name('payments.reject');
         Route::get('/payments/{payment}/details', [CashierController::class, 'getPaymentDetails'])->name('payments.details');
+        
+        // Fee Management
+        Route::get('/fees', [CashierController::class, 'fees'])->name('fees');
+        Route::get('/fees/create', [CashierController::class, 'createFee'])->name('fees.create');
+        Route::post('/fees', [CashierController::class, 'storeFee'])->name('fees.store');
+        Route::get('/fees/{fee}/edit', [CashierController::class, 'editFee'])->name('fees.edit');
+        Route::put('/fees/{fee}', [CashierController::class, 'updateFee'])->name('fees.update');
+        Route::delete('/fees/{fee}', [CashierController::class, 'destroyFee'])->name('fees.destroy');
+        Route::post('/fees/{fee}/toggle', [CashierController::class, 'toggleFeeStatus'])->name('fees.toggle');
         
         // Reports
         Route::get('/reports', [CashierController::class, 'reports'])->name('reports');

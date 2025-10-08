@@ -51,6 +51,60 @@
                     </div>
                 </div>
             </div>
+        @elseif($student->enrollment_status === 'payment_pending')
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="alert alert-info border-0 shadow-sm">
+                        <div class="d-flex align-items-center">
+                            <i class="ri-time-line fs-4 me-3"></i>
+                            <div>
+                                <h6 class="alert-heading mb-1">Payment Schedule Pending</h6>
+                                <p class="mb-0">Your payment schedule has been submitted and is awaiting cashier approval.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        <!-- Payment Status Alert -->
+        @if($student->enrollment_status === 'enrolled')
+            @if($student->is_paid)
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="alert alert-success border-0 shadow-sm">
+                            <div class="d-flex align-items-center">
+                                <i class="ri-check-double-line fs-4 me-3"></i>
+                                <div>
+                                    <h6 class="alert-heading mb-1">Payment Complete</h6>
+                                    <p class="mb-0">All payments have been completed. Total paid: ₱{{ number_format($student->total_paid ?? 0, 2) }}</p>
+                                    @if($student->payment_completed_at)
+                                        <small class="text-muted">Completed on: {{ $student->payment_completed_at->format('M d, Y h:i A') }}</small>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @elseif($student->total_paid > 0)
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="alert alert-warning border-0 shadow-sm">
+                            <div class="d-flex align-items-center">
+                                <i class="ri-money-dollar-circle-line fs-4 me-3"></i>
+                                <div>
+                                    <h6 class="alert-heading mb-1">Partial Payment Received</h6>
+                                    <p class="mb-0">
+                                        Paid: ₱{{ number_format($student->total_paid ?? 0, 2) }} of ₱{{ number_format($student->total_fees_due ?? 0, 2) }}
+                                        <br>
+                                        <strong>Remaining Balance: ₱{{ number_format(($student->total_fees_due ?? 0) - ($student->total_paid ?? 0), 2) }}</strong>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endif
         @endif
 
         <!-- Summary Cards -->
