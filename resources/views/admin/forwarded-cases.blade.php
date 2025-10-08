@@ -30,7 +30,7 @@
                 <td>{{ $meeting->scheduled_date->format('Y-m-d') }}</td>
                 <td>{{ $meeting->scheduled_time->format('H:i') }}</td>
 
-                <td><span class="badge bg-warning">{{ ucfirst($meeting->status) }}</span></td>
+                <td><span class="badge bg-warning">{{ $meeting->status === 'forwarded' ? 'Submitted' : ucfirst($meeting->status) }}</span></td>
                 <td>
                     <ul>
                         @foreach($meeting->sanctions as $sanction)
@@ -46,27 +46,27 @@
                     </ul>
                 </td>
                 <td>
-                    <div class="btn-group-vertical btn-group-sm">
+                    <div class="btn-group btn-group-sm">
                         <!-- View Summary Button - Always Available -->
                         <button class="btn btn-outline-info btn-sm view-summary-btn" data-meeting-id="{{ $meeting->id }}" title="View Summary Report" data-bs-toggle="modal" data-bs-target="#viewSummaryModal">
-                            <i class="ri-file-text-line"></i> View Summary
+                            <i class="ri-file-text-line"></i>
                         </button>
 
                         @foreach($meeting->sanctions as $sanction)
                             @if(!$sanction->is_approved)
                                 <!-- Approve Button -->
                                 <button class="btn btn-outline-success btn-sm approve-sanction-btn" data-sanction-id="{{ $sanction->id }}" title="Approve Sanction">
-                                    <i class="ri-check-line"></i> Approve
+                                    <i class="ri-check-line"></i>
                                 </button>
 
                                 <!-- Reject Button -->
                                 <button class="btn btn-outline-danger btn-sm reject-sanction-btn" data-sanction-id="{{ $sanction->id }}" title="Reject Sanction">
-                                    <i class="ri-close-line"></i> Reject
+                                    <i class="ri-close-line"></i>
                                 </button>
 
                                 <!-- Revise Button -->
                                 <button class="btn btn-outline-warning btn-sm revise-sanction-btn" data-sanction-id="{{ $sanction->id }}" title="Revise Sanction" data-bs-toggle="modal" data-bs-target="#reviseSanctionModal" data-sanction="{{ $sanction->sanction }}" data-notes="{{ $sanction->notes }}">
-                                    <i class="ri-edit-line"></i> Revise
+                                    <i class="ri-edit-line"></i>
                                 </button>
                             @else
                                 <!-- Approved Status -->
@@ -311,7 +311,6 @@ function generateSummaryHTML(meeting) {
                     </div>
                     <div class="col-md-6">
                         <p><strong>Grade Level:</strong> ${meeting.student ? meeting.student.grade_level : 'N/A'}</p>
-                        <p><strong>Section:</strong> ${meeting.student ? meeting.student.section : 'N/A'}</p>
                     </div>
                 </div>
             </div>
@@ -333,7 +332,6 @@ function generateSummaryHTML(meeting) {
                     </div>
                     <div class="col-md-6">
                         <p><strong>Location:</strong> ${meeting.location || 'TBD'}</p>
-                        <p><strong>Counselor:</strong> ${meeting.counselor ? meeting.counselor.full_name : 'Unassigned'}</p>
 
                     </div>
                 </div>

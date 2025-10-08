@@ -285,4 +285,28 @@
     </div>
   </div>
 
+  <!-- INCIDENT FORM PREVIEW MODAL -->
+  <div class="modal fade" id="incidentFormPreviewModal" tabindex="-1" aria-labelledby="incidentFormPreviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="incidentFormPreviewModalLabel">Incident Form Preview</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="incidentFormPreviewBody" style="background: #fff;">
+          <!-- Incident form HTML will be injected here -->
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" id="downloadIncidentPDFBtn">
+            <i class="ri-download-2-line me-2"></i>Save as PDF
+          </button>
+          <button type="button" class="btn btn-success" id="printIncidentFormBtn">
+            <i class="ri-printer-line me-2"></i>Print
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </x-discipline-layout>

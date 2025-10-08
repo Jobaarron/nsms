@@ -7,7 +7,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Violation extends Model
 {
+    /**
+     * The table associated with the model.
+     */
     protected $table = 'student_violations';
+    /**
+     * Get the case meeting related to this violation.
+     */
+    public function caseMeeting(): BelongsTo
+    {
+        return $this->belongsTo(CaseMeeting::class, 'case_meeting_id');
+    }
 
     protected $fillable = [
         'student_id',

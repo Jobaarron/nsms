@@ -106,20 +106,19 @@
                         <video id="video" autoplay playsinline></video>
                         <div class="camera-overlay"></div>
                         <div class="face-status" id="faceStatus">Position your face in the circle</div>
+                        <div class="d-flex justify-content-center gap-3 mt-3">
+                            <button type="button" class="btn btn-primary" id="startCamera">
+                                <i class="ri-camera-line me-2"></i>Start Camera
+                            </button>
+                            <button type="button" class="btn btn-success" id="captureBtn" disabled>
+                                <i class="ri-camera-3-line me-2"></i>Capture Photo
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="stopCamera" disabled>
+                                <i class="ri-stop-line me-2"></i>Stop Camera
+                            </button>
+                        </div>
                     </div>
                     <canvas id="canvas"></canvas>
-                    
-                    <div class="d-flex justify-content-center gap-3 mb-3">
-                        <button type="button" class="btn btn-primary" id="startCamera">
-                            <i class="ri-camera-line me-2"></i>Start Camera
-                        </button>
-                        <button type="button" class="btn btn-success" id="captureBtn" disabled>
-                            <i class="ri-camera-3-line me-2"></i>Capture Photo
-                        </button>
-                        <button type="button" class="btn btn-secondary" id="stopCamera" disabled>
-                            <i class="ri-stop-line me-2"></i>Stop Camera
-                        </button>
-                    </div>
                     
                     <div class="alert alert-info">
                         <h6 class="alert-heading">Instructions:</h6>

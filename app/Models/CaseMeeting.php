@@ -9,6 +9,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CaseMeeting extends Model
 {
+    /**
+     * Get the violations related to this case meeting.
+     */
+    public function violations(): HasMany
+    {
+        return $this->hasMany(Violation::class, 'case_meeting_id');
+    }
+
+    // Removed automatic status syncing between CaseMeeting and related violations
     protected $fillable = [
         'student_id',
         'counselor_id',
@@ -73,6 +82,7 @@ class CaseMeeting extends Model
         return $this->hasMany(Sanction::class);
     }
 
+
     /**
      * Check if the case meeting is ready to be forwarded.
      */
@@ -98,11 +108,11 @@ class CaseMeeting extends Model
     }
 
     /**
-     * Scope to get forwarded case meetings.
+     * Scope to get submitted case meetings (previously forwarded).
      */
-    public function scopeForwarded($query)
+    public function scopeSubmitted($query)
     {
-        return $query->where('status', 'forwarded');
+        return $query->where('status', 'submitted');
     }
 
     /**
@@ -136,7 +146,7 @@ class CaseMeeting extends Model
             'pre_completed' => ['text' => 'Pre-Completed', 'class' => 'badge bg-warning'],
             'completed' => ['text' => 'Completed', 'class' => 'badge bg-success'],
             'cancelled' => ['text' => 'Cancelled', 'class' => 'badge bg-danger'],
-            'forwarded' => ['text' => 'Forwarded', 'class' => 'badge bg-warning'],
+            'submitted' => ['text' => 'Submitted', 'class' => 'badge bg-warning'],
             default => ['text' => ucfirst($this->status), 'class' => 'badge bg-secondary']
         };
     }
@@ -154,7 +164,7 @@ class CaseMeeting extends Model
             'in_progress' => 'in_progress',
             'pre_completed' => 'pre_completed',
             'completed' => 'completed',
-            'forwarded' => 'in_progress',
+            'submitted' => 'in_progress',
             'cancelled' => 'pending', // Return to pending if cancelled
             default => null
         };

@@ -1,4 +1,3 @@
-﻿
 <?php
 
 namespace App\Models;
@@ -25,11 +24,11 @@ class FaceRegistration extends Model
     ];
 
     protected $casts = [
-        'face_encoding' => 'array',
         'face_landmarks' => 'array',
+        'face_encoding' => 'array',
         'registered_at' => 'datetime',
         'is_active' => 'boolean',
-        'confidence_score' => 'float',
+        'confidence_score' => 'float'
     ];
 
     protected $dates = [

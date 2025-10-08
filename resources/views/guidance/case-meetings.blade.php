@@ -305,9 +305,9 @@
                     <button class="btn btn-outline-primary" onclick="refreshCaseMeetings()">
                         <i class="ri-refresh-line me-2"></i>Refresh
                     </button>
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#scheduleCaseMeetingModal">
+                    <!-- <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#scheduleCaseMeetingModal">
                         <i class="ri-calendar-event-line me-2"></i>Schedule Meeting
-                    </button>
+                    </button> -->
                 </div>
             </div>
         </div>
@@ -405,11 +405,10 @@
                             <select class="form-select" id="status-filter" onchange="filterCaseMeetings()">
                                 <option value="">All Status</option>
                                 <option value="scheduled">Scheduled</option>
-                                <option value="in_progress">In Progress</option>
                                 <option value="pre_completed">Pre-Completed</option>
+                                <option value="submitted">Submitted</option>
                                 <option value="completed">Completed</option>
                                 <option value="cancelled">Cancelled</option>
-                                <option value="forwarded">Forwarded</option>
                             </select>
                         </div>
                         <div class="col-md-3">
@@ -495,29 +494,31 @@
                                             <button class="btn btn-outline-primary" onclick="viewCaseMeeting({{ $meeting->id }})" title="View Details">
                                                 <i class="ri-eye-line"></i>
                                             </button>
-                                            
-                                            <!-- Schedule Button - Always Available -->
-                                            <button class="btn btn-outline-primary" onclick="openScheduleMeetingModal({{ $meeting->student ? $meeting->student->id : 0 }})" title="Schedule Meeting">
+
+                                            <!-- Schedule Button - Permanently disabled after scheduling -->
+                                            <button class="btn btn-outline-primary {{ $meeting->scheduled_date ? 'disabled' : '' }}"
+                                                onclick="{{ !$meeting->scheduled_date ? 'openScheduleMeetingModal(' . ($meeting->student ? $meeting->student->id : 0) . ')' : '' }}"
+                                                title="{{ $meeting->scheduled_date ? 'Already scheduled' : 'Schedule Meeting' }}">
                                                 <i class="ri-calendar-event-line"></i>
                                             </button>
 
-                                            <!-- Forward Button - Available when summary and sanctions exist -->
-                                            <button class="btn btn-outline-warning {{ !$meeting->summary || $meeting->sanctions->isEmpty() ? 'disabled' : '' }}" 
-                                                    onclick="{{ $meeting->summary && $meeting->sanctions->isNotEmpty() ? 'forwardToPresident(' . $meeting->id . ')' : '' }}" 
-                                                    title="{{ $meeting->summary && $meeting->sanctions->isNotEmpty() ? 'Forward to President' : 'Summary and sanctions required before forwarding' }}">
-                                                <i class="ri-send-plane-line"></i>
-                                            </button>
-
-                                            <!-- Summary Button - Available when no summary exists -->
-                                            <button class="btn btn-outline-info {{ $meeting->summary ? 'disabled' : '' }}" 
-                                                    onclick="{{ !$meeting->summary ? 'openCreateSummaryModal(' . $meeting->id . ')' : '' }}" 
-                                                    title="{{ $meeting->summary ? 'Summary already added' : 'Add Summary' }}">
+                                            <!-- Summary Button - Permanently disabled after summary is added -->
+                                            <button class="btn btn-outline-info {{ $meeting->summary ? 'disabled' : '' }}"
+                                                onclick="{{ !$meeting->summary ? 'openCreateSummaryModal(' . $meeting->id . ')' : '' }}"
+                                                title="{{ $meeting->summary ? 'Summary already added' : 'Add Summary' }}">
                                                 <i class="ri-file-text-line"></i>
                                             </button>
 
-                                            <!-- Edit Button - Always Available -->
+                                            <!-- Edit Button - Always enabled -->
                                             <button class="btn btn-outline-secondary" onclick="editCaseMeeting({{ $meeting->id }})" title="Edit">
                                                 <i class="ri-edit-line"></i>
+                                            </button>
+
+                                            <!-- Forward Button - Enabled only if scheduled, summary, sanctions, and not submitted -->
+                                            <button class="btn btn-outline-warning {{ !$meeting->scheduled_date || !$meeting->summary || $meeting->sanctions->isEmpty() || $meeting->status === 'submitted' ? 'disabled' : '' }}"
+                                                onclick="{{ $meeting->scheduled_date && $meeting->summary && $meeting->sanctions->isNotEmpty() && $meeting->status !== 'submitted' ? 'forwardToPresident(' . $meeting->id . ')' : '' }}"
+                                                title="{{ $meeting->status === 'submitted' ? 'Already submitted' : ($meeting->scheduled_date && $meeting->summary && $meeting->sanctions->isNotEmpty() ? 'Forward to President' : 'Schedule, summary, and sanctions required before forwarding') }}">
+                                                <i class="ri-send-plane-line"></i>
                                             </button>
                                         </div>
                                     </td>
@@ -548,7 +549,7 @@
         </div>
     </div>
 
-    <!-- Schedule Case Meeting Modal -->
+    Schedule Case Meeting Modal
     <div class="modal fade" id="scheduleCaseMeetingModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
