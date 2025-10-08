@@ -415,83 +415,88 @@ class StudentController extends Controller
 
     public function faceRegistration()
     {
-        $student = Auth::guard('student')->user();
-        
-        if (!$student) {
-            return redirect()->route('student.login');
+        try {
+            $student = Auth::guard('student')->user();
+            if (!$student) {
+                return redirect()->route('student.login');
+            }
+            return view('student.face-registration', compact('student'));
+        } catch (\Exception $e) {
+            \Log::error('Error loading face registration page', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->view('errors.500', ['message' => 'An error occurred loading the face registration page.'], 500);
         }
-        
-        return view('student.face-registration', compact('student'));
     }
-public function saveFaceRegistration(Request $request)
+ public function saveFaceRegistration(Request $request)
 {
     try {
         $studentId = auth()->user()->id ?? $request->input('student_id');
 
-        // ✅ Check if student already has a registered face
-        $existing = DB::table('face_registrations')
-            ->where('student_id', $studentId)
-            ->where('is_active', 1)
-            ->first();
-
-        if ($existing) {
+        // Validate
+        if (!$request->has('face_encoding')) {
+            \Log::error('Face registration failed: Missing face encoding.', ['request' => $request->all()]);
             return response()->json([
                 'success' => false,
-                'message' => 'This student’s face is already registered.'
+                'message' => 'Missing face encoding.'
             ], 400);
         }
 
-        $faceEncoding = $request->input('face_encoding');
-        $confidenceScore = $request->input('confidence_score', 0.7);
-        $faceLandmarks = $request->input('face_landmarks');
-        $source = $request->input('source', 'webcam');
-
-        // ✅ Ensure face landmarks are not null
-        if (empty($faceLandmarks) || $faceLandmarks === 'null' || $faceLandmarks === null) {
-            $faceLandmarks = '[]';
+        // Check if already registered
+        $alreadyRegistered = \App\Models\FaceRegistration::where('student_id', $studentId)
+            ->where('is_active', true)
+            ->exists();
+        if ($alreadyRegistered) {
+            \Log::info('Face registration attempt for already registered student.', ['student_id' => $studentId]);
+            return response()->json([
+                'success' => false,
+                'message' => 'This system is already registered.'
+            ], 409);
         }
 
-        // ✅ Handle face image upload
-        $faceImageData = null;
-        $faceImageMime = null;
-
-        if ($request->hasFile('face_image')) {
-            $file = $request->file('face_image');
-            $faceImageMime = $file->getMimeType();
-            $faceImageData = base64_encode(file_get_contents($file->getRealPath()));
-        } elseif ($request->filled('face_image_base64')) {
-            // ✅ If image is sent as base64 from JS instead of file
-            $base64 = $request->input('face_image_base64');
-            if (preg_match('/^data:(.*?);base64,(.*)$/', $base64, $matches)) {
-                $faceImageMime = $matches[1];
-                $faceImageData = $matches[2];
-            }
+        // Only store base64, not full data URL
+        $faceImageData = $request->input('face_image_data');
+        if ($faceImageData && str_starts_with($faceImageData, 'data:')) {
+            $faceImageData = explode(',', $faceImageData, 2)[1] ?? null;
         }
 
-        DB::table('face_registrations')->insert([
+        // Log the incoming data for debugging (do not log image data for privacy)
+        \Log::info('Creating face registration', [
             'student_id' => $studentId,
-            'face_encoding' => $faceEncoding,
+            'has_face_encoding' => $request->has('face_encoding'),
+            'has_face_image_data' => !empty($faceImageData),
+            'face_image_mime_type' => $request->input('face_image_mime_type'),
+            'confidence_score' => $request->input('confidence_score'),
+            'face_landmarks' => $request->input('face_landmarks'),
+            'source' => $request->input('source', 'camera_capture'),
+        ]);
+
+        \App\Models\FaceRegistration::create([
+            'student_id' => $studentId,
+            'face_encoding' => $request->input('face_encoding'),
+            'confidence_score' => $request->input('confidence_score'),
+            'face_landmarks' => $request->input('face_landmarks'),
             'face_image_data' => $faceImageData,
-            'face_image_mime_type' => $faceImageMime,
-            'confidence_score' => $confidenceScore,
-            'face_landmarks' => $faceLandmarks,
-            'source' => $source,
+            'face_image_mime_type' => $request->input('face_image_mime_type'),
+            'source' => $request->input('source', 'camera_capture'),
             'registered_at' => now(),
-            'created_at' => now(),
-            'updated_at' => now(),
-            'is_active' => 1,
+            'is_active' => true
         ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Face registered successfully.'
+            'message' => 'Face registered successfully!'
         ]);
-
-    } catch (\Throwable $e) {
-        Log::error('Face registration failed', ['error' => $e->getMessage()]);
+    } catch (\Exception $e) {
+        \Log::error('Face registration server error', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+            'request' => $request->all()
+        ]);
         return response()->json([
             'success' => false,
-            'message' => $e->getMessage()
+            'message' => 'Server error: ' . $e->getMessage()
         ], 500);
     }
 }

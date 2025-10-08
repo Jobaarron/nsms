@@ -100,6 +100,8 @@
                     </h5>
                 </div>
                 <div class="card-body text-center">
+                    <!-- Hidden input for JS to access student ID -->
+                    <input type="hidden" id="studentId" value="{{ $student->student_id }}">
                     <div class="camera-container mb-4">
                         <video id="video" autoplay playsinline></video>
                         <div class="camera-overlay"></div>
@@ -161,26 +163,32 @@
                 @php
                     $faceRegistration = $student->activeFaceRegistration()->first();
                 @endphp
-                <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-header bg-white border-0 pb-0">
-                        <h6 class="card-title mb-0">
-                            <i class="ri-user-line me-2"></i>Current Registration
+                <div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, #e3f0ff 0%, #f9f9f9 100%); border: 2px solid #1976d2; border-radius: 1rem; overflow: hidden;">
+                    <div class="card-header bg-primary text-white border-0 pb-2" style="border-bottom: 2px solid #1976d2;">
+                        <h6 class="card-title mb-0 d-flex align-items-center">
+                            <i class="ri-id-card-line me-2"></i>Current Registration
                         </h6>
                     </div>
-                    <div class="card-body text-center">
-                        @if($faceRegistration && $faceRegistration->face_image_data_url)
-                            <img src="{{ $faceRegistration->face_image_data_url }}" alt="Registered Face" class="face-preview mb-3">
-                        @else
-                            <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mb-3 mx-auto face-preview">
-                                <i class="ri-user-line fs-1 text-muted"></i>
+                    <div class="card-body p-3">
+                        <div class="d-flex align-items-center" style="gap: 1.5rem;">
+                            <div>
+                                @if($faceRegistration && $faceRegistration->face_image_data_url)
+                                    <img id="currentFaceImage" src="{{ $faceRegistration->face_image_data_url }}" alt="Registered Face" style="width:120px; height:120px; object-fit:cover; border-radius:12px; border:3px solid #1976d2; box-shadow:0 2px 8px rgba(25,118,210,0.15); background:#fff;">
+                                @else
+                                    <div class="bg-light d-flex align-items-center justify-content-center" style="width:120px; height:120px; border-radius:12px; border:2px solid #b0bec5;">
+                                        <i class="ri-user-line fs-1 text-muted"></i>
+                                    </div>
+                                @endif
                             </div>
-                        @endif
-                        <h6 class="fw-bold mb-1">{{ $student->full_name ?? ($student->first_name . ' ' . $student->last_name) }}</h6>
-                        <p class="text-muted small mb-2">{{ $student->student_id }}</p>
-                        @if($faceRegistration)
-                            <small class="text-muted d-block">Registered: {{ $faceRegistration->registered_at->format('M d, Y') }}</small>
-                            <small class="text-muted d-block">Source: {{ ucfirst(str_replace('_', ' ', $faceRegistration->source)) }}</small>
-                        @endif
+                            <div class="flex-grow-1">
+                                <h5 class="fw-bold mb-1" style="color:#1976d2;">{{ $student->full_name ?? ($student->first_name . ' ' . $student->last_name) }}</h5>
+                                <p class="mb-1" style="font-size:1.1rem; color:#333;">Student ID: <span class="fw-semibold">{{ $student->student_id }}</span></p>
+                                @if($faceRegistration)
+                                    <p class="mb-1 text-muted" style="font-size:0.95rem;">Registered: <span class="fw-semibold">{{ $faceRegistration->registered_at->format('M d, Y') }}</span></p>
+                                    <p class="mb-1 text-muted" style="font-size:0.95rem;">Source: <span class="fw-semibold">{{ ucfirst(str_replace('_', ' ', $faceRegistration->source)) }}</span></p>
+                                @endif
+                            </div>
+                        </div>
                     </div>
                 </div>
             @endif
@@ -241,7 +249,13 @@
                                                 <span class="badge bg-success ms-2">Active</span>
                                             @endif
                                         </h6>
-                                        <small class="text-muted d-block">{{ $registration->registered_at->format('M d, Y g:i A') }}</small>
+                                        <small class="text-muted d-block">
+                                            @if($registration->registered_at)
+                                                {{ $registration->registered_at->format('M d, Y g:i A') }}
+                                            @else
+                                                Not set
+                                            @endif
+                                        </small>
                                         <small class="text-muted">Source: {{ ucfirst(str_replace('_', ' ', $registration->source)) }}</small>
                                     </div>
                                 @endforeach
@@ -282,5 +296,15 @@
             window.faceRegistrationDeleteUrl = '{{ route("student.face-registration.delete") }}';
         </script>
         @vite('resources/js/face-registration.js')
+        <script>
+        // Call this function after a successful face registration save
+        function updateCurrentFaceImage(newImageUrl) {
+            const img = document.getElementById('currentFaceImage');
+            if (img && newImageUrl) {
+                img.src = newImageUrl;
+            }
+        }
+        // Example usage: updateCurrentFaceImage('data:image/jpeg;base64,...')
+        </script>
     @endpush
 </x-student-layout>

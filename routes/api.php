@@ -9,6 +9,7 @@ use App\Models\Student;
 use App\Models\FaceRegistration;
 use App\Http\Controllers\ViolationController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DisciplineOfficerController;
 
 // -------------------------
 // Login (Mobile) - TODO: Create AuthController
@@ -72,11 +73,11 @@ Route::middleware('auth:sanctum')->post('/register-face', function (Request $req
 
     $face = FaceRegistration::create([
         'student_id' => $request->student_id,
-        'face_encoding' => json_encode($encoding),
+        'face_encoding' => $encoding,
         'face_image_data' => $request->face_image_data ?? null,
         'face_image_mime_type' => $request->face_image_mime_type ?? null,
         'confidence_score' => $request->input('confidence_score', 0.0),
-        'face_landmarks' => $request->input('face_landmarks') ? json_encode($request->input('face_landmarks')) : null,
+        'face_landmarks' => $request->input('face_landmarks'),
         'source' => $request->source,
         'device_id' => $request->device_id,
         'registered_by' => $request->user()->id,
@@ -101,22 +102,56 @@ Route::post('/recognize-face', function (Request $request) {
     $threshold = $request->input('threshold', 0.35); // cosine similarity threshold
     $inputEncoding = $request->face_encoding;
 
+    // Validate input encoding is array of numbers
+    if (!is_array($inputEncoding) || empty($inputEncoding) || !is_numeric($inputEncoding[0])) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Invalid face encoding format'
+        ], 400);
+    }
+
     // Normalize input embedding
     $norm = sqrt(array_sum(array_map(fn($v) => $v*$v, $inputEncoding)));
+    if ($norm == 0) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Invalid face encoding (zero norm)'
+        ], 400);
+    }
     $inputEncoding = array_map(fn($v) => $v/$norm, $inputEncoding);
 
-    $registeredFaces = FaceRegistration::with('student')->whereNotNull('face_encoding')->get();
+    $registeredFaces = FaceRegistration::with('student')->where('is_active', true)->get();
 
     $bestMatch = null;
     $bestScore = -1;
     $debug = [];
+    $validFacesCount = 0;
 
     foreach ($registeredFaces as $face) {
-        $storedEncoding = json_decode($face->face_encoding, true);
-        if (!is_array($storedEncoding) || empty($storedEncoding)) continue;
+        $storedEncoding = $face->face_encoding;
+
+        // Skip if encoding is not a valid array of numbers
+        if (!is_array($storedEncoding) || empty($storedEncoding) || !is_numeric($storedEncoding[0])) {
+            $debug[] = [
+                'student_id' => $face->student_id,
+                'student_name' => $face->student->first_name . ' ' . $face->student->last_name,
+                'status' => 'skipped_invalid_encoding'
+            ];
+            continue;
+        }
+
+        $validFacesCount++;
 
         // Normalize stored embedding
         $normStored = sqrt(array_sum(array_map(fn($v)=>$v*$v, $storedEncoding)));
+        if ($normStored == 0) {
+            $debug[] = [
+                'student_id' => $face->student_id,
+                'student_name' => $face->student->first_name . ' ' . $face->student->last_name,
+                'status' => 'skipped_zero_norm'
+            ];
+            continue;
+        }
         $storedEncoding = array_map(fn($v)=>$v/$normStored, $storedEncoding);
 
         // Cosine similarity
@@ -125,7 +160,8 @@ Route::post('/recognize-face', function (Request $request) {
         $debug[] = [
             'student_id' => $face->student_id,
             'student_name' => $face->student->first_name . ' ' . $face->student->last_name,
-            'similarity' => $dot
+            'similarity' => $dot,
+            'status' => 'compared'
         ];
 
         if ($dot > $bestScore && $dot >= $threshold) {
@@ -141,7 +177,11 @@ Route::post('/recognize-face', function (Request $request) {
             'confidence' => $bestScore,
             'student' => $bestMatch->student,
             'face' => $bestMatch,
-            'debug' => $debug
+            'debug' => $debug,
+            'stats' => [
+                'total_registered_faces' => $registeredFaces->count(),
+                'valid_faces_compared' => $validFacesCount
+            ]
         ]);
     }
 
@@ -149,7 +189,11 @@ Route::post('/recognize-face', function (Request $request) {
         'success' => true,
         'recognized' => false,
         'message' => 'No matching face found',
-        'debug' => $debug
+        'debug' => $debug,
+        'stats' => [
+            'total_registered_faces' => $registeredFaces->count(),
+            'valid_faces_compared' => $validFacesCount
+        ]
     ]);
 });
 
@@ -248,9 +292,24 @@ Route::middleware('auth:sanctum')->get('/students/{studentId}/face-registrations
     $registrations = FaceRegistration::where('student_id', $studentId)
         ->orderBy('created_at', 'desc')
         ->get(['face_image_data', 'face_image_mime_type', 'created_at']);
-    
+
     return response()->json([
         'success' => true,
         'faces' => $registrations
     ]);
+});
+
+// -------------------------
+// Discipline Officer API Routes (Protected)
+// -------------------------
+Route::middleware('auth:sanctum')->prefix('discipline-officer')->group(function () {
+    Route::get('/dashboard', [DisciplineOfficerController::class, 'dashboard']);
+    Route::get('/students', [DisciplineOfficerController::class, 'getStudents']);
+    Route::get('/students/{studentId}', [DisciplineOfficerController::class, 'getStudent']);
+    Route::post('/violations', [DisciplineOfficerController::class, 'submitViolation']);
+    Route::get('/violations', [DisciplineOfficerController::class, 'getViolations']);
+    Route::get('/violations/{violationId}', [DisciplineOfficerController::class, 'getViolation']);
+    Route::put('/violations/{violationId}', [DisciplineOfficerController::class, 'updateViolation']);
+    Route::get('/violation-types', [DisciplineOfficerController::class, 'getViolationTypes']);
+    Route::post('/check-duplicate-violation', [DisciplineOfficerController::class, 'checkDuplicateViolation']);
 });

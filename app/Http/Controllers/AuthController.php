@@ -71,7 +71,45 @@ class AuthController extends Controller
                 'message' => 'Your account is not active. Please contact administrator.'
             ], 401);
         }
-    
+
+        // Allow any active user to log in via mobile app
+
+        // Ensure discipline/guidance models exist for role-based users
+        if ($user->hasRole('discipline_officer') && !$user->discipline) {
+            $nameParts = explode(' ', $user->name ?? 'Unknown', 2);
+            \App\Models\Discipline::create([
+                'user_id' => $user->id,
+                'employee_id' => 'DO' . str_pad($user->id, 3, '0', STR_PAD_LEFT),
+                'first_name' => $nameParts[0],
+                'last_name' => $nameParts[1] ?? '',
+                'is_active' => true,
+                'specialization' => 'discipline_officer',
+            ]);
+        }
+
+        if ($user->hasRole('guidance_counselor') && !$user->guidance) {
+            $nameParts = explode(' ', $user->name ?? 'Unknown', 2);
+            \App\Models\Guidance::create([
+                'user_id' => $user->id,
+                'employee_id' => 'GC' . str_pad($user->id, 3, '0', STR_PAD_LEFT),
+                'first_name' => $nameParts[0],
+                'last_name' => $nameParts[1] ?? '',
+                'is_active' => true,
+                'specialization' => 'guidance_counselor',
+            ]);
+        }
+
+        if ($user->hasRole('admin') && !$user->admin) {
+            $nameParts = explode(' ', $user->name ?? 'Unknown', 2);
+            \App\Models\Admin::create([
+                'user_id' => $user->id,
+                'employee_id' => 'AD' . str_pad($user->id, 3, '0', STR_PAD_LEFT),
+                'first_name' => $nameParts[0],
+                'last_name' => $nameParts[1] ?? '',
+                'is_active' => true,
+            ]);
+        }
+
         // Create token for the device
         $token = $user->createToken($request->device_name)->plainTextToken;
         
@@ -85,6 +123,7 @@ class AuthController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'role' => $user->getUserRole(),
+                'is_active' => $user->status === 'active',
             ],
             'roles' => $roles,
         ], 200);
