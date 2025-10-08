@@ -258,7 +258,7 @@
                                 name="city"
                                 class="form-control form-control-lg text-uppercase @error('city') is-invalid @enderror"
                                 value="{{ old('city') }}"
-                                placeholder="QUEZON CITY"
+                                placeholder="BATANGAS CITY"
                                 oninput="this.value = this.value.toUpperCase()"
                             >
                             @error('city') <div class="invalid-feedback">{{ $message }}</div> @enderror
@@ -273,7 +273,7 @@
                                 name="province"
                                 class="form-control form-control-lg text-uppercase @error('province') is-invalid @enderror"
                                 value="{{ old('province') }}"
-                                placeholder="METRO MANILA"
+                                placeholder="NASUGBU"
                                 oninput="this.value = this.value.toUpperCase()"
                             >
                             @error('province') <div class="invalid-feedback">{{ $message }}</div> @enderror
