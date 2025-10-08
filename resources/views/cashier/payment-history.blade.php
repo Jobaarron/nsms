@@ -36,29 +36,32 @@
                                 <label for="status" class="form-label">Status</label>
                                 <select class="form-select" id="status" name="status">
                                     <option value="">All Status</option>
-                                    <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
-                                    <option value="confirmed" {{ request('status') == 'confirmed' ? 'selected' : '' }}>Confirmed</option>
-                                    <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>Rejected</option>
+                                    <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Not yet paid</option>
+                                    <option value="confirmed" {{ request('status') == 'confirmed' ? 'selected' : '' }}>Paid</option>
+                                    <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>Declined</option>
                                 </select>
                             </div>
-                            <div class="col-lg-2 col-md-4">
+                            <!-- Payment Method filter removed for on-site processing -->
+                            <!-- <div class="col-lg-2 col-md-4">
                                 <label for="payment_method" class="form-label">Payment Method</label>
                                 <select class="form-select" id="payment_method" name="payment_method">
                                     <option value="">All Methods</option>
                                     <option value="cash" {{ request('payment_method') == 'cash' ? 'selected' : '' }}>Cash</option>
-                                    <option value="online" {{ request('payment_method') == 'online' ? 'selected' : '' }}>Online</option>
-                                    <option value="bank_transfer" {{ request('payment_method') == 'bank_transfer' ? 'selected' : '' }}>Bank Transfer</option>
+                                    <option value="online_payment" {{ request('payment_method') == 'online_payment' ? 'selected' : '' }}>Online Payment</option>
+                                    <option value="scholarship" {{ request('payment_method') == 'scholarship' ? 'selected' : '' }}>Scholarship</option>
+                                    <option value="voucher" {{ request('payment_method') == 'voucher' ? 'selected' : '' }}>Voucher</option>
                                 </select>
-                            </div>
-                            <div class="col-lg-2 col-md-4">
-                                <label for="payment_mode" class="form-label">Payment Mode</label>
-                                <select class="form-select" id="payment_mode" name="payment_mode">
-                                    <option value="">All Modes</option>
-                                    <option value="full" {{ request('payment_mode') == 'full' ? 'selected' : '' }}>Full Payment</option>
-                                    <option value="quarterly" {{ request('payment_mode') == 'quarterly' ? 'selected' : '' }}>Quarterly</option>
-                                    <option value="monthly" {{ request('payment_mode') == 'monthly' ? 'selected' : '' }}>Monthly</option>
+                            </div> -->
+                            <!-- Payment mode filter removed - now handled by payment_method -->
+                            <!-- <div class="col-lg-2 col-md-4">
+                                <label for="payment_mode" class="form-label">Payment Schedule</label>
+                                <select class="form-select" id="payment_method" name="payment_method">
+                                    <option value="">All Schedules</option>
+                                    <option value="full" {{ request('payment_method') == 'full' ? 'selected' : '' }}>Full Payment</option>
+                                    <option value="quarterly" {{ request('payment_method') == 'quarterly' ? 'selected' : '' }}>Quarterly</option>
+                                    <option value="monthly" {{ request('payment_method') == 'monthly' ? 'selected' : '' }}>Monthly</option>
                                 </select>
-                            </div>
+                            </div> -->
                             <div class="col-lg-2 col-md-6">
                                 <label for="date_from" class="form-label">Date From</label>
                                 <input type="date" class="form-control" id="date_from" name="date_from" 
@@ -72,7 +75,7 @@
                             <div class="col-lg-2 col-md-8">
                                 <label for="search" class="form-label">Search</label>
                                 <input type="text" class="form-control" id="search" name="search" 
-                                       value="{{ request('search') }}" placeholder="Transaction ID, Name, Student ID...">
+                                       value="{{ request('search') }}" placeholder="Student ID, Name, Transaction ID...">
                             </div>
                             <div class="col-lg-12 col-md-4">
                                 <label class="form-label">&nbsp;</label>
@@ -112,14 +115,12 @@
                             <table class="table table-hover">
                                 <thead>
                                     <tr>
+                                        <th>Priority</th>
                                         <th>Transaction ID</th>
-                                        <th>Student/Enrollee</th>
-{{-- <th>Fee Type</th> --}}
+                                        <th>Student ID</th>
                                         <th>Amount</th>
-                                        <th>Payment Method</th>
+                                        <th>Scheduled Date</th>
                                         <th>Status</th>
-                                        <th>Processed By</th>
-                                        <th>Date</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -150,11 +151,12 @@
                                                     ₱{{ number_format($payment->amount, 2) }}
                                                 </span>
                                             </td>
-                                            <td>
+                                            <!-- Payment method badge removed for on-site processing -->
+                                            <!-- <td>
                                                 <span class="badge bg-info">
                                                     {{ ucfirst($payment->payment_method) }}
                                                 </span>
-                                            </td>
+                                            </td> -->
                                             <td>
                                                 @php
                                                     $statusClass = match($payment->confirmation_status) {

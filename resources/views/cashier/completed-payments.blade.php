@@ -40,13 +40,12 @@
                             <table class="table table-hover">
                                 <thead>
                                     <tr>
+                                        <th>Priority</th>
                                         <th>Transaction ID</th>
-                                        <th>Student/Enrollee</th>
-{{-- <th>Fee Type</th> --}}
+                                        <th>Student ID</th>
                                         <th>Amount</th>
-                                        <th>Payment Method</th>
-                                        <th>Processed By</th>
-                                        <th>Confirmed Date</th>
+                                        <th>Scheduled Date</th>
+                                        <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -77,11 +76,12 @@
                                                     ₱{{ number_format($payment->amount, 2) }}
                                                 </span>
                                             </td>
-                                            <td>
+                                            <!-- Payment method badge removed for on-site processing -->
+                                            <!-- <td>
                                                 <span class="badge bg-info">
                                                     {{ ucfirst($payment->payment_method) }}
                                                 </span>
-                                            </td>
+                                            </td> -->
                                             <td>
                                                 @if($payment->cashier)
                                                     <div>

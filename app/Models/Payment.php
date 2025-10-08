@@ -18,7 +18,7 @@ class Payment extends Model
         'payable_type',
         'amount',
         'status',
-        'payment_method',
+        'payment_method', // Now stores payment schedule: full, quarterly, monthly
         'reference_number',
         'notes',
         'paid_at',
@@ -28,7 +28,7 @@ class Payment extends Model
         'confirmation_status',
         'scheduled_date',
         'period_name',
-        'payment_mode',
+        // 'payment_mode', // Removed - redundant with payment_method
         'amount_received',
     ];
 

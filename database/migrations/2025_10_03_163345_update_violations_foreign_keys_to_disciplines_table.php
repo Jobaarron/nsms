@@ -12,14 +12,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Drop existing foreign keys if they exist
-        DB::statement('ALTER TABLE student_violations DROP FOREIGN KEY IF EXISTS violations_reported_by_foreign');
-        DB::statement('ALTER TABLE student_violations DROP FOREIGN KEY IF EXISTS violations_resolved_by_foreign');
-
-        Schema::table('student_violations', function (Blueprint $table) {
-            $table->foreign('reported_by')->references('id')->on('disciplines')->onDelete('cascade');
-            $table->foreign('resolved_by')->references('id')->on('disciplines')->onDelete('set null');
-        });
+        // Temporarily disabled to fix migration issues
+        // TODO: Re-enable after fixing foreign key constraints
+        return;
     }
 
     /**
@@ -27,13 +22,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Drop existing foreign keys if they exist
-        DB::statement('ALTER TABLE student_violations DROP FOREIGN KEY IF EXISTS violations_reported_by_foreign');
-        DB::statement('ALTER TABLE student_violations DROP FOREIGN KEY IF EXISTS violations_resolved_by_foreign');
-
-        Schema::table('student_violations', function (Blueprint $table) {
-            $table->foreign('reported_by')->references('id')->on('guidance_discipline')->onDelete('cascade');
-            $table->foreign('resolved_by')->references('id')->on('guidance_discipline')->onDelete('set null');
-        });
+        // Temporarily disabled to fix migration issues
+        // TODO: Re-enable after fixing foreign key constraints
+        return;
     }
 };

@@ -44,7 +44,7 @@ return new class extends Migration
             $table->foreignId('registered_by')->nullable()->change();
             $table->boolean('is_active')->nullable(false)->change();
             $table->string('device_id')->nullable()->change();
-            $table->timestamps(0);
+            // Removed $table->timestamps(0); to avoid duplicate columns during rollback
         });
     }
 };

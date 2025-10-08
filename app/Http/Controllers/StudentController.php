@@ -27,6 +27,12 @@ class StudentController extends Controller
             return redirect()->route('student.login');
         }
         
+        // Refresh payment totals to ensure they're up-to-date
+        $this->refreshStudentPaymentTotals($student);
+        
+        // Reload the student to get updated values
+        $student->refresh();
+        
         return view('student.index', compact('student'));
     }
 
@@ -272,15 +278,12 @@ class StudentController extends Controller
             ->delete();
 
         $request->validate([
-            'payment_mode' => 'nullable|in:full,quarterly,monthly',
+            'payment_method' => 'nullable|in:full,quarterly,monthly',
             'payment_notes' => 'nullable|string|max:1000'
         ]);
 
-        // Set default payment mode if not provided
-        $paymentMode = $request->payment_mode ?? 'full';
-        
-        // Set default payment method (will be determined by cashier)
-        $paymentMethod = 'cash';
+        // Set default payment schedule if not provided
+        $paymentSchedule = $request->payment_method ?? 'full';
 
         try {
             Log::info('Starting enrollment submission for student: ' . $student->id);
@@ -291,7 +294,7 @@ class StudentController extends Controller
             try {
                 $enrollee = $student->enrollee;
                 if ($enrollee && $enrollee->preferred_schedule) {
-                    $preferredScheduleDate = $enrollee->preferred_schedule;
+                    $preferredScheduleDate = Carbon::parse($enrollee->preferred_schedule);
                 }
             } catch (\Exception $e) {
                 Log::warning('Could not fetch enrollee data: ' . $e->getMessage());
@@ -307,17 +310,16 @@ class StudentController extends Controller
             Log::info('Total amount calculated: ' . $totalAmount);
 
             // Create payment schedules based on payment mode
-            Log::info('Creating payment schedules with mode: ' . $paymentMode);
-            $this->createPaymentSchedules($student, $paymentMode, $totalAmount, $preferredScheduleDate, $paymentMethod, $request->payment_notes);
+            Log::info('Creating payment schedules with method: ' . $paymentSchedule);
+            $this->createPaymentSchedules($student, $paymentSchedule, $totalAmount, $preferredScheduleDate, $request->payment_notes);
             
             Log::info('Payment schedules created successfully');
 
             // Update student with enrollment information
             Log::info('Updating student enrollment status');
             $student->update([
-                'payment_mode' => $paymentMode,
                 'total_fees_due' => $totalAmount,
-                'enrollment_status' => 'payment_pending' // Changed from 'enrolled' to 'payment_pending'
+                'enrollment_status' => 'enrolled' // Use valid enum value - student is enrolled but payment is pending
             ]);
             
             Log::info('Student updated successfully');
@@ -343,6 +345,8 @@ class StudentController extends Controller
                 ->with('success', 'Payment schedule submitted successfully! Your schedule is now pending approval from the cashier\'s office.');
         } catch (\Exception $e) {
             Log::error('Enrollment submission failed: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            Log::error('File: ' . $e->getFile() . ' Line: ' . $e->getLine());
             
             // Check if this is an AJAX request
             if ($request->expectsJson() || $request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
@@ -356,16 +360,21 @@ class StudentController extends Controller
         }
     }
 
-    private function createPaymentSchedules($student, $paymentMode, $totalAmount, $baseDate, $paymentMethod, $notes = null)
+    private function createPaymentSchedules($student, $paymentMethod, $totalAmount, $baseDate, $notes = null)
     {
         $schedules = [];
         
-        switch ($paymentMode) {
+        // Ensure baseDate is a Carbon instance
+        if (!$baseDate instanceof \Carbon\Carbon) {
+            $baseDate = \Carbon\Carbon::parse($baseDate);
+        }
+        
+        switch ($paymentMethod) {
             case 'full':
                 $schedules[] = [
                     'period_name' => 'Full Payment',
                     'amount' => $totalAmount,
-                    'scheduled_date' => $baseDate,
+                    'scheduled_date' => $baseDate->format('Y-m-d'),
                 ];
                 break;
                 
@@ -377,7 +386,7 @@ class StudentController extends Controller
                     $schedules[] = [
                         'period_name' => $quarters[$i],
                         'amount' => $quarterlyAmount,
-                        'scheduled_date' => Carbon::parse($baseDate)->addMonths($i * 3),
+                        'scheduled_date' => $baseDate->copy()->addMonths($i * 3)->format('Y-m-d'),
                     ];
                 }
                 break;
@@ -390,7 +399,7 @@ class StudentController extends Controller
                     $schedules[] = [
                         'period_name' => $months[$i],
                         'amount' => $monthlyAmount,
-                        'scheduled_date' => Carbon::parse($baseDate)->addMonths($i),
+                        'scheduled_date' => $baseDate->copy()->addMonths($i)->format('Y-m-d'),
                     ];
                 }
                 break;
@@ -403,28 +412,31 @@ class StudentController extends Controller
                     'transaction_id' => 'TXN-' . $student->student_id . '-' . time() . '-' . rand(100, 999),
                     'payable_type' => 'App\\Models\\Student',
                     'payable_id' => $student->id,
+                    'fee_id' => null, // Explicitly set to null since this is a payment schedule, not tied to specific fee
                     'amount' => $schedule['amount'],
                     'scheduled_date' => $schedule['scheduled_date'],
                     'period_name' => $schedule['period_name'],
-                    'payment_mode' => $paymentMode,
-                    'payment_method' => $paymentMethod,
+                    'payment_method' => $paymentMethod, // Now stores payment schedule: full, quarterly, monthly
                     'status' => 'pending',
                     'confirmation_status' => 'pending',
+                    'processed_by' => null, // Explicitly set to null until processed by cashier
                     'notes' => $notes,
                 ]);
             } catch (\Exception $e) {
                 Log::error('Payment creation failed: ' . $e->getMessage());
+                Log::error('Payment creation stack trace: ' . $e->getTraceAsString());
                 Log::error('Payment data: ' . json_encode([
                     'transaction_id' => 'TXN-' . $student->student_id . '-' . time() . '-' . rand(100, 999),
                     'payable_type' => 'App\\Models\\Student',
                     'payable_id' => $student->id,
+                    'fee_id' => null,
                     'amount' => $schedule['amount'],
                     'scheduled_date' => $schedule['scheduled_date'],
                     'period_name' => $schedule['period_name'],
-                    'payment_mode' => $paymentMode,
-                    'payment_method' => $paymentMethod,
+                    'payment_method' => $paymentMethod, // Now stores payment schedule: full, quarterly, monthly
                     'status' => 'pending',
                     'confirmation_status' => 'pending',
+                    'processed_by' => null,
                     'notes' => $notes,
                 ]));
                 throw $e;
@@ -526,6 +538,12 @@ class StudentController extends Controller
             return redirect()->route('student.login');
         }
         
+        // Refresh payment totals to ensure they're up-to-date
+        $this->refreshStudentPaymentTotals($student);
+        
+        // Reload the student to get updated values
+        $student->refresh();
+        
         // Get all payment records for this student
         $paymentSchedules = Payment::where('payable_type', Student::class)
             ->where('payable_id', $student->id)
@@ -543,20 +561,13 @@ class StudentController extends Controller
         $feeCalculation = Fee::calculateTotalFeesForGrade($student->grade_level);
         $totalFeesAmount = $feeCalculation['total_amount'];
         
-        // Calculate total paid (confirmed payments)
-        $totalPaid = $paymentHistory->sum('amount_received') ?: $paymentHistory->sum('amount');
+        // Calculate total paid (confirmed payments) - use amount_received if available
+        $totalPaid = $paymentHistory->sum(function($payment) {
+            return $payment->amount_received ?? $payment->amount;
+        });
         
         // Calculate balance due
         $balanceDue = $totalFeesAmount - $totalPaid;
-        
-        // Update student totals if they don't match
-        if ($student->total_fees_due != $totalFeesAmount || $student->total_paid != $totalPaid) {
-            $student->update([
-                'total_fees_due' => $totalFeesAmount,
-                'total_paid' => $totalPaid,
-                'is_paid' => $balanceDue <= 0
-            ]);
-        }
         
         return view('student.payments', compact('student', 'paymentSchedules', 'paymentHistory', 'totalFeesAmount', 'totalPaid', 'balanceDue'));
     }
@@ -707,5 +718,41 @@ class StudentController extends Controller
                 'message' => 'Failed to remove face registration'
             ], 500);
         }
+    }
+
+    /**
+     * Refresh student payment totals from confirmed payments
+     */
+    private function refreshStudentPaymentTotals($student)
+    {
+        // Calculate total paid amount from all confirmed payments
+        $totalPaid = Payment::where('payable_type', 'App\\Models\\Student')
+            ->where('payable_id', $student->id)
+            ->where('confirmation_status', 'confirmed')
+            ->get()
+            ->sum(function($payment) {
+                return $payment->amount_received ?? $payment->amount;
+            });
+        
+        // Calculate total fees due if not set
+        if (!$student->total_fees_due) {
+            $feeCalculation = Fee::calculateTotalFeesForGrade($student->grade_level);
+            $totalFeesDue = $feeCalculation['total_amount'];
+        } else {
+            $totalFeesDue = $student->total_fees_due;
+        }
+        
+        // Check if payment is complete
+        $isFullyPaid = $totalPaid >= $totalFeesDue;
+        
+        // Update student record
+        $student->update([
+            'total_paid' => $totalPaid,
+            'total_fees_due' => $totalFeesDue,
+            'is_paid' => $isFullyPaid,
+            'payment_completed_at' => $isFullyPaid && !$student->payment_completed_at ? now() : $student->payment_completed_at
+        ]);
+        
+        Log::info("Student payment totals refreshed - ID: {$student->id}, Total Paid: {$totalPaid}, Total Due: {$totalFeesDue}, Fully Paid: " . ($isFullyPaid ? 'Yes' : 'No'));
     }
 }

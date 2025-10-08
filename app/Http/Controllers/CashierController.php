@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use App\Models\Cashier;
 use App\Models\Payment;
 use App\Models\Student;
@@ -143,13 +144,15 @@ class CashierController extends Controller
             $query->where('confirmation_status', $request->status);
         }
 
-        if ($request->filled('payment_method')) {
-            $query->where('payment_method', $request->payment_method);
-        }
+        // Payment method filter removed for on-site processing
+        // if ($request->filled('payment_method')) {
+        //     $query->where('payment_method', $request->payment_method);
+        // }
 
-        if ($request->filled('payment_mode')) {
-            $query->where('payment_mode', $request->payment_mode);
-        }
+        // Payment mode filter removed - now using payment_method for schedule type
+        // if ($request->filled('payment_mode')) {
+        //     $query->where('payment_method', $request->payment_mode);
+        // }
 
         if ($request->filled('date_from')) {
             $query->whereDate('created_at', '>=', $request->date_from);
@@ -162,18 +165,21 @@ class CashierController extends Controller
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
-                $q->where('transaction_id', 'like', "%{$search}%")
-                  ->orWhere('reference_number', 'like', "%{$search}%")
+                // Prioritize Student ID search first
+                $q->whereHasMorph('payable', [Student::class, Enrollee::class], function($subQuery, $type) use ($search) {
+                      if ($type === Student::class) {
+                          $subQuery->where('student_id', 'like', "%{$search}%");
+                      } elseif ($type === Enrollee::class) {
+                          $subQuery->where('application_id', 'like', "%{$search}%");
+                      }
+                  })
                   ->orWhereHasMorph('payable', [Student::class, Enrollee::class], function($subQuery, $type) use ($search) {
                       $subQuery->where('first_name', 'like', "%{$search}%")
-                               ->orWhere('last_name', 'like', "%{$search}%");
-                      
-                      if ($type === Student::class) {
-                          $subQuery->orWhere('student_id', 'like', "%{$search}%");
-                      } elseif ($type === Enrollee::class) {
-                          $subQuery->orWhere('application_id', 'like', "%{$search}%");
-                      }
-                  });
+                               ->orWhere('last_name', 'like', "%{$search}%")
+                               ->orWhere('full_name', 'like', "%{$search}%");
+                  })
+                  ->orWhere('transaction_id', 'like', "%{$search}%")
+                  ->orWhere('reference_number', 'like', "%{$search}%");
             });
         }
 
@@ -189,9 +195,13 @@ class CashierController extends Controller
     {
         $request->validate([
             'cashier_notes' => 'nullable|string|max:1000',
+            'amount_received' => 'nullable|numeric|min:0',
         ]);
 
         $cashier = Auth::guard('cashier')->user();
+
+        // Use amount_received if provided, otherwise use the original amount
+        $amountReceived = $request->amount_received ?? $payment->amount;
 
         $payment->update([
             'confirmation_status' => 'confirmed',
@@ -199,6 +209,8 @@ class CashierController extends Controller
             'confirmed_at' => now(),
             'cashier_notes' => $request->cashier_notes,
             'status' => 'paid',
+            'amount_received' => $amountReceived,
+            'paid_at' => now(),
         ]);
 
         // Update student enrollment status and payment totals when payment schedule is approved
@@ -206,13 +218,17 @@ class CashierController extends Controller
             $student = $payment->payable;
             if ($student) {
                 // Calculate total paid amount from all confirmed payments
-                $totalPaid = \App\Models\Payment::where('payable_type', 'App\\Models\\Student')
+                // Use amount_received if available, otherwise use amount
+                $totalPaid = Payment::where('payable_type', 'App\\Models\\Student')
                     ->where('payable_id', $student->id)
                     ->where('confirmation_status', 'confirmed')
-                    ->sum('amount');
+                    ->get()
+                    ->sum(function($payment) {
+                        return $payment->amount_received ?? $payment->amount;
+                    });
                 
                 // Check if payment is complete (total paid >= total fees due)
-                $isFullyPaid = $totalPaid >= $student->total_fees_due;
+                $isFullyPaid = $totalPaid >= ($student->total_fees_due ?? 0);
                 
                 // Update student record
                 $student->update([
