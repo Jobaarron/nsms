@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const faceStatus = document.getElementById('faceStatus');
 
     // Configuration
-    const FLASK_SERVER_URL = 'http://192.168.1.12:5000';
+    const FLASK_SERVER_URL = 'http://192.168.1.18:5000';
     let isFlaskServerAvailable = false;
 
     // State variables
@@ -108,30 +108,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const existingGuide = document.querySelector('.face-guide');
         if (existingGuide) existingGuide.remove();
 
-        // Add face guide overlay
+        // Add face guide overlay only (no tips)
         const videoContainer = video.parentElement;
         const guide = document.createElement('div');
         guide.className = 'face-guide';
         videoContainer.style.position = 'relative';
         videoContainer.appendChild(guide);
-
-        // Add capture tips
-        const existingTips = document.querySelector('.capture-tips');
-        if (!existingTips) {
-            const tips = document.createElement('div');
-            tips.className = 'capture-tips';
-            tips.innerHTML = `
-                <h6><i class="ri-lightbulb-line me-2"></i>Capture Tips:</h6>
-                <ul>
-                    <li>Position your face within the green oval</li>
-                    <li>Ensure good lighting on your face</li>
-                    <li>Remove glasses if possible</li>
-                    <li>Look directly at the camera</li>
-                    <li>Keep a neutral expression</li>
-                </ul>
-            `;
-            videoContainer.appendChild(tips);
-        }
     }
 
     // Capture photo

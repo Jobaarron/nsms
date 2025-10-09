@@ -166,13 +166,23 @@ class DisciplineOfficerController extends Controller
         $violationTime = $validatedData['violation_time'] ?? $validatedData['time'] ?? null;
         $formattedTime = $violationTime ? date('H:i:s', strtotime($violationTime)) : null;
 
+
+        // Get the discipline record for the current user
+        $discipline = Auth::user()->discipline;
+        if (!$discipline) {
+            return response()->json([
+                'error' => true,
+                'message' => 'No discipline record found for this user.'
+            ], 422);
+        }
+
         $violationData = [
             'student_id' => $validatedData['student_id'],
             'title' => $violationType,
             'severity' => $validatedData['severity'],
             'violation_date' => $formattedDate,
             'violation_time' => $formattedTime,
-            'reported_by' => Auth::id(),
+            'reported_by' => $discipline->id,
         ];
 
         $violation = Violation::create($violationData);

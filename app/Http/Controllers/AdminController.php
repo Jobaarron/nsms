@@ -88,6 +88,22 @@ class AdminController extends Controller
         ));
     }
     
+
+        /**
+     * Display a listing of submitted (forwarded) case meetings for the president/admin.
+     */
+    public function forwardedCases()
+    {
+        if ($response = $this->checkAdminAuth()) {
+            return $response;
+        }
+
+        $caseMeetings = \App\Models\CaseMeeting::with(['student', 'sanctions.violation'])
+            ->where('status', 'submitted')
+            ->paginate(10);
+
+        return view('admin.forwarded-cases', compact('caseMeetings'));
+    }
     public function getStats()
     {
         $stats = [
@@ -530,14 +546,14 @@ public function getUserRoles(User $user)
 }
     
     
-public function forwardedCases()
+public function submittedCases()
 {
     if ($response = $this->checkAdminAuth()) {
         return $response;
     }
 
     $caseMeetings = \App\Models\CaseMeeting::with(['student', 'sanctions.violation'])
-        ->where('status', 'forwarded')
+        ->where('status', 'submitted')
         ->paginate(10);
 
     return view('admin.forwarded-cases', compact('caseMeetings'));
@@ -616,11 +632,11 @@ public function forwardedCases()
                 'notes' => ($sanction->notes ? $sanction->notes . "\n" : '') . 'Rejected by admin on ' . now()->toDateTimeString(),
             ]);
 
-            // Optionally, update related case meeting status to 'forwarded' or other appropriate status
+            // Optionally, update related case meeting status to 'submitted' or other appropriate status
             $caseMeeting = $sanction->caseMeeting;
             if ($caseMeeting) {
                 $caseMeeting->update([
-                    'status' => 'forwarded',
+                    'status' => 'submitted',
                 ]);
             }
 

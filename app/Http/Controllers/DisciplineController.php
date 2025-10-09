@@ -584,89 +584,67 @@ class DisciplineController extends Controller
      */
     public function forwardViolation(Request $request, Violation $violation)
     {
-        try {
-            // Check if violation is already forwarded/in progress
-            if ($violation->status === 'in_progress') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Violation has already been forwarded.'
-                ], 400);
-            }
-
-            // Get an active guidance counselor to assign the case meeting
-            $guidanceCounselor = Guidance::active()->counselors()->first();
-
-            if (!$guidanceCounselor) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No available guidance counselor to assign the case meeting.'
-                ], 400);
-            }
-
-            // Create case meeting with comprehensive violation data
-            $caseMeeting = CaseMeeting::create([
-                'student_id' => $violation->student_id,
-                'counselor_id' => $guidanceCounselor->id,
-                'meeting_type' => 'case_meeting',
-                'location' => 'Guidance Office',
-                'reason' => 'Violation: ' . $violation->title . ' - ' . $violation->description,
-                'notes' => 'Forwarded from Discipline Office. ' .
-                          'Student Involved: ' . $violation->student->first_name . ' ' . $violation->student->last_name . ' (' . $violation->student->student_id . '). ' .
-                          'Date and Time: ' . $violation->violation_date . ' ' . ($violation->violation_time ?: 'N/A') . '. ' .
-                          'Incident Details: ' . $violation->description . '. ' .
-                          'Violation Information: ' . $violation->title . ' (Severity: ' . $violation->severity . '). ' .
-                          'Status: ' . $violation->status . '. ' .
-                          'Urgency Level: ' . ($violation->urgency_level ?: 'Not specified') . '. ' .
-                          'Violation ID: ' . $violation->id,
-                'status' => 'in_progress',
-                'sanction_recommendation' => $violation->sanction,
-                'urgency_level' => $violation->urgency_level,
-            ]);
-
-            // Update violation status to in progress
-            $violation->update([
-                'status' => 'in_progress',
-            ]);
-
-            // Create a sanction for the case meeting based on the violation
-            try {
-                Sanction::create([
-                    'case_meeting_id' => $caseMeeting->id,
-                    'violation_id' => $violation->id,
-                    'severity' => $violation->severity,
-                    'category' => null,
-                    'major_category' => $violation->major_category,
-                    'sanction' => $violation->sanction ?: 'Pending sanction determination',
-                    'deportment_grade_action' => 'No change',
-                    'suspension' => 'None',
-                    'notes' => 'Created from violation forwarding',
-                    'is_automatic' => true,
-                    'is_approved' => false, // Requires approval from guidance
-                    'approved_by' => null,
-                    'approved_at' => null,
-                ]);
-            } catch (\Exception $e) {
-                \Log::error('Failed to create sanction for case meeting', [
-                    'case_meeting_id' => $caseMeeting->id,
-                    'violation_id' => $violation->id,
-                    'error' => $e->getMessage(),
-                ]);
-                // Continue without sanction, as it's not critical
-            }
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Violation forwarded to case meeting successfully. Guidance will schedule the meeting.',
-                'case_meeting_id' => $caseMeeting->id,
-            ]);
-        } catch (\Exception $e) {
-            \Log::error('Error forwarding violation: ' . $e->getMessage());
-
+        // Ensure the discipline officer has a valid discipline record
+        $user = Auth::user();
+        $discipline = $user ? $user->discipline : null;
+        if (!$discipline) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to forward violation: ' . $e->getMessage()
-            ], 500);
+                'message' => 'No discipline record found for this user.'
+            ], 422);
         }
+
+        // Get an active guidance counselor to assign the case meeting
+        $guidanceCounselor = Guidance::active()->counselors()->first();
+
+        // Create case meeting with violation data
+        $caseMeeting = CaseMeeting::create([
+            'student_id' => $violation->student_id,
+            'counselor_id' => $guidanceCounselor ? $guidanceCounselor->id : null,
+            'meeting_type' => 'case_meeting',
+            'location' => 'Guidance Office',
+            'reason' => 'Violation: ' . $violation->title . ' - ' . $violation->description,
+            'notes' => 'Submitted from Discipline Office. ' .
+                      'Student Involved: ' . $violation->student->first_name . ' ' . $violation->student->last_name . ' (' . $violation->student->student_id . '). ' .
+                      'Date and Time: ' . $violation->violation_date . ' ' . ($violation->violation_time ?: 'N/A') . '. ' .
+                      'Incident Details: ' . $violation->description . '. ' .
+                      'Violation Information: ' . $violation->title . ' (Severity: ' . $violation->severity . '). ' .
+                      'Status: ' . $violation->status . '. ' .
+                      'Urgency Level: ' . ($violation->urgency_level ?: 'Not specified') . '. ' .
+                      'Violation ID: ' . $violation->id,
+            'status' => 'scheduled', // Use a valid ENUM value
+            'sanction_recommendation' => $violation->sanction,
+            'urgency_level' => $violation->urgency_level,
+        ]);
+
+        // Update violation status and reported_by to ensure valid discipline id
+        $violation->update([
+            'status' => 'in_progress',
+            'reported_by' => $discipline->id,
+        ]);
+
+        // Create a sanction for the case meeting based on the violation
+        Sanction::create([
+            'case_meeting_id' => $caseMeeting->id,
+            'violation_id' => $violation->id,
+            'severity' => $violation->severity,
+            'category' => null,
+            'major_category' => $violation->major_category,
+            'sanction' => $violation->sanction ?: 'Pending sanction determination',
+            'deportment_grade_action' => 'No change',
+            'suspension' => 'None',
+            'notes' => 'Created from violation forwarding',
+            'is_automatic' => true,
+            'is_approved' => false, // Requires approval from guidance
+            'approved_by' => null,
+            'approved_at' => null,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Violation submitted to case meeting successfully. Guidance will schedule the meeting.',
+            'case_meeting_id' => $caseMeeting->id,
+        ]);
     }
 
     /**

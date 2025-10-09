@@ -16,9 +16,9 @@
                         <button class="btn btn-outline-primary" onclick="refreshCounselingSessions()">
                             <i class="ri-refresh-line me-2"></i>Refresh
                         </button>
-                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#scheduleCounselingModal">
+                        <!-- <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#scheduleCounselingModal">
                             <i class="ri-heart-pulse-line me-2"></i>Schedule Session
-                        </button>
+                        </button> -->
                     </div>
                 </div>
             </div>

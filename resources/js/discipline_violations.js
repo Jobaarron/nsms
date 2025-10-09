@@ -1990,7 +1990,7 @@ function showIncidentForm() {
                 <div class="modal-header">
                     <h5 class="modal-title">Incident Form</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
+                                                                                       </div>
                 <div class="modal-body">
                     <form id="incidentForm">
                         <div class="mb-3">
@@ -2265,164 +2265,96 @@ window.generateIncidentForm = function() {
     const time = document.getElementById('incidentTime').value;
     const details = document.getElementById('incidentDetails').value;
     const violation = document.getElementById('incidentViolation').value;
-
     // Get selected students
     const selectedStudentsText = Array.from(document.querySelectorAll('#incidentSelectedStudentsContainer .badge'))
         .map(badge => badge.textContent.trim())
         .join(', ');
-
     // Validate required fields
     if (!reporter || !date || !time || !details || window.incidentSelectedStudents.length === 0) {
         alert('Please fill in all required fields before generating the incident form.');
         return;
     }
-
-    // Create printable HTML
-    const printWindow = window.open('', '_blank');
-    const printContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Incident Report Form</title>
-            <style>
-                body {
-                    font-family: Arial, sans-serif;
-                    margin: 20px;
-                    line-height: 1.6;
-                }
-                .header {
-                    text-align: center;
-                    border-bottom: 2px solid #000;
-                    padding-bottom: 10px;
-                    margin-bottom: 20px;
-                }
-                .school-name {
-                    font-size: 24px;
-                    font-weight: bold;
-                    margin-bottom: 5px;
-                }
-                .form-title {
-                    font-size: 18px;
-                    font-weight: bold;
-                }
-                .section {
-                    margin-bottom: 20px;
-                }
-                .section-title {
-                    font-weight: bold;
-                    font-size: 14px;
-                    margin-bottom: 8px;
-                    border-bottom: 1px solid #ccc;
-                    padding-bottom: 3px;
-                }
-                .field {
-                    margin-bottom: 10px;
-                }
-                .field-label {
-                    font-weight: bold;
-                    display: inline-block;
-                    min-width: 120px;
-                }
-                .field-value {
-                    display: inline-block;
-                }
-                .signature-section {
-                    margin-top: 40px;
-                    border-top: 1px solid #000;
-                    padding-top: 20px;
-                }
-                .signature-line {
-                    display: inline-block;
-                    width: 200px;
-                    border-bottom: 1px solid #000;
-                    margin-right: 20px;
-                    margin-bottom: 20px;
-                }
-                @media print {
-                    body { margin: 0; }
-                }
-            </style>
-        </head>
-        <body>
-            <div class="header">
-                <div class="school-name">Nicolites Montessori School</div>
-                <div class="form-title">INCIDENT REPORT FORM</div>
-            </div>
-
-            <div class="section">
-                <div class="section-title">INCIDENT INFORMATION</div>
-                <div class="field">
-                    <span class="field-label">Date of Incident:</span>
-                    <span class="field-value">${new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                </div>
-                <div class="field">
-                    <span class="field-label">Time of Incident:</span>
-                    <span class="field-value">${time}</span>
-                </div>
-                <div class="field">
-                    <span class="field-label">Reported By:</span>
-                    <span class="field-value">${reporter}</span>
-                </div>
-                <div class="field">
-                    <span class="field-label">Students Involved:</span>
-                    <span class="field-value">${selectedStudentsText}</span>
-                </div>
-            </div>
-
-            <div class="section">
-                <div class="section-title">INCIDENT DETAILS</div>
-                <div style="margin-top: 10px; padding: 10px; border: 1px solid #ccc; min-height: 100px;">
-                    ${details.replace(/\n/g, '<br>')}
-                </div>
-            </div>
-
-            <div class="section">
-                <div class="section-title">VIOLATION INFORMATION</div>
-                <div style="margin-top: 10px; padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9;">
-                    ${violation.replace(/\n/g, '<br>')}
-                </div>
-            </div>
-
-            <div class="signature-section">
-                <div style="margin-bottom: 20px;">
-                    <strong>Prepared by:</strong>
-                </div>
-                <div class="signature-line"></div>
-                <div style="display: inline-block; font-size: 12px; color: #666;">
-                    Signature over Printed Name
-                </div>
-
-                <div style="margin-top: 20px; margin-bottom: 20px;">
-                    <strong>Reviewed by:</strong>
-                </div>
-                <div class="signature-line"></div>
-                <div style="display: inline-block; font-size: 12px; color: #666;">
-                    Guidance Counselor/Discipline Officer
-                </div>
-
-                <div style="margin-top: 20px; margin-bottom: 20px;">
-                    <strong>Approved by:</strong>
-                </div>
-                <div class="signature-line"></div>
-                <div style="display: inline-block; font-size: 12px; color: #666;">
-                    Principal/Discipline Head
-                </div>
-            </div>
-
-            <div style="margin-top: 40px; font-size: 12px; color: #666; text-align: center;">
-                Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}
-            </div>
-        </body>
-        </html>
+    // Only the inner content for modal preview
+    const innerContent = `
+      <div class="header">
+        <div class="school-name">Nicolites Montessori School</div>
+        <div class="form-title">INCIDENT REPORT FORM</div>
+      </div>
+      <div class="section">
+        <div class="section-title">INCIDENT INFORMATION</div>
+        <div class="field"><span class="field-label">Date of Incident:</span><span class="field-value">${new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span></div>
+        <div class="field"><span class="field-label">Time of Incident:</span><span class="field-value">${time}</span></div>
+        <div class="field"><span class="field-label">Reported By:</span><span class="field-value">${reporter}</span></div>
+        <div class="field"><span class="field-label">Students Involved:</span><span class="field-value">${selectedStudentsText}</span></div>
+      </div>
+      <div class="section">
+        <div class="section-title">INCIDENT DETAILS</div>
+        <div style="margin-top: 10px; padding: 10px; border: 1px solid #ccc; min-height: 100px;">${details.replace(/\n/g, '<br>')}</div>
+      </div>
+      <div class="section">
+        <div class="section-title">VIOLATION INFORMATION</div>
+        <div style="margin-top: 10px; padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9;">${violation.replace(/\n/g, '<br>')}</div>
+      </div>
+      <div class="signature-section">
+        <div style="margin-bottom: 20px;"><strong>Prepared by:</strong></div>
+        <div class="signature-line"></div>
+        <div style="display: inline-block; font-size: 12px; color: #666;">Signature over Printed Name</div>
+        <div style="margin-top: 20px; margin-bottom: 20px;"><strong>Reviewed by:</strong></div>
+        <div class="signature-line"></div>
+        <div style="display: inline-block; font-size: 12px; color: #666;">Guidance Counselor/Discipline Officer</div>
+        <div style="margin-top: 20px; margin-bottom: 20px;"><strong>Approved by:</strong></div>
+        <div class="signature-line"></div>
+        <div style="display: inline-block; font-size: 12px; color: #666;">Principal/Discipline Head</div>
+      </div>
+      <div style="margin-top: 40px; font-size: 12px; color: #666; text-align: center;">Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</div>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; }
+        .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
+        .school-name { font-size: 24px; font-weight: bold; margin-bottom: 5px; }
+        .form-title { font-size: 18px; font-weight: bold; }
+        .section { margin-bottom: 20px; }
+        .section-title { font-weight: bold; font-size: 14px; margin-bottom: 8px; border-bottom: 1px solid #ccc; padding-bottom: 3px; }
+        .field { margin-bottom: 10px; }
+        .field-label { font-weight: bold; display: inline-block; min-width: 120px; }
+        .field-value { display: inline-block; }
+        .signature-section { margin-top: 40px; border-top: 1px solid #000; padding-top: 20px; }
+        .signature-line { display: inline-block; width: 200px; border-bottom: 1px solid #000; margin-right: 20px; margin-bottom: 20px; }
+        @media print { body { margin: 0; } }
+      </style>
     `;
-
-    printWindow.document.write(printContent);
-    printWindow.document.close();
-
-    // Wait for content to load then priFincnt
-    printWindow.onload = function() {
-        printWindow.print();
-        // Optionally close the print window after printing
-        // printWindow.close();
+    // Full HTML for print/PDF
+    const printContent = `<!DOCTYPE html><html><head><title>Incident Report Form</title></head><body>${innerContent}</body></html>`;
+    // Show in modal (only inner content)
+    document.getElementById('incidentFormPreviewBody').innerHTML = innerContent;
+    // Hide the incident form modal if open
+    const incidentModalEl = document.getElementById('incidentFormModal');
+    if (incidentModalEl && incidentModalEl.classList.contains('show')) {
+        const incidentModal = bootstrap.Modal.getInstance(incidentModalEl) || new bootstrap.Modal(incidentModalEl);
+        incidentModal.hide();
+    }
+    // Show the preview modal
+    const previewModal = new bootstrap.Modal(document.getElementById('incidentFormPreviewModal'));
+    previewModal.show();
+    // Print button
+    document.getElementById('printIncidentFormBtn').onclick = function() {
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(printContent);
+        printWindow.document.close();
+        printWindow.onload = function() {
+            printWindow.print();
+        };
     };
-}
+    // Save as PDF button (requires html2pdf.js)
+    document.getElementById('downloadIncidentPDFBtn').onclick = function() {
+        if (window.html2pdf) {
+            window.html2pdf().from(document.getElementById('incidentFormPreviewBody')).set({
+                margin: 0.5,
+                filename: 'incident-form.pdf',
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+            }).save();
+        } else {
+            alert('PDF export requires html2pdf.js. Please include it in your project.');
+        }
+    };
+};

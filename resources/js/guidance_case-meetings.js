@@ -24,11 +24,13 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializeFilters() {
     // Filter functionality
     const statusFilter = document.getElementById('status-filter');
-    const dateFilter = document.getElementById('date-filter');
+    const dateFilterStart = document.getElementById('date-filter-start');
+    const dateFilterEnd = document.getElementById('date-filter-end');
     const searchFilter = document.getElementById('search-filter');
 
     if (statusFilter) statusFilter.addEventListener('change', filterCaseMeetings);
-    if (dateFilter) dateFilter.addEventListener('change', filterCaseMeetings);
+    if (dateFilterStart) dateFilterStart.addEventListener('change', filterCaseMeetings);
+    if (dateFilterEnd) dateFilterEnd.addEventListener('change', filterCaseMeetings);
     if (searchFilter) searchFilter.addEventListener('input', filterCaseMeetings);
 }
 
@@ -56,22 +58,39 @@ window.refreshCaseMeetings = function() {
 
 window.filterCaseMeetings = function() {
     const statusValue = document.getElementById('status-filter').value;
-    const dateValue = document.getElementById('date-filter').value;
+    const dateStartValue = document.getElementById('date-filter-start').value;
+    const dateEndValue = document.getElementById('date-filter-end').value;
     const searchValue = document.getElementById('search-filter').value.toLowerCase();
 
     const rows = document.querySelectorAll('#case-meetings-table tbody tr');
 
     rows.forEach(row => {
-        if (row.cells.length < 6) return; // Skip if not enough cells
+        if (row.cells.length < 4) return; // Adjusted for your table structure
 
         const studentName = row.cells[0].textContent.toLowerCase();
-        const dateTime = row.cells[1].textContent.toLowerCase();
-        const location = row.cells[2].textContent.toLowerCase();
-        const status = row.cells[3].textContent.toLowerCase();
+        const dateText = row.cells[1].textContent.trim();
+        const status = row.cells[2].textContent.toLowerCase();
+
+        // Parse date from cell (format: 'M d, Y')
+        let rowDate = null;
+        if (dateText) {
+            // Only take the first line (date)
+            const dateLine = dateText.split('\n')[0].trim();
+            rowDate = new Date(dateLine);
+        }
+
+        let matchesDate = true;
+        if (dateStartValue) {
+            const startDate = new Date(dateStartValue);
+            if (!rowDate || rowDate < startDate) matchesDate = false;
+        }
+        if (dateEndValue) {
+            const endDate = new Date(dateEndValue);
+            if (!rowDate || rowDate > endDate) matchesDate = false;
+        }
 
         const matchesStatus = !statusValue || status.includes(statusValue.toLowerCase());
-        const matchesDate = !dateValue || dateTime.includes(new Date(dateValue).toLocaleDateString().toLowerCase());
-        const matchesSearch = !searchValue || studentName.includes(searchValue) || location.includes(searchValue);
+        const matchesSearch = !searchValue || studentName.includes(searchValue);
 
         row.style.display = matchesStatus && matchesDate && matchesSearch ? '' : 'none';
     });
@@ -79,7 +98,8 @@ window.filterCaseMeetings = function() {
 
 window.clearFilters = function() {
     document.getElementById('status-filter').value = '';
-    document.getElementById('date-filter').value = '';
+    document.getElementById('date-filter-start').value = '';
+    document.getElementById('date-filter-end').value = '';
     document.getElementById('search-filter').value = '';
     filterCaseMeetings();
 };

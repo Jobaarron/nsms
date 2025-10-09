@@ -12,9 +12,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Temporarily disabled to fix migration issues
-        // TODO: Re-enable after fixing foreign key constraints
-        return;
+        // Drop old foreign key and add new one to disciplines
+        Schema::table('student_violations', function (Blueprint $table) {
+            try {
+                $table->dropForeign('violations_reported_by_foreign');
+            } catch (\Exception $e) {}
+            $table->foreign('reported_by')->references('id')->on('disciplines')->onDelete('cascade');
+        });
     }
 
     /**
@@ -22,8 +26,12 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Temporarily disabled to fix migration issues
-        // TODO: Re-enable after fixing foreign key constraints
-        return;
+        // Revert back to guidance_discipline
+        Schema::table('student_violations', function (Blueprint $table) {
+            try {
+                $table->dropForeign('violations_reported_by_foreign');
+            } catch (\Exception $e) {}
+            $table->foreign('reported_by')->references('id')->on('guidance_discipline')->onDelete('cascade');
+        });
     }
 };

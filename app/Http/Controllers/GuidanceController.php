@@ -219,7 +219,7 @@ class GuidanceController extends Controller
         }
 
         $validatedData['counselor_id'] = $guidanceRecord->id;
-        $validatedData['status'] = 'scheduled';
+    $validatedData['status'] = 'scheduled';
 
         // Check if there's an existing pending or in_progress case meeting for this student
         $existingMeeting = CaseMeeting::where('student_id', $validatedData['student_id'])
@@ -307,7 +307,6 @@ class GuidanceController extends Controller
             'follow_up_required' => $validatedData['follow_up_required'] ?? false,
             'follow_up_date' => $validatedData['follow_up_date'],
             'status' => 'pre_completed',
-            'completed_at' => now(),
         ]);
 
         if ($request->ajax()) {
@@ -550,7 +549,7 @@ class GuidanceController extends Controller
         }
 
         $caseMeeting->update([
-            'status' => 'forwarded',
+            'status' => 'submitted',
             'forwarded_to_president' => true,
             'forwarded_at' => now(),
         ]);
