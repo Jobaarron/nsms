@@ -35,7 +35,7 @@ export default defineConfig({
                 'resources/js/enrollee-application.js',
                 'resources/js/admin-role-access.js',
                 'resources/js/role-modals.js',
-                'resources/js/manage_users.js',
+
                 'resources/js/user-management.js',
                 'resources/js/admin-enrollment-management.js',
                 'resources/css/admin-enrollment-management.css',
@@ -54,7 +54,8 @@ export default defineConfig({
                 'resources/js/cashier-payment-schedules.js',
                 'resources/js/cashier-fees.js',
                 'resources/js/enrollee-data-change-requests.js',
-                'resources/js/registrar-data-change-requests.js'
+                'resources/js/registrar-data-change-requests.js',
+                'resources/js/registrar-document-management.js'
                 
             ],
             refresh: true,

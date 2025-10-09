@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use App\Models\Cashier;
 use App\Models\Payment;
 use App\Models\Student;
@@ -32,10 +33,63 @@ class CashierController extends Controller
         $completedPayments = Payment::completed()->count();
         $todayPayments = Payment::whereDate('confirmed_at', today())->confirmed()->count();
 
-        // Get recent payments
-        $recentPayments = Payment::with(['payable', 'fee', 'cashier'])
-            ->orderBy('created_at', 'desc')
-            ->limit(10)
+        // Get payment method analytics
+        $paymentMethodStats = Payment::where('confirmation_status', 'confirmed')
+            ->select('payment_method')
+            ->selectRaw('COUNT(*) as count')
+            ->selectRaw('SUM(amount) as total_amount')
+            ->groupBy('payment_method')
+            ->get();
+
+        // Format payment method data for charts
+        $paymentMethodData = [
+            'full' => ['count' => 0, 'amount' => 0],
+            'quarterly' => ['count' => 0, 'amount' => 0],
+            'monthly' => ['count' => 0, 'amount' => 0]
+        ];
+
+        foreach ($paymentMethodStats as $stat) {
+            if (isset($paymentMethodData[$stat->payment_method])) {
+                $paymentMethodData[$stat->payment_method] = [
+                    'count' => $stat->count,
+                    'amount' => $stat->total_amount
+                ];
+            }
+        }
+
+        // Get monthly revenue trend (last 6 months)
+        $monthlyRevenue = Payment::where('confirmation_status', 'confirmed')
+            ->where('confirmed_at', '>=', now()->subMonths(6))
+            ->selectRaw('MONTH(confirmed_at) as month')
+            ->selectRaw('YEAR(confirmed_at) as year')
+            ->selectRaw('SUM(amount) as total')
+            ->selectRaw('COUNT(*) as count')
+            ->groupBy('year', 'month')
+            ->orderBy('year')
+            ->orderBy('month')
+            ->get();
+
+        // Get daily revenue for current month
+        $dailyRevenue = Payment::where('confirmation_status', 'confirmed')
+            ->whereMonth('confirmed_at', now()->month)
+            ->whereYear('confirmed_at', now()->year)
+            ->selectRaw('DAY(confirmed_at) as day')
+            ->selectRaw('SUM(amount) as total')
+            ->selectRaw('COUNT(*) as count')
+            ->groupBy('day')
+            ->orderBy('day')
+            ->get();
+
+        // Get top performing fee categories
+        $topFeeCategories = Payment::with('fee')
+            ->where('confirmation_status', 'confirmed')
+            ->join('fees', 'payments.fee_id', '=', 'fees.id')
+            ->select('fees.fee_category')
+            ->selectRaw('SUM(payments.amount) as total_amount')
+            ->selectRaw('COUNT(payments.id) as payment_count')
+            ->groupBy('fees.fee_category')
+            ->orderBy('total_amount', 'desc')
+            ->limit(5)
             ->get();
 
         return view('cashier.index', compact(
@@ -44,7 +98,10 @@ class CashierController extends Controller
             'duePayments', 
             'completedPayments',
             'todayPayments',
-            'recentPayments'
+            'paymentMethodData',
+            'monthlyRevenue',
+            'dailyRevenue',
+            'topFeeCategories'
         ));
     }
 
@@ -97,10 +154,68 @@ class CashierController extends Controller
      */
     public function pendingPayments()
     {
-        $payments = Payment::with(['payable', 'fee'])
-            ->pending()
-            ->orderBy('created_at', 'desc')
-            ->paginate(20);
+        // Get grouped payment schedules for pending payments only
+        $groupedPayments = Payment::with(['payable'])
+            ->where('payable_type', Student::class)
+            ->where('confirmation_status', 'pending')
+            ->select('payable_id', 'payment_method', 'confirmation_status')
+            ->selectRaw('MIN(id) as first_payment_id')
+            ->selectRaw('MIN(transaction_id) as base_transaction_id')
+            ->selectRaw('SUM(amount) as total_amount')
+            ->selectRaw('COUNT(*) as installment_count')
+            ->selectRaw('MIN(scheduled_date) as first_due_date')
+            ->selectRaw('MAX(scheduled_date) as last_due_date')
+            ->selectRaw('MIN(created_at) as created_at')
+            ->groupBy('payable_id', 'payment_method', 'confirmation_status')
+            ->orderBy('first_due_date')
+            ->get();
+
+        // Create a custom paginator-like object
+        $payments = new class($groupedPayments) {
+            private $data;
+            
+            public function __construct($data) {
+                $this->data = $data->map(function($schedule) {
+                    $student = Student::find($schedule->payable_id);
+                    
+                    return (object)[
+                        'id' => $schedule->first_payment_id,
+                        'payable_id' => $schedule->payable_id,
+                        'payable' => $student,
+                        'transaction_id' => $schedule->base_transaction_id,
+                        'payment_method' => $schedule->payment_method,
+                        'confirmation_status' => $schedule->confirmation_status,
+                        'total_amount' => $schedule->total_amount,
+                        'installment_count' => $schedule->installment_count,
+                        'first_due_date' => $schedule->first_due_date,
+                        'last_due_date' => $schedule->last_due_date,
+                        'scheduled_date' => $schedule->first_due_date,
+                        'amount' => $schedule->total_amount,
+                        'created_at' => $schedule->created_at,
+                    ];
+                });
+            }
+            
+            public function total() {
+                return $this->data->count();
+            }
+            
+            public function count() {
+                return $this->data->count();
+            }
+            
+            public function isEmpty() {
+                return $this->data->isEmpty();
+            }
+            
+            public function isNotEmpty() {
+                return $this->data->isNotEmpty();
+            }
+            
+            public function getIterator() {
+                return $this->data->getIterator();
+            }
+        };
 
         return view('cashier.pending-payments', compact('payments'));
     }
@@ -143,13 +258,15 @@ class CashierController extends Controller
             $query->where('confirmation_status', $request->status);
         }
 
-        if ($request->filled('payment_method')) {
-            $query->where('payment_method', $request->payment_method);
-        }
+        // Payment method filter removed for on-site processing
+        // if ($request->filled('payment_method')) {
+        //     $query->where('payment_method', $request->payment_method);
+        // }
 
-        if ($request->filled('payment_mode')) {
-            $query->where('payment_mode', $request->payment_mode);
-        }
+        // Payment mode filter removed - now using payment_method for schedule type
+        // if ($request->filled('payment_mode')) {
+        //     $query->where('payment_method', $request->payment_mode);
+        // }
 
         if ($request->filled('date_from')) {
             $query->whereDate('created_at', '>=', $request->date_from);
@@ -162,18 +279,21 @@ class CashierController extends Controller
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
-                $q->where('transaction_id', 'like', "%{$search}%")
-                  ->orWhere('reference_number', 'like', "%{$search}%")
+                // Prioritize Student ID search first
+                $q->whereHasMorph('payable', [Student::class, Enrollee::class], function($subQuery, $type) use ($search) {
+                      if ($type === Student::class) {
+                          $subQuery->where('student_id', 'like', "%{$search}%");
+                      } elseif ($type === Enrollee::class) {
+                          $subQuery->where('application_id', 'like', "%{$search}%");
+                      }
+                  })
                   ->orWhereHasMorph('payable', [Student::class, Enrollee::class], function($subQuery, $type) use ($search) {
                       $subQuery->where('first_name', 'like', "%{$search}%")
-                               ->orWhere('last_name', 'like', "%{$search}%");
-                      
-                      if ($type === Student::class) {
-                          $subQuery->orWhere('student_id', 'like', "%{$search}%");
-                      } elseif ($type === Enrollee::class) {
-                          $subQuery->orWhere('application_id', 'like', "%{$search}%");
-                      }
-                  });
+                               ->orWhere('last_name', 'like', "%{$search}%")
+                               ->orWhere('full_name', 'like', "%{$search}%");
+                  })
+                  ->orWhere('transaction_id', 'like', "%{$search}%")
+                  ->orWhere('reference_number', 'like', "%{$search}%");
             });
         }
 
@@ -189,9 +309,13 @@ class CashierController extends Controller
     {
         $request->validate([
             'cashier_notes' => 'nullable|string|max:1000',
+            'amount_received' => 'nullable|numeric|min:0',
         ]);
 
         $cashier = Auth::guard('cashier')->user();
+
+        // Use amount_received if provided, otherwise use the original amount
+        $amountReceived = $request->amount_received ?? $payment->amount;
 
         $payment->update([
             'confirmation_status' => 'confirmed',
@@ -199,6 +323,8 @@ class CashierController extends Controller
             'confirmed_at' => now(),
             'cashier_notes' => $request->cashier_notes,
             'status' => 'paid',
+            'amount_received' => $amountReceived,
+            'paid_at' => now(),
         ]);
 
         // Update student enrollment status and payment totals when payment schedule is approved
@@ -206,13 +332,17 @@ class CashierController extends Controller
             $student = $payment->payable;
             if ($student) {
                 // Calculate total paid amount from all confirmed payments
-                $totalPaid = \App\Models\Payment::where('payable_type', 'App\\Models\\Student')
+                // Use amount_received if available, otherwise use amount
+                $totalPaid = Payment::where('payable_type', 'App\\Models\\Student')
                     ->where('payable_id', $student->id)
                     ->where('confirmation_status', 'confirmed')
-                    ->sum('amount');
+                    ->get()
+                    ->sum(function($payment) {
+                        return $payment->amount_received ?? $payment->amount;
+                    });
                 
                 // Check if payment is complete (total paid >= total fees due)
-                $isFullyPaid = $totalPaid >= $student->total_fees_due;
+                $isFullyPaid = $totalPaid >= ($student->total_fees_due ?? 0);
                 
                 // Update student record
                 $student->update([

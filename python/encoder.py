@@ -15,15 +15,31 @@ CORS(app)
 model = insightface.app.FaceAnalysis()
 model.prepare(ctx_id=-1)  # CPU only
 
+@app.route('/', methods=['GET'])
+def health_check():
+    return jsonify({'status': 'Face encoding server is running', 'version': '1.0'}), 200
+
 @app.route('/encode-face', methods=['POST'])
 def encode_face():
     try:
-        data = request.get_json() or {}
-        image_base64 = data.get('image_base64')
-        if not image_base64:
-            return jsonify({'error': 'image_base64 is required'}), 400
+        image_base64 = None
 
-        # Remove data URI prefix if present
+        # Handle JSON input (mobile app)
+        if request.is_json:
+            data = request.get_json() or {}
+            image_base64 = data.get('image_base64')
+        # Handle FormData input (web app)
+        elif request.files:
+            file = request.files.get('image')
+            if file:
+                # Read file and convert to base64
+                img_bytes = file.read()
+                image_base64 = base64.b64encode(img_bytes).decode('utf-8')
+
+        if not image_base64:
+            return jsonify({'error': 'image_base64 or image file is required'}), 400
+
+        # Remove data URI prefix if present (for base64 strings)
         if ',' in image_base64:
             image_base64 = image_base64.split(',', 1)[1]
 

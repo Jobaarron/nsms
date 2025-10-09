@@ -90,7 +90,7 @@ function updatePaymentSchedulesTable(payments) {
     } else {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="8" class="text-center py-4">
+                <td colspan="7" class="text-center py-4">
                     <div class="text-muted">
                         <i class="ri-inbox-line fs-1 mb-2"></i>
                         <p>No payment schedules found</p>
@@ -106,46 +106,47 @@ function createPaymentRow(payment) {
     const statusBadge = getStatusBadge(payment.confirmation_status);
     const priorityBadge = getPriorityBadge(payment.scheduled_date);
     
+    // Debug: Log payment data to see structure (removed for cleaner console)
+    
+    // Format payment method display
+    const paymentMethodDisplay = getPaymentMethodDisplay(payment.payment_method, payment.installment_count);
+    
+    // Format date range for installment payments
+    const dateDisplay = getDateDisplay(payment);
+    
+    // Get student identifier - try different possible fields
+    const studentId = student?.student_id || student?.id || payment.payable_id;
+    
     return `
         <tr>
             <td>${priorityBadge}</td>
             <td>
                 <span class="fw-bold">${payment.transaction_id}</span><br>
-                <small class="text-muted">${payment.period_name}</small>
+                <small class="text-muted">${paymentMethodDisplay}</small>
             </td>
             <td>
-                <div class="d-flex align-items-center">
-                    <div class="avatar-sm bg-light rounded-circle me-2 d-flex align-items-center justify-content-center">
-                        <i class="ri-user-line"></i>
-                    </div>
-                    <div>
-                        <div class="fw-semibold">${student.first_name} ${student.last_name}</div>
-                        <small class="text-muted">${student.student_id}</small>
-                    </div>
-                </div>
+                <div class="fw-semibold">${student.student_id}</div>
+                <small class="text-muted">${student.first_name} ${student.last_name}</small>
             </td>
             <td>
-                <span class="fw-bold">₱${formatNumber(payment.amount)}</span><br>
-                <small class="text-muted">${payment.payment_mode}</small>
+                <span class="fw-bold">₱${formatNumber(payment.total_amount || payment.amount)}</span><br>
+                <small class="text-muted">${getInstallmentInfo(payment)}</small>
             </td>
             <td>
-                <span class="badge bg-secondary">${payment.payment_method.replace('_', ' ').toUpperCase()}</span>
-            </td>
-            <td>
-                <div>${formatDate(payment.scheduled_date)}</div>
+                <div>${dateDisplay}</div>
                 <small class="text-muted">${getTimeAgo(payment.scheduled_date)}</small>
             </td>
             <td>${statusBadge}</td>
             <td>
                 <div class="btn-group btn-group-sm">
-                    <button class="btn btn-outline-primary" onclick="viewPaymentDetails(${payment.id})" title="View Details">
+                    <button class="btn btn-outline-primary" onclick="viewPaymentScheduleDetails('${studentId}', '${payment.payment_method}')" title="View Schedule">
                         <i class="ri-eye-line"></i>
                     </button>
                     ${payment.confirmation_status === 'pending' ? `
-                        <button class="btn btn-outline-success" onclick="processPayment(${payment.id}, 'confirm')" title="Confirm Payment">
+                        <button class="btn btn-outline-success" onclick="approvePaymentSchedule('${studentId}', '${payment.payment_method}')" title="Approve Schedule">
                             <i class="ri-check-line"></i>
                         </button>
-                        <button class="btn btn-outline-danger" onclick="processPayment(${payment.id}, 'reject')" title="Reject Payment">
+                        <button class="btn btn-outline-danger" onclick="rejectPaymentSchedule('${studentId}', '${payment.payment_method}')" title="Reject Schedule">
                             <i class="ri-close-line"></i>
                         </button>
                     ` : ''}
@@ -155,13 +156,43 @@ function createPaymentRow(payment) {
     `;
 }
 
+function getPaymentMethodDisplay(method, count) {
+    switch(method) {
+        case 'full':
+            return 'Full Payment';
+        case 'quarterly':
+            return `Quarterly (${count} payments)`;
+        case 'monthly':
+            return `Monthly (${count} payments)`;
+        default:
+            return 'Full Payment';
+    }
+}
+
+function getDateDisplay(payment) {
+    if (payment.payment_method === 'full') {
+        return formatDate(payment.scheduled_date);
+    } else {
+        return `${formatDate(payment.first_due_date)} - ${formatDate(payment.last_due_date)}`;
+    }
+}
+
+function getInstallmentInfo(payment) {
+    if (payment.payment_method === 'full') {
+        return 'One-time payment';
+    } else {
+        const perInstallment = payment.total_amount / payment.installment_count;
+        return `₱${formatNumber(perInstallment)} × ${payment.installment_count}`;
+    }
+}
+
 function getStatusBadge(status) {
     const badges = {
-        'pending': '<span class="badge bg-warning">Pending</span>',
-        'confirmed': '<span class="badge bg-success">Confirmed</span>',
-        'rejected': '<span class="badge bg-danger">Rejected</span>'
+        'pending': '<span class="badge bg-warning">Not yet paid</span>',
+        'confirmed': '<span class="badge bg-success">Paid</span>',
+        'rejected': '<span class="badge bg-warning">Not yet paid</span>' // Declined reverts to "Not yet paid"
     };
-    return badges[status] || '<span class="badge bg-secondary">Unknown</span>';
+    return badges[status] || '<span class="badge bg-warning">Not yet paid</span>';
 }
 
 function getPriorityBadge(scheduledDate) {
@@ -417,10 +448,7 @@ function formatCurrency(amount) {
 }
 
 function formatNumber(number) {
-    return new Intl.NumberFormat('en-US', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    }).format(number || 0);
+    return new Intl.NumberFormat().format(number || 0);
 }
 
 function formatDate(dateString) {
@@ -434,14 +462,195 @@ function formatDate(dateString) {
 function getTimeAgo(dateString) {
     const date = new Date(dateString);
     const now = new Date();
-    const diffMs = now - date;
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const diffTime = Math.abs(now - date);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
     if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays > 0) return `${diffDays} days ago`;
-    if (diffDays === -1) return 'Tomorrow';
-    return `In ${Math.abs(diffDays)} days`;
+    if (diffDays === 1) return 'Tomorrow';
+    if (diffDays < 7) return `In ${diffDays} days`;
+    if (diffDays < 30) return `In ${Math.ceil(diffDays / 7)} weeks`;
+    return `In ${Math.ceil(diffDays / 30)} months`;
+}
+
+// New functions for handling payment schedules - expose to global scope
+window.viewPaymentScheduleDetails = function(studentId, paymentMethod) {
+    fetch(`/cashier/api/payment-schedules/student/${studentId}/${paymentMethod}`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayPaymentScheduleModal(data.schedule);
+        }
+    })
+    .catch(error => {
+        console.error('Error loading payment schedule:', error);
+    });
+};
+
+window.displayPaymentScheduleModal = function(schedule) {
+    // Create a modal to display the payment schedule details
+    const modalHtml = `
+        <div class="modal fade" id="paymentScheduleModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Payment Schedule Details</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Student Information</h6>
+                                <p><strong>Name:</strong> ${schedule.student.first_name} ${schedule.student.last_name}</p>
+                                <p><strong>Student ID:</strong> ${schedule.student.student_id}</p>
+                                <p><strong>Email:</strong> ${schedule.student.email}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Payment Schedule</h6>
+                                <p><strong>Payment Method:</strong> ${schedule.payment_method.charAt(0).toUpperCase() + schedule.payment_method.slice(1)}</p>
+                                <p><strong>Total Amount:</strong> ₱${formatNumber(schedule.total_amount)}</p>
+                                <p><strong>Installments:</strong> ${schedule.installment_count}</p>
+                                <p><strong>Status:</strong> <span class="badge bg-${schedule.status === 'confirmed' ? 'success' : 'warning'}">${schedule.status === 'confirmed' ? 'Paid' : 'Not yet paid'}</span></p>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <h6>Payment Breakdown</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Period</th>
+                                            <th>Amount</th>
+                                            <th>Due Date</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${schedule.payments.map(payment => `
+                                            <tr>
+                                                <td>${payment.period_name}</td>
+                                                <td>₱${formatNumber(payment.amount)}</td>
+                                                <td>${formatDate(payment.scheduled_date)}</td>
+                                                <td><span class="badge bg-${payment.status === 'confirmed' ? 'success' : 'warning'}">${payment.status === 'confirmed' ? 'Paid' : 'Not yet paid'}</span></td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        ${schedule.status === 'pending' ? `
+                            <button type="button" class="btn btn-success" onclick="approvePaymentSchedule(${schedule.student.id}, '${schedule.payment_method}')">Approve Schedule</button>
+                            <button type="button" class="btn btn-danger" onclick="rejectPaymentSchedule(${schedule.student.id}, '${schedule.payment_method}')">Reject Schedule</button>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if any
+    const existingModal = document.getElementById('paymentScheduleModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add modal to body
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('paymentScheduleModal'));
+    modal.show();
+};
+
+window.approvePaymentSchedule = function(studentId, paymentMethod) {
+    if (confirm('Are you sure you want to approve this entire payment schedule?')) {
+        processPaymentSchedule(studentId, paymentMethod, 'approve');
+    }
+};
+
+window.rejectPaymentSchedule = function(studentId, paymentMethod) {
+    const reason = prompt('Please provide a reason for rejecting this payment schedule:');
+    if (reason) {
+        processPaymentSchedule(studentId, paymentMethod, 'reject', reason);
+    }
+};
+
+function processPaymentSchedule(studentId, paymentMethod, action, reason = null) {
+    console.log('Processing payment schedule:', {
+        studentId: studentId,
+        paymentMethod: paymentMethod,
+        action: action,
+        reason: reason
+    });
+    
+    const url = `/cashier/api/payment-schedules/student/${studentId}/${paymentMethod}/process`;
+    console.log('Request URL:', url);
+    
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            action: action,
+            reason: reason
+        })
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers);
+        
+        if (!response.ok) {
+            // Log the response text for debugging
+            return response.text().then(text => {
+                console.log('Error response body:', text);
+                throw new Error(`HTTP error! status: ${response.status}. Response: ${text.substring(0, 200)}`);
+            });
+        }
+        
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            return response.text().then(text => {
+                console.log('Non-JSON response body:', text);
+                throw new Error('Response is not JSON. Content-Type: ' + contentType + '. Response: ' + text.substring(0, 200));
+            });
+        }
+        
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            loadPaymentSchedules(); // Reload the table
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error processing payment schedule:', error);
+        
+        if (error.message.includes('HTTP error! status: 422')) {
+            alert('Validation error. Please check your input and try again.');
+        } else if (error.message.includes('HTTP error! status: 401')) {
+            alert('Authentication error. Please refresh the page and try again.');
+        } else if (error.message.includes('HTTP error! status: 404')) {
+            alert('Payment schedule not found. Please refresh the page.');
+        } else if (error.message.includes('not JSON')) {
+            alert('Server error. Please try again later.');
+        } else {
+            alert('An error occurred while processing the payment schedule: ' + error.message);
+        }
+    });
 }
 
 function updatePagination(payments) {

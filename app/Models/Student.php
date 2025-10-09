@@ -58,7 +58,7 @@ class Student extends Authenticatable
         'last_school_type',
         'last_school_name',
         'medical_history',
-        'payment_mode',
+        // 'payment_mode', // Removed - now handled by payment_method in payments table
         'is_paid',
         'total_fees_due',
         'total_paid',
@@ -119,7 +119,7 @@ class Student extends Authenticatable
     // Relationship to enrollee record (if student was created from enrollment)
     public function enrollee()
     {
-        return $this->belongsTo(Enrollee::class);
+        return $this->belongsTo(Enrollee::class, 'enrollee_id');
     }
 
     public function getFullNameAttribute()

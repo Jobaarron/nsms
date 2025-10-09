@@ -63,7 +63,7 @@
         @php
             $totalConfirmed = $paymentSummary->where('confirmation_status', 'confirmed')->first();
             $totalPending = $paymentSummary->where('confirmation_status', 'pending')->first();
-            $totalRejected = $paymentSummary->where('confirmation_status', 'rejected')->first();
+            // Rejected status removed - now treated as "Not yet paid"
         @endphp
         
         <div class="col-lg-3 col-md-6 mb-3">
@@ -76,7 +76,7 @@
                     </div>
                     <div class="flex-grow-1">
                         <h4 class="fw-bold fs-4 mb-0">₱{{ number_format($totalConfirmed->total_amount ?? 0, 2) }}</h4>
-                        <small class="text-muted">Confirmed ({{ $totalConfirmed->count ?? 0 }})</small>
+                        <small class="text-muted">Paid ({{ $totalConfirmed->count ?? 0 }})</small>
                     </div>
                 </div>
             </div>
@@ -92,27 +92,13 @@
                     </div>
                     <div class="flex-grow-1">
                         <h4 class="fw-bold fs-4 mb-0">₱{{ number_format($totalPending->total_amount ?? 0, 2) }}</h4>
-                        <small class="text-muted">Pending ({{ $totalPending->count ?? 0 }})</small>
+                        <small class="text-muted">Not yet paid ({{ $totalPending->count ?? 0 }})</small>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body d-flex align-items-center">
-                    <div class="flex-shrink-0 me-3">
-                        <div class="bg-danger bg-opacity-10 rounded-circle p-3">
-                            <i class="ri-close-line fs-2 text-danger"></i>
-                        </div>
-                    </div>
-                    <div class="flex-grow-1">
-                        <h4 class="fw-bold fs-4 mb-0">₱{{ number_format($totalRejected->total_amount ?? 0, 2) }}</h4>
-                        <small class="text-muted">Rejected ({{ $totalRejected->count ?? 0 }})</small>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <!-- Rejected status removed - now treated as "Not yet paid" -->
 
         <div class="col-lg-3 col-md-6 mb-3">
             <div class="card border-0 shadow-sm">

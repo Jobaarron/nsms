@@ -531,15 +531,7 @@ window.editViolation = function(violationId) {
                 <label class="form-label fw-bold small">Title</label>
                 <input type="text" class="form-control form-control-sm" id="edit_title" name="title" value="${violation.title || ''}" required>
             </div>
-            <div class="mb-2">
-                <label class="form-label fw-bold small">Urgency Level</label>
-                <select class="form-select form-select-sm" id="edit_urgency_level" name="urgency_level" required>
-                    <option value="medium" ${(!violation.urgency_level || violation.urgency_level === 'medium') ? 'selected' : ''}>Normal</option>
-                    <option value="low" ${violation.urgency_level === 'low' ? 'selected' : ''}>Low</option>
-                    <option value="high" ${violation.urgency_level === 'high' ? 'selected' : ''}>High</option>
-                    <option value="urgent" ${violation.urgency_level === 'urgent' ? 'selected' : ''}>Urgent</option>
-                </select>
-            </div>
+
             <div class="col-12">
     <label class="form-label fw-bold small">Status</label>
     <select class="form-select form-select-sm" id="edit_status" name="status" required disabled>
@@ -1599,16 +1591,7 @@ window.forwardViolation = function(violationId) {
                 <label class="form-label">Location</label>
                 <input type="text" class="form-control" name="location" placeholder="e.g., Guidance Office, Student's Home">
               </div>
-              <div class="col-md-6">
-                <label class="form-label">Urgency Level</label>
-                <select class="form-select" name="urgency_level">
-                  <option value="">Normal</option>
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                  <option value="urgent">Urgent</option>
-                </select>
-              </div>
+
               <div class="col-12">
                 <label class="form-label">Reason <span class="text-danger">*</span></label>
                 <textarea class="form-control" name="reason" rows="3" required placeholder="Describe the reason for this meeting...">${`Violation: ${data.title} - ${data.description || 'No description provided'}`}</textarea>
@@ -2049,16 +2032,7 @@ function showIncidentForm() {
                             <label class="form-label fw-bold">Details</label>
                             <textarea class="form-control" id="incidentDetails" rows="4" required></textarea>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Urgency Level</label>
-                            <select class="form-select" id="incidentUrgencyLevel">
-                                <option value="">Normal</option>
-                                <option value="low">Low</option>
-                                <option value="medium">Medium</option>
-                                <option value="high" selected>High</option>
-                                <option value="urgent">Urgent</option>
-                            </select>
-                        </div>
+
 
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -2171,12 +2145,11 @@ function showIncidentForm() {
             return;
         }
 
-                // Collect incident data
+        // Collect incident data
         const reporter = document.getElementById('incidentReporter').value;
         const date = document.getElementById('incidentDate').value;
         const time = document.getElementById('incidentTime').value;
         const details = document.getElementById('incidentDetails').value;
-        const urgencyLevel = document.getElementById('incidentUrgencyLevel').value;
 
         const submitBtn = document.querySelector('#incidentFormModal button[type="submit"]');
         const originalText = submitBtn.textContent;
@@ -2207,7 +2180,7 @@ function showIncidentForm() {
                 formData.append('incident_reporter', reporter);
                 formData.append('incident_date', date);
                 formData.append('incident_time', time);
-                formData.append('urgency_level', urgencyLevel);
+
 
 
 

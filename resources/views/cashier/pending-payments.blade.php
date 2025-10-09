@@ -32,17 +32,17 @@
                         <div class="d-flex gap-2">
                             <select class="form-select form-select-sm payment-filter" name="status">
                                 <option value="">All Status</option>
-                                <option value="pending">Pending</option>
-                                <option value="confirmed">Confirmed</option>
-                                <option value="rejected">Rejected</option>
+                                <option value="pending">Not yet paid</option>
+                                <option value="confirmed">Paid</option>
                             </select>
-                            <select class="form-select form-select-sm payment-filter" name="payment_mode">
-                                <option value="">All Modes</option>
+                            <!-- Payment mode filter removed - now handled by payment_method -->
+                            <!-- <select class="form-select form-select-sm payment-filter" name="payment_method">
+                                <option value="">All Schedules</option>
                                 <option value="full">Full Payment</option>
                                 <option value="quarterly">Quarterly</option>
                                 <option value="monthly">Monthly</option>
-                            </select>
-                            <input type="text" class="form-control form-control-sm" id="payment-search" placeholder="Search...">
+                            </select> -->
+                            <input type="text" class="form-control form-control-sm" id="payment-search" placeholder="Search by Student ID, Name...">
                         </div>
                     </div>
                 </div>
@@ -53,9 +53,8 @@
                                 <tr>
                                     <th>Priority</th>
                                     <th>Transaction ID</th>
-                                    <th>Student</th>
+                                    <th>Student ID</th>
                                     <th>Amount</th>
-                                    <th>Payment Method</th>
                                     <th>Scheduled Date</th>
                                     <th>Status</th>
                                     <th>Actions</th>
@@ -63,7 +62,7 @@
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td colspan="8" class="text-center py-4">
+                                    <td colspan="7" class="text-center py-4">
                                         <div class="spinner-border text-primary" role="status">
                                             <span class="visually-hidden">Loading...</span>
                                         </div>
@@ -132,11 +131,12 @@
                                                     ₱{{ number_format($payment->amount, 2) }}
                                                 </span>
                                             </td>
-                                            <td>
+                                            <!-- Payment method badge removed for on-site processing -->
+                                            <!-- <td>
                                                 <span class="badge bg-info">
                                                     {{ ucfirst($payment->payment_method) }}
                                                 </span>
-                                            </td>
+                                            </td> -->
                                             <td>
                                                 <small>{{ $payment->reference_number ?? 'N/A' }}</small>
                                             </td>
@@ -319,7 +319,7 @@
                             <p><strong>Name:</strong> ${payment.payable ? payment.payable.first_name + ' ' + payment.payable.last_name : 'N/A'}</p>
                             <p><strong>ID:</strong> ${payment.payable ? (payment.payable.student_id || payment.payable.application_id) : 'N/A'}</p>
                             <p><strong>Fee Type:</strong> ${payment.fee ? payment.fee.name : 'N/A'}</p>
-                            <p><strong>Status:</strong> <span class="badge bg-warning">${payment.confirmation_status}</span></p>
+                            <p><strong>Status:</strong> <span class="badge bg-warning">Not yet paid</span></p>
                         </div>
                     </div>
                     ${payment.notes ? `<div class="mt-3"><h6>Notes</h6><p>${payment.notes}</p></div>` : ''}

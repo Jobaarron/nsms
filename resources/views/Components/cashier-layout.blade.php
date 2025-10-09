@@ -85,17 +85,17 @@
             </a>
           </li>
           
-          <li class="nav-item mb-2">
+          <!-- <li class="nav-item mb-2">
             <a class="nav-link {{ request()->routeIs('cashier.due-payments') ? 'active' : '' }}" href="{{ route('cashier.due-payments') }}">
               <i class="ri-alarm-warning-line me-2"></i>Due Payments
             </a>
-          </li>
+          </li> -->
           
-          <li class="nav-item mb-2">
+          <!-- <li class="nav-item mb-2">
             <a class="nav-link {{ request()->routeIs('cashier.completed-payments') ? 'active' : '' }}" href="{{ route('cashier.completed-payments') }}">
               <i class="ri-check-double-line me-2"></i>Completed Payments
             </a>
-          </li>
+          </li> -->
           
           <li class="nav-item mb-2">
             <a class="nav-link {{ request()->routeIs('cashier.payment-history') ? 'active' : '' }}" href="{{ route('cashier.payment-history') }}">

@@ -84,7 +84,7 @@
           
           <li class="nav-item mb-2">
             <a class="nav-link {{ request()->routeIs('student.face-registration') ? 'active' : '' }}" href="{{ route('student.face-registration') }}">
-              <i class="ri-user-smile-line me-2"></i>Face Registration
+              <i class="ri-user-smile-line me-2"></i>ID Capturing
             </a>
           </li>
           
@@ -115,5 +115,7 @@
       </main>
     </div>
   </div>
+
+  @stack('scripts')
 </body>
 </html>

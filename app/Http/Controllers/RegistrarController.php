@@ -700,6 +700,14 @@ class RegistrarController extends Controller
      */
     public function sendNotice(Request $request, $id): JsonResponse
     {
+        Log::info('sendNotice called', [
+            'id' => $id,
+            'request_data' => $request->all(),
+            'subject' => $request->get('subject'),
+            'message' => $request->get('message'),
+            'priority' => $request->get('priority')
+        ]);
+
         $request->validate([
             'subject' => 'required|string|max:255',
             'message' => 'required|string|max:1000',
@@ -717,7 +725,6 @@ class RegistrarController extends Controller
                 'enrollee_id' => $application->id,
                 'title' => $request->subject,
                 'message' => $request->message,
-                'type' => 'info',
                 'priority' => $request->priority,
                 'is_global' => false,
                 'created_by' => Auth::id(),
@@ -1139,51 +1146,135 @@ class RegistrarController extends Controller
      */
     public function sendBulkNotice(Request $request): JsonResponse
     {
-        $request->validate([
-            'title' => 'required|string|max:255',
-            'message' => 'required|string',
-            'type' => 'required|in:info,success,warning,error',
-            'priority' => 'required|in:normal,high,urgent',
-            'status_filter' => 'nullable|in:pending,approved,rejected',
-            'grade_filter' => 'nullable|string'
-        ]);
+        // Support both application_ids (simple) and filters (complex) approach
+        if ($request->has('application_ids')) {
+            // Simple bulk notice to specific applications
+            $request->validate([
+                'application_ids' => 'required|array',
+                'application_ids.*' => 'required|string',
+                'title' => 'required|string|max:255',
+                'message' => 'required|string',
+                'priority' => 'required|in:normal,high,urgent',
+                'type' => 'nullable|in:info,success,warning,error'
+            ]);
 
-        try {
-            $query = Enrollee::query();
-            
-            if ($request->status_filter) {
-                $query->where('enrollment_status', $request->status_filter);
-            }
-            
-            if ($request->grade_filter) {
-                $query->where('grade_level_applied', $request->grade_filter);
-            }
-            
-            $enrollees = $query->get();
-            $count = 0;
-            
-            foreach ($enrollees as $enrollee) {
-                Notice::create([
-                    'enrollee_id' => $enrollee->id,
-                    'title' => $request->title,
-                    'message' => $request->message,
-                    'type' => $request->type,
-                    'priority' => $request->priority,
-                    'is_global' => !$request->status_filter && !$request->grade_filter,
-                    'created_by' => Auth::id(),
+            try {
+                // Find enrollees by application_id (not database id)
+                $enrollees = Enrollee::whereIn('application_id', $request->application_ids)->get();
+                $count = 0;
+                
+                foreach ($enrollees as $enrollee) {
+                    Notice::create([
+                        'enrollee_id' => $enrollee->id,
+                        'title' => $request->title,
+                        'message' => $request->message,
+                        'type' => $request->type ?? 'info',
+                        'priority' => $request->priority,
+                        'is_global' => false,
+                        'created_by' => Auth::id(),
+                    ]);
+                    $count++;
+                }
+
+                return response()->json([
+                    'success' => true,
+                    'message' => "Notice sent to {$count} student(s) successfully"
                 ]);
-                $count++;
+            } catch (\Exception $e) {
+                Log::error('Error sending bulk notice: ' . $e->getMessage());
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to send notices'
+                ], 500);
             }
+        } else {
+            // Complex bulk notice with filters (original logic)
+            $request->validate([
+                'title' => 'required|string|max:255',
+                'message' => 'required|string',
+                'type' => 'required|in:info,success,warning,error',
+                'priority' => 'required|in:normal,high,urgent',
+                'status_filter' => 'nullable|in:pending,approved,rejected',
+                'grade_filter' => 'nullable|string'
+            ]);
+
+            try {
+                $query = Enrollee::query();
+                
+                if ($request->status_filter) {
+                    $query->where('enrollment_status', $request->status_filter);
+                }
+                
+                if ($request->grade_filter) {
+                    $query->where('grade_level_applied', $request->grade_filter);
+                }
+                
+                $enrollees = $query->get();
+                $count = 0;
+                
+                foreach ($enrollees as $enrollee) {
+                    Notice::create([
+                        'enrollee_id' => $enrollee->id,
+                        'title' => $request->title,
+                        'message' => $request->message,
+                        'type' => $request->type,
+                        'priority' => $request->priority,
+                        'is_global' => !$request->status_filter && !$request->grade_filter,
+                        'created_by' => Auth::id(),
+                    ]);
+                    $count++;
+                }
+
+                return response()->json([
+                    'success' => true,
+                    'message' => "Bulk notice sent to {$count} applicant(s) successfully"
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Error sending bulk notice: ' . $e->getMessage());
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to send bulk notice'
+                ], 500);
+            }
+        }
+    }
+
+    /**
+     * Get applications data for AJAX requests
+     */
+    public function getApplicationsData(): JsonResponse
+    {
+        try {
+            $applications = Enrollee::select([
+                'id',
+                'application_id', 
+                'first_name', 
+                'last_name', 
+                'email',
+                'enrollment_status'
+            ])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($app) {
+                return [
+                    'id' => $app->id,
+                    'application_id' => $app->application_id,
+                    'first_name' => $app->first_name,
+                    'last_name' => $app->last_name,
+                    'email' => $app->email,
+                    'enrollment_status' => $app->enrollment_status
+                ];
+            });
 
             return response()->json([
                 'success' => true,
-                'message' => "Bulk notice sent to {$count} applicant(s) successfully"
+                'applications' => $applications
             ]);
         } catch (\Exception $e) {
-            Log::error('Error sending bulk notice: ' . $e->getMessage());
+            Log::error('Error fetching applications data: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to send bulk notice'
+                'message' => 'Failed to fetch applications data'
             ], 500);
         }
     }
