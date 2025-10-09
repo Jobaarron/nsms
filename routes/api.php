@@ -133,8 +133,10 @@ Route::middleware('auth:sanctum')->get('/students/face-registration-status', fun
 // -------------------------
 // Violation Routes (Protected)
 // -------------------------
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/violations', [ViolationController::class,'store']); // Submit violation
+    Route::post('/discipline-officer/violations', [ViolationController::class,'store']); // Alias for React Native
     Route::get('/violations', [ViolationController::class,'index']); // List all
     Route::get('/violations/statistics', [ViolationController::class,'statistics']); // Stats
     Route::get('/violations/{id}', [ViolationController::class,'show']); // Show one

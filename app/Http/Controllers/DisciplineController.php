@@ -584,10 +584,20 @@ class DisciplineController extends Controller
      */
     public function forwardViolation(Request $request, Violation $violation)
     {
+        // Ensure the discipline officer has a valid discipline record
+        $user = Auth::user();
+        $discipline = $user ? $user->discipline : null;
+        if (!$discipline) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No discipline record found for this user.'
+            ], 422);
+        }
+
         // Get an active guidance counselor to assign the case meeting
         $guidanceCounselor = Guidance::active()->counselors()->first();
 
-        // Create case meeting with violation data (skip counselor check for simplicity)
+        // Create case meeting with violation data
         $caseMeeting = CaseMeeting::create([
             'student_id' => $violation->student_id,
             'counselor_id' => $guidanceCounselor ? $guidanceCounselor->id : null,
@@ -602,14 +612,15 @@ class DisciplineController extends Controller
                       'Status: ' . $violation->status . '. ' .
                       'Urgency Level: ' . ($violation->urgency_level ?: 'Not specified') . '. ' .
                       'Violation ID: ' . $violation->id,
-            'status' => 'in_progress',
+            'status' => 'scheduled', // Use a valid ENUM value
             'sanction_recommendation' => $violation->sanction,
             'urgency_level' => $violation->urgency_level,
         ]);
 
-        // Update violation status to in progress
+        // Update violation status and reported_by to ensure valid discipline id
         $violation->update([
             'status' => 'in_progress',
+            'reported_by' => $discipline->id,
         ]);
 
         // Create a sanction for the case meeting based on the violation
