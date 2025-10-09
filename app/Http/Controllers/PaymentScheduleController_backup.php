@@ -13,105 +13,6 @@ use Carbon\Carbon;
 class PaymentScheduleController extends Controller
 {
     /**
-     * Create a payment schedule from student enrollment
-     */
-    public function createPaymentSchedule(Request $request)
-    {
-        // This method would be implemented for student enrollment
-        // For now, return a simple response
-        return response()->json([
-            'success' => true,
-            'message' => 'Payment schedule creation not implemented yet'
-        ]);
-    }
-
-    /**
-     * Get payment schedule for a student
-     */
-    public function getPaymentSchedule($studentId)
-    {
-        // This method would return payment schedule for a specific student
-        return response()->json([
-            'success' => true,
-            'schedule' => []
-        ]);
-    }
-
-    /**
-     * Get individual payment details for cashier
-     */
-    public function getPaymentDetails($paymentId)
-    {
-        $payment = Payment::with(['payable', 'fee'])
-            ->where('id', $paymentId)
-            ->first();
-
-        if (!$payment) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Payment not found'
-            ], 404);
-        }
-
-        return response()->json([
-            'success' => true,
-            'payment' => [
-                'id' => $payment->id,
-                'transaction_id' => $payment->transaction_id,
-                'amount' => $payment->amount,
-                'status' => $payment->status,
-                'confirmation_status' => $payment->confirmation_status,
-                'payment_method' => $payment->payment_method,
-                'scheduled_date' => $payment->scheduled_date,
-                'created_at' => $payment->created_at,
-                'confirmed_at' => $payment->confirmed_at,
-                'payable' => $payment->payable,
-                'fee' => $payment->fee ? [
-                    'name' => $payment->fee->name,
-                    'amount' => $payment->fee->amount,
-                    'fee_category' => $payment->fee->fee_category,
-                ] : null
-            ]
-        ]);
-    }
-
-    /**
-     * Process payment (for cashier)
-     */
-    public function processPayment(Request $request, $paymentId)
-    {
-        $request->validate([
-            'action' => 'required|in:confirm,reject',
-            'cashier_notes' => 'nullable|string|max:1000',
-        ]);
-
-        $payment = Payment::find($paymentId);
-        if (!$payment) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Payment not found'
-            ], 404);
-        }
-
-        $cashier = Auth::guard('cashier')->user();
-        $action = $request->action;
-
-        $payment->update([
-            'confirmation_status' => $action === 'confirm' ? 'confirmed' : 'rejected',
-            'status' => $action === 'confirm' ? 'paid' : 'failed',
-            'processed_by' => $cashier->id,
-            'confirmed_at' => now(),
-            'cashier_notes' => $request->cashier_notes,
-            'paid_at' => $action === 'confirm' ? now() : null,
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Payment ' . ($action === 'confirm' ? 'confirmed' : 'rejected') . ' successfully'
-        ]);
-    }
-
-    /**
      * Get payment statistics for dashboard
      */
     public function getPaymentStatistics()
@@ -294,25 +195,9 @@ class PaymentScheduleController extends Controller
      */
     public function getStudentPaymentSchedule($studentId, $paymentMethod)
     {
-        // Find student by student_id (like "NS-25001") or database ID
-        if (is_numeric($studentId)) {
-            // If numeric, treat as database ID
-            $student = Student::find($studentId);
-        } else {
-            // If not numeric, treat as student_id
-            $student = Student::where('student_id', $studentId)->first();
-        }
-        
-        if (!$student) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Student not found with ID: ' . $studentId
-            ], 404);
-        }
-
         $payments = Payment::with(['payable'])
             ->where('payable_type', 'App\\Models\\Student')
-            ->where('payable_id', $student->id)
+            ->where('payable_id', $studentId)
             ->where('payment_method', $paymentMethod)
             ->orderBy('scheduled_date')
             ->get();
@@ -354,25 +239,10 @@ class PaymentScheduleController extends Controller
      */
     public function processStudentPaymentSchedule(Request $request, $studentId, $paymentMethod)
     {
-        // Debug logging
-        \Log::info('processStudentPaymentSchedule called', [
-            'studentId' => $studentId,
-            'paymentMethod' => $paymentMethod,
-            'request_data' => $request->all()
+        $request->validate([
+            'action' => 'required|in:approve,reject',
+            'reason' => 'required_if:action,reject|string|max:1000'
         ]);
-
-        try {
-            $request->validate([
-                'action' => 'required|in:approve,reject',
-                'reason' => 'required_if:action,reject|nullable|string|max:1000'
-            ]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            \Log::error('Validation failed', ['errors' => $e->errors()]);
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed: ' . implode(', ', $e->validator->errors()->all())
-            ], 422);
-        }
 
         $cashier = Auth::guard('cashier')->user();
         
@@ -383,28 +253,9 @@ class PaymentScheduleController extends Controller
             ], 401);
         }
         
-        // Find student by student_id (like "NS-25001") or database ID
-        if (is_numeric($studentId)) {
-            // If numeric, treat as database ID
-            $student = Student::find($studentId);
-        } else {
-            // If not numeric, treat as student_id
-            $student = Student::where('student_id', $studentId)->first();
-        }
-        
-        if (!$student) {
-            \Log::error('Student not found', ['studentId' => $studentId]);
-            return response()->json([
-                'success' => false,
-                'message' => 'Student not found with ID: ' . $studentId
-            ], 404);
-        }
-
-        \Log::info('Student found', ['student' => $student->toArray()]);
-
         // Get all payments for this student and payment method
         $payments = Payment::where('payable_type', 'App\\Models\\Student')
-            ->where('payable_id', $student->id)
+            ->where('payable_id', $studentId)
             ->where('payment_method', $paymentMethod)
             ->where('confirmation_status', 'pending')
             ->get();
@@ -434,10 +285,12 @@ class PaymentScheduleController extends Controller
 
         // Update student record if approved
         if ($action === 'approve') {
-            $totalPaid = Payment::where('payable_type', 'App\\Models\\Student')
-                ->where('payable_id', $student->id)
-                ->where('confirmation_status', 'confirmed')
-                ->sum('amount');
+            $student = Student::find($studentId);
+            if ($student) {
+                $totalPaid = Payment::where('payable_type', 'App\\Models\\Student')
+                    ->where('payable_id', $studentId)
+                    ->where('confirmation_status', 'confirmed')
+                    ->sum('amount');
                 
                 $isFullyPaid = $totalPaid >= ($student->total_fees_due ?? 0);
                 
@@ -447,121 +300,16 @@ class PaymentScheduleController extends Controller
                     'is_paid' => $isFullyPaid,
                     'payment_completed_at' => $isFullyPaid ? now() : null
                 ]);
+            }
         }
 
         $message = $action === 'approve' 
             ? 'Payment schedule approved successfully. All payments have been confirmed.'
             : 'Payment schedule rejected. Reason: ' . $request->reason;
 
-        \Log::info('Payment schedule processed successfully', [
-            'action' => $action,
-            'message' => $message
-        ]);
-
         return response()->json([
             'success' => true,
             'message' => $message
-        ]);
-    }
-
-    /**
-     * Get payment history for cashier dashboard
-     */
-    public function getPaymentHistory(Request $request)
-    {
-        // First, get all payments with their relationships
-        $baseQuery = Payment::with(['payable', 'fee'])
-            ->whereIn('confirmation_status', ['confirmed', 'pending', 'rejected']);
-
-        // Apply filters before grouping
-        if ($request->has('status') && $request->status) {
-            $baseQuery->where('confirmation_status', $request->status);
-        }
-
-        if ($request->has('search') && $request->search) {
-            $search = $request->search;
-            $baseQuery->where(function ($q) use ($search) {
-                $q->where('transaction_id', 'like', "%{$search}%")
-                  ->orWhereHas('payable', function ($payableQuery) use ($search) {
-                      $payableQuery->where('student_id', 'like', "%{$search}%")
-                                   ->orWhere('first_name', 'like', "%{$search}%")
-                                   ->orWhere('last_name', 'like', "%{$search}%");
-                  });
-            });
-        }
-
-        // Get all matching payments
-        $allPayments = $baseQuery->orderBy('created_at', 'desc')->get();
-
-        // Group payments by student and payment method
-        $groupedPayments = $allPayments->groupBy(function ($payment) {
-            return $payment->payable_id . '_' . $payment->payment_method . '_' . $payment->confirmation_status;
-        })->map(function ($paymentGroup) {
-            // Get the first payment as the representative
-            $firstPayment = $paymentGroup->first();
-            
-            // Calculate totals
-            $totalAmount = $paymentGroup->sum('amount');
-            $installmentCount = $paymentGroup->count();
-            
-            // Create a consolidated payment object
-            $consolidatedPayment = $firstPayment->replicate();
-            $consolidatedPayment->total_amount = $totalAmount;
-            $consolidatedPayment->amount = $totalAmount;
-            $consolidatedPayment->installment_count = $installmentCount;
-            
-            // Ensure we have proper dates - use the earliest created_at and latest confirmed_at
-            $consolidatedPayment->created_at = $paymentGroup->min('created_at') ?: $firstPayment->created_at ?: now();
-            $consolidatedPayment->confirmed_at = $paymentGroup->whereNotNull('confirmed_at')->max('confirmed_at');
-            
-            // Try to get cashier info from any payment that has it
-            $paymentWithCashier = $paymentGroup->whereNotNull('processed_by')->first();
-            if ($paymentWithCashier && $paymentWithCashier->processed_by) {
-                // Load the cashier relationship
-                $cashier = \App\Models\Cashier::find($paymentWithCashier->processed_by);
-                if ($cashier) {
-                    $consolidatedPayment->cashier = $cashier;
-                    $consolidatedPayment->processed_by = $paymentWithCashier->processed_by;
-                    $consolidatedPayment->confirmed_at = $paymentWithCashier->confirmed_at;
-                }
-            } else {
-                // If no processed_by, try to find any cashier who might have processed it
-                // For now, let's use a default cashier or the currently logged in cashier
-                $currentCashier = auth('cashier')->user();
-                if ($currentCashier) {
-                    $consolidatedPayment->cashier = $currentCashier;
-                    $consolidatedPayment->processed_by = $currentCashier->id;
-                }
-            }
-            
-            return $consolidatedPayment;
-        })->values();
-
-        // Apply pagination
-        $perPage = 15;
-        $currentPage = $request->get('page', 1);
-        $total = $groupedPayments->count();
-        $items = $groupedPayments->forPage($currentPage, $perPage);
-
-        $paginatedPayments = new \Illuminate\Pagination\LengthAwarePaginator(
-            $items,
-            $total,
-            $perPage,
-            $currentPage,
-            ['path' => $request->url(), 'pageName' => 'page']
-        );
-
-        return response()->json([
-            'success' => true,
-            'payments' => [
-                'data' => $paginatedPayments->items(),
-                'total' => $total,
-                'per_page' => $perPage,
-                'current_page' => $currentPage,
-                'last_page' => $paginatedPayments->lastPage(),
-                'from' => $paginatedPayments->firstItem(),
-                'to' => $paginatedPayments->lastItem()
-            ]
         ]);
     }
 }

@@ -184,14 +184,13 @@ class StudentController extends Controller
                     'face_image_mime_type' => $request->id_photo_mime_type,
                     'source' => 'registration_form',
                     'registered_at' => now(),
-                    'is_active' => true
                 ]);
             }
 
             return response()->json([
                 'success' => true,
-                'message' => 'Student registered successfully',
-                'student' => $student
+                'message' => 'Payment schedule submitted successfully! Please wait for cashier approval to complete your enrollment.',
+                'redirect_url' => route('student.payments')
             ], 201);
 
         } catch (\Exception $e) {
@@ -315,11 +314,11 @@ class StudentController extends Controller
             
             Log::info('Payment schedules created successfully');
 
-            // Update student with enrollment information
-            Log::info('Updating student enrollment status');
+            // Update student with fee information but keep pre_registered status until payment is approved
+            Log::info('Updating student fee information');
             $student->update([
                 'total_fees_due' => $totalAmount,
-                'enrollment_status' => 'enrolled' // Use valid enum value - student is enrolled but payment is pending
+                // Keep enrollment_status as 'pre_registered' until cashier approves payment schedule
             ]);
             
             Log::info('Student updated successfully');

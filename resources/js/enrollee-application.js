@@ -97,7 +97,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Field exists in data:', selectedField in enrolleeData);
             
             if (selectedField && selectedField in enrolleeData) {
-                const currentValue = enrolleeData[selectedField];
+                let currentValue = enrolleeData[selectedField];
                 console.log('Raw current value for', selectedField, ':', currentValue);
                 
                 // Handle different data types and null/empty values
@@ -105,20 +105,35 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (currentValue === null || currentValue === undefined || currentValue === '') {
                     displayValue = 'Not provided';
                 } else {
-                    displayValue = String(currentValue);
+                    // Handle special cases for display
+                    if (selectedField === 'date_of_birth' && currentValue) {
+                        // Format date for display
+                        try {
+                            const date = new Date(currentValue);
+                            displayValue = date.toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                            });
+                        } catch (e) {
+                            displayValue = String(currentValue);
+                        }
+                    } else {
+                        displayValue = String(currentValue);
+                    }
                 }
                 
                 console.log('Display value:', displayValue);
                 
                 currentValueInput.value = displayValue;
                 if (oldValueInput) {
-                    oldValueInput.value = displayValue;
+                    oldValueInput.value = String(currentValue || ''); // Store raw value for form submission
                 }
             } else {
                 console.log('Field not found in enrollee data or no field selected');
                 currentValueInput.value = 'Not provided';
                 if (oldValueInput) {
-                    oldValueInput.value = 'Not provided';
+                    oldValueInput.value = '';
                 }
             }
         });

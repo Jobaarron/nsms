@@ -596,27 +596,39 @@ class EnrolleeController extends Controller
         try {
             $enrollee = Auth::guard('enrollee')->user();
             
-            // Mark all unread notices for this enrollee
-            Notice::where(function($query) use ($enrollee) {
+            if (!$enrollee) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not authenticated'
+                ], 401);
+            }
+            
+            // Get all unread notices for this enrollee
+            $notices = Notice::where(function($query) use ($enrollee) {
                 $query->where('enrollee_id', $enrollee->id)
                       ->orWhere('is_global', true);
             })
             ->where('is_read', false)
-            ->update([
-                'is_read' => true,
-                'read_at' => now()
-            ]);
+            ->get();
+
+            // Mark each notice as read using the model method
+            $updatedCount = 0;
+            foreach ($notices as $notice) {
+                $notice->markAsRead();
+                $updatedCount++;
+            }
 
             return response()->json([
                 'success' => true,
-                'message' => 'All notices marked as read'
+                'message' => "All notices marked as read ({$updatedCount} notices updated)"
             ]);
 
         } catch (\Exception $e) {
             \Log::error('Error marking all notices as read: ' . $e->getMessage());
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
             return response()->json([
                 'success' => false,
-                'message' => 'Error updating notices'
+                'message' => 'Error updating notices: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -644,6 +656,15 @@ class EnrolleeController extends Controller
                 ], 400);
             }
             
+            // Also check if a student record already exists for this enrollee
+            $existingStudentByEnrollee = \App\Models\Student::where('enrollee_id', $enrollee->id)->first();
+            if ($existingStudentByEnrollee) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'A student record already exists for this enrollee.'
+                ], 400);
+            }
+            
             // Check if application is approved - updated logic for new workflow
             if ($enrollee->enrollment_status !== 'approved') {
                 return response()->json([
@@ -653,13 +674,71 @@ class EnrolleeController extends Controller
             }
             
             // Generate student ID (format: NS-25001)
-            $latestStudent = \App\Models\Student::orderBy('id', 'desc')->first();
-            $nextNumber = $latestStudent ? (intval(substr($latestStudent->student_id, 3)) + 1) : 25001;
-            $studentId = 'NS-' . str_pad($nextNumber, 5, '0', STR_PAD_LEFT);
+            $year = date('Y');
+            $shortYear = substr($year, -2); // Get last 2 digits of year (25 for 2025)
+            
+            // Find the last student for this year
+            $lastStudent = \App\Models\Student::where('student_id', 'like', "NS-{$shortYear}%")
+                ->orderBy('student_id', 'desc')
+                ->first();
+            
+            if ($lastStudent) {
+                // Extract number after NS-25 (e.g., "NS-25001" -> "001")
+                $lastNumber = (int) substr($lastStudent->student_id, 5);
+                $newNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
+            } else {
+                $newNumber = '001';
+            }
+            
+            // Generate student ID in format: NS-25001 (NS = Nicolites School, 25 = year, 001 = sequence)
+            $studentId = 'NS-' . $shortYear . $newNumber;
+            
+            // Double-check that the generated student_id is unique
+            $existingStudent = \App\Models\Student::where('student_id', $studentId)->first();
+            if ($existingStudent) {
+                \Log::error('Generated student ID already exists', [
+                    'generated_id' => $studentId,
+                    'enrollee_id' => $enrollee->id
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error generating unique student ID. Please try again.'
+                ], 500);
+            }
             
             // Generate password (format: 25-001 based on application_id)
             // Use the same format as enrollment password (application_id is already "25-001")
             $password = $enrollee->application_id;
+            
+            // Validate required fields before creating student record
+            $requiredFields = [
+                'first_name' => $enrollee->first_name,
+                'last_name' => $enrollee->last_name,
+                'date_of_birth' => $enrollee->date_of_birth,
+                'gender' => $enrollee->gender,
+                'address' => $enrollee->address,
+                'grade_level_applied' => $enrollee->grade_level_applied,
+                'guardian_name' => $enrollee->guardian_name,
+                'guardian_contact' => $enrollee->guardian_contact
+            ];
+            
+            $missingFields = [];
+            foreach ($requiredFields as $field => $value) {
+                if (empty($value)) {
+                    $missingFields[] = $field;
+                }
+            }
+            
+            if (!empty($missingFields)) {
+                \Log::error('Missing required fields for student creation', [
+                    'enrollee_id' => $enrollee->id,
+                    'missing_fields' => $missingFields
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Missing required information: ' . implode(', ', $missingFields)
+                ], 400);
+            }
             
             // Create student record with all available fields
             try {
@@ -676,7 +755,7 @@ class EnrolleeController extends Controller
                     'suffix' => $enrollee->suffix,
                     'full_name' => $fullName,
                     'date_of_birth' => $enrollee->date_of_birth,
-                    'place_of_birth' => $enrollee->place_of_birth ?? 'Not specified',
+                    'place_of_birth' => $enrollee->place_of_birth,
                     'gender' => $enrollee->gender,
                     'nationality' => $enrollee->nationality ?? 'Filipino',
                     'religion' => $enrollee->religion,
@@ -688,14 +767,13 @@ class EnrolleeController extends Controller
                     'zip_code' => $enrollee->zip_code,
                     'grade_level' => $enrollee->grade_level_applied,
                     'strand' => $enrollee->strand_applied,
-                    'track' => $enrollee->track_applied ?? 'Academic',
+                    'track' => $enrollee->track_applied,
                     'student_type' => $enrollee->student_type ?? 'new',
                     'enrollment_status' => 'pre_registered',
-                    'academic_year' => $enrollee->academic_year ?? '2024-2025',
+                    'academic_year' => $enrollee->academic_year ?? (date('Y') . '-' . (date('Y') + 1)),
                     'documents' => $enrollee->documents,
                     'id_photo' => $enrollee->id_photo,
                     'id_photo_mime_type' => $enrollee->id_photo_mime_type,
-                    'id_photo_data_url' => $enrollee->id_photo_data_url,
                     'father_name' => $enrollee->father_name,
                     'father_occupation' => $enrollee->father_occupation,
                     'father_contact' => $enrollee->father_contact,
@@ -706,13 +784,29 @@ class EnrolleeController extends Controller
                     'guardian_contact' => $enrollee->guardian_contact,
                     'last_school_type' => $enrollee->last_school_type,
                     'last_school_name' => $enrollee->last_school_name,
-                    'medical_history' => $enrollee->medical_history ?? 'None specified',
+                    'medical_history' => $enrollee->medical_history,
                     'pre_registered_at' => now(),
                     'is_active' => true
                 ]);
             
             } catch (\Exception $studentError) {
-                \Log::error('Error creating student record: ' . $studentError->getMessage());
+                \Log::error('Error creating student record', [
+                    'error' => $studentError->getMessage(),
+                    'trace' => $studentError->getTraceAsString(),
+                    'enrollee_id' => $enrollee->id,
+                    'student_id' => $studentId ?? 'not_generated',
+                    'enrollee_data' => [
+                        'first_name' => $enrollee->first_name,
+                        'last_name' => $enrollee->last_name,
+                        'email' => $enrollee->email,
+                        'guardian_name' => $enrollee->guardian_name,
+                        'guardian_contact' => $enrollee->guardian_contact,
+                        'address' => $enrollee->address,
+                        'grade_level_applied' => $enrollee->grade_level_applied,
+                        'date_of_birth' => $enrollee->date_of_birth,
+                        'gender' => $enrollee->gender
+                    ]
+                ]);
                 return response()->json([
                     'success' => false,
                     'message' => 'Error creating student record: ' . $studentError->getMessage()

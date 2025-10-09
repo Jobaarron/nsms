@@ -315,14 +315,14 @@
                         <label for="decline-reason" class="form-label">Reason for Decline <span class="text-danger">*</span></label>
                         <textarea class="form-control" id="decline-reason" rows="4" placeholder="Please provide a detailed reason for declining this application..." required></textarea>
                     </div>
-                    <div class="mb-3">
+                    <!-- <div class="mb-3">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="notify-applicant" checked>
                             <label class="form-check-label" for="notify-applicant">
                                 Send notification email to applicant
                             </label>
                         </div>
-                    </div>
+                    </div> -->
                 </form>
             </div>
             <div class="modal-footer">
@@ -364,8 +364,8 @@
     </div>
 </div>
 
-<!-- Create Notice Modal -->
-<div class="modal fade" id="createNoticeModal" tabindex="-1" aria-labelledby="createNoticeModalLabel" aria-hidden="true">
+<!-- Create Notice Modal - SIMPLIFIED: Use simple "Send Notice to Applicant" instead -->
+<!-- <div class="modal fade" id="createNoticeModal" tabindex="-1" aria-labelledby="createNoticeModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header" style="background-color: var(--primary-color); color: white;">
@@ -436,9 +436,10 @@
             </div>
         </div>
     </div>
-</div>
+</div> -->
 
-<!-- Bulk Notice Modal -->
+<!-- Bulk Notice Modal - SIMPLIFIED: Use simple bulk notice instead -->
+<!--
 <div class="modal fade" id="bulkNoticeModal" tabindex="-1" aria-labelledby="bulkNoticeModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -527,7 +528,7 @@
             </div>
         </div>
     </div>
-</div>
+</div> -->
 
 <!-- Approve Application Modal -->
 <div class="modal fade" id="approveApplicationModal" tabindex="-1" aria-labelledby="approveApplicationModalLabel" aria-hidden="true">
@@ -636,6 +637,7 @@
         </div>
     </div>
 </div>
+
 
 <!-- Loading Modal -->
 <div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">

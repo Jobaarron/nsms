@@ -34,7 +34,6 @@
                                 <option value="">All Status</option>
                                 <option value="pending">Not yet paid</option>
                                 <option value="confirmed">Paid</option>
-                                <option value="rejected">Declined</option>
                             </select>
                             <!-- Payment mode filter removed - now handled by payment_method -->
                             <!-- <select class="form-select form-select-sm payment-filter" name="payment_method">
@@ -320,7 +319,7 @@
                             <p><strong>Name:</strong> ${payment.payable ? payment.payable.first_name + ' ' + payment.payable.last_name : 'N/A'}</p>
                             <p><strong>ID:</strong> ${payment.payable ? (payment.payable.student_id || payment.payable.application_id) : 'N/A'}</p>
                             <p><strong>Fee Type:</strong> ${payment.fee ? payment.fee.name : 'N/A'}</p>
-                            <p><strong>Status:</strong> <span class="badge bg-warning">${payment.confirmation_status}</span></p>
+                            <p><strong>Status:</strong> <span class="badge bg-warning">Not yet paid</span></p>
                         </div>
                     </div>
                     ${payment.notes ? `<div class="mt-3"><h6>Notes</h6><p>${payment.notes}</p></div>` : ''}
