@@ -219,7 +219,7 @@ class GuidanceController extends Controller
         }
 
         $validatedData['counselor_id'] = $guidanceRecord->id;
-    $validatedData['status'] = 'scheduled';
+        $validatedData['status'] = 'scheduled';
 
         // Check if there's an existing pending or in_progress case meeting for this student
         $existingMeeting = CaseMeeting::where('student_id', $validatedData['student_id'])
@@ -539,12 +539,12 @@ class GuidanceController extends Controller
             'meeting_type' => $caseMeeting->meeting_type,
         ]);
 
-        if (! $caseMeeting->isReadyForForwarding()) {
+        // Only require summary and schedule for forwarding
+        if (empty($caseMeeting->summary) || $caseMeeting->status !== 'pre_completed') {
             Log::warning('Forward blocked: requirements not met', ['id' => $caseMeeting->id]);
-
             return response()->json([
                 'success' => false,
-                'message' => 'Please add both a summary report and a sanction before forwarding.'
+                'message' => 'Please add both a schedule and a summary report before forwarding.'
             ], 400);
         }
 

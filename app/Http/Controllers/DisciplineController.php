@@ -612,7 +612,7 @@ class DisciplineController extends Controller
                       'Status: ' . $violation->status . '. ' .
                       'Urgency Level: ' . ($violation->urgency_level ?: 'Not specified') . '. ' .
                       'Violation ID: ' . $violation->id,
-            'status' => 'scheduled', // Use a valid ENUM value
+            'status' => 'in_progress', // Set to in_progress when forwarded
             'sanction_recommendation' => $violation->sanction,
             'urgency_level' => $violation->urgency_level,
         ]);

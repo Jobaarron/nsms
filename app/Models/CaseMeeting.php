@@ -88,7 +88,8 @@ class CaseMeeting extends Model
      */
     public function isReadyForForwarding(): bool
     {
-        return !empty($this->summary) && $this->sanctions()->exists();
+        // Ready if summary exists and status is pre_completed
+        return !empty($this->summary) && $this->status === 'pre_completed';
     }
 
     /**
