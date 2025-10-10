@@ -9,6 +9,22 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CaseMeeting extends Model
 {
+    protected static function booted()
+    {
+        static::updated(function (CaseMeeting $caseMeeting) {
+            // Only sync if status was changed
+            if ($caseMeeting->isDirty('status')) {
+                $newStatus = $caseMeeting->status;
+                // Map case meeting status to violation status
+                $violationStatus = self::mapStatusToViolationStatus($newStatus);
+                if ($violationStatus) {
+                    foreach ($caseMeeting->violations as $violation) {
+                        $violation->update(['status' => $violationStatus]);
+                    }
+                }
+            }
+        });
+    }
     /**
      * Get the violations related to this case meeting.
      */
@@ -165,7 +181,7 @@ class CaseMeeting extends Model
             'in_progress' => 'in_progress',
             'pre_completed' => 'pre_completed',
             'completed' => 'completed',
-            'submitted' => 'in_progress',
+            'submitted' => 'submitted',
             'cancelled' => 'pending', // Return to pending if cancelled
             default => null
         };

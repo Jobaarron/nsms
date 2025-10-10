@@ -217,9 +217,12 @@ class DisciplineController extends Controller
             ->orderBy('last_name', 'asc')
             ->get();
 
+
         $stats = [
             'pending' => $filtered->where('status', 'pending')->count(),
             'investigating' => $filtered->whereIn('status', ['investigating', 'in_progress'])->count(),
+            'submitted' => $filtered->where('status', 'submitted')->count(),
+            'completed' => $filtered->where('status', 'completed')->count(),
             'resolved' => $filtered->where('status', 'resolved')->count(),
             'severe' => $filtered->where('effective_severity', 'severe')->count(),
         ];

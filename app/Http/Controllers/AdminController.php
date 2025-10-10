@@ -584,6 +584,7 @@ public function submittedCases()
                 'approved_at' => now(),
             ]);
 
+
             // Mark the related case meeting as completed
             $caseMeeting = $sanction->caseMeeting;
             if ($caseMeeting) {
@@ -591,6 +592,10 @@ public function submittedCases()
                     'status' => 'completed',
                     'completed_at' => now(),
                 ]);
+                // Set all related violations' statuses to 'submitted' (discipline side)
+                foreach ($caseMeeting->violations as $violation) {
+                    $violation->update(['status' => 'submitted']);
+                }
             }
 
             return response()->json([
