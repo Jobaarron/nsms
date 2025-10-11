@@ -72,10 +72,13 @@
                             <i class="ri-file-text-line me-2"></i>Add Summary
                         </button>
                     @endif
-                    @if($caseMeeting->summary && $caseMeeting->sanctions->isNotEmpty() && !$caseMeeting->forwarded_to_president)
+                    @if($caseMeeting->summary && $caseMeeting->status === 'pre_completed' && !$caseMeeting->forwarded_to_president)
                         <button class="btn btn-warning" onclick="forwardToPresident({{ $caseMeeting->id }})">
                             <i class="ri-send-plane-line me-2"></i>Forward to President
                         </button>
+                    @endif
+                    @if(!in_array($caseMeeting->status, ['in_progress','scheduled','pre_completed','submitted','completed']))
+                        <button class="btn btn-secondary" disabled>Action Disabled</button>
                     @endif
                     <a href="{{ route('guidance.case-meetings.edit', $caseMeeting) }}" class="btn btn-primary">
                         <i class="ri-edit-line me-2"></i>Edit Meeting

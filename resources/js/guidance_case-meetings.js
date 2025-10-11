@@ -235,12 +235,20 @@ window.viewCaseMeeting = function(meetingId) {
             }
 
             // Forward button
-            if (meeting.summary && meeting.sanctions && meeting.sanctions.length > 0 && !meeting.forwarded_to_president) {
+            if (meeting.summary && meeting.status === 'pre_completed' && !meeting.forwarded_to_president) {
                 const forwardBtn = document.createElement('button');
                 forwardBtn.className = 'btn btn-warning';
                 forwardBtn.onclick = () => forwardToPresident(meeting.id);
                 forwardBtn.innerHTML = '<i class="ri-send-plane-line me-2"></i>Forward to President';
                 actionsContainer.appendChild(forwardBtn);
+            }
+            // Disable other action buttons except edit/view if not allowed
+            if (!['in_progress','scheduled','pre_completed','submitted','completed'].includes(meeting.status)) {
+                const disabledBtn = document.createElement('button');
+                disabledBtn.className = 'btn btn-secondary';
+                disabledBtn.disabled = true;
+                disabledBtn.innerText = 'Action Disabled';
+                actionsContainer.appendChild(disabledBtn);
             }
 
             // // Edit button

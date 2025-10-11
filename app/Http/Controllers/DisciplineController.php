@@ -217,9 +217,12 @@ class DisciplineController extends Controller
             ->orderBy('last_name', 'asc')
             ->get();
 
+
         $stats = [
             'pending' => $filtered->where('status', 'pending')->count(),
             'investigating' => $filtered->whereIn('status', ['investigating', 'in_progress'])->count(),
+            'submitted' => $filtered->where('status', 'submitted')->count(),
+            'completed' => $filtered->where('status', 'completed')->count(),
             'resolved' => $filtered->where('status', 'resolved')->count(),
             'severe' => $filtered->where('effective_severity', 'severe')->count(),
         ];
@@ -612,7 +615,7 @@ class DisciplineController extends Controller
                       'Status: ' . $violation->status . '. ' .
                       'Urgency Level: ' . ($violation->urgency_level ?: 'Not specified') . '. ' .
                       'Violation ID: ' . $violation->id,
-            'status' => 'scheduled', // Use a valid ENUM value
+            'status' => 'in_progress', // Set to in_progress when forwarded
             'sanction_recommendation' => $violation->sanction,
             'urgency_level' => $violation->urgency_level,
         ]);

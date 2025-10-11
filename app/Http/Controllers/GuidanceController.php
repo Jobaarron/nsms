@@ -219,7 +219,7 @@ class GuidanceController extends Controller
         }
 
         $validatedData['counselor_id'] = $guidanceRecord->id;
-    $validatedData['status'] = 'scheduled';
+        $validatedData['status'] = 'scheduled';
 
         // Check if there's an existing pending or in_progress case meeting for this student
         $existingMeeting = CaseMeeting::where('student_id', $validatedData['student_id'])
@@ -272,10 +272,16 @@ class GuidanceController extends Controller
             return back()->withErrors(['error' => 'You do not have permission to complete case meetings.']);
         }
 
+
         $caseMeeting->update([
             'status' => 'completed',
             'completed_at' => now(),
         ]);
+
+        // Automatically update all related violations' statuses
+        foreach ($caseMeeting->violations as $violation) {
+            $violation->update(['status' => 'completed']);
+        }
 
         if ($request->ajax()) {
             return response()->json([
@@ -301,6 +307,7 @@ class GuidanceController extends Controller
             'follow_up_date' => 'nullable|date|after:today',
         ]);
 
+
         $caseMeeting->update([
             'summary' => $validatedData['summary'],
             'recommendations' => $validatedData['recommendations'],
@@ -308,6 +315,11 @@ class GuidanceController extends Controller
             'follow_up_date' => $validatedData['follow_up_date'],
             'status' => 'pre_completed',
         ]);
+
+        // Automatically update all related violations' statuses
+        foreach ($caseMeeting->violations as $violation) {
+            $violation->update(['status' => 'pre_completed']);
+        }
 
         if ($request->ajax()) {
             return response()->json([
@@ -539,20 +551,26 @@ class GuidanceController extends Controller
             'meeting_type' => $caseMeeting->meeting_type,
         ]);
 
-        if (! $caseMeeting->isReadyForForwarding()) {
+        // Only require summary and schedule for forwarding
+        if (empty($caseMeeting->summary) || $caseMeeting->status !== 'pre_completed') {
             Log::warning('Forward blocked: requirements not met', ['id' => $caseMeeting->id]);
-
             return response()->json([
                 'success' => false,
-                'message' => 'Please add both a summary report and a sanction before forwarding.'
+                'message' => 'Please add both a schedule and a summary report before forwarding.'
             ], 400);
         }
+
 
         $caseMeeting->update([
             'status' => 'submitted',
             'forwarded_to_president' => true,
             'forwarded_at' => now(),
         ]);
+
+        // Automatically update all related violations' statuses
+        foreach ($caseMeeting->violations as $violation) {
+            $violation->update(['status' => 'submitted']);
+        }
 
         Log::info('Forward successful for CaseMeeting', ['id' => $caseMeeting->id]);
 
