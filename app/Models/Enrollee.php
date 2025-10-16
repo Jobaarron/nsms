@@ -83,6 +83,8 @@ class Enrollee extends Authenticatable
         'admin_notes',
         'processed_by',
         'password',
+        'remember_token',
+        'id_photo_data_url',
     ];
 
     /**
@@ -191,17 +193,17 @@ class Enrollee extends Authenticatable
     // Evaluation tracking relationships
     public function firstViewedBy()
     {
-        return $this->belongsTo(\App\Models\Registrar::class, 'first_viewed_by');
+        return $this->belongsTo(\App\Models\User::class, 'first_viewed_by');
     }
 
     public function evaluationStartedBy()
     {
-        return $this->belongsTo(\App\Models\Registrar::class, 'evaluation_started_by');
+        return $this->belongsTo(\App\Models\User::class, 'evaluation_started_by');
     }
 
     public function evaluationCompletedBy()
     {
-        return $this->belongsTo(\App\Models\Registrar::class, 'evaluation_completed_by');
+        return $this->belongsTo(\App\Models\User::class, 'evaluation_completed_by');
     }
 
     // Accessors

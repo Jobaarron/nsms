@@ -14,15 +14,16 @@ return new class extends Migration
         Schema::create('counseling_sessions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('student_id')->constrained('students')->onDelete('cascade');
-            $table->foreignId('counselor_id')->constrained('guidances')->onDelete('cascade');
+            $table->foreignId('counselor_id')->nullable()->constrained('guidances')->onDelete('set null');
+            $table->foreignId('recommended_by')->nullable()->constrained('users')->onDelete('set null');
             $table->enum('session_type', ['individual', 'group', 'family', 'career'])->default('individual');
-            $table->date('scheduled_date');
-            $table->time('scheduled_time');
+            $table->date('scheduled_date')->nullable();
+            $table->time('scheduled_time')->nullable();
             $table->integer('duration')->default(60); // Duration in minutes
             $table->string('location')->nullable();
             $table->text('reason');
             $table->text('notes')->nullable();
-            $table->enum('status', ['scheduled', 'completed', 'cancelled', 'rescheduled'])->default('scheduled');
+            $table->enum('status', ['scheduled', 'completed', 'cancelled', 'rescheduled', 'recommended'])->default('scheduled');
             $table->text('session_summary')->nullable();
             $table->text('student_progress')->nullable();
             $table->text('goals_achieved')->nullable();

@@ -11,13 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('violations', function (Blueprint $table) {
+        Schema::create('student_violations', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('case_meeting_id')->nullable();
             $table->foreignId('student_id')->constrained('students')->onDelete('cascade');
-            $table->foreignId('reported_by')->constrained('guidance_discipline')->onDelete('cascade');
+            $table->foreignId('reported_by')->constrained('disciplines')->onDelete('cascade');
             $table->string('violation_type')->nullable(); // e.g., 'late', 'uniform', 'misconduct', 'academic'
             $table->string('title');
-            $table->text('description');
+            $table->text('description')->nullable();
+            $table->enum('major_category', ['minor', 'major'])->nullable();
+            $table->enum('urgency_level', ['low', 'medium', 'high', 'critical'])->default('medium');
             $table->enum('severity', ['minor', 'major', 'severe'])->default('minor');
             $table->date('violation_date');
             $table->time('violation_time')->nullable();
@@ -25,7 +28,8 @@ return new class extends Migration
             $table->json('witnesses')->nullable(); // Array of witness names
             $table->text('evidence')->nullable(); // Description of evidence
             $table->json('attachments')->nullable(); // File paths for photos/documents
-            $table->enum('status', ['pending', 'investigating', 'resolved', 'dismissed'])->default('pending');
+            $table->enum('status', ['pending', 'investigating', 'in_progress', 'resolved', 'dismissed', 'forwarded'])->default('pending');
+            $table->text('sanction')->nullable();
             $table->text('resolution')->nullable();
             $table->foreignId('resolved_by')->nullable()->constrained('guidance_discipline')->onDelete('set null');
             $table->date('resolved_at')->nullable();
@@ -48,6 +52,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('violations');
+        Schema::dropIfExists('student_violations');
     }
 };

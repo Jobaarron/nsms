@@ -13,9 +13,12 @@ return new class extends Migration
     {
         Schema::create('sanctions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('violation_id')->constrained('violations')->onDelete('cascade');
+            $table->foreignId('case_meeting_id')->nullable()->constrained('case_meetings')->onDelete('cascade');
+            $table->foreignId('violation_id')->nullable()->constrained('student_violations')->onDelete('set null');
             $table->string('severity'); // minor, major
             $table->string('category')->nullable(); // for major offenses: Category 1, 2, 3
+            $table->integer('offense_number')->default(1);
+            $table->string('major_category')->nullable();
             $table->text('sanction'); // The sanction text
             $table->string('deportment_grade_action'); // e.g., "No change", "Lowered by one step", "Needs Improvement (NI)"
             $table->string('suspension'); // e.g., "None", "3-5 days", "Dismissal/Expulsion"

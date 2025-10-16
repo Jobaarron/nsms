@@ -28,9 +28,20 @@ return new class extends Migration
             $table->timestamp('enrolled_at')->nullable();
             $table->text('status_reason')->nullable(); // Reason for approval/rejection
             
+            // EVALUATION TRACKING
+            $table->timestamp('first_viewed_at')->nullable();
+            $table->unsignedBigInteger('first_viewed_by')->nullable();
+            $table->timestamp('evaluation_started_at')->nullable();
+            $table->unsignedBigInteger('evaluation_started_by')->nullable();
+            $table->timestamp('evaluation_completed_at')->nullable();
+            $table->unsignedBigInteger('evaluation_completed_by')->nullable();
+            $table->integer('documents_reviewed_count')->default(0);
+            $table->integer('documents_total_count')->default(0);
+            
             // ENROLLMENT DOCUMENTS
             $table->longText('id_photo')->nullable(); // Store image as base64 binary data
             $table->string('id_photo_mime_type')->nullable(); // Store MIME type (image/jpeg, image/png)
+            $table->longText('id_photo_data_url')->nullable(); // For displaying photos
             $table->json('documents')->nullable(); // Birth certificate, report cards, etc.
             
             // PERSONAL INFORMATION
@@ -45,6 +56,8 @@ return new class extends Migration
             $table->string('religion')->nullable();
             $table->string('contact_number')->nullable();
             $table->string('email')->unique(); // Required for enrollment application
+            $table->string('password')->nullable(); // For enrollee authentication
+            $table->string('remember_token')->nullable(); // For remember me functionality
             $table->text('address');
             $table->string('city')->nullable();
             $table->string('province')->nullable();
@@ -63,7 +76,7 @@ return new class extends Migration
             $table->string('mother_name')->nullable();
             $table->string('mother_occupation')->nullable();
             $table->string('mother_contact')->nullable();
-            $table->string('guardian_name'); // Primary guardian
+            $table->string('guardian_name'); 
             $table->string('guardian_contact');
             
             // PREVIOUS SCHOOL INFORMATION
@@ -83,6 +96,8 @@ return new class extends Migration
             
             // ENROLLMENT SCHEDULING
             $table->date('preferred_schedule')->nullable();
+            $table->enum('appointment_status', ['pending', 'approved', 'rejected', 'completed'])->default('pending');
+            $table->text('appointment_notes')->nullable();
             $table->timestamp('enrollment_date')->nullable();
             $table->timestamp('application_date')->default(now());
             

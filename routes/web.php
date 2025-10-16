@@ -354,7 +354,7 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
     });
 });
 
-// Guidance & Discipline Portal Routes (GuidanceDisciplineController - for unified guidance/discipline system) Removed
+// Guidance & Discipline Portal Routes (GuidanceDisciplineController - for unified guidance/discipline system) Removed - Early version (sentimental)
 
 
 // API Routes for Violations (ViolationController - for React Native/API access)

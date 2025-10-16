@@ -20,6 +20,7 @@ class Violation extends Model
     }
 
     protected $fillable = [
+        'case_meeting_id',
         'student_id',
         'reported_by',
         'violation_type',

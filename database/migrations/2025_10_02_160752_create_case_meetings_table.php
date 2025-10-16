@@ -16,12 +16,12 @@ return new class extends Migration
             $table->foreignId('student_id')->constrained('students')->onDelete('cascade');
             $table->foreignId('counselor_id')->constrained('guidances')->onDelete('cascade');
             $table->enum('meeting_type', ['case_meeting', 'house_visit'])->default('case_meeting');
-            $table->date('scheduled_date');
-            $table->time('scheduled_time');
+            $table->date('scheduled_date')->nullable();
+            $table->time('scheduled_time')->nullable();
             $table->string('location')->nullable();
             $table->text('reason');
             $table->text('notes')->nullable();
-            $table->enum('status', ['scheduled', 'completed', 'cancelled', 'forwarded'])->default('scheduled');
+            $table->enum('status', ['scheduled', 'in_progress', 'pre_completed', 'submitted', 'completed', 'cancelled', 'forwarded'])->default('scheduled');
             $table->text('summary')->nullable();
             $table->text('recommendations')->nullable();
             $table->boolean('follow_up_required')->default(false);

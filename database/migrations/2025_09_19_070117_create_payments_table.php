@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id();
             $table->string('transaction_id')->unique();
 
-            // Foreign key for the fee being paid
-            $table->foreignId('fee_id')->constrained('fees')->onDelete('cascade');
+            // Foreign key for the fee being paid (nullable for custom payments)
+            $table->foreignId('fee_id')->nullable()->constrained('fees')->onDelete('set null');
 
             // Polymorphic relationship for the payer (Enrollee or Student)
             $table->morphs('payable');
@@ -27,6 +27,18 @@ return new class extends Migration
             $table->string('reference_number')->nullable();
             $table->text('notes')->nullable();
             $table->timestamp('paid_at')->nullable();
+            
+            // Payment schedule fields
+            $table->date('scheduled_date')->nullable();
+            $table->string('period_name')->nullable();
+            $table->decimal('amount_received', 10, 2)->nullable();
+            
+            // Cashier processing fields
+            $table->unsignedBigInteger('processed_by')->nullable();
+            $table->timestamp('confirmed_at')->nullable();
+            $table->text('cashier_notes')->nullable();
+            $table->enum('confirmation_status', ['pending', 'confirmed', 'rejected'])->default('pending');
+            
             $table->timestamps();
         });
     }
