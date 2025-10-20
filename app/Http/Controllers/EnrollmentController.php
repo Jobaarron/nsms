@@ -10,6 +10,9 @@ use App\Models\Fee;
 use App\Mail\EnrolleeCredentialsMail;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Http\Request;
 
 class EnrollmentController extends Controller
 {
@@ -94,16 +97,54 @@ class EnrollmentController extends Controller
         ]);
         */
 
-        // 2) Store the ID photo as base64 data
-        if ($request->hasFile('id_photo')) {
+        // 2) Handle ID photo from temporary files or direct upload
+        $tempFiles = session('temp_enrollment_files', []);
+        
+        // Find ID photo in temporary files
+        $idPhotoFile = null;
+        foreach ($tempFiles as $fileData) {
+            if ($fileData['type'] === 'id_photo') {
+                $idPhotoFile = $fileData;
+                break;
+            }
+        }
+        
+        if ($idPhotoFile && Storage::disk('public')->exists($idPhotoFile['path'])) {
+            // Use temporary file
+            $photoContent = Storage::disk('public')->get($idPhotoFile['path']);
+            $data['id_photo'] = base64_encode($photoContent);
+            $data['id_photo_mime_type'] = $idPhotoFile['mime_type'];
+        } elseif ($request->hasFile('id_photo')) {
+            // Fallback to direct upload
             $photo = $request->file('id_photo');
             $data['id_photo'] = base64_encode(file_get_contents($photo->getRealPath()));
             $data['id_photo_mime_type'] = $photo->getMimeType();
         }
 
-        // 3) Store the multiple documents with metadata (consistent with EnrolleeController)
+        // 3) Handle documents from temporary files or direct upload
         $documents = [];
-        if ($request->hasFile('documents')) {
+        
+        // Get documents from temporary files
+        foreach ($tempFiles as $fileData) {
+            if ($fileData['type'] === 'documents' && Storage::disk('public')->exists($fileData['path'])) {
+                // Move temporary file to permanent location
+                $permanentPath = 'documents/' . $fileData['id'] . '.' . $fileData['extension'];
+                Storage::disk('public')->move($fileData['path'], $permanentPath);
+                
+                $documents[] = [
+                    'type' => strtoupper($fileData['extension']) ?: 'Unknown',
+                    'filename' => $fileData['original_name'],
+                    'path' => $permanentPath,
+                    'mime_type' => $fileData['mime_type'],
+                    'size' => $fileData['size'],
+                    'uploaded_at' => $fileData['uploaded_at'],
+                    'status' => 'pending'
+                ];
+            }
+        }
+        
+        // Fallback to direct upload if no temporary files
+        if (empty($documents) && $request->hasFile('documents')) {
             foreach ($request->file('documents') as $doc) {
                 $path = $doc->store('documents', 'public');
                 $documents[] = [
@@ -117,6 +158,7 @@ class EnrollmentController extends Controller
                 ];
             }
         }
+        
         $data['documents'] = $documents; // Store as array of objects with metadata
 
         // 4) Map grade_level to grade_level_applied for enrollee
@@ -163,6 +205,9 @@ class EnrollmentController extends Controller
 
         // 7) Create enrollment application (Enrollee record)
         $enrollee = Enrollee::create($data);
+
+        // 7.5) Clean up temporary files after successful enrollment
+        $this->cleanupTempFiles($tempFiles);
 
         // 8) Send enrollment credentials email
         try {
@@ -214,6 +259,182 @@ class EnrollmentController extends Controller
                 'message' => 'Unable to calculate fees for the selected grade level.',
                 'error' => $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Upload temporary file for enrollment form
+     */
+    public function uploadTempFile(Request $request): JsonResponse
+    {
+        try {
+            $request->validate([
+                'file' => 'required|file|max:8192', // 8MB limit
+                'type' => 'required|in:id_photo,documents'
+            ]);
+
+            $file = $request->file('file');
+            $type = $request->input('type');
+
+            // Validate file type based on upload type
+            if ($type === 'id_photo') {
+                $request->validate([
+                    'file' => 'image|mimes:jpeg,png,jpg|max:5120' // 5MB for ID photo
+                ]);
+            } else {
+                $request->validate([
+                    'file' => 'mimes:pdf,jpeg,png,jpg|max:8192' // 8MB for documents
+                ]);
+            }
+
+            // Generate unique file ID
+            $fileId = (string) Str::uuid();
+            $originalName = $file->getClientOriginalName();
+            $extension = $file->getClientOriginalExtension();
+            $mimeType = $file->getMimeType();
+            $size = $file->getSize();
+
+            // Store file temporarily
+            $tempPath = "temp/enrollment/{$fileId}.{$extension}";
+            $file->storeAs('temp/enrollment', "{$fileId}.{$extension}", 'public');
+
+            // Store file metadata in session
+            $tempFiles = session('temp_enrollment_files', []);
+            $tempFiles[$fileId] = [
+                'id' => $fileId,
+                'type' => $type,
+                'original_name' => $originalName,
+                'extension' => $extension,
+                'mime_type' => $mimeType,
+                'size' => $size,
+                'path' => $tempPath,
+                'uploaded_at' => now()->toISOString()
+            ];
+            session(['temp_enrollment_files' => $tempFiles]);
+
+            return response()->json([
+                'success' => true,
+                'file' => [
+                    'id' => $fileId,
+                    'name' => $originalName,
+                    'size' => $size,
+                    'type' => $type
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Temporary file upload failed: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'File upload failed: ' . $e->getMessage()
+            ], 422);
+        }
+    }
+
+    /**
+     * Delete temporary file
+     */
+    public function deleteTempFile(string $fileId): JsonResponse
+    {
+        try {
+            $tempFiles = session('temp_enrollment_files', []);
+            
+            if (isset($tempFiles[$fileId])) {
+                $fileData = $tempFiles[$fileId];
+                
+                // Delete physical file
+                if (Storage::disk('public')->exists($fileData['path'])) {
+                    Storage::disk('public')->delete($fileData['path']);
+                }
+                
+                // Remove from session
+                unset($tempFiles[$fileId]);
+                session(['temp_enrollment_files' => $tempFiles]);
+                
+                return response()->json([
+                    'success' => true,
+                    'message' => 'File deleted successfully'
+                ]);
+            }
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'File not found'
+            ], 404);
+            
+        } catch (\Exception $e) {
+            Log::error('Temporary file deletion failed: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'File deletion failed'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get temporary files for current session
+     */
+    public function getTempFiles(): JsonResponse
+    {
+        try {
+            $tempFiles = session('temp_enrollment_files', []);
+            
+            $files = [
+                'id_photo' => null,
+                'documents' => []
+            ];
+            
+            foreach ($tempFiles as $fileData) {
+                if ($fileData['type'] === 'id_photo') {
+                    $files['id_photo'] = [
+                        'id' => $fileData['id'],
+                        'name' => $fileData['original_name'],
+                        'size' => $fileData['size']
+                    ];
+                } else {
+                    $files['documents'][] = [
+                        'id' => $fileData['id'],
+                        'name' => $fileData['original_name'],
+                        'size' => $fileData['size']
+                    ];
+                }
+            }
+            
+            return response()->json([
+                'success' => true,
+                'files' => $files
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Get temporary files failed: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve files'
+            ], 500);
+        }
+    }
+
+    /**
+     * Clean up temporary files and session data
+     */
+    private function cleanupTempFiles(array $tempFiles): void
+    {
+        try {
+            // Delete physical temporary files
+            foreach ($tempFiles as $fileData) {
+                if (Storage::disk('public')->exists($fileData['path'])) {
+                    Storage::disk('public')->delete($fileData['path']);
+                }
+            }
+            
+            // Clear session data
+            session()->forget('temp_enrollment_files');
+            
+        } catch (\Exception $e) {
+            Log::error('Temporary file cleanup failed: ' . $e->getMessage());
         }
     }
 }

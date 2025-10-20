@@ -33,16 +33,39 @@
                         <label for="id_photo" class="form-label fw-semibold" style="color: var(--primary-color);">
                             <i class="ri-image-add-line me-2"></i>ID Photo (JPG, PNG)
                         </label>
+                        
+                        <!-- AJAX Upload Area -->
+                        <div class="file-upload-area" id="id_photo_upload_area">
+                            <div class="upload-zone" id="id_photo_zone">
+                                <i class="ri-image-add-line upload-icon"></i>
+                                <p class="upload-text">Click to upload or drag and drop</p>
+                                <p class="upload-subtext">JPG, PNG up to 5MB</p>
+                            </div>
+                            <div class="file-preview" id="id_photo_preview" style="display: none;">
+                                <div class="file-item">
+                                    <i class="ri-image-line file-icon"></i>
+                                    <div class="file-info">
+                                        <span class="file-name"></span>
+                                        <span class="file-size"></span>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-danger remove-file">
+                                        <i class="ri-close-line"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Hidden file input for fallback -->
                         <input
                             type="file"
                             id="id_photo"
                             name="id_photo"
-                            class="form-control form-control-lg @error('id_photo') is-invalid @enderror"
+                            class="d-none"
                             accept=".jpg,.jpeg,.png"
-                            required
                         />
+                        
                         @error('id_photo')
-                            <div class="invalid-feedback">{{ $message }}</div>
+                            <div class="invalid-feedback d-block">{{ $message }}</div>
                         @enderror
                     </div>
 
@@ -297,18 +320,32 @@
                     <!-- Documents -->
                     <div class="mb-3">
                         <label for="documents" class="form-label fw-semibold" style="color: var(--primary-color);">
-                            <i class="ri-file-list-3-line me-2"></i>Documents (PDF, DOCX, JPG, PNG)
+                            <i class="ri-file-list-3-line me-2"></i>Documents (PDF, JPG, PNG)
                         </label>
+                        
+                        <!-- AJAX Upload Area -->
+                        <div class="file-upload-area" id="documents_upload_area">
+                            <div class="upload-zone" id="documents_zone">
+                                <i class="ri-file-add-line upload-icon"></i>
+                                <p class="upload-text">Click to upload or drag and drop</p>
+                                <p class="upload-subtext">PDF, JPG, PNG up to 8MB each</p>
+                            </div>
+                            <div class="files-preview" id="documents_preview">
+                                <!-- Uploaded files will appear here -->
+                            </div>
+                        </div>
+                        
+                        <!-- Hidden file input for fallback -->
                         <input
                             type="file"
                             id="documents"
                             name="documents[]"
-                            class="form-control form-control-lg @error('documents') is-invalid @enderror"
-                            accept=".pdf,.docx,.jpg,.jpeg,.png"
+                            class="d-none"
+                            accept=".pdf,.jpg,.jpeg,.png"
                             multiple
-                            required
                         />
-                        @error('documents') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        
+                        @error('documents') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                     </div>
 
                     <!-- Grade & Strand -->
