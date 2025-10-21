@@ -44,6 +44,14 @@ Route::post('/enroll', [EnrollmentController::class, 'store'])
 Route::get('/api/fees/calculate/{gradeLevel}', [EnrollmentController::class, 'calculateFees'])
      ->name('api.fees.calculate');
 
+// AJAX file upload routes for enrollment
+Route::post('/enroll/upload-temp-file', [EnrollmentController::class, 'uploadTempFile'])
+     ->name('enroll.upload.temp');
+Route::delete('/enroll/delete-temp-file/{fileId}', [EnrollmentController::class, 'deleteTempFile'])
+     ->name('enroll.delete.temp');
+Route::get('/enroll/get-temp-files', [EnrollmentController::class, 'getTempFiles'])
+     ->name('enroll.get.temp');
+
 // Contact form routes
 Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
 
