@@ -20,6 +20,8 @@ return new class extends Migration
             $table->string('phone_number')->nullable();
             $table->text('address')->nullable();
             $table->string('position')->nullable();
+            $table->string('specialization')->nullable()->comment('Staff specialization or area of expertise');
+            $table->enum('type', ['guidance', 'discipline'])->default('guidance')->comment('Type of staff - guidance or discipline');
             $table->date('hire_date')->nullable();
             $table->text('qualifications')->nullable();
             $table->string('emergency_contact_name')->nullable();

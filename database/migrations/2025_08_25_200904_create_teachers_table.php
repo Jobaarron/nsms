@@ -17,6 +17,9 @@ return new class extends Migration
             $table->string('employee_id')->unique()->comment('Unique identifier for the teacher (e.g., TCH001)');
             $table->string('department')->nullable()->comment('Department the teacher belongs to');
             $table->string('position')->nullable()->comment('Position or job title');
+            $table->string('specialization')->nullable()->comment('Teacher specialization or subject area');
+            $table->enum('employment_status', ['full_time', 'part_time', 'contractual', 'substitute'])->default('full_time');
+            $table->json('subjects')->nullable()->comment('Subjects taught by the teacher');
             $table->date('hire_date')->nullable()->comment('Date when the teacher was hired');
             $table->string('phone_number')->nullable()->comment('Contact number');
             $table->text('address')->nullable()->comment('Residential address');

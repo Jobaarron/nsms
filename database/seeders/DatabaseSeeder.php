@@ -16,15 +16,22 @@ class DatabaseSeeder extends Seeder
         // User::factory(10)->create();
         
         // Only create test user if it doesn't exist
-        if (!User::where('email', 'test@example.com')->exists()) {
-            User::factory()->create([
-                'name' => 'Test User',
-                'email' => 'test@example.com',
-            ]);
-        }
+        // if (!User::where('email', 'test@example.com')->exists()) {
+        //     User::factory()->create([
+        //         'name' => 'Test User',
+        //         'email' => 'test@example.com',
+        //     ]);
+        // }
 
         $this->call([
             RolePermissionSeeder::class,
+            FeesTableSeeder::class,
+            SubjectSeeder::class,
+            CashierSeeder::class,
+            SanctionsSeeder::class,
+            ViolationListSeeder::class,
+            // TestStudentSeeder::class, // Added test student data for login testing - AlvinTheKings
+            // EnrolleeSeeder::class, // Added enrollee test data / Do no touch, it's still error. - Job
         ]);
     }
 }

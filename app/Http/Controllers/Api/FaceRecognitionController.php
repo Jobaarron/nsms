@@ -49,9 +49,17 @@ class FaceRecognitionController extends Controller
                            ->update(['is_active' => false]);
 
             // Create new face registration from ID photo
+            // Ensure face_encoding is always stored as an array
+            $faceEncoding = $request->face_encoding;
+            if (is_string($faceEncoding)) {
+                $decoded = json_decode($faceEncoding, true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                    $faceEncoding = $decoded;
+                }
+            }
             $faceRegistration = FaceRegistration::create([
                 'student_id' => $student->id,
-                'face_encoding' => $request->face_encoding,
+                'face_encoding' => $faceEncoding,
                 'face_image_data' => $student->id_photo,
                 'face_image_mime_type' => $student->id_photo_mime_type,
                 'confidence_score' => $request->confidence_score ?? 0.0,
@@ -108,6 +116,12 @@ class FaceRecognitionController extends Controller
         try {
             $confidenceThreshold = $request->confidence_threshold ?? 0.6;
             $inputEncoding = $request->face_encoding;
+            if (is_string($inputEncoding)) {
+                $decoded = json_decode($inputEncoding, true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                    $inputEncoding = $decoded;
+                }
+            }
 
             // Get all active face registrations
             $activeRegistrations = FaceRegistration::active()

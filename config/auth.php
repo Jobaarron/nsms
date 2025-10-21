@@ -45,6 +45,31 @@ return [
             'driver' => 'session',
             'provider' => 'students',
         ],
+        
+        'enrollee' => [
+            'driver' => 'session',
+            'provider' => 'enrollees',
+        ],
+        
+        'registrar' => [
+            'driver' => 'session',
+            'provider' => 'registrars',
+        ],
+        
+        'discipline' => [
+            'driver' => 'session',
+            'provider' => 'disciplines',
+        ],
+        
+        'guidance' => [
+            'driver' => 'session',
+            'provider' => 'guidances',
+        ],
+        
+        'cashier' => [
+            'driver' => 'session',
+            'provider' => 'cashiers',
+        ],
     ],
 
     /*
@@ -73,6 +98,31 @@ return [
         'students' => [
             'driver' => 'eloquent',
             'model' => App\Models\Student::class,
+        ],
+
+        'enrollees' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Enrollee::class,
+        ],
+
+        'registrars' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Registrar::class,
+        ],
+
+        'disciplines' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Discipline::class,
+        ],
+
+        'guidances' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Guidance::class,
+        ],
+
+        'cashiers' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Cashier::class,
         ],
 
         // 'users' => [

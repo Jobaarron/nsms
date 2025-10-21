@@ -90,7 +90,8 @@ class User extends Authenticatable
 
     public function isAdmin()
     {
-        return $this->admin()->exists() && $this->admin->is_active;
+        $admin = $this->admin;
+        return $admin && $admin->is_active;
     }
 
     public function teacher()
@@ -130,12 +131,16 @@ class User extends Authenticatable
 
     public function isStudent()
     {
-        return $this->student()->exists() && $this->student->is_active;
+        $student = $this->student;
+        return $student && $student->is_active;
     }
 
     public function getUserRole()
     {
         if ($this->isAdmin()) return 'admin';
+        //add disciplinestaffhere
+        if ($this->isDisciplineStaff()) return 'discipline_officer';
+        if ($this->isGuidanceStaff()) return 'guidance_counselor';
         // if ($this->isTeacher()) return 'teacher';
         // if ($this->isGuidanceCounsellor()) return 'guidance_counsellor';
         // if ($this->isDisciplineOfficer()) return 'discipline_officer';
@@ -144,11 +149,22 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if user is guidance staff (counselor, discipline officer, or security guard)
+     * Check if user is guidance staff
      */
     public function isGuidanceStaff()
     {
-        return $this->hasRole(['guidance_counselor', 'discipline_officer', 'security_guard']);
+        $guidance = $this->guidance;
+        return ($guidance && $guidance->is_active) || $this->guidanceDiscipline()->exists();
+    }
+
+    /**
+     * Check if user is discipline staff
+     */
+    public function isDisciplineStaff()
+    {
+    $discipline = $this->discipline;
+    // Defensive: check for null and property
+    return ($discipline && (property_exists($discipline, 'is_active') ? $discipline->is_active : true));
     }
 
     /**
@@ -156,17 +172,32 @@ class User extends Authenticatable
      */
     public function updateLastLogin()
     {
-        // 
-
+        // Update last login logic can be implemented here
         return;
     }
 
     /**
-     * Get the guidance discipline record for this user
+     * Get the guidance discipline record for this user (legacy)
      */
     public function guidanceDiscipline()
     {
         return $this->hasOne(GuidanceDiscipline::class);
+    }
+
+    /**
+     * Get the discipline record for this user (new system)
+     */
+    public function discipline()
+    {
+        return $this->hasOne(Discipline::class);
+    }
+
+    /**
+     * Get the guidance record for this user (new system)
+     */
+    public function guidance()
+    {
+        return $this->hasOne(Guidance::class);
     }
 
 }

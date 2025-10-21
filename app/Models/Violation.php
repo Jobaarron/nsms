@@ -7,13 +7,27 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Violation extends Model
 {
+    /**
+     * The table associated with the model.
+     */
+    protected $table = 'student_violations';
+    /**
+     * Get the case meeting related to this violation.
+     */
+    public function caseMeeting(): BelongsTo
+    {
+        return $this->belongsTo(CaseMeeting::class, 'case_meeting_id');
+    }
+
     protected $fillable = [
+        'case_meeting_id',
         'student_id',
         'reported_by',
         'violation_type',
         'title',
         'description',
         'severity',
+        'major_category',
         'violation_date',
         'violation_time',
         'location',
@@ -29,14 +43,18 @@ class Violation extends Model
         'parent_notified',
         'parent_notification_date',
         'notes',
+        'sanction',
+        'urgency_level',
+    ];
+
+    protected $attributes = [
+        'urgency_level' => 'medium',
     ];
 
     protected $casts = [
         'violation_date' => 'date',
         'resolved_at' => 'date',
         'parent_notification_date' => 'date',
-        'witnesses' => 'array',
-        'attachments' => 'array',
         'parent_notified' => 'boolean',
     ];
 
@@ -53,7 +71,7 @@ class Violation extends Model
      */
     public function reportedBy(): BelongsTo
     {
-        return $this->belongsTo(GuidanceDiscipline::class, 'reported_by');
+        return $this->belongsTo(Discipline::class, 'reported_by');
     }
 
     /**
@@ -61,7 +79,15 @@ class Violation extends Model
      */
     public function resolvedBy(): BelongsTo
     {
-        return $this->belongsTo(GuidanceDiscipline::class, 'resolved_by');
+        return $this->belongsTo(Discipline::class, 'resolved_by');
+    }
+
+    /**
+     * Get the sanctions related to this violation.
+     */
+    public function sanctions()
+    {
+        return $this->hasMany(Sanction::class);
     }
 
     /**
@@ -85,6 +111,7 @@ class Violation extends Model
         return match($this->status) {
             'pending' => 'warning',
             'investigating' => 'info',
+            'in_progress' => 'info',
             'resolved' => 'success',
             'dismissed' => 'secondary',
             default => 'secondary'

@@ -138,12 +138,12 @@
          <div class="col-md-4">
            <div class="card h-100">
              <div class="card-body text-center">
-               <i class="ri-checkbox-multiple-line display-4 text-info mb-3"></i>
-               <h5>Mark Attendance</h5>
-               <p class="text-muted">Take attendance for your classes and track student presence</p>
-               <button class="btn btn-outline-info" disabled>
-                 <i class="ri-checkbox-multiple-line me-2"></i>Coming Soon
-               </button>
+               <i class="ri-heart-pulse-line display-4 text-warning mb-3"></i>
+               <h5>Recommend for Counseling</h5>
+               <p class="text-muted">Refer students to guidance counseling services</p>
+               <a href="{{ route('teacher.recommend-counseling.form') }}" class="btn btn-outline-warning">
+                 <i class="ri-heart-pulse-line me-2"></i>Recommend Student
+               </a>
              </div>
            </div>
          </div>

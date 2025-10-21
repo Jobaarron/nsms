@@ -3,8 +3,13 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Nicolites Portal</title>
+    <title>Landing Page | Nicolites Portal</title>
     <!-- Remix Icons -->
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.4.0/fonts/remixicon.css" rel="stylesheet" />
     <!-- Fonts -->
@@ -19,8 +24,7 @@
     <nav class="navbar navbar-expand-lg fixed-top">
         <div class="container">
             <a class="navbar-brand" href="/">
-                <img src="{{ Vite::asset('resources/assets/images/nms logo.png') }}" alt="logo" class="nav__logo"/>
-                
+                <img src="{{ Vite::asset('resources/assets/images/nms logo.png') }}" alt="logo" class="nav__logo"/>  
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
@@ -34,63 +38,47 @@
                     {{-- Excluded Button --}}
                     
                     <li class="nav-item dropdown-elegant">
-                        <a href="#" class="btn btn-custom me-2 dropdown-toggle {{ request()->is('enroll*') || request()->is('portal*') || request()->is('login*') ? 'active' : '' }}">
-                            Enrollment
+                        <a href="#" class="btn btn-custom me-2 dropdown-toggle {{ request()->is('student/login*') || request()->is('teacher/login*') || request()->is('guidance/login*') || request()->is('discipline/login*') || request()->is('cashier/login*') || request()->is('admin/login*') || request()->is('enrollee/login*') || request()->is('registrar/login*') ? 'active' : '' }}">
+                            Portal Login
                         </a>
                         <div class="dropdown-menu">
-                            <a href="/enroll" class="dropdown-item {{ request()->is('enroll*') ? 'active' : '' }}">
+                            <a href="/enrollee/login" class="dropdown-item {{ request()->is('enrollee/login*') ? 'active' : '' }}">
                                 <i class="ri-user-add-line"></i>
-                                Student Enrollment
+                                Applicant Portal
                             </a>
-                            {{-- <a href="#" class="dropdown-item #">
-                                <i class="ri-discuss-line"></i>
-                                Enrollment Instruction
-                            </a>
-                            <a href="#" class="dropdown-item #">
-                                <i class="ri-file-paper-line"></i>
-                                Enrollment Requirements
-                            </a> --}}
-                            
-                            {{-- <a href="/portal/parent" class="dropdown-item {{ request()->is('portal/parent*') ? 'active' : '' }}">
-                                <i class="ri-parent-line"></i>
-                                Parent Portal
-                            </a> To be use later or not (draft) --}}
-                        </div>
-                    </li>
-
-                    <li class="nav-item dropdown-elegant">
-                        <a href="#" class="btn btn-custom me-2 dropdown-toggle {{  request()->is('portal*') || request()->is('login*') ? 'active' : '' }}">
-                            Portal
-                        </a>
-                        <div class="dropdown-menu">
-                            {{-- <a href="/enroll" class="dropdown-item {{ request()->is('enroll*') ? 'active' : '' }}">
-                                <i class="ri-user-add-line"></i>
-                                Student Enrollment
-                            </a> --}}
-                            <a href="/student/login" class="dropdown-item {{ request()->is('/student/login*') ? 'active' : '' }}">
+                            <div class="dropdown-divider"></div>
+                            <a href="/student/login" class="dropdown-item {{ request()->is('student/login*') ? 'active' : '' }}">
                                 <i class="ri-graduation-cap-line"></i>
-                                Student
+                                Student Portal
                             </a>
-                            {{-- <div class="dropdown-divider"></div> --}}
-                            <a href="teacher/login" class="dropdown-item {{ request()->is('teacher/login*') ? 'active' : '' }}">
-                                <i class="ri-user-star-line"></i>
-                                Teacher
+                            <a href="/registrar/login" class="dropdown-item {{ request()->is('registrar/login*') ? 'active' : '' }}">
+                                <i class="ri-building-line"></i>
+                                Registrar Portal
                             </a>
-                            <a href="/guidance/login" class="dropdown-item {{ request()->is('/guidance/login') ? 'active' : '' }}">
-                                <i class="ri-building-4-line"></i>
-                                Guidance & Discipline 
+                            <div class="dropdown-divider"></div>
+                            <a href="/teacher/login" class="dropdown-item {{ request()->is('teacher/login*') ? 'active' : '' }}">
+                                <i class="ri-user-3-line"></i>
+                                Teacher Portal
                             </a>
-                            <a href="/admin/login" class="dropdown-item {{ request()->is('/admin/login') ? 'active' : '' }}">
+                            <a href="/guidance/login" class="dropdown-item {{ request()->is('guidance/login*') ? 'active' : '' }}">
+                                <i class="ri-heart-pulse-line"></i>
+                                Guidance Portal
+                            </a>
+                            <a href="/discipline/login" class="dropdown-item {{ request()->is('discipline/login*') ? 'active' : '' }}">
+                                <i class="ri-shield-user-line"></i>
+                                Discipline Portal
+                            </a>
+                            <a href="/cashier/login" class="dropdown-item {{ request()->is('cashier/login*') ? 'active' : '' }}">
+                                <i class="ri-money-dollar-circle-line"></i>
+                                Cashier Portal
+                            </a>
+                            <div class="dropdown-divider"></div>
+                            <a href="/admin/login" class="dropdown-item {{ request()->is('admin/login*') ? 'active' : '' }}">
                                 <i class="ri-admin-line"></i>
-                                Registrar & Administration
+                                Admin Portal
                             </a>
-                            {{-- <a href="/portal/parent" class="dropdown-item {{ request()->is('portal/parent*') ? 'active' : '' }}">
-                                <i class="ri-parent-line"></i>
-                                Parent Portal
-                            </a> To be use later or not (draft) --}}
                         </div>
                     </li>
-                    
                 </ul>
             </div>
             </div>
@@ -132,7 +120,7 @@
             <div class="row">
                 <div class="col-12 text-center">
                     <p class="footer-text mb-0">
-                        © {{ date('Y') }} Nicolites Portal: Student Management System All rights reserved.
+                        © {{ date('Y') }} Nicolites Portal: School Management System All rights reserved.
                     </p>
                 </div>
             </div>

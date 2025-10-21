@@ -6,7 +6,8 @@
             <div class="content-card p-5">
                 <div class="text-center mb-4">
                     <i class="ri-user-add-line" style="font-size: 4rem; color: var(--primary-color);"></i>
-                    <h2 class="page-header mb-2">Student Enrollment</h2>
+                    <h2 class="page-header mb-2">Student Admission</h2>
+                    <br><br>
                     <p class="text-muted">Please fill out the form below to apply</p>
                 </div>
 
@@ -72,10 +73,9 @@
                                 required
                             >
                                 <option value="">-- Select Type --</option>
-                                <option value="new" {{ old('student_type')=='new' ? 'selected':'' }}>New Student</option>
+                                <option value="new" {{ old('student_type')=='new' ? 'selected':'' }}>New</option>
                                 <option value="transferee" {{ old('student_type')=='transferee' ? 'selected':'' }}>Transferee</option>
-                                <option value="returnee" {{ old('student_type')=='returnee' ? 'selected':'' }}>Returnee</option>
-                                <option value="continuing" {{ old('student_type')=='continuing' ? 'selected':'' }}>Continuing</option>
+                                <option value="old" {{ old('student_type')=='old' ? 'selected':'' }}>Old</option>
                             </select>
                             @error('student_type') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
@@ -258,7 +258,7 @@
                                 name="city"
                                 class="form-control form-control-lg text-uppercase @error('city') is-invalid @enderror"
                                 value="{{ old('city') }}"
-                                placeholder="QUEZON CITY"
+                                placeholder="BATANGAS CITY"
                                 oninput="this.value = this.value.toUpperCase()"
                             >
                             @error('city') <div class="invalid-feedback">{{ $message }}</div> @enderror
@@ -273,7 +273,7 @@
                                 name="province"
                                 class="form-control form-control-lg text-uppercase @error('province') is-invalid @enderror"
                                 value="{{ old('province') }}"
-                                placeholder="METRO MANILA"
+                                placeholder="NASUGBU"
                                 oninput="this.value = this.value.toUpperCase()"
                             >
                             @error('province') <div class="invalid-feedback">{{ $message }}</div> @enderror
@@ -325,8 +325,8 @@
                             >
                                 <option value="">-- Select Grade --</option>
                                 <option value="Nursery" {{ old('grade_level')=='Nursery' ? 'selected':'' }}>Nursery</option>
-                                <option value="Kinder 1" {{ old('grade_level')=='Kinder 1' ? 'selected':'' }}>Kinder 1</option>
-                                <option value="Kinder 2" {{ old('grade_level')=='Kinder 2' ? 'selected':'' }}>Kinder 2</option>
+                                <option value="Junior Casa" {{ old('grade_level')=='Junior Casa' ? 'selected':'' }}>Junior Casa</option>
+                                <option value="Senior Casa" {{ old('grade_level')=='Senior Casa' ? 'selected':'' }}>Senior Casa</option>
                                 <option value="Grade 1" {{ old('grade_level')=='Grade 1' ? 'selected':'' }}>Grade 1</option>
                                 <option value="Grade 2" {{ old('grade_level')=='Grade 2' ? 'selected':'' }}>Grade 2</option>
                                 <option value="Grade 3" {{ old('grade_level')=='Grade 3' ? 'selected':'' }}>Grade 3</option>
@@ -355,11 +355,28 @@
                                 <option value="STEM" {{ old('strand')=='STEM' ? 'selected':'' }}>STEM</option>
                                 <option value="ABM" {{ old('strand')=='ABM' ? 'selected':'' }}>ABM</option>
                                 <option value="HUMSS" {{ old('strand')=='HUMSS' ? 'selected':'' }}>HUMSS</option>
-                                <option value="GAS" {{ old('strand')=='GAS' ? 'selected':'' }}>GAS</option>
-                                <option value="TVL-ICT" {{ old('strand')=='TVL-ICT' ? 'selected':'' }}>TVL-ICT</option>
-                                <option value="TVL-HE" {{ old('strand')=='TVL-HE' ? 'selected':'' }}>TVL-HE</option>
+                                <option value="TVL" {{ old('strand')=='TVL' ? 'selected':'' }}>TVL</option>
                             </select>
                             @error('strand') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        </div>
+                    </div>
+
+                    <!-- Track Field (for TVL students) -->
+                    <div class="row mb-3" id="track-container" style="display: none;">
+                        <div class="col-md-6">
+                            <label for="track_applied" class="form-label fw-semibold" style="color: var(--primary-color);">
+                                <i class="ri-road-map-line me-2"></i>Track Applied
+                            </label>
+                            <select
+                                id="track_applied"
+                                name="track_applied"
+                                class="form-select form-select-lg @error('track_applied') is-invalid @enderror"
+                            >
+                                <option value="">-- Select Track --</option>
+                                <option value="ICT" {{ old('track_applied')=='ICT' ? 'selected':'' }}>ICT (Information and Communications Technology)</option>
+                                <option value="HE" {{ old('track_applied')=='HE' ? 'selected':'' }}>HE (Home Economics)</option>
+                            </select>
+                            @error('track_applied') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                     </div>
 
@@ -551,6 +568,7 @@
 
                     <!-- Payment & Schedule -->
                     <div class="row mb-4">
+                        {{-- PAYMENT MODE SECTION - COMMENTED OUT FOR FUTURE STUDENT PORTAL IMPLEMENTATION
                         <div class="col-md-6">
                             <label for="payment_mode" class="form-label fw-semibold" style="color: var(--primary-color);">
                                 Mode of Payment
@@ -559,17 +577,16 @@
                                 id="payment_mode"
                                 name="payment_mode"
                                 class="form-select form-select-lg @error('payment_mode') is-invalid @enderror"
-                                required
                             >
                                 <option value="">-- Select Mode --</option>
                                 <option value="cash" {{ old('payment_mode')=='cash'?'selected':'' }}>Cash</option>
                                 <option value="online payment" {{ old('payment_mode')=='Online Payment'?'selected':'' }}>Online Payment</option>
-                                {{-- <option value="installment" {{ old('payment_mode')=='installment'?'selected':'' }}>Installment</option>
-                                <option value="scholarship" {{ old('payment_mode')=='scholarship'?'selected':'' }}>Scholarship</option> --}}
-                            </select>
+                                <option value="installment" {{ old('payment_mode')=='installment'?'selected':'' }}>Installment</option>
+                                {{-- <option value="scholarship" {{ old('payment_mode')=='scholarship'?'selected':'' }}>Scholarship</option> --}}
+                            {{-- </select>
                             @error('payment_mode') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                        </div>
-                        <div class="col-md-6">
+                        </div> --}}
+                        {{-- <div class="col-md-6">
                             <label for="preferred_schedule" class="form-label fw-semibold" style="color: var(--primary-color);">
                                 Preferred Schedule
                             </label>
@@ -581,14 +598,15 @@
                                 value="{{ old('preferred_schedule') }}"
                             >
                             @error('preferred_schedule') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                        </div>
+                        </div> --}}
                     </div>
 
                     <button type="submit" class="btn btn-custom btn-lg w-100 mb-3">
-                        <i class="ri-send-plane-line me-2"></i>Enroll Now
+                        <i class="ri-send-plane-line me-2"></i>Apply now
                     </button>
                 </form>
             </div>
         </div>
     </div> 
+
 </x-layout>

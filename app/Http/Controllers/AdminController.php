@@ -13,6 +13,9 @@ use Spatie\Permission\Models\Permission;
 use Illuminate\Support\Facades\DB;
 use App\Models\Admin;
 use App\Models\Student;
+use App\Models\Enrollee;
+use App\Models\Teacher;
+use App\Models\GuidanceDiscipline;
 use App\Traits\AdminAuthentication;
 use Illuminate\Support\Facades\Log;
 
@@ -22,23 +25,85 @@ class AdminController extends Controller
     
     public function index()
     {
-        $totalUsers = User::count();
-        $totalRoles = Role::count();
-
         if ($response = $this->checkAdminAuth()) {
             return $response;
         }
-        $activeUsers = User::where('status', 'active')->count();
-        $recentUsers = User::where('created_at', '>=', now()->subDays(30))->count();
 
-         return view('admin.index', compact(
+        // Comprehensive user statistics from all tables
+        $userStats = [
+            'total_users' => User::count(),
+            'total_enrollees' => Enrollee::count(),
+            'total_students' => Student::count(),
+            'total_teachers' => Teacher::count(),
+            'total_admins' => Admin::count(),
+            'total_guidance' => GuidanceDiscipline::count(),
+            'total_roles' => Role::count(),
+            'total_permissions' => Permission::count()
+        ];
+
+        // Calculate comprehensive total users (all user types)
+        $totalUsers = $userStats['total_users'] + $userStats['total_enrollees'] + $userStats['total_students'];
+        
+        // User status breakdown
+        $userStatusStats = [
+            'active_users' => User::where('status', 'active')->count(),
+            'pending_enrollees' => Enrollee::where('enrollment_status', 'pending')->count(),
+            'approved_enrollees' => Enrollee::where('enrollment_status', 'approved')->count(),
+            'enrolled_students' => Enrollee::where('enrollment_status', 'enrolled')->count(),
+            'recent_applications' => Enrollee::where('created_at', '>=', now()->subDays(30))->count()
+        ];
+
+        // Data visualization data (static for now, ready for charts)
+        $chartData = [
+            'user_types' => [
+                'labels' => ['System Users', 'Enrollees/Applicants', 'Students', 'Teachers', 'Admins', 'Guidance Staff'],
+                'data' => [
+                    $userStats['total_users'],
+                    $userStats['total_enrollees'],
+                    $userStats['total_students'],
+                    $userStats['total_teachers'],
+                    $userStats['total_admins'],
+                    $userStats['total_guidance']
+                ]
+            ],
+            'enrollment_status' => [
+                'labels' => ['Pending', 'Approved', 'Enrolled'],
+                'data' => [
+                    $userStatusStats['pending_enrollees'],
+                    $userStatusStats['approved_enrollees'],
+                    $userStatusStats['enrolled_students']
+                ]
+            ],
+            'monthly_applications' => [
+                'labels' => ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                'data' => [12, 19, 23, 15, 28, 35, 42, 38, 45, 52, 48, 55] // Static data for visualization
+            ]
+        ];
+
+        return view('admin.index', compact(
             'totalUsers',
-            'totalRoles',
-            'activeUsers',
-            'recentUsers'
+            'userStats',
+            'userStatusStats',
+            'chartData'
         ));
     }
     
+
+        /**
+     * Display a listing of submitted (forwarded) case meetings for the president/admin.
+     */
+    public function forwardedCases()
+    {
+        if ($response = $this->checkAdminAuth()) {
+            return $response;
+        }
+
+        $caseMeetings = \App\Models\CaseMeeting::with(['student', 'sanctions.violation'])
+            ->where('status', 'submitted')
+            ->paginate(10);
+
+        return view('admin.forwarded-cases', compact('caseMeetings'));
+    }
     public function getStats()
     {
         $stats = [
@@ -63,14 +128,14 @@ class AdminController extends Controller
         return view('admin.login');
     }
 
-    public function rolesAccess()
-{
-    $users = User::with('roles')->get();
-    $roles = Role::with(['permissions', 'users'])->get();
-    $permissions = Permission::with('roles')->get();
-    
-    return view('admin.roles_access', compact('users', 'roles', 'permissions'));
-}
+    public function manageUsers()
+    {
+        $users = User::with(['roles', 'admin', 'teacher', 'guidanceDiscipline'])->get();
+        $roles = Role::with(['permissions', 'users'])->get();
+        $permissions = Permission::with('roles')->get();
+        
+        return view('admin.user_management', compact('users', 'roles', 'permissions'));
+    }
 
 // AJAX Methods for Role Management
 public function assignRole(Request $request)
@@ -306,12 +371,7 @@ public function getUserRoles(User $user)
     }
 }
     
- public function manageUsers()
-    {
-        $users = User::with(['roles', 'permissions'])->get();
-        $roles = Role::all();
-        return view('admin.manage_users', compact('users', 'roles'));
-    }
+ 
 
     public function storeUser(Request $request)
     {
@@ -396,266 +456,25 @@ public function getUserRoles(User $user)
 
 
     public function enrollments(Request $request)
-{
-    if ($response = $this->checkAdminAuth()) {
-        return $response;
-    }
-
-    $query = Student::query();
-
-    // Apply filters
-    if ($request->filled('status')) {
-        $query->where('enrollment_status', $request->status);
-    }
-
-    if ($request->filled('grade_level')) {
-        $query->where('grade_level', $request->grade_level);
-    }
-
-    if ($request->filled('search')) {
-        $search = $request->search;
-        $query->where(function($q) use ($search) {
-            $q->where('first_name', 'LIKE', "%{$search}%")
-              ->orWhere('last_name', 'LIKE', "%{$search}%")
-              ->orWhere('email', 'LIKE', "%{$search}%")
-              ->orWhere('lrn', 'LIKE', "%{$search}%");
-        });
-    }
-
-    $enrollments = $query->orderBy('created_at', 'desc')->paginate(15);
-
-    // Get counts for filter cards
-    $pendingCount = Student::where('enrollment_status', 'pending')->count();
-    $approvedCount = Student::where('enrollment_status', 'enrolled')->count();
-    $rejectedCount = Student::where('enrollment_status', 'rejected')->count();
-    $totalCount = Student::count();
-
-    return view('admin.enrollments', compact(
-        'enrollments',
-        'pendingCount',
-        'approvedCount', 
-        'rejectedCount',
-        'totalCount'
-    ));
-}
-
-    public function approveEnrollment($id)
     {
-        try {
-            if ($response = $this->checkAdminAuth()) {
-                return $response;
-            }
-
-            $student = Student::findOrFail($id);
-            
-            $updated = $student->update([
-                'enrollment_status' => 'enrolled',
-                'approved_at' => now(),
-                'approved_by' => Auth::id(),
-                'status_updated_at' => now(),
-                'status_updated_by' => Auth::id()
-            ]);
-
-            if ($updated) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Student enrollment approved successfully!'
-                ]);
-            } else {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to update student status.'
-                ], 500);
-            }
-
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            Log::error('Student not found for approval: ' . $id);
-            return response()->json([
-                'success' => false,
-                'message' => 'Student not found.'
-            ], 404);
-        } catch (\Exception $e) {
-            Log::error('Error approving enrollment: ' . $e->getMessage(), [
-                'student_id' => $id,
-                'user_id' => Auth::id(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'An error occurred while approving the student. Please try again.'
-            ], 500);
-        }
-    }
-
-public function rejectEnrollment($id)
-{
-    try {
-        if ($response = $this->checkAdminAuth()) {
-            return $response;
-        }
-
-        $student = Student::findOrFail($id);
-        $student->update([
-            'enrollment_status' => 'rejected',
-            'rejected_at' => now(),
-            'rejected_by' => Auth::id()
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Student enrollment rejected.'
-        ]);
-
-    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Student not found.'
-        ], 404);
-    } catch (\Exception $e) {
-        Log::error('Error rejecting enrollment: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Error rejecting student: ' . $e->getMessage()
-        ], 500);
-    }
-}
-
-public function deleteEnrollment($id)
-{
-    try {
-        if ($response = $this->checkAdminAuth()) {
-            return $response;
-        }
-
-        $student = Student::findOrFail($id);
-        $student->delete();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Student record deleted successfully!'
-        ]);
-
-    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Student not found.'
-        ], 404);
-    } catch (\Exception $e) {
-        Log::error('Error deleting enrollment: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Error deleting student: ' . $e->getMessage()
-        ], 500);
-    }
-}
-
-public function bulkApprove(Request $request)
-{
-    try {
-        if ($response = $this->checkAdminAuth()) {
-            return $response;
-        }
-
-        $request->validate([
-            'student_ids' => 'required|array',
-            'student_ids.*' => 'exists:students,id'
-        ]);
-
-        $studentIds = $request->input('student_ids', []);
         
-        $updated = Student::whereIn('id', $studentIds)->update([
-            'enrollment_status' => 'enrolled',
-            'approved_at' => now(),
-            'approved_by' => Auth::id()
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => "{$updated} students approved successfully!"
-        ]);
-
-    } catch (\Exception $e) {
-        Log::error('Error in bulk approve: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Bulk approve failed: ' . $e->getMessage()
-        ], 500);
+        return view('admin.enrollments');
     }
-}
+       
+    
 
-public function bulkReject(Request $request)
-{
-    try {
-        if ($response = $this->checkAdminAuth()) {
-            return $response;
-        }
+  
 
-        $request->validate([
-            'student_ids' => 'required|array',
-            'student_ids.*' => 'exists:students,id'
-        ]);
 
-        $studentIds = $request->input('student_ids', []);
-        
-        $updated = Student::whereIn('id', $studentIds)->update([
-            'enrollment_status' => 'rejected',
-            'rejected_at' => now(),
-            'rejected_by' => Auth::id()
-        ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => "{$updated} students rejected."
-        ]);
 
-    } catch (\Exception $e) {
-        Log::error('Error in bulk reject: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Bulk reject failed: ' . $e->getMessage()
-        ], 500);
-    }
-}
 
-public function bulkDelete(Request $request)
-{
-    try {
-        if ($response = $this->checkAdminAuth()) {
-            return $response;
-        }
 
-        $request->validate([
-            'student_ids' => 'required|array',
-            'student_ids.*' => 'exists:students,id'
-        ]);
 
-        $studentIds = $request->input('student_ids', []);
-        $deleted = Student::whereIn('id', $studentIds)->delete();
 
-        return response()->json([
-            'success' => true,
-            'message' => "{$deleted} student records deleted successfully!"
-        ]);
 
-    } catch (\Exception $e) {
-        Log::error('Error in bulk delete: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Bulk delete failed: ' . $e->getMessage()
-        ], 500);
-    }
-}
 
-public function viewEnrollment($id)
-{
-    if ($response = $this->checkAdminAuth()) {
-        return $response;
-    }
 
-    $student = Student::findOrFail($id);
-    return view('admin.enrollment-details', compact('student'));
-}
 
     
     /**
@@ -727,74 +546,182 @@ public function viewEnrollment($id)
 }
     
     
-    // Generate admin user
-    public function generateAdmin(Request $request)
+public function submittedCases()
 {
-    $request->validate([
-        'name' => 'required|string|max:255',
-        'email' => 'required|string|email|max:255|unique:users',
-        'password' => 'required|string|min:8|confirmed',
-        'employee_id' => 'nullable|string|unique:admins',
-        'department' => 'nullable|string|max:255',
-        'admin_level' => 'required|in:super_admin,admin,moderator',
-    ]);
+    if ($response = $this->checkAdminAuth()) {
+        return $response;
+    }
 
-    // Check if permission tables exist
-    if (!Schema::hasTable('roles') || !Schema::hasTable('permissions')) {
+    $caseMeetings = \App\Models\CaseMeeting::with(['student', 'sanctions.violation'])
+        ->where('status', 'submitted')
+        ->paginate(10);
+
+    return view('admin.forwarded-cases', compact('caseMeetings'));
+}
+
+    public function approveSanction(\App\Models\Sanction $sanction)
+    {
+        $user = auth()->user();
+
+        if (!$user->hasRole('admin')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized. Only admins can approve sanctions.'
+            ], 403);
+        }
+
+        if ($sanction->is_approved) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Sanction is already approved.'
+            ], 400);
+        }
+
         try {
-            Artisan::call('vendor:publish', [
-                '--provider' => 'Spatie\Permission\PermissionServiceProvider',
-                '--tag' => 'migrations'
+            $sanction->update([
+                'is_approved' => true,
+                'approved_by' => $user->id,
+                'approved_at' => now(),
             ]);
-            
-            Artisan::call('migrate');
-            
-            if (!Schema::hasTable('roles') || !Schema::hasTable('permissions')) {
-                return back()->with('error', 'Failed to create permission tables. Please run migrations manually.');
+
+
+            // Mark the related case meeting as completed
+            $caseMeeting = $sanction->caseMeeting;
+            if ($caseMeeting) {
+                $caseMeeting->update([
+                    'status' => 'completed',
+                    'completed_at' => now(),
+                ]);
+                // Set all related violations' statuses to 'submitted' (discipline side)
+                foreach ($caseMeeting->violations as $violation) {
+                    $violation->update(['status' => 'submitted']);
+                }
             }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Sanction approved and case meeting marked as completed.'
+            ]);
         } catch (\Exception $e) {
-            return back()->with('error', 'Error running migrations: ' . $e->getMessage());
+            \Log::error('Error approving sanction: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while approving the sanction.'
+            ], 500);
         }
     }
 
-    DB::beginTransaction();
-    
-    try {
-        // Create user first
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-        ]);
+    public function rejectSanction(\App\Models\Sanction $sanction)
+    {
+        $user = auth()->user();
 
-        // Create admin record
-        $admin = Admin::create([
-            'user_id' => $user->id,
-            'employee_id' => $request->employee_id,
-            'department' => $request->department,
-            'admin_level' => $request->admin_level,
-            'is_active' => true,
-        ]);
+        if (!$user->hasRole('admin')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized. Only admins can reject sanctions.'
+            ], 403);
+        }
 
-        // Setup roles and permissions with proper model_has_permissions population
-        $this->setupAdminRoleAndPermissions($user, $request->admin_level);
+        if ($sanction->is_approved) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot reject an already approved sanction.'
+            ], 400);
+        }
 
-        // Clear permission cache to ensure fresh permissions
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+        try {
+            $sanction->update([
+                'is_approved' => false,
+                'approved_by' => null,
+                'approved_at' => null,
+                'notes' => ($sanction->notes ? $sanction->notes . "\n" : '') . 'Rejected by admin on ' . now()->toDateTimeString(),
+            ]);
 
-        DB::commit();
+            // Optionally, update related case meeting status to 'submitted' or other appropriate status
+            $caseMeeting = $sanction->caseMeeting;
+            if ($caseMeeting) {
+                $caseMeeting->update([
+                    'status' => 'submitted',
+                ]);
+            }
 
-        // Log in the new admin user
-        Auth::login($user);
-
-        return redirect()->route('admin.dashboard')
-            ->with('success', 'Admin user created successfully! You are now logged in as an administrator.');
-
-    } catch (\Exception $e) {
-        DB::rollback();
-        return back()->with('error', 'Error creating admin: ' . $e->getMessage());
+            return response()->json([
+                'success' => true,
+                'message' => 'Sanction rejected successfully.'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error rejecting sanction: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while rejecting the sanction.'
+            ], 500);
+        }
     }
-}
+
+    public function reviseSanction(\App\Models\Sanction $sanction, Request $request)
+    {
+        $user = auth()->user();
+
+        if (!$user->hasRole('admin')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized. Only admins can revise sanctions.'
+            ], 403);
+        }
+
+        $request->validate([
+            'sanction' => 'required|string|max:1000',
+            'notes' => 'nullable|string|max:2000',
+        ]);
+
+        if ($sanction->is_approved) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot revise an already approved sanction.'
+            ], 400);
+        }
+
+        try {
+            $sanction->update([
+                'sanction' => $request->input('sanction'),
+                'notes' => ($sanction->notes ? $sanction->notes . "\n" : '') . 'Revised by admin on ' . now()->toDateTimeString() . '. Notes: ' . $request->input('notes', ''),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Sanction revised successfully.'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error revising sanction: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while revising the sanction.'
+            ], 500);
+        }
+    }
+
+    public function viewSummaryReport(\App\Models\CaseMeeting $caseMeeting)
+    {
+        $user = auth()->user();
+
+        if (!$user->hasRole('admin')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized access.'
+            ], 403);
+        }
+
+        $caseMeeting->load(['student', 'counselor', 'sanctions']);
+
+        return response()->json([
+            'success' => true,
+            'meeting' => $caseMeeting
+        ]);
+    }
+// REMOVED: generateAdmin() method
+// This functionality has been moved to UserManagementController->storeAdmin()
+// The admin-generator.blade.php view is no longer needed as admin creation
+// is now handled through the centralized user management system
 
 private function setupAdminRoleAndPermissions(User $user, string $adminLevel)
 {
@@ -933,30 +860,15 @@ private function getPermissionsByLevel(string $level): array
     }
 }
 
-public function showGeneratorForm()
+public function users()
 {
-    // Check if admin role exists
-    $adminRoleExists = Role::where('name', 'admin')->where('guard_name', 'web')->exists();
-    
-    // Check if any admin users exist (only if the role exists)
-    $adminExists = false;
-    if ($adminRoleExists) {
-        $adminExists = User::role('admin')->exists();
+    if ($response = $this->checkAdminAuth()) {
+        return $response;
     }
     
-    return view('admin.admin-generator', compact('adminRoleExists', 'adminExists'));
+    $users = User::with('roles')->get();
+    return view('admin.users.index', compact('users'));
 }
-
-
- public function users()
-    {
-        if ($response = $this->checkAdminAuth()) {
-            return $response;
-        }
-        
-        $users = User::with('roles')->get();
-        return view('admin.users.index', compact('users'));
-    }
 
 public function roles()
 {
@@ -979,16 +891,16 @@ public function roles()
             return $response;
         }
 
-        $student = Student::findOrFail($id);
-        return view('admin.enrollment-edit', compact('student'));
+        $enrollee = Enrollee::findOrFail($id);
+        return view('admin.enrollment-edit', compact('enrollee'));
 
     } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
         return redirect()->route('admin.enrollments')
-            ->with('error', 'Student not found.');
+            ->with('error', 'Enrollee not found.');
     } catch (\Exception $e) {
         Log::error('Error loading enrollment edit page: ' . $e->getMessage());
         return redirect()->route('admin.enrollments')
-            ->with('error', 'Error loading student information.');
+            ->with('error', 'Error loading enrollee information.');
     }
     }
 
@@ -1001,12 +913,12 @@ public function updateEnrollmentStatus(Request $request, $id)
     }
 
     $request->validate([
-        'status' => 'required|in:pending,enrolled,rejected',
+        'status' => 'required|in:pending,approved,rejected,enrolled',
         'reason' => 'nullable|string|max:500'
     ]);
 
-    $student = Student::findOrFail($id);
-    $student->update([
+    $enrollee = Enrollee::findOrFail($id);
+    $enrollee->update([
         'enrollment_status' => $request->status,
         'status_reason' => $request->reason,
         'status_updated_at' => now(),
@@ -1015,7 +927,7 @@ public function updateEnrollmentStatus(Request $request, $id)
 
     return response()->json([
         'success' => true,
-        'message' => 'Student status updated successfully!'
+        'message' => 'Enrollment status updated successfully!'
     ]);
 }
 
@@ -1025,31 +937,43 @@ public function exportSelected(Request $request)
         return $response;
     }
 
-    $studentIds = $request->input('student_ids', []);
-    $students = Student::whereIn('id', $studentIds)->get();
+    $enrolleeIds = $request->input('enrollee_ids', []);
+    
+    if (empty($enrolleeIds)) {
+        return back()->with('error', 'No enrollees selected for export.');
+    }
 
-    // Create CSV export
-    $filename = 'selected_enrollments_' . date('Y-m-d_H-i-s') . '.csv';
+    $enrollees = Enrollee::whereIn('id', $enrolleeIds)->get();
+    
+    $fileName = 'enrollees-' . date('Y-m-d') . '.csv';
     $headers = [
-        'Content-Type' => 'text/csv',
-        'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        'Content-type'        => 'text/csv',
+        'Content-Disposition' => "attachment; filename=$fileName",
+        'Pragma'              => 'no-cache',
+        'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+        'Expires'             => '0'
     ];
 
-    $callback = function() use ($students) {
+    $callback = function() use ($enrollees) {
         $file = fopen('php://output', 'w');
-        fputcsv($file, ['Name', 'Email', 'Grade Level', 'Status', 'Guardian', 'Contact', 'Applied Date']);
+        
+        // Add CSV headers
+        fputcsv($file, [
+            'Application ID', 'LRN', 'First Name', 'Last Name', 'Grade Level Applied', 'Email', 'Enrollment Status'
+        ]);
 
-        foreach ($students as $student) {
+        foreach ($enrollees as $enrollee) {
             fputcsv($file, [
-                $student->first_name . ' ' . $student->last_name,
-                $student->email,
-                $student->grade_level,
-                $student->enrollment_status,
-                $student->guardian_name,
-                $student->guardian_contact,
-                $student->created_at->format('Y-m-d H:i:s')
+                $enrollee->application_id,
+                $enrollee->lrn,
+                $enrollee->first_name,
+                $enrollee->last_name,
+                $enrollee->grade_level_applied,
+                $enrollee->email,
+                $enrollee->enrollment_status
             ]);
         }
+        
         fclose($file);
     };
 

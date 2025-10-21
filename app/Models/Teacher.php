@@ -13,6 +13,9 @@ class Teacher extends Model
         'employee_id',
         'department',
         'position',
+        'specialization',
+        'employment_status',
+        'subjects',
         'hire_date',
         'phone_number',
         'address',
@@ -23,6 +26,7 @@ class Teacher extends Model
     protected $casts = [
         'hire_date' => 'date',
         'is_active' => 'boolean',
+        'subjects' => 'array',
     ];
 
     /**

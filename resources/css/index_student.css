@@ -1,19 +1,76 @@
- /* Color Palette */
+ /* Clean Color Palette - Matching Landing Page */
  :root {
-    --primary-color: #014421;
-    --secondary-color: #D0D8C3;
-    --accent-color: #2d6a3e;
-    --light-green: #e8f5e8;
-    --dark-green: #012d17;
+    --primary-color: #2B7A3B;      /* Rich green from logo shield */
+    --secondary-color: #4CAF50;     /* Lighter green from logo text */
+    --accent-color: #1B5E20;       /* Darker green for emphasis */
+    --light-green: #E8F5E9;        /* Very light green for subtle backgrounds */
+    --dark-green: #0D4F14;         /* Deep green for text */
+    --white: #FFFFFF;              /* Pure white for clean backgrounds */
+    --light-gray: #F8F9FA;         /* Light gray for subtle sections */
+    --border-gray: #E0E0E0;        /* Light border color */
+    --text-gray: #424242;          /* Professional gray for text */
+    --student-accent: #2B7A3B;     /* Primary color for student theme */
   }
   body {
     font-family: 'Nunito', sans-serif;
-    background-color: var(--light-green);
+    background-color: var(--white);
+    color: var(--text-gray);
+    line-height: 1.6;
   }
+
   /* Sidebar */
   .sidebar {
-    background-color: var(--secondary-color);
+    background-color: var(--white);
+    border-right: 1px solid var(--border-gray);
     min-height: 100vh;
+    padding: 1.5rem 1rem;
+    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Sidebar Logo */
+  .sidebar-logo {
+    width: 160px;
+    height: auto;
+    max-width: 100%;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+  }
+
+  .sidebar-logo:hover {
+    transform: scale(1.01);
+  }
+
+  /* User Info Section */
+  .user-info {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    box-shadow: 0 4px 8px rgba(1, 68, 33, 0.2);
+    transition: all 0.3s ease;
+  }
+
+  .user-info:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(1, 68, 33, 0.3);
+  }
+
+  .user-name {
+    color: #fff;
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+
+  .user-role {
+    color: var(--light-green);
+    font-weight: 500;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    opacity: 0.9;
   }
   .sidebar .nav-link {
     color: var(--primary-color);
@@ -25,18 +82,50 @@
   }
   .sidebar .nav-link:hover {
     background-color: var(--light-green);
-    color: var(--dark-green);
+    color: var(--primary-color);
     transform: translateX(5px);
+    box-shadow: 0 2px 8px rgba(43, 122, 59, 0.1);
   }
   .sidebar .nav-link.active {
-    background-color: var(--accent-color);
-    color: #fff;
-    box-shadow: 0 2px 4px rgba(1, 68, 33, 0.2);
+    background-color: var(--student-accent);
+    color: var(--white);
+    box-shadow: 0 2px 4px rgba(43, 122, 59, 0.2);
   }
   .sidebar .nav-link.active:hover {
     background-color: var(--primary-color);
-    color: #fff;
+    color: var(--white);
     transform: translateX(5px);
+    box-shadow: 0 4px 12px rgba(43, 122, 59, 0.3);
+  }
+
+  /* Main Content Area */
+  .main-content {
+    min-height: 100vh;
+    background-color: var(--light-gray);
+  }
+
+  /* User Info Section */
+  .user-info {
+    border: 1px solid var(--border-gray);
+    transition: all 0.3s ease;
+  }
+
+  .user-info:hover {
+    border-color: var(--student-accent);
+    box-shadow: 0 2px 8px rgba(43, 122, 59, 0.1);
+  }
+
+  .avatar-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--student-accent), var(--secondary-color));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--white);
+    font-size: 1.2rem;
+    flex-shrink: 0;
   }
   /* Section Titles */
   .section-title {
@@ -138,4 +227,206 @@
   .table-hover tbody tr:hover {
     background-color: var(--light-green);
     color: var(--dark-green);
+  }
+
+  /* Progress Steps - Clear Status Indicators */
+  .progress-steps {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    margin: 2rem 0;
+  }
+
+  .progress-steps::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 30px;
+    right: 30px;
+    height: 2px;
+    background: var(--border-gray);
+    z-index: 1;
+    transform: translateY(-50%);
+  }
+
+  .progress-step {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+    border: 3px solid #dee2e6;
+    color: #adb5bd;
+    font-size: 1.5rem;
+    position: relative;
+    z-index: 2;
+    transition: all 0.3s ease;
+    opacity: 0.6;
+  }
+
+  .progress-step.completed {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: var(--white);
+    box-shadow: 0 4px 12px rgba(43, 122, 59, 0.3);
+    opacity: 1;
+  }
+
+  .progress-step.active {
+    background: var(--secondary-color);
+    border-color: var(--secondary-color);
+    color: var(--white);
+    animation: pulse 2s infinite;
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+    opacity: 1;
+  }
+
+  .progress-step.pending {
+    background: #fff3cd;
+    border-color: #ffc107;
+    color: #856404;
+    opacity: 0.8;
+  }
+
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+
+  /* Timeline */
+  .timeline {
+    position: relative;
+    padding-left: 2rem;
+  }
+
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 0.75rem;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: var(--secondary-color);
+  }
+
+  .timeline-item {
+    position: relative;
+    margin-bottom: 2rem;
+  }
+
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -2.25rem;
+    top: 0.5rem;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: var(--student-accent);
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 2px var(--student-accent);
+  }
+
+  .timeline-item.completed::before {
+    background-color: var(--primary-color);
+    box-shadow: 0 0 0 2px var(--primary-color);
+  }
+
+  .timeline-item.active::before {
+    background-color: var(--secondary-color);
+    box-shadow: 0 0 0 2px var(--secondary-color);
+    animation: pulse 2s infinite;
+  }
+
+  /* Info Cards */
+  .info-card {
+    background: linear-gradient(135deg, var(--light-green) 0%, rgba(208, 216, 195, 0.3) 100%);
+    border: 1px solid var(--secondary-color);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+  }
+
+  .info-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(1, 68, 33, 0.1);
+    border-color: var(--student-accent);
+  }
+
+  /* Alert Customizations */
+  .alert-student {
+    background-color: rgba(43, 122, 59, 0.1);
+    border-color: var(--student-accent);
+    color: var(--dark-green);
+  }
+
+  /* Form Enhancements */
+  .form-control:focus {
+    border-color: var(--student-accent);
+    box-shadow: 0 0 0 0.2rem rgba(43, 122, 59, 0.25);
+  }
+
+  .form-select:focus {
+    border-color: var(--student-accent);
+    box-shadow: 0 0 0 0.2rem rgba(43, 122, 59, 0.25);
+  }
+
+  /* Payment Option Cards */
+  .payment-option {
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+
+  .payment-option:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .payment-option.border-primary {
+    box-shadow: 0 4px 12px rgba(43, 122, 59, 0.2);
+  }
+
+  /* Loading States */
+  .loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(43, 122, 59, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+  }
+
+  .loading-spinner {
+    width: 3rem;
+    height: 3rem;
+    border: 0.3rem solid rgba(255, 255, 255, 0.3);
+    border-top: 0.3rem solid #fff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  /* Badge Enhancements */
+  .badge-status {
+    font-size: 0.85rem;
+    padding: 0.5em 1em;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+  }
+
+  .badge-status:hover {
+    transform: scale(1.05);
   }

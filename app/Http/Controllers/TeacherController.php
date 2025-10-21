@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Teacher;
+use App\Models\Student;
+use App\Models\CounselingSession;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -21,114 +23,14 @@ class TeacherController extends Controller
         return view('teacher.index');
     }
 
-    /**
-     * Show the teacher account generator form.
-     */
-    public function showGeneratorForm()
-    {
-        // Check if teacher role exists
-        $teacherRoleExists = Role::where('name', 'teacher')->where('guard_name', 'web')->exists();
-        
-        // Check if any teacher exists
-        $teacherExists = User::whereHas('roles', function($query) {
-            $query->where('name', 'teacher');
-        })->exists();
+    // REMOVED: generateTeacher() method
+    // This functionality has been moved to UserManagementController->storeTeacher()
+    // The teacher-generator.blade.php view is no longer needed as teacher creation
+    // is now handled through the centralized user management system
 
-        return view('teacher.teacher-generator', [
-            'teacherRoleExists' => $teacherRoleExists,
-            'teacherExists' => $teacherExists,
-        ]);
-    }
-
-    /**
-     * Generate a new teacher account.
-     */
-    public function generateTeacher(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'employee_id' => 'required|string|max:50|unique:teachers,employee_id',
-            'department' => 'required|string|max:255',
-            'position' => 'required|string|max:255',
-            'phone_number' => 'nullable|string|max:20',
-            'address' => 'nullable|string',
-            'qualifications' => 'nullable|string',
-            'hire_date' => 'required|date',
-            'password' => 'required|string|min:8|confirmed',
-        ]);
-
-        DB::beginTransaction();
-        
-        try {
-            // Create user first
-            $user = User::create([
-                'name' => $request->name,
-                'email' => $request->email,
-                'password' => Hash::make($request->password),
-                'status' => 'active',
-            ]);
-
-            // Create teacher record
-            $teacher = Teacher::create([
-                'user_id' => $user->id,
-                'employee_id' => $request->employee_id,
-                'department' => $request->department,
-                'position' => $request->position,
-                'phone_number' => $request->phone_number,
-                'address' => $request->address,
-                'qualifications' => $request->qualifications,
-                'hire_date' => $request->hire_date,
-                'is_active' => true,
-            ]);
-
-            // Setup roles and permissions
-            $this->setupTeacherRoleAndPermissions($user);
-
-            DB::commit();
-
-            return redirect()->route('teacher.generator')
-                ->with('success', 'Teacher account created successfully for ' . $teacher->user->name . '. You can now login to the system.');
-
-        } catch (\Exception $e) {
-            DB::rollback();
-            return back()->with('error', 'Error creating teacher: ' . $e->getMessage());
-        }
-    }
-
-    private function setupTeacherRoleAndPermissions(User $user)
-    {
-        // Create or get the teacher role
-        $teacherRole = Role::firstOrCreate([
-            'name' => 'teacher',
-            'guard_name' => 'web'
-        ]);
-
-        // Define teacher permissions
-        $permissions = [
-            'View Students',
-            'Manage Grades',
-            'View Classes',
-            'Manage Attendance',
-            'View Reports',
-        ];
-
-        // Create permissions if they don't exist and assign to teacher role
-        foreach ($permissions as $permissionName) {
-            $permission = Permission::firstOrCreate([
-                'name' => $permissionName,
-                'guard_name' => 'web'
-            ]);
-            
-            // Assign permission to teacher role if not already assigned
-            if (!$teacherRole->hasPermissionTo($permission)) {
-                $teacherRole->givePermissionTo($permission);
-            }
-        }
-
-        // Assign role to user
-        $user->assignRole($teacherRole);
-    }
+    // REMOVED: setupTeacherRoleAndPermissions() method
+    // Role and permission management is now handled by RolePermissionSeeder
+    // All teacher roles and permissions are centrally managed
 
     /**
      * Show the teacher login form.
@@ -184,7 +86,44 @@ class TeacherController extends Controller
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        
+
         return redirect()->route('teacher.login');
+    }
+
+    /**
+     * Show the form to recommend a student to counselling.
+     */
+    public function showRecommendForm()
+    {
+        $students = Student::select('id', 'first_name', 'last_name', 'student_id')
+            ->orderBy('last_name', 'asc')
+            ->get();
+
+        return view('teacher.recommend-counseling', compact('students'));
+    }
+
+    /**
+     * Recommend a student to counselling.
+     */
+    public function recommendToCounseling(Request $request)
+    {
+        $validatedData = $request->validate([
+            'student_id' => 'required|exists:students,id',
+            'reason' => 'required|string',
+            'notes' => 'nullable|string',
+        ]);
+
+        // Create a counseling session recommendation
+        CounselingSession::create([
+            'student_id' => $validatedData['student_id'],
+            'recommended_by' => Auth::id(),
+            'reason' => $validatedData['reason'],
+            'notes' => $validatedData['notes'],
+            'status' => 'recommended', // New status for recommendations
+            'session_type' => 'individual', // Default
+        ]);
+
+        return redirect()->route('teacher.dashboard')
+            ->with('success', 'Student has been recommended for counseling. Guidance will review the recommendation.');
     }
 }

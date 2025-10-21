@@ -9,7 +9,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf-token" content="{{ csrf_token() }}">
-  <title>{{ $title ?? 'Admin Dashboard' }} • NSMS</title>
+  <title>Admin Portal | Nicolites Portal</title>
 
   <!-- Remix Icons -->
   <link href="https://cdn.jsdelivr.net/npm/remixicon@3.4.0/fonts/remixicon.css" rel="stylesheet"/>
@@ -17,6 +17,7 @@
   
   @vite(['resources/sass/app.scss','resources/js/app.js'])
   @vite(['resources/css/index_admin.css'])
+  
  
 </head>
 <body>
@@ -24,48 +25,58 @@
     <div class="row">
       <!-- SIDEBAR -->
       <nav class="col-12 col-md-2 sidebar d-md-block py-4">
+        <!-- School Logo -->
+        <div class="text-center mb-3">
+          <img src="{{ Vite::asset('resources/assets/images/nms logo.png') }}" alt="Nicolites Montessori School" class="sidebar-logo">
+        </div>
+        
+        <!-- User Info -->
+        {{-- <div class="user-info">
+          <div class="user-name">{{ Auth::user()->name }}</div>
+          <div class="user-role">{{ ucwords(str_replace('_', ' ', Auth::user()->getRoleNames()->first())) }}</div>
+        </div> --}}
+
         <div class="px-3 mb-4">
           <h5 class="text-uppercase fw-bold text-muted small">Admin Panel</h5>
         </div>
         <ul class="nav flex-column">
           <li class="nav-item">
-            <a class="nav-link d-flex align-items-center py-3 px-3 rounded {{ request()->routeIs('admin.dashboard') ? 'active bg-light' : '' }}" href="{{ route('admin.dashboard') }}">
+            <a class="nav-link d-flex align-items-center py-3 px-3 rounded" href="{{ route('admin.dashboard') }}">
               <i class="ri-dashboard-line me-2 fs-5"></i>
               <span>Dashboard</span>
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link d-flex align-items-center py-3 px-3 rounded" href="{{ route('admin.roles.access') }}">
-                <i class="ri-shield-user-line me-2 fs-5"></i>
-                <span>Roles & Access</span>
+            <a class="nav-link d-flex align-items-center py-3 px-3 rounded" href="{{ route('admin.manage.users') }}">
+              <i class="ri-shield-user-line me-2 fs-5"></i>
+              <span>User Management</span>
             </a>
-        </li>
           </li>
-          <li class="nav-item">
-            <a class="nav-link disabled d-flex align-items-center py-3 px-3 rounded" href="{{ route('admin.manage.users') }}">
-                <i class="ri-user-settings-line me-2 fs-5"></i>
-                <span>Manage Users</span>
-            </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link d-flex align-items-center py-3 px-3 rounded" href="{{ route('admin.enrollments') }}">
+          {{-- <li class="nav-item">
+            <a class="nav-link d-flex align-items-center py-3 px-3 rounded" href="{{ route('admin.enrollments') }}">
               <i class="ri-file-list-line me-2 fs-5"></i>
               <span>Enrollments</span>
-          </a>
-      </li>
-      <li class="nav-item">
-          <a class="nav-link d-flex align-items-center py-3 px-3 rounded {{ request()->routeIs('admin.contact.messages') ? 'active bg-light' : '' }}" href="{{ route('admin.contact.messages') }}">
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link d-flex align-items-center py-3 px-3 rounded" href="{{ route('admin.contact.messages') }}">
               <i class="ri-mail-line me-2 fs-5"></i>
               <span>Contact Messages</span>
-          </a>
-      </li>
+            </a>
+          </li> --}}
+          <li class="nav-item">
+            <a class="nav-link d-flex align-items-center py-3 px-3 rounded" href="{{ route('admin.forwarded.cases') }}">
+              <i class="ri-file-list-3-line me-2 fs-5"></i>
+              <span>Guidance and Discipline</span>
+            </a>
+          </li>
           <li class="nav-item mt-4">
             <form method="POST" action="{{ route('admin.logout') }}" class="px-3">
-                @csrf
-                <button type="submit" class="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center">
-                    <i class="ri-logout-box-line me-2"></i>
-                    <span>Logout</span>
-                </button>
+              @csrf
+              <button type="submit" class="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center">
+                <i class="ri-logout-box-line me-2"></i>
+                <span>Logout</span>
+              </button>
             </form>
           </li>
         </ul>

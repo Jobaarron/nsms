@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-  const dob = document.getElementById('dob');
+  const dob = document.getElementById('date_of_birth');
   if (!dob) return;
   // prevent selecting a future date
   dob.max = new Date().toISOString().split('T')[0];
@@ -74,4 +74,35 @@ document.addEventListener('DOMContentLoaded', function() {
       document.getElementById('strand-group').classList.remove('d-none');
       document.getElementById('strand').required = true;
   }
+});
+
+// Show track field for TVL strand
+document.addEventListener('DOMContentLoaded', function() {
+    const strandSelect = document.getElementById('strand');
+    const trackContainer = document.getElementById('track-container');
+    const trackSelect = document.getElementById('track_applied');
+
+    function toggleTrackField() {
+        if (strandSelect.value === 'TVL') {
+            trackContainer.style.display = 'block';
+            trackSelect.required = true;
+        } else {
+            trackContainer.style.display = 'none';
+            trackSelect.required = false;
+            trackSelect.value = '';
+        }
+    }
+
+    // Initial check on page load
+    toggleTrackField();
+
+    // Listen for changes
+    strandSelect.addEventListener('change', toggleTrackField);
+
+    // Handle old input values - check if TVL was previously selected
+    const oldStrand = strandSelect.value || '';
+    if (oldStrand === 'TVL') {
+        trackContainer.style.display = 'block';
+        trackSelect.required = true;
+    }
 });

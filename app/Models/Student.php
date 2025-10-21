@@ -15,14 +15,23 @@ class Student extends Authenticatable
     use HasFactory, Notifiable, HasRoles;
 
     protected $fillable = [
+        'user_id',
+        'enrollee_id',
+        'student_id',
         'lrn',
-        'student_type',
+        'password',
+        'id_photo',
+        'id_photo_mime_type',
+        'id_photo_data_url',
         'first_name',
         'middle_name',
         'last_name',
         'suffix',
+        'full_name',
         'date_of_birth',
+        'place_of_birth',
         'gender',
+        'nationality',
         'religion',
         'email',
         'contact_number',
@@ -32,6 +41,12 @@ class Student extends Authenticatable
         'zip_code',
         'grade_level',
         'strand',
+        'track',
+        'section',
+        'student_type',
+        'enrollment_status',
+        'academic_year',
+        'documents',
         'father_name',
         'father_occupation',
         'father_contact',
@@ -43,33 +58,27 @@ class Student extends Authenticatable
         'last_school_type',
         'last_school_name',
         'medical_history',
-        'payment_mode',
-        'preferred_schedule',
-        'id_photo',
-        'id_photo_mime_type',
-        'documents',
-        'password',
+        // 'payment_mode', // Removed - now handled by payment_method in payments table
         'is_paid',
-        'enrollment_status',
-        'academic_year',
-        'approved_by',
-        'approved_at',
-        'enrolled_at',
-        // Additional
-        'rejected_by',
-        'rejected_at',
-        'status_updated_at',
-        'status_updated_by',
-        'status_reason',
-        
+        'total_fees_due',
+        'total_paid',
+        'payment_completed_at',
+        'pre_registered_at',
+        'is_active',
+        'remarks',
+
     ];
 
 
     protected $casts = [
-        'birth_date' => 'date',
-        'approved_at' => 'datetime',
-        'rejected_at' => 'datetime',
-        'is_paid' => 'boolean'
+        'date_of_birth' => 'date',
+        'pre_registered_at' => 'datetime',
+        'payment_completed_at' => 'datetime',
+        'is_active' => 'boolean',
+        'is_paid' => 'boolean',
+        'documents' => 'array',
+        'total_fees_due' => 'decimal:2',
+        'total_paid' => 'decimal:2'
     ];
 
     protected $hidden = [
@@ -83,14 +92,22 @@ class Student extends Authenticatable
     
     protected $guard_name = 'student';
     
+    /**
+     * Get the name of the unique identifier for the user.
+     *
+     * @return string
+     */
+    public function getAuthIdentifierName()
+    {
+        return 'student_id';
+    }
+    
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'date_of_birth' => 'date',
-            'preferred_schedule' => 'date',
-            'documents' => 'array', // This will automatically convert JSON to array when retrieved
         ];
     }
 
@@ -99,14 +116,10 @@ class Student extends Authenticatable
         return $this->belongsTo(User::class);
     }
 
-    public function approvedBy()
+    // Relationship to enrollee record (if student was created from enrollment)
+    public function enrollee()
     {
-        return $this->belongsTo(User::class, 'approved_by');
-    }
-
-    public function rejectedBy()
-    {
-        return $this->belongsTo(User::class, 'rejected_by');
+        return $this->belongsTo(Enrollee::class, 'enrollee_id');
     }
 
     public function getFullNameAttribute()
@@ -131,45 +144,30 @@ class Student extends Authenticatable
     //     return $this->birth_date ? $this->birth_date->age : null;
     // }
 
-    public function scopeEnrolled($query)
+    public function scopeActive($query)
     {
-        return $query->where('enrollment_status', 'enrolled');
+        return $query->where('is_active', true);
     }
 
-    public function scopePending($query)
+    public function scopeByGrade($query, $grade)
     {
-        return $query->where('enrollment_status', 'pending');
+        return $query->where('grade_level', $grade);
     }
 
-    public function scopeRejected($query)
+    public function scopeBySection($query, $section)
     {
-        return $query->where('enrollment_status', 'rejected');
+        return $query->where('section', $section);
     }
 
-    public function scopeCurrentYear($query)
-    {
-        return $query->where('academic_year', date('Y'));
-    }
-
-    // Payment-related methods
-    public function isPaid()
-    {
-        return $this->is_paid;
-    }
-
+    // Helper methods
     public function canAccessFeatures()
     {
-        return $this->is_paid && $this->enrollment_status === 'enrolled';
+        return $this->is_active;
     }
 
-    public function getPaymentStatusAttribute()
+    public function getAgeAttribute()
     {
-        return $this->is_paid ? 'Paid' : 'Unpaid';
-    }
-
-    public function getPaymentStatusBadgeAttribute()
-    {
-        return $this->is_paid ? 'success' : 'danger';
+        return $this->date_of_birth ? \Carbon\Carbon::parse($this->date_of_birth)->age : null;
     }
 
     /**

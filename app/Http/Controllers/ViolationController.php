@@ -13,7 +13,7 @@ use Carbon\Carbon;
 class ViolationController extends Controller
 {
     /**
-     * Display a listing of violations.
+     * Display a listing of violations. | React Native Controller
      */
     public function index()
     {
@@ -75,13 +75,22 @@ class ViolationController extends Controller
         $validator = Validator::make($request->all(), [
             'student_id' => 'required|exists:students,id',
             'violation_type' => 'required|string|max:50',
-            'description' => 'required|string',
-            'date' => 'required|date',
+            // description is now optional
+            'description' => 'nullable|string',
+            // Accept both 'date' and 'violation_date'
+            'date' => 'nullable|date',
+            'violation_date' => 'nullable|date',
+            'title' => 'nullable|string|max:100',
+            'time' => 'nullable|string',
             'severity' => 'nullable|in:minor,major,severe',
             'location' => 'nullable|string|max:100',
             'evidence' => 'nullable|string',
             'notes' => 'nullable|string',
+            'allowDuplicate' => 'nullable|boolean',
+            'image_base64' => 'nullable|string',
+            'image_mime_type' => 'nullable|string',
         ]);
+
 
         if ($validator->fails()) {
             return response()->json([
@@ -91,37 +100,68 @@ class ViolationController extends Controller
         }
 
         try {
-            // Check for duplicate violation on the same day
-            $date = Carbon::parse($request->date)->format('Y-m-d');
-            $duplicate = Violation::where('student_id', $request->student_id)
-                ->where('violation_type', $request->violation_type)
-                ->whereDate('violation_date', $date)
-                ->exists();
-
-            if ($duplicate) {
+            // Accept both 'date' and 'violation_date' from request
+            $date = $request->date ?? $request->violation_date;
+            if ($date) {
+                $date = Carbon::parse($date)->format('Y-m-d');
+            } else {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Duplicate violation found for this student on the same day',
-                    'is_duplicate' => true
-                ], 409);
+                    'message' => 'Violation date is required.'
+                ], 422);
+            }
+
+            // Duplicate check unless allowDuplicate is true
+            $allowDuplicate = $request->input('allowDuplicate', false);
+            if (!$allowDuplicate) {
+                $duplicate = Violation::where('student_id', $request->student_id)
+                    ->where('violation_type', $request->violation_type)
+                    ->whereDate('violation_date', $date)
+                    ->exists();
+                if ($duplicate) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Duplicate violation found for this student on the same day',
+                        'is_duplicate' => true
+                    ], 409);
+                }
+            }
+
+            // Auto-generate description if not provided
+            $description = $request->description;
+            if (!$description) {
+                $description = 'Violation: ' . $request->violation_type . ' recorded.';
+            }
+
+            // Use title if provided, else default
+            $title = $request->title ?? (ucfirst($request->violation_type) . ' Violation');
+
+            // Find the discipline record for the current user (from disciplines table)
+            $discipline = \App\Models\Discipline::where('user_id', Auth::id())->first();
+            if (!$discipline) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Discipline record not found for this user.'
+                ], 422);
             }
 
             $violation = Violation::create([
                 'student_id' => $request->student_id,
-                'reported_by' => Auth::id(), // Assuming staff is authenticated
+                'reported_by' => $discipline->id,
                 'violation_type' => $request->violation_type,
-                'title' => ucfirst($request->violation_type) . ' Violation',
-                'description' => $request->description,
+                'title' => $title,
+                'description' => $description,
                 'severity' => $request->severity ?? 'minor',
-                'violation_date' => $request->date,
+                'violation_date' => $date,
                 'location' => $request->location,
                 'evidence' => $request->evidence,
                 'notes' => $request->notes,
                 'status' => 'pending',
+                // Optionally store time if you have a column for it
+                // 'time' => $request->time,
             ]);
 
-            // You might want to add event/notification here
-            // event(new ViolationReported($violation));
+            // Optionally handle image_base64 saving here if needed
 
             return response()->json([
                 'success' => true,
