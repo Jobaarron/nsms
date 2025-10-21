@@ -89,6 +89,18 @@
           </li>
           
           <li class="nav-item mb-2">
+            <a class="nav-link {{ request()->routeIs('student.schedule.*') ? 'active' : '' }}" href="{{ route('student.schedule.index') }}">
+              <i class="ri-calendar-line me-2"></i>Class Schedule
+            </a>
+          </li>
+          
+          <li class="nav-item mb-2">
+            <a class="nav-link {{ request()->routeIs('student.grades.*') ? 'active' : '' }}" href="{{ route('student.grades.index') }}">
+              <i class="ri-file-text-line me-2"></i>Grades
+            </a>
+          </li>
+          
+          <li class="nav-item mb-2">
             <a class="nav-link {{ request()->routeIs('student.violations') ? 'active' : '' }}" href="{{ route('student.violations') }}">
               <i class="ri-flag-line me-2"></i>Violations
             </a>

@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\Log;
 use App\Models\Subject;
 use App\Models\Fee;
 use App\Models\Payment;
+use App\Models\ClassSchedule;
+use App\Models\Grade;
 use Illuminate\Support\Facades\DB;
 
 class StudentController extends Controller

@@ -8,7 +8,7 @@ use Spatie\Permission\Models\Permission;
 use App\Models\User;
 use App\Models\Admin;
 use App\Models\Teacher;
-use App\Models\GuidanceDiscipline;
+// use App\Models\GuidanceDiscipline; // Removed - now using separate Guidance and Discipline models
 use App\Models\Discipline;
 use App\Models\Guidance;
 
@@ -90,6 +90,14 @@ class RolePermissionSeeder extends Seeder
             'Generate Payment Reports',
             'Export Payment Data',
             
+            // FACULTY HEAD LAYOUT PERMISSIONS (faculty-head-layout.blade.php)
+            'Faculty Head Dashboard',
+            'Assign Adviser per Class',
+            'Assign Teacher per Subject/Section',
+            'View Submitted Grades from Teachers',
+            'Approve/Reject Submitted Grades from Teachers',
+            'Activate Grade Submission',
+            
             // CORE SYSTEM PERMISSIONS (for AdminController compatibility)
             'View Reports',
             'View Analytics',
@@ -107,6 +115,9 @@ class RolePermissionSeeder extends Seeder
                 'guard_name' => 'web'
             ]);
         }
+
+        // Faculty Head permissions are already created above with 'web' guard
+        // No need to create separate permissions with different guard
 
 
         // Create roles and assign permissions
@@ -223,16 +234,15 @@ class RolePermissionSeeder extends Seeder
             'View Reports',
         ]);
 
-        // FACULTY HEAD ROLE - Academic leadership
+        // FACULTY HEAD ROLE - Based on faculty-head-layout.blade.php sidebar navigation (using web guard)
         $facultyHead = Role::firstOrCreate(['name' => 'faculty_head', 'guard_name' => 'web']);
         $facultyHead->syncPermissions([
-            'Teacher Dashboard',
-            'My Classes',
-            'View Students',
-            'Grade Book',
-            'Attendance Management',
-            'Teacher Messages',
-            'Guidance Analytics',
+            'Faculty Head Dashboard',
+            'Assign Adviser per Class',
+            'Assign Teacher per Subject/Section', 
+            'View Submitted Grades from Teachers',
+            'Approve/Reject Submitted Grades from Teachers',
+            'Activate Grade Submission',
         ]);
 
         // REGISTRAR ROLE - Based on registrar-layout.blade.php sidebar navigation
@@ -324,8 +334,8 @@ class RolePermissionSeeder extends Seeder
             ]
         );
         
-        // Create GuidanceDiscipline record for Guidance Counselor
-        GuidanceDiscipline::firstOrCreate(
+        // Create Guidance record for Guidance Counselor (new separate system)
+        Guidance::firstOrCreate(
             ['user_id' => $guidanceUser->id],
             [
                 'employee_id' => 'GDC001',
@@ -334,15 +344,14 @@ class RolePermissionSeeder extends Seeder
                 'phone_number' => '09123456789',
                 'address' => '123 Guidance Street, Quezon City',
                 'position' => 'Guidance Counselor',
-                'specialization' => 'Educational Psychology',
-                'type' => 'guidance',
+                'specialization' => 'guidance_counselor',
                 'hire_date' => '2023-01-15',
                 'qualifications' => 'Master of Arts in Guidance and Counseling',
                 'emergency_contact_name' => 'Juan Santos',
                 'emergency_contact_phone' => '09987654321',
                 'emergency_contact_relationship' => 'spouse',
                 'notes' => 'Specializes in academic and career counseling',
-                'department' => 'guidance',
+                'is_active' => true,
             ]
         );
         
@@ -358,8 +367,8 @@ class RolePermissionSeeder extends Seeder
             ]
         );
         
-        // Create GuidanceDiscipline record for Discipline Head
-        GuidanceDiscipline::firstOrCreate(
+        // Create Discipline record for Discipline Head (new separate system)
+        Discipline::firstOrCreate(
             ['user_id' => $disciplineHeadUser->id],
             [
                 'employee_id' => 'DH001',
@@ -368,15 +377,14 @@ class RolePermissionSeeder extends Seeder
                 'phone_number' => '09234567890',
                 'address' => '456 Discipline Avenue, Manila',
                 'position' => 'Discipline Head',
-                'specialization' => 'Student Discipline Management',
-                'type' => 'discipline',
+                'specialization' => 'discipline_head',
                 'hire_date' => '2022-06-01',
                 'qualifications' => 'Bachelor of Science in Education, Discipline Management Certificate',
                 'emergency_contact_name' => 'Ana Cruz',
                 'emergency_contact_phone' => '09876543210',
                 'emergency_contact_relationship' => 'spouse',
                 'notes' => 'Head of Student Discipline Department',
-                'department' => 'discipline',
+                'is_active' => true,
             ]
         );
         
@@ -392,8 +400,8 @@ class RolePermissionSeeder extends Seeder
             ]
         );
         
-        // Create GuidanceDiscipline record for Discipline Officer
-        GuidanceDiscipline::firstOrCreate(
+        // Create Discipline record for Discipline Officer (new separate system)
+        Discipline::firstOrCreate(
             ['user_id' => $disciplineOfficerUser->id],
             [
                 'employee_id' => 'DO001',
@@ -402,15 +410,14 @@ class RolePermissionSeeder extends Seeder
                 'phone_number' => '09345678901',
                 'address' => '789 Officer Lane, Pasig City',
                 'position' => 'Discipline Officer',
-                'specialization' => 'Student Behavior Management',
-                'type' => 'discipline',
+                'specialization' => 'discipline_officer',
                 'hire_date' => '2023-08-15',
                 'qualifications' => 'Bachelor of Arts in Psychology',
                 'emergency_contact_name' => 'Lisa Mendoza',
                 'emergency_contact_phone' => '09765432109',
                 'emergency_contact_relationship' => 'sibling',
                 'notes' => 'Handles student violations and disciplinary actions',
-                'department' => 'discipline',
+                'is_active' => true,
             ]
         );
         
@@ -642,6 +649,39 @@ class RolePermissionSeeder extends Seeder
         
         // Assign head counselor role
         $headCounselorUser->assignRole('head_counselor');
+
+        // 11. Create Faculty Head User (separate system with faculty_head guard)
+        $facultyHeadUser = \App\Models\FacultyHead::firstOrCreate(
+            ['employee_id' => 'FH001'],
+            [
+                'user_id' => User::firstOrCreate([
+                    'email' => 'faculty.head@nicolites.edu',
+                    'name' => 'Dr. Antonio Gonzales',
+                    'password' => bcrypt('facultyhead2024'),
+                ])->id,
+                'employee_id' => 'FH001',
+                'department' => 'Academic Affairs',
+                'position' => 'Faculty Head',
+                'appointed_date' => '2023-01-15',
+                'employment_status' => 'active',
+                'phone_number' => '09567890123',
+                'address' => '654 Faculty Avenue, Quezon City',
+                'qualifications' => 'Doctor of Philosophy in Educational Leadership, Master of Arts in Teaching',
+                'permissions' => [
+                    'Faculty Head Dashboard',
+                    'Assign Adviser per Class',
+                    'Assign Teacher per Subject/Section',
+                    'View Submitted Grades from Teachers',
+                    'Approve/Reject Submitted Grades from Teachers',
+                    'Activate Grade Submission',
+                ],
+                'is_active' => true,
+                'notes' => 'Head of Faculty responsible for teacher assignments and grade oversight',
+            ]
+        );
+        
+        // Assign faculty head role (using faculty_head guard)
+        $facultyHeadUser->assignRole('faculty_head');
         
     }
 }

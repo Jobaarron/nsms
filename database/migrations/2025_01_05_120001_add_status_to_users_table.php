@@ -12,10 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            // Add teacher_id column without foreign key constraint to avoid circular dependency
-            // The teachers table already has user_id foreign key, so this creates a bidirectional relationship
-            $table->unsignedBigInteger('teacher_id')->after('id')->nullable();
-            $table->index('teacher_id');
+            $table->enum('status', ['active', 'inactive', 'suspended', 'pending'])
+                  ->default('active')
+                  ->after('email_verified_at');
         });
     }
 
@@ -25,8 +24,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropIndex(['teacher_id']);
-            $table->dropColumn('teacher_id');
+            $table->dropColumn('status');
         });
     }
 };

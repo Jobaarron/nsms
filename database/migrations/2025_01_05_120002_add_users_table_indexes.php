@@ -12,10 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            // Add teacher_id column without foreign key constraint to avoid circular dependency
-            // The teachers table already has user_id foreign key, so this creates a bidirectional relationship
-            $table->unsignedBigInteger('teacher_id')->after('id')->nullable();
-            $table->index('teacher_id');
+            // Add performance indexes for commonly queried fields
+            $table->index('email_verified_at');
+            $table->index(['status', 'created_at']); // Compound index for status filtering with date ordering
         });
     }
 
@@ -25,8 +24,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropIndex(['teacher_id']);
-            $table->dropColumn('teacher_id');
+            $table->dropIndex(['email_verified_at']);
+            $table->dropIndex(['status', 'created_at']);
         });
     }
 };

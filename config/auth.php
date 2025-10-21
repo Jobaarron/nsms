@@ -70,6 +70,11 @@ return [
             'driver' => 'session',
             'provider' => 'cashiers',
         ],
+        
+        'faculty_head' => [
+            'driver' => 'session',
+            'provider' => 'faculty_heads',
+        ],
     ],
 
     /*
@@ -123,6 +128,11 @@ return [
         'cashiers' => [
             'driver' => 'eloquent',
             'model' => App\Models\Cashier::class,
+        ],
+
+        'faculty_heads' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\FacultyHead::class,
         ],
 
         // 'users' => [

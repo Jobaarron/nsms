@@ -6,6 +6,9 @@ use App\Models\User;
 use App\Models\Teacher;
 use App\Models\Student;
 use App\Models\CounselingSession;
+use App\Models\FacultyAssignment;
+use App\Models\GradeSubmission;
+use App\Models\ClassSchedule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -20,7 +23,77 @@ class TeacherController extends Controller
      */
     public function index()
     {
-        return view('teacher.index');
+        $teacher = Auth::user();
+        $currentAcademicYear = date('Y') . '-' . (date('Y') + 1);
+        
+        try {
+            // Get teacher's assignments
+            $assignments = FacultyAssignment::where('teacher_id', $teacher->id)
+                ->where('academic_year', $currentAcademicYear)
+                ->where('status', 'active')
+                ->with(['subject', 'teacher'])
+                ->get();
+            
+            // Get recent grade submissions
+            $recentSubmissions = GradeSubmission::where('teacher_id', $teacher->id)
+                ->where('academic_year', $currentAcademicYear)
+                ->with(['subject'])
+                ->orderBy('created_at', 'desc')
+                ->limit(5)
+                ->get();
+                
+            // Calculate statistics
+            $stats = [
+                'total_classes' => $assignments->count(),
+                'total_students' => $assignments->sum('student_count') ?: 0,
+                'grade_submissions' => $recentSubmissions->count(),
+                'weekly_hours' => $assignments->sum('weekly_hours') ?: 0,
+            ];
+        } catch (\Exception $e) {
+            // Handle case where tables don't exist yet
+            $assignments = collect();
+            $recentSubmissions = collect();
+            $stats = [
+                'total_classes' => 0,
+                'total_students' => 0,
+                'grade_submissions' => 0,
+                'weekly_hours' => 0,
+            ];
+        }
+        
+        return view('teacher.index', compact(
+            'assignments',
+            'stats',
+            'recentSubmissions',
+            'currentAcademicYear'
+        ));
+    }
+
+    /**
+     * Get dashboard statistics for AJAX requests
+     */
+    public function getDashboardStats()
+    {
+        $teacher = Auth::user();
+        $currentAcademicYear = date('Y') . '-' . (date('Y') + 1);
+        
+        // Get teacher's assignments
+        $assignments = FacultyAssignment::where('teacher_id', $teacher->id)
+            ->where('academic_year', $currentAcademicYear)
+            ->where('status', 'active')
+            ->get();
+        
+        // Calculate real-time statistics
+        $stats = [
+            'total_classes' => $assignments->count(),
+            'total_students' => $assignments->sum('student_count') ?: 0,
+            'grade_submissions' => GradeSubmission::where('teacher_id', $teacher->id)
+                ->where('academic_year', $currentAcademicYear)
+                ->count(),
+            'weekly_hours' => $assignments->sum('weekly_hours') ?: 0,
+        ];
+        
+        return response()->json($stats);
     }
 
     // REMOVED: generateTeacher() method

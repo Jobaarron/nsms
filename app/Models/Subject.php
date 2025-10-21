@@ -30,6 +30,21 @@ class Subject extends Model
         return $this->hasMany(Grade::class);
     }
 
+    public function classSchedules()
+    {
+        return $this->hasMany(ClassSchedule::class);
+    }
+
+    public function facultyAssignments()
+    {
+        return $this->hasMany(FacultyAssignment::class);
+    }
+
+    public function gradeSubmissions()
+    {
+        return $this->hasMany(GradeSubmission::class);
+    }
+
     // Simple scopes
     public function scopeForGrade($query, $gradeLevel)
     {

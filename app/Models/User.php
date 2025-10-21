@@ -81,6 +81,11 @@ class User extends Authenticatable
     {
         return $this->hasRole('teacher');
     }
+
+    public function getIsFacultyHeadAttribute()
+    {
+        return $this->hasRole('faculty_head');
+    }
     
     // Add this relationship to your existing User model
     public function admin()
@@ -138,10 +143,11 @@ class User extends Authenticatable
     public function getUserRole()
     {
         if ($this->isAdmin()) return 'admin';
+        if ($this->getIsFacultyHeadAttribute()) return 'faculty_head';
         //add disciplinestaffhere
         if ($this->isDisciplineStaff()) return 'discipline_officer';
         if ($this->isGuidanceStaff()) return 'guidance_counselor';
-        // if ($this->isTeacher()) return 'teacher';
+        if ($this->getIsTeacherAttribute()) return 'teacher';
         // if ($this->isGuidanceCounsellor()) return 'guidance_counsellor';
         // if ($this->isDisciplineOfficer()) return 'discipline_officer';
         if ($this->isStudent()) return 'student';
@@ -154,7 +160,7 @@ class User extends Authenticatable
     public function isGuidanceStaff()
     {
         $guidance = $this->guidance;
-        return ($guidance && $guidance->is_active) || $this->guidanceDiscipline()->exists();
+        return ($guidance && $guidance->is_active);
     }
 
     /**
@@ -176,13 +182,7 @@ class User extends Authenticatable
         return;
     }
 
-    /**
-     * Get the guidance discipline record for this user (legacy)
-     */
-    public function guidanceDiscipline()
-    {
-        return $this->hasOne(GuidanceDiscipline::class);
-    }
+    // Legacy guidanceDiscipline relationship removed - now using separate guidance() and discipline() relationships
 
     /**
      * Get the discipline record for this user (new system)
@@ -198,6 +198,101 @@ class User extends Authenticatable
     public function guidance()
     {
         return $this->hasOne(Guidance::class);
+    }
+
+    /**
+     * Get faculty assignments for this teacher
+     */
+    public function facultyAssignments()
+    {
+        return $this->hasMany(FacultyAssignment::class, 'teacher_id');
+    }
+
+    /**
+     * Get class schedules for this teacher
+     */
+    public function classSchedules()
+    {
+        return $this->hasMany(ClassSchedule::class, 'teacher_id');
+    }
+
+    /**
+     * Get grade submissions for this teacher
+     */
+    public function gradeSubmissions()
+    {
+        return $this->hasMany(GradeSubmission::class, 'teacher_id');
+    }
+
+    /**
+     * Get grade submissions reviewed by this faculty head
+     */
+    public function reviewedGradeSubmissions()
+    {
+        return $this->hasMany(GradeSubmission::class, 'reviewed_by');
+    }
+
+    /**
+     * Get faculty assignments made by this faculty head
+     */
+    public function assignmentsMade()
+    {
+        return $this->hasMany(FacultyAssignment::class, 'assigned_by');
+    }
+
+    /**
+     * Get teacher's current teaching load
+     */
+    public function getCurrentTeachingLoad($academicYear = null)
+    {
+        $academicYear = $academicYear ?: (date('Y') . '-' . (date('Y') + 1));
+        
+        return $this->facultyAssignments()
+                   ->where('academic_year', $academicYear)
+                   ->where('status', 'active')
+                   ->with(['subject', 'assignedBy'])
+                   ->get();
+    }
+
+    /**
+     * Get teacher's weekly schedule
+     */
+    public function getWeeklySchedule($academicYear = null)
+    {
+        $academicYear = $academicYear ?: (date('Y') . '-' . (date('Y') + 1));
+        
+        $schedules = $this->classSchedules()
+                         ->where('academic_year', $academicYear)
+                         ->where('is_active', true)
+                         ->with(['subject'])
+                         ->get();
+        
+        $weeklySchedule = [];
+        $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        
+        foreach ($days as $day) {
+            $weeklySchedule[$day] = $schedules->where('day_of_week', $day)
+                                            ->sortBy('start_time')
+                                            ->values();
+        }
+        
+        return $weeklySchedule;
+    }
+
+    /**
+     * Check if user can submit grades for a specific class
+     */
+    public function canSubmitGradesFor($subjectId, $gradeLevel, $section, $academicYear = null)
+    {
+        $academicYear = $academicYear ?: (date('Y') . '-' . (date('Y') + 1));
+        
+        return $this->facultyAssignments()
+                   ->where('subject_id', $subjectId)
+                   ->where('grade_level', $gradeLevel)
+                   ->where('section', $section)
+                   ->where('academic_year', $academicYear)
+                   ->where('status', 'active')
+                   ->exists();
     }
 
 }

@@ -33,45 +33,41 @@
         </div>
         
         <!-- User Info -->
-        {{-- <div class="user-info">
+        <div class="user-info">
           <div class="user-name">{{ Auth::user()->name }}</div>
           <div class="user-role">{{ ucwords(str_replace('_', ' ', Auth::user()->getRoleNames()->first())) }}</div>
-        </div> --}}
+        </div>
+        
         <ul class="nav flex-column">
           <li class="nav-item mb-2">
-            <a class="nav-link active" href="#">
+            <a class="nav-link {{ request()->routeIs('teacher.dashboard') ? 'active' : '' }}" href="{{ route('teacher.dashboard') }}">
               <i class="ri-dashboard-line me-2"></i>Dashboard
             </a>
           </li>
+          
           <li class="nav-item mb-2">
-            <span class="nav-link d-flex justify-content-between align-items-center">
-              <span><i class="ri-book-3-line me-2"></i>My Classes</span>
-              {{-- <small class="badge bg-light text-dark">Soon</small> --}}
-            </span>
+            <a class="nav-link {{ request()->routeIs('teacher.schedule*') ? 'active' : '' }}" href="{{ route('teacher.schedule') }}">
+              <i class="ri-calendar-line me-2"></i>Class Schedule
+            </a>
           </li>
+          
           <li class="nav-item mb-2">
-            <span class="nav-link disabled d-flex justify-content-between align-items-center">
-              <span><i class="ri-team-line me-2"></i>Students</span>
-              <small class="badge bg-light text-dark">Soon</small>
-            </span>
+            <a class="nav-link {{ request()->routeIs('teacher.grades*') ? 'active' : '' }}" href="{{ route('teacher.grades') }}">
+              <i class="ri-pencil-ruler-2-line me-2"></i>Submit Grades
+            </a>
           </li>
+          
           <li class="nav-item mb-2">
-            <span class="nav-link disabled d-flex justify-content-between align-items-center">
-              <span><i class="ri-pencil-ruler-2-line me-2"></i>Grade Book</span>
-              <small class="badge bg-light text-dark">Soon</small>
-            </span>
+            <a class="nav-link {{ request()->routeIs('teacher.schedule.students') ? 'active' : '' }}" href="{{ route('teacher.schedule.students') }}">
+              <i class="ri-team-line me-2"></i>My Students
+            </a>
           </li>
+          
+          
           <li class="nav-item mb-2">
-            <span class="nav-link disabled d-flex justify-content-between align-items-center">
-              <span><i class="ri-time-line me-2"></i>Attendance</span>
-              <small class="badge bg-light text-dark">Soon</small>
-            </span>
-          </li>
-          <li class="nav-item">
-            <span class="nav-link disabled d-flex justify-content-between align-items-center">
-              <span><i class="ri-chat-1-line me-2"></i>Messages</span>
-              <small class="badge bg-light text-dark">Soon</small>
-            </span>
+            <a class="nav-link {{ request()->routeIs('teacher.recommend-counseling.*') ? 'active' : '' }}" href="{{ route('teacher.recommend-counseling.form') }}">
+              <i class="ri-heart-pulse-line me-2"></i>Recommend Counseling
+            </a>
           </li>
 
           <li class="nav-item mt-3">

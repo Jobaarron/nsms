@@ -228,4 +228,106 @@ class Student extends Authenticatable
     {
         return !empty($this->id_photo);
     }
+
+    /**
+     * Get grades for this student
+     */
+    public function grades()
+    {
+        return $this->hasMany(Grade::class);
+    }
+
+    /**
+     * Get class schedules for this student
+     */
+    public function classSchedules()
+    {
+        return ClassSchedule::where('grade_level', $this->grade_level)
+                           ->where('section', $this->section)
+                           ->where('academic_year', $this->academic_year)
+                           ->where('is_active', true)
+                           ->with(['subject', 'teacher'])
+                           ->get();
+    }
+
+    /**
+     * Get grades for a specific quarter with payment check
+     */
+    public function getGradesForQuarter($quarter, $academicYear = null)
+    {
+        $academicYear = $academicYear ?: $this->academic_year;
+        
+        // Check if student has paid for the quarter
+        if (!$this->hasPaidForQuarter($quarter)) {
+            return collect(); // Return empty collection if not paid
+        }
+
+        return $this->grades()
+                   ->where('quarter', $quarter)
+                   ->where('academic_year', $academicYear)
+                   ->with(['subject', 'teacher'])
+                   ->get();
+    }
+
+    /**
+     * Check if student has paid for a specific quarter
+     */
+    public function hasPaidForQuarter($quarter)
+    {
+        // Integration with existing payment system
+        // This checks if the student has made payments for the required fees
+        return $this->is_paid || $this->total_paid > 0;
+    }
+
+    /**
+     * Get weekly class schedule
+     */
+    public function getWeeklySchedule()
+    {
+        $schedules = $this->classSchedules();
+        $weeklySchedule = [];
+        
+        $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        
+        foreach ($days as $day) {
+            $weeklySchedule[$day] = $schedules->where('day_of_week', $day)
+                                            ->sortBy('start_time')
+                                            ->values();
+        }
+        
+        return $weeklySchedule;
+    }
+
+    /**
+     * Get current academic performance
+     */
+    public function getAcademicPerformance($academicYear = null)
+    {
+        $academicYear = $academicYear ?: $this->academic_year;
+        
+        $grades = $this->grades()
+                      ->where('academic_year', $academicYear)
+                      ->where('is_final', true)
+                      ->with('subject')
+                      ->get();
+        
+        $performance = [
+            'total_subjects' => $grades->groupBy('subject_id')->count(),
+            'quarters' => [],
+            'general_average' => null
+        ];
+        
+        foreach (['1st', '2nd', '3rd', '4th'] as $quarter) {
+            $quarterGrades = $grades->where('quarter', $quarter);
+            if ($quarterGrades->isNotEmpty()) {
+                $performance['quarters'][$quarter] = [
+                    'average' => $quarterGrades->avg('grade'),
+                    'subjects_count' => $quarterGrades->count(),
+                    'passing_count' => $quarterGrades->where('grade', '>=', 75)->count()
+                ];
+            }
+        }
+        
+        return $performance;
+    }
 }

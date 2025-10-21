@@ -12,7 +12,8 @@ use App\Models\Admin;
 use App\Models\Teacher;
 use App\Models\Student;
 use App\Models\Enrollee;
-use App\Models\GuidanceDiscipline;
+use App\Models\Guidance;
+use App\Models\Discipline;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 
@@ -170,7 +171,7 @@ class UserManagementController extends Controller
             $request->validate([
                 'name' => 'required|string|max:255',
                 'email' => 'required|string|email|max:255|unique:users',
-                'employee_id' => 'nullable|string|max:255|unique:guidance_discipline,employee_id',
+                'employee_id' => 'nullable|string|max:255|unique:guidances,employee_id',
                 'position' => 'nullable|string|max:255',
                 'specialization' => 'nullable|string|max:255',
                 'hire_date' => 'nullable|date'
@@ -192,16 +193,15 @@ class UserManagementController extends Controller
             $lastName = isset($nameParts[1]) ? $nameParts[1] : '';
 
             // Create guidance record
-            GuidanceDiscipline::create([
+            Guidance::create([
                 'user_id' => $user->id,
                 'employee_id' => $request->employee_id ?: 'GDN' . str_pad($user->id, 3, '0', STR_PAD_LEFT),
                 'first_name' => $firstName,
                 'last_name' => $lastName,
                 'position' => $request->position,
-                'specialization' => $request->specialization,
+                'specialization' => $request->specialization ?: 'guidance_counselor',
                 'hire_date' => $request->hire_date,
-                'department' => 'guidance',
-                'type' => 'guidance'
+                'is_active' => true
             ]);
 
             // Assign guidance counselor role (updated to match RolePermissionSeeder)
@@ -236,7 +236,7 @@ class UserManagementController extends Controller
             $request->validate([
                 'name' => 'required|string|max:255',
                 'email' => 'required|string|email|max:255|unique:users',
-                'employee_id' => 'nullable|string|max:255|unique:guidance_discipline,employee_id',
+                'employee_id' => 'nullable|string|max:255|unique:disciplines,employee_id',
                 'position' => 'nullable|string|max:255',
                 'specialization' => 'nullable|string|max:255',
                 'hire_date' => 'nullable|date'
@@ -258,16 +258,15 @@ class UserManagementController extends Controller
             $lastName = isset($nameParts[1]) ? $nameParts[1] : '';
 
             // Create discipline record
-            GuidanceDiscipline::create([
+            Discipline::create([
                 'user_id' => $user->id,
                 'employee_id' => $request->employee_id ?: 'DSC' . str_pad($user->id, 3, '0', STR_PAD_LEFT),
                 'first_name' => $firstName,
                 'last_name' => $lastName,
                 'position' => $request->position,
-                'specialization' => $request->specialization,
+                'specialization' => $request->specialization ?: 'discipline_head',
                 'hire_date' => $request->hire_date,
-                'department' => 'discipline',
-                'type' => 'discipline'
+                'is_active' => true
             ]);
 
             // Assign discipline role
@@ -318,14 +317,16 @@ class UserManagementController extends Controller
                 'email_verified_at' => now(),
             ]);
 
-            // Create guidance discipline record
-            GuidanceDiscipline::create([
+            // Create guidance record
+            Guidance::create([
                 'user_id' => $user->id,
-                'employee_id' => $request->employee_id,
+                'employee_id' => $request->employee_id ?: 'GC' . str_pad($user->id, 3, '0', STR_PAD_LEFT),
+                'first_name' => explode(' ', $request->name, 2)[0],
+                'last_name' => explode(' ', $request->name, 2)[1] ?? '',
                 'position' => $request->position,
-                'specialization' => $request->specialization,
+                'specialization' => $request->specialization ?: 'guidance_counselor',
                 'hire_date' => $request->hire_date,
-                'type' => 'guidance'
+                'is_active' => true
             ]);
 
             // Assign guidance counselor role
@@ -376,14 +377,16 @@ class UserManagementController extends Controller
                 'email_verified_at' => now(),
             ]);
 
-            // Create guidance discipline record
-            GuidanceDiscipline::create([
+            // Create discipline record
+            Discipline::create([
                 'user_id' => $user->id,
-                'employee_id' => $request->employee_id,
+                'employee_id' => $request->employee_id ?: 'DH' . str_pad($user->id, 3, '0', STR_PAD_LEFT),
+                'first_name' => explode(' ', $request->name, 2)[0],
+                'last_name' => explode(' ', $request->name, 2)[1] ?? '',
                 'position' => $request->position,
-                'specialization' => $request->specialization,
+                'specialization' => $request->specialization ?: 'discipline_head',
                 'hire_date' => $request->hire_date,
-                'type' => 'discipline'
+                'is_active' => true
             ]);
 
             // Assign discipline head role
@@ -434,14 +437,16 @@ class UserManagementController extends Controller
                 'email_verified_at' => now(),
             ]);
 
-            // Create guidance discipline record
-            GuidanceDiscipline::create([
+            // Create discipline record
+            Discipline::create([
                 'user_id' => $user->id,
-                'employee_id' => $request->employee_id,
+                'employee_id' => $request->employee_id ?: 'DO' . str_pad($user->id, 3, '0', STR_PAD_LEFT),
+                'first_name' => explode(' ', $request->name, 2)[0],
+                'last_name' => explode(' ', $request->name, 2)[1] ?? '',
                 'position' => $request->position,
-                'specialization' => $request->specialization,
+                'specialization' => $request->specialization ?: 'discipline_officer',
                 'hire_date' => $request->hire_date,
-                'type' => 'discipline'
+                'is_active' => true
             ]);
 
             // Assign discipline officer role
