@@ -601,8 +601,13 @@ class GuidanceController extends Controller
     public function counselingSessionsIndex()
     {
         $counselingSessions = CounselingSession::with(['student', 'counselor', 'recommender'])
-            ->orderByRaw("CASE WHEN status = 'recommended' THEN 0 ELSE 1 END, scheduled_date DESC")
+            ->orderByRaw("CASE WHEN status = 'recommended' THEN 0 ELSE 1 END, start_date DESC")
             ->paginate(20);
+
+        $scheduledSessions = CounselingSession::with('student')
+            ->where('status', 'scheduled')
+            ->orderBy('start_date', 'desc')
+            ->get();
 
         $students = Student::select('id', 'first_name', 'last_name', 'student_id')
             ->orderBy('last_name', 'asc')
@@ -613,7 +618,7 @@ class GuidanceController extends Controller
             ->orderBy('first_name')
             ->get();
 
-        return view('guidance.counseling-sessions', compact('counselingSessions', 'students', 'counselors'));
+        return view('guidance.counseling-sessions', compact('counselingSessions', 'scheduledSessions', 'students', 'counselors'));
     }
 
     /**
@@ -642,7 +647,19 @@ class GuidanceController extends Controller
         $validatedData['counselor_id'] = $guidanceRecord->id;
         $validatedData['status'] = 'scheduled';
 
-        $counselingSession = CounselingSession::create($validatedData);
+        // Auto-set session_no based on count of previous sessions for this student
+        $studentId = $validatedData['student_id'];
+        $sessionCount = CounselingSession::where('student_id', $studentId)->count();
+        $validatedData['session_no'] = $sessionCount + 1;
+
+        $counselingSession = CounselingSession::create([
+            ...$validatedData,
+            'referral_academic' => isset($validatedData['referral_academic']) ? json_encode($validatedData['referral_academic']) : null,
+            'referral_academic_other' => $validatedData['referral_academic_other'] ?? null,
+            'referral_social' => isset($validatedData['referral_social']) ? json_encode($validatedData['referral_social']) : null,
+            'referral_social_other' => $validatedData['referral_social_other'] ?? null,
+            'incident_description' => $validatedData['incident_description'] ?? null,
+        ]);
 
         return redirect()->route('guidance.counseling-sessions.index')
             ->with('success', 'Counseling session scheduled successfully.');
@@ -789,7 +806,7 @@ class GuidanceController extends Controller
         }
 
         $counselingSessions = CounselingSession::with(['student', 'counselor', 'recommender'])
-            ->orderByRaw("CASE WHEN status = 'recommended' THEN 0 ELSE 1 END, scheduled_date DESC")
+            ->orderByRaw("CASE WHEN status = 'recommended' THEN 0 ELSE 1 END, start_date DESC")
             ->paginate(20);
 
         $students = Student::select('id', 'first_name', 'last_name', 'student_id')
@@ -1080,5 +1097,39 @@ class GuidanceController extends Controller
             'career' => 'bg-warning',
             default => 'bg-secondary'
         };
+    }
+
+    /**
+     * Approve counseling session via AJAX
+     */
+    public function approveCounselingSession(Request $request)
+    {
+        $request->validate([
+            'session_id' => 'required|exists:counseling_sessions,id',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'time_limit' => 'required|integer|min:1|max:240',
+            'time' => 'required|date_format:H:i',
+        ]);
+
+
+        $session = CounselingSession::findOrFail($request->session_id);
+        $session->start_date = $request->start_date;
+        $session->end_date = $request->end_date;
+        $session->time_limit = $request->time_limit;
+        $session->time = $request->time;
+        $session->status = 'scheduled';
+
+        // Auto-set session_no: count all scheduled+completed sessions for this student (excluding this one if already scheduled)
+        $studentId = $session->student_id;
+        $sessionCount = CounselingSession::where('student_id', $studentId)
+            ->whereIn('status', ['scheduled', 'completed'])
+            ->where('id', '!=', $session->id)
+            ->count();
+        $session->session_no = $sessionCount + 1;
+
+        $session->save();
+
+        return response()->json(['success' => true]);
     }
 }

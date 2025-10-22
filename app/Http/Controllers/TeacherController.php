@@ -109,18 +109,22 @@ class TeacherController extends Controller
     {
         $validatedData = $request->validate([
             'student_id' => 'required|exists:students,id',
-            'reason' => 'required|string',
-            'notes' => 'nullable|string',
+            'referral_academic' => 'nullable|array',
+            'referral_academic_other' => 'nullable|string',
+            'referral_social' => 'nullable|array',
+            'referral_social_other' => 'nullable|string',
+            'incident_description' => 'nullable|string',
         ]);
 
-        // Create a counseling session recommendation
         CounselingSession::create([
             'student_id' => $validatedData['student_id'],
             'recommended_by' => Auth::id(),
-            'reason' => $validatedData['reason'],
-            'notes' => $validatedData['notes'],
-            'status' => 'recommended', // New status for recommendations
-            'session_type' => 'individual', // Default
+            'referral_academic' => isset($validatedData['referral_academic']) ? json_encode($validatedData['referral_academic']) : null,
+            'referral_academic_other' => $validatedData['referral_academic_other'] ?? null,
+            'referral_social' => isset($validatedData['referral_social']) ? json_encode($validatedData['referral_social']) : null,
+            'referral_social_other' => $validatedData['referral_social_other'] ?? null,
+            'incident_description' => $validatedData['incident_description'] ?? null,
+            'status' => 'recommended',
         ]);
 
         return redirect()->route('teacher.dashboard')
