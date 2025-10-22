@@ -1,4 +1,6 @@
 <x-student-layout>
+  @vite(['resources/js/student-schedule.js'])
+  
   <!-- MAIN CONTENT -->
   <main class="col-12 col-md-10 px-4 py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -66,7 +68,7 @@
     <div class="card">
       <div class="card-header">
         <h5 class="mb-0">
-          <i class="ri-calendar-2-line me-2"></i>Weekly Schedule
+          <i class="ri-calendar-2-line me-2"></i>Schedule
         </h5>
       </div>
       <div class="card-body">
@@ -107,6 +109,3 @@
   </main>
 </x-student-layout>
 
-@push('scripts')
-<script src="{{ asset('js/student-schedule.js') }}"></script>
-@endpush

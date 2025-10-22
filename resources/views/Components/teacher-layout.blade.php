@@ -58,7 +58,7 @@
           </li>
           
           <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('teacher.schedule.students') ? 'active' : '' }}" href="{{ route('teacher.schedule.students') }}">
+            <a class="nav-link {{ request()->routeIs('teacher.students') ? 'active' : '' }}" href="/teacher/students">
               <i class="ri-team-line me-2"></i>My Students
             </a>
           </li>

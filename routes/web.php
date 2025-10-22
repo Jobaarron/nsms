@@ -242,6 +242,8 @@ Route::middleware(['auth', 'role:teacher'])->prefix('teacher')->name('teacher.')
 Route::middleware(['auth', 'role:teacher|faculty_head'])->prefix('teacher')->name('teacher.')->group(function () {
     Route::get('/schedule/calendar', [App\Http\Controllers\TeacherScheduleController::class, 'calendar'])
         ->name('schedule.calendar');
+    Route::get('/students', [App\Http\Controllers\TeacherScheduleController::class, 'allStudents'])
+        ->name('students');
     Route::get('/schedule/students', [App\Http\Controllers\TeacherScheduleController::class, 'students'])
         ->name('schedule.students');
     Route::get('/schedule/data', [App\Http\Controllers\TeacherScheduleController::class, 'getScheduleData'])
@@ -708,10 +710,18 @@ Route::prefix('registrar')->name('registrar.')->group(function () {
         
         // Logout
         Route::post('/logout', function(Request $request) {
+            // Clear all authentication guards to prevent session conflicts
             Auth::guard('registrar')->logout();
+            Auth::guard('web')->logout();
+            Auth::guard('enrollee')->logout();
+            Auth::guard('student')->logout();
+            
+            // Completely clear the session
             $request->session()->invalidate();
             $request->session()->regenerateToken();
-            return redirect()->route('registrar.login');
+            $request->session()->flush();
+            
+            return redirect()->route('registrar.login')->with('success', 'Logged out successfully');
         })->name('logout');
     });
 });

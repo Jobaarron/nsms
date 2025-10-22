@@ -39,7 +39,7 @@ class StudentScheduleController extends Controller
             'section' => $student->section
         ];
 
-        return view('student.schedule.index', compact('student', 'weeklySchedule', 'stats', 'currentAcademicYear'));
+        return view('student.schedule', compact('student', 'weeklySchedule', 'stats', 'currentAcademicYear'));
     }
 
     /**

@@ -25,14 +25,14 @@ class TeacherScheduleController extends Controller
         
         try {
             // Get teacher's assignments
-            $assignments = FacultyAssignment::where('teacher_id', $teacher->id)
+            $assignments = FacultyAssignment::where('teacher_id', $teacher->teacher->id)
                 ->where('academic_year', $currentAcademicYear)
                 ->where('status', 'active')
                 ->with(['subject', 'teacher'])
                 ->get();
             
             // Get teacher's weekly schedule
-            $weeklySchedule = ClassSchedule::where('teacher_id', $teacher->id)
+            $weeklySchedule = ClassSchedule::where('teacher_id', $teacher->teacher->id)
                 ->where('academic_year', $currentAcademicYear)
                 ->with(['subject'])
                 ->orderBy('day_of_week')
@@ -77,7 +77,49 @@ class TeacherScheduleController extends Controller
             $timeSlots[] = sprintf('%02d:00', $hour);
         }
 
-        return view('teacher.schedule.calendar', compact('teacher', 'weeklySchedule', 'timeSlots'));
+        return view('teacher.schedule', compact('teacher', 'weeklySchedule', 'timeSlots'));
+    }
+
+    /**
+     * Display all students across teacher's classes
+     */
+    public function allStudents()
+    {
+        $teacher = Auth::user();
+        $currentAcademicYear = date('Y') . '-' . (date('Y') + 1);
+
+        // Check if teacher profile exists
+        if (!$teacher->teacher) {
+            return redirect()->route('teacher.schedule')->with('error', 'Teacher profile not found. Please contact administration.');
+        }
+
+        // Get all teacher's assignments
+        $assignments = FacultyAssignment::where('teacher_id', $teacher->teacher->id)
+                                       ->where('academic_year', $currentAcademicYear)
+                                       ->where('status', 'active')
+                                       ->with(['subject'])
+                                       ->get();
+
+        // Group students by class
+        $studentsByClass = collect();
+        foreach ($assignments as $assignment) {
+            $students = Student::where('grade_level', $assignment->grade_level)
+                              ->where('section', $assignment->section)
+                              ->where('academic_year', $currentAcademicYear)
+                              ->where('is_active', true)
+                              ->orderBy('last_name')
+                              ->orderBy('first_name')
+                              ->get();
+
+            $studentsByClass->push([
+                'assignment' => $assignment,
+                'students' => $students,
+                'class_name' => $assignment->grade_level . ' - ' . $assignment->section,
+                'subject' => $assignment->subject->subject_name
+            ]);
+        }
+
+        return view('teacher.students', compact('teacher', 'studentsByClass', 'currentAcademicYear'));
     }
 
     /**
@@ -92,7 +134,7 @@ class TeacherScheduleController extends Controller
         $currentAcademicYear = date('Y') . '-' . (date('Y') + 1);
 
         // Verify teacher is assigned to this class
-        $assignment = FacultyAssignment::where('teacher_id', $teacher->id)
+        $assignment = FacultyAssignment::where('teacher_id', $teacher->teacher->id)
                                      ->where('subject_id', $subjectId)
                                      ->where('grade_level', $gradeLevel)
                                      ->where('section', $section)
@@ -102,7 +144,7 @@ class TeacherScheduleController extends Controller
                                      ->first();
 
         if (!$assignment) {
-            return redirect()->route('teacher.schedule.index')->with('error', 'You are not assigned to this class.');
+            return redirect()->route('teacher.schedule')->with('error', 'You are not assigned to this class.');
         }
 
         // Get students in this class
@@ -123,7 +165,7 @@ class TeacherScheduleController extends Controller
                                 ->where('is_active', true)
                                 ->get();
 
-        return view('teacher.schedule.students', compact('teacher', 'assignment', 'students', 'schedule'));
+        return view('teacher.schedule', compact('teacher', 'assignment', 'students', 'schedule'));
     }
 
     /**

@@ -28,14 +28,14 @@ class TeacherGradeController extends Controller
         
         try {
             // Get teacher's assignments
-            $assignments = FacultyAssignment::where('teacher_id', $teacher->id)
+            $assignments = FacultyAssignment::where('teacher_id', $teacher->teacher->id)
                 ->where('academic_year', $currentAcademicYear)
                 ->where('status', 'active')
                 ->with(['subject', 'teacher'])
                 ->get();
             
             // Get grade submissions
-            $submissions = GradeSubmission::where('teacher_id', $teacher->id)
+            $submissions = GradeSubmission::where('teacher_id', $teacher->teacher->id)
                 ->where('academic_year', $currentAcademicYear)
                 ->with(['subject'])
                 ->orderBy('created_at', 'desc')
@@ -67,12 +67,12 @@ class TeacherGradeController extends Controller
 
         // Verify teacher can submit grades for this class
         if (!$teacher->canSubmitGradesFor($subjectId, $gradeLevel, $section, $currentAcademicYear)) {
-            return redirect()->route('teacher.grades.index')->with('error', 'You are not assigned to this class.');
+            return redirect()->route('teacher.grades')->with('error', 'You are not assigned to this class.');
         }
 
         // Get or create grade submission
         $submission = GradeSubmission::firstOrCreate([
-            'teacher_id' => $teacher->id,
+            'teacher_id' => $teacher->teacher->id,
             'subject_id' => $subjectId,
             'grade_level' => $gradeLevel,
             'section' => $section,
@@ -101,7 +101,7 @@ class TeacherGradeController extends Controller
         $existingGrades = $submission->getExistingGrades();
 
         // Get faculty assignment details
-        $assignment = FacultyAssignment::where('teacher_id', $teacher->id)
+        $assignment = FacultyAssignment::where('teacher_id', $teacher->teacher->id)
                                      ->where('subject_id', $subjectId)
                                      ->where('grade_level', $gradeLevel)
                                      ->where('section', $section)
@@ -110,7 +110,7 @@ class TeacherGradeController extends Controller
                                      ->with('subject')
                                      ->first();
 
-        return view('teacher.grades.create', compact('submission', 'students', 'existingGrades', 'assignment', 'quarter'));
+        return view('teacher.grades', compact('submission', 'students', 'existingGrades', 'assignment', 'quarter'));
     }
 
     /**
@@ -131,7 +131,7 @@ class TeacherGradeController extends Controller
         $submission = GradeSubmission::findOrFail($request->submission_id);
 
         // Verify ownership
-        if ($submission->teacher_id !== $teacher->id) {
+        if ($submission->teacher_id !== $teacher->teacher->id) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -178,13 +178,13 @@ class TeacherGradeController extends Controller
         $teacher = Auth::user();
 
         // Verify ownership
-        if ($submission->teacher_id !== $teacher->id) {
-            return redirect()->route('teacher.grades.index')->with('error', 'Unauthorized');
+        if ($submission->teacher_id !== $teacher->teacher->id) {
+            return redirect()->route('teacher.grades')->with('error', 'Unauthorized');
         }
 
         // Check if can submit
         if (!$submission->canSubmit()) {
-            return redirect()->route('teacher.grades.index')->with('error', 'All student grades must be entered before submission');
+            return redirect()->route('teacher.grades')->with('error', 'All student grades must be entered before submission');
         }
 
         $request->validate([
@@ -193,7 +193,7 @@ class TeacherGradeController extends Controller
 
         $submission->submit($request->submission_notes);
 
-        return redirect()->route('teacher.grades.index')->with('success', 'Grades submitted for review successfully');
+        return redirect()->route('teacher.grades')->with('success', 'Grades submitted for review successfully');
     }
 
     /**
@@ -204,14 +204,14 @@ class TeacherGradeController extends Controller
         $teacher = Auth::user();
 
         // Verify ownership or faculty head access
-        if ($submission->teacher_id !== $teacher->id && !$teacher->hasRole('faculty_head')) {
-            return redirect()->route('teacher.grades.index')->with('error', 'Unauthorized');
+        if ($submission->teacher_id !== $teacher->teacher->id && !$teacher->hasRole('faculty_head')) {
+            return redirect()->route('teacher.grades')->with('error', 'Unauthorized');
         }
 
         $students = $submission->students();
         $assignment = $submission->facultyAssignment();
 
-        return view('teacher.grades.show', compact('submission', 'students', 'assignment'));
+        return view('teacher.grades', compact('submission', 'students', 'assignment'));
     }
 
     /**
@@ -228,7 +228,7 @@ class TeacherGradeController extends Controller
         $submission = GradeSubmission::findOrFail($request->submission_id);
 
         // Verify ownership
-        if ($submission->teacher_id !== $teacher->id) {
+        if ($submission->teacher_id !== $teacher->teacher->id) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -259,7 +259,7 @@ class TeacherGradeController extends Controller
         $teacher = Auth::user();
 
         // Verify ownership or faculty head access
-        if ($submission->teacher_id !== $teacher->id && !$teacher->hasRole('faculty_head')) {
+        if ($submission->teacher_id !== $teacher->teacher->id && !$teacher->hasRole('faculty_head')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 

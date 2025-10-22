@@ -12,27 +12,21 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Revamped faculty_assignments table using Laravel Schema Builder
-        // This table enables all faculty head features from the checklist:
-        // - Assign teacher per subject/section
-        // - Assign adviser per class  
-        // - View submitted grades from teachers
-        // - Approve/reject submitted grades
-        // - Activate grade submission
+      
         
         // Use the same approach as grade_submissions migration
         Schema::create('faculty_assignments', function (Blueprint $table) {
             $table->id();
             
             // Core assignment relationships - following the same pattern as grade_submissions
-            $table->foreignId('teacher_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('teacher_id')->constrained('teachers')->onDelete('cascade');
             $table->foreignId('subject_id')->constrained('subjects')->onDelete('cascade');
             $table->foreignId('assigned_by')->constrained('users')->onDelete('cascade');
             
             // Class identification
             $table->string('grade_level')->comment('Grade level (e.g., Grade 7, Grade 8)');
             $table->string('section')->comment('Section name (e.g., A, B, C)');
-            $table->string('academic_year')->default('2025-2026')->comment('Academic year');
+            $table->string('academic_year')->default(date('Y') . '-' . (date('Y') + 1))->comment('Academic year');
             
             // Assignment type and status
             $table->enum('assignment_type', ['subject_teacher', 'class_adviser'])

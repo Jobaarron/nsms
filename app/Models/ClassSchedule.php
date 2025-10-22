@@ -37,7 +37,7 @@ class ClassSchedule extends Model
 
     public function teacher()
     {
-        return $this->belongsTo(User::class, 'teacher_id'); // Links to users table like grades
+        return $this->belongsTo(Teacher::class, 'teacher_id'); // Links to teachers table
     }
 
     // Get students for this class schedule

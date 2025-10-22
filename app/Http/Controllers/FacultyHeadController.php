@@ -50,7 +50,7 @@ class FacultyHeadController extends Controller
                                        ->limit(10)
                                        ->get();
 
-        return view('faculty-head.dashboard', compact('facultyHead', 'stats', 'recentSubmissions', 'recentAssignments', 'currentAcademicYear'));
+        return view('faculty-head.index', compact('facultyHead', 'stats', 'recentSubmissions', 'recentAssignments', 'currentAcademicYear'));
     }
 
     /**
@@ -214,7 +214,7 @@ class FacultyHeadController extends Controller
             return $assignment->grade_level . ' - ' . $assignment->section;
         });
 
-        return view('faculty-head.assignments.index', compact('teachers', 'subjects', 'assignments', 'assignmentsByClass', 'currentAcademicYear'));
+        return view('faculty-head.assign-teacher', compact('teachers', 'subjects', 'assignments', 'assignmentsByClass', 'currentAcademicYear'));
     }
 
     /**
@@ -289,7 +289,7 @@ class FacultyHeadController extends Controller
 
         $submissionsByStatus = $submissions->groupBy('status');
 
-        return view('faculty-head.grades.index', compact('submissions', 'submissionsByStatus'));
+        return view('faculty-head.view-grades', compact('submissions', 'submissionsByStatus'));
     }
 
     /**
@@ -300,7 +300,7 @@ class FacultyHeadController extends Controller
         $students = $submission->students();
         $assignment = $submission->facultyAssignment();
         
-        return view('faculty-head.grades.review', compact('submission', 'students', 'assignment'));
+        return view('faculty-head.approve-grades', compact('submission', 'students', 'assignment'));
     }
 
     /**
@@ -360,7 +360,7 @@ class FacultyHeadController extends Controller
 
         $schedulesByDay = $schedules->groupBy('day_of_week');
 
-        return view('faculty-head.schedules.index', compact('schedules', 'schedulesByDay', 'currentAcademicYear'));
+        return view('faculty-head.index', compact('schedules', 'schedulesByDay', 'currentAcademicYear'));
     }
 
     /**

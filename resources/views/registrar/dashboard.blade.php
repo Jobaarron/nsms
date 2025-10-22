@@ -110,7 +110,7 @@
                                     </div>
                                     <div class="col-md-5">
                                         <div class="d-flex gap-2 justify-content-end">
-                                            <a href="{{ route('registrar.applications.get', $application->id) }}" class="btn btn-outline-primary">
+                                            <a href="{{ route('registrar.applications') }}?view={{ $application->id }}" class="btn btn-outline-primary">
                                                 <i class="ri-eye-line me-1"></i>View Details
                                             </a>
                                             <button class="btn btn-success" onclick="approveApplication({{ $application->id }})">

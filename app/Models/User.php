@@ -201,27 +201,27 @@ class User extends Authenticatable
     }
 
     /**
-     * Get faculty assignments for this teacher
+     * Get faculty assignments for this teacher (through teacher profile)
      */
     public function facultyAssignments()
     {
-        return $this->hasMany(FacultyAssignment::class, 'teacher_id');
+        return $this->hasManyThrough(FacultyAssignment::class, Teacher::class, 'user_id', 'teacher_id');
     }
 
     /**
-     * Get class schedules for this teacher
+     * Get class schedules for this teacher (through teacher profile)
      */
     public function classSchedules()
     {
-        return $this->hasMany(ClassSchedule::class, 'teacher_id');
+        return $this->hasManyThrough(ClassSchedule::class, Teacher::class, 'user_id', 'teacher_id');
     }
 
     /**
-     * Get grade submissions for this teacher
+     * Get grade submissions for this teacher (through teacher profile)
      */
     public function gradeSubmissions()
     {
-        return $this->hasMany(GradeSubmission::class, 'teacher_id');
+        return $this->hasManyThrough(GradeSubmission::class, Teacher::class, 'user_id', 'teacher_id');
     }
 
     /**
@@ -245,9 +245,11 @@ class User extends Authenticatable
      */
     public function getCurrentTeachingLoad($academicYear = null)
     {
+        if (!$this->teacher) return collect();
+        
         $academicYear = $academicYear ?: (date('Y') . '-' . (date('Y') + 1));
         
-        return $this->facultyAssignments()
+        return $this->teacher->facultyAssignments()
                    ->where('academic_year', $academicYear)
                    ->where('status', 'active')
                    ->with(['subject', 'assignedBy'])
@@ -259,9 +261,11 @@ class User extends Authenticatable
      */
     public function getWeeklySchedule($academicYear = null)
     {
+        if (!$this->teacher) return [];
+        
         $academicYear = $academicYear ?: (date('Y') . '-' . (date('Y') + 1));
         
-        $schedules = $this->classSchedules()
+        $schedules = $this->teacher->classSchedules()
                          ->where('academic_year', $academicYear)
                          ->where('is_active', true)
                          ->with(['subject'])
@@ -284,9 +288,11 @@ class User extends Authenticatable
      */
     public function canSubmitGradesFor($subjectId, $gradeLevel, $section, $academicYear = null)
     {
+        if (!$this->teacher) return false;
+        
         $academicYear = $academicYear ?: (date('Y') . '-' . (date('Y') + 1));
         
-        return $this->facultyAssignments()
+        return $this->teacher->facultyAssignments()
                    ->where('subject_id', $subjectId)
                    ->where('grade_level', $gradeLevel)
                    ->where('section', $section)

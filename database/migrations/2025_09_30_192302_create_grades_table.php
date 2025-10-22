@@ -18,7 +18,7 @@ return new class extends Migration
             // Core relationships
             $table->foreignId('student_id')->constrained('students')->onDelete('cascade');
             $table->foreignId('subject_id')->constrained('subjects')->onDelete('cascade');
-            $table->foreignId('teacher_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('teacher_id')->constrained('teachers')->onDelete('cascade');
             
             // Academic period
             $table->string('academic_year', 10)->default(date('Y') . '-' . (date('Y') + 1));

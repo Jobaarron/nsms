@@ -27,10 +27,7 @@ class StudentGradeController extends Controller
             return redirect()->route('student.login');
         }
 
-        // Check if student has paid (integration with existing payment system)
-        if (!$student->is_paid && $student->total_paid <= 0) {
-            return view('student.grades.payment-required', compact('student'));
-        }
+        // Payment check is handled in the main grades view
 
         // Get current academic year
         $currentAcademicYear = $student->academic_year;
@@ -41,7 +38,7 @@ class StudentGradeController extends Controller
         // Get academic performance summary
         $performance = $student->getAcademicPerformance($currentAcademicYear);
         
-        return view('student.grades.index', compact('student', 'availableQuarters', 'performance', 'currentAcademicYear'));
+        return view('student.grades', compact('student', 'availableQuarters', 'performance', 'currentAcademicYear'));
     }
 
     /**
@@ -62,7 +59,7 @@ class StudentGradeController extends Controller
 
         // Check payment for this quarter
         if (!$student->hasPaidForQuarter($quarter)) {
-            return view('student.grades.payment-required', compact('student', 'quarter'));
+            return view('student.grades', compact('student', 'quarter'));
         }
 
         // Get grades for the quarter
@@ -74,7 +71,7 @@ class StudentGradeController extends Controller
         // Get grading system (quarterly vs semester)
         $gradingSystem = Grade::getGradingSystem($student->grade_level);
         
-        return view('student.grades.quarter', compact('student', 'grades', 'quarter', 'stats', 'gradingSystem'));
+        return view('student.grades', compact('student', 'grades', 'quarter', 'stats', 'gradingSystem'));
     }
 
     /**
@@ -136,7 +133,7 @@ class StudentGradeController extends Controller
                 }
             }
             
-            return view('student.grades.report-all', compact('student', 'allGrades', 'performance'));
+            return view('student.grades', compact('student', 'allGrades', 'performance'));
         }
 
         // Single quarter report
@@ -147,7 +144,7 @@ class StudentGradeController extends Controller
         $grades = $student->getGradesForQuarter($quarter, $student->academic_year);
         $stats = $this->calculateQuarterStats($grades);
         
-        return view('student.grades.report-quarter', compact('student', 'grades', 'quarter', 'stats'));
+        return view('student.grades', compact('student', 'grades', 'quarter', 'stats'));
     }
 
     /**

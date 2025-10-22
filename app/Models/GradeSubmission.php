@@ -38,7 +38,7 @@ class GradeSubmission extends Model
     // Relationships - interconnected with existing system
     public function teacher()
     {
-        return $this->belongsTo(User::class, 'teacher_id'); // Same as grades.teacher_id
+        return $this->belongsTo(Teacher::class, 'teacher_id'); // References teachers table
     }
 
     public function subject()

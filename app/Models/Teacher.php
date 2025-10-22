@@ -60,4 +60,36 @@ class Teacher extends Model
     {
         return $this->user->email;
     }
+
+    /**
+     * Get faculty assignments for this teacher
+     */
+    public function facultyAssignments()
+    {
+        return $this->hasMany(FacultyAssignment::class, 'teacher_id');
+    }
+
+    /**
+     * Get class schedules for this teacher
+     */
+    public function classSchedules()
+    {
+        return $this->hasMany(ClassSchedule::class, 'teacher_id');
+    }
+
+    /**
+     * Get grade submissions for this teacher
+     */
+    public function gradeSubmissions()
+    {
+        return $this->hasMany(GradeSubmission::class, 'teacher_id');
+    }
+
+    /**
+     * Get grades submitted by this teacher
+     */
+    public function grades()
+    {
+        return $this->hasMany(Grade::class, 'teacher_id');
+    }
 }

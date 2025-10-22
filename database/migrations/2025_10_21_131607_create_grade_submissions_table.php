@@ -16,7 +16,7 @@ return new class extends Migration
             $table->id();
             
             // Core relationships - interconnected with existing grades system
-            $table->foreignId('teacher_id')->constrained('users')->onDelete('cascade'); // Same as grades.teacher_id
+            $table->foreignId('teacher_id')->constrained('teachers')->onDelete('cascade'); // References teachers table
             $table->foreignId('subject_id')->constrained('subjects')->onDelete('cascade');
             
             // Submission details

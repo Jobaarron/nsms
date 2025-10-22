@@ -35,7 +35,7 @@ class FacultyAssignment extends Model
     // Relationships - interconnected with existing system
     public function teacher()
     {
-        return $this->belongsTo(User::class, 'teacher_id'); // Links to users table
+        return $this->belongsTo(Teacher::class, 'teacher_id'); // Links to teachers table
     }
 
     public function subject()
