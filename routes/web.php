@@ -242,8 +242,8 @@ Route::middleware(['auth', 'role:teacher'])->prefix('teacher')->name('teacher.')
 Route::middleware(['auth', 'role:teacher|faculty_head'])->prefix('teacher')->name('teacher.')->group(function () {
     Route::get('/schedule/calendar', [App\Http\Controllers\TeacherScheduleController::class, 'calendar'])
         ->name('schedule.calendar');
-    Route::get('/students', [App\Http\Controllers\TeacherScheduleController::class, 'allStudents'])
-        ->name('students');
+    Route::get('/my-students', [App\Http\Controllers\TeacherScheduleController::class, 'allStudents'])
+        ->name('my-students');
     Route::get('/schedule/students', [App\Http\Controllers\TeacherScheduleController::class, 'students'])
         ->name('schedule.students');
     Route::get('/schedule/data', [App\Http\Controllers\TeacherScheduleController::class, 'getScheduleData'])
