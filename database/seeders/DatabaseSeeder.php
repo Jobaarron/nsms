@@ -27,7 +27,7 @@ class DatabaseSeeder extends Seeder
             RolePermissionSeeder::class,
             FeesTableSeeder::class,
             SubjectSeeder::class,
-            CashierSeeder::class,
+            // CashierSeeder::class, // Moved to RolePermissionSeeder
             SanctionsSeeder::class,
             ViolationListSeeder::class,
             // TestStudentSeeder::class, // Added test student data for login testing - AlvinTheKings

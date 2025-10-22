@@ -32,10 +32,10 @@
         </div>
         
         <!-- User Info -->
-        <div class="user-info">
+        <!-- <div class="user-info">
           <div class="user-name">{{ Auth::guard('faculty_head')->user()->full_name ?? 'Faculty Head' }}</div>
           <div class="user-role">Faculty Head</div>
-        </div>
+        </div> -->
         
         <ul class="nav flex-column">
           <li class="nav-item mb-2">

@@ -298,8 +298,8 @@ Route::post('/faculty-head/login', [App\Http\Controllers\FacultyHeadController::
 Route::post('/faculty-head/logout', [App\Http\Controllers\FacultyHeadController::class, 'logout'])
     ->name('faculty-head.logout');
 
-// Faculty Head Routes (Protected by faculty_head guard)
-Route::middleware('auth:faculty_head')->prefix('faculty-head')->name('faculty-head.')->group(function () {
+// Faculty Head Routes (Protected by web guard with role check)
+Route::middleware(['auth', 'role:faculty_head'])->prefix('faculty-head')->name('faculty-head.')->group(function () {
     Route::get('/', [App\Http\Controllers\FacultyHeadController::class, 'index'])
         ->name('dashboard');
     

@@ -8,9 +8,10 @@ use Spatie\Permission\Models\Permission;
 use App\Models\User;
 use App\Models\Admin;
 use App\Models\Teacher;
-// use App\Models\GuidanceDiscipline; // Removed - now using separate Guidance and Discipline models
+use App\Models\Cashier;
 use App\Models\Discipline;
 use App\Models\Guidance;
+use Illuminate\Support\Facades\Hash;
 
 class RolePermissionSeeder extends Seeder
 {
@@ -76,19 +77,19 @@ class RolePermissionSeeder extends Seeder
             'Approved',
             'Reports',
             
-            // CASHIER LAYOUT PERMISSIONS (cashier-layout.blade.php)
-            'Cashier Dashboard',
-            'Pending Payments',
-            'Due Payments',
-            'Completed Payments',
-            'Payment History',
-            'Payment Reports',
-            'Confirm Payments',
-            'Reject Payments',
-            'View Payment Details',
-            'Process Payments',
-            'Generate Payment Reports',
-            'Export Payment Data',
+            // CASHIER LAYOUT PERMISSIONS - Handled separately with cashier guard
+            // 'Cashier Dashboard',
+            // 'Pending Payments',
+            // 'Due Payments',
+            // 'Completed Payments',
+            // 'Payment History',
+            // 'Payment Reports',
+            // 'Confirm Payments',
+            // 'Reject Payments',
+            // 'View Payment Details',
+            // 'Process Payments',
+            // 'Generate Payment Reports',
+            // 'Export Payment Data',
             
             // FACULTY HEAD LAYOUT PERMISSIONS (faculty-head-layout.blade.php)
             'Faculty Head Dashboard',
@@ -216,9 +217,8 @@ class RolePermissionSeeder extends Seeder
             'Violations Management',
         ]);
 
-        // CASHIER ROLE - Financial transactions and payment management
-        $cashier = Role::firstOrCreate(['name' => 'cashier', 'guard_name' => 'web']);
-        $cashier->syncPermissions([
+        // CASHIER ROLE - Financial transactions and payment management (using web guard)
+        $cashierPermissions = [
             'Cashier Dashboard',
             'Pending Payments',
             'Due Payments', 
@@ -232,7 +232,19 @@ class RolePermissionSeeder extends Seeder
             'Generate Payment Reports',
             'Export Payment Data',
             'View Reports',
-        ]);
+        ];
+
+        // Create cashier permissions with web guard
+        foreach ($cashierPermissions as $permission) {
+            Permission::firstOrCreate([
+                'name' => $permission,
+                'guard_name' => 'web'
+            ]);
+        }
+
+        // Create cashier role with web guard
+        $cashier = Role::firstOrCreate(['name' => 'cashier', 'guard_name' => 'web']);
+        $cashier->syncPermissions($cashierPermissions);
 
         // FACULTY HEAD ROLE - Based on faculty-head-layout.blade.php sidebar navigation (using web guard)
         $facultyHead = Role::firstOrCreate(['name' => 'faculty_head', 'guard_name' => 'web']);
@@ -325,7 +337,9 @@ class RolePermissionSeeder extends Seeder
         // Assign both admin and super_admin roles
         $adminUser->assignRole(['super_admin', 'admin']);
 
-        // 2. Create Guidance Counselor User
+        // 2. Create Guidance Counselor User - OLD ACCOUNT (COMMENTED OUT)
+        // This was using the old GuidanceDiscipline model before separation
+        /*
         $guidanceUser = User::firstOrCreate(
             ['email' => 'guidance@nicolites.edu'],
             [
@@ -357,8 +371,11 @@ class RolePermissionSeeder extends Seeder
         
         // Assign guidance counselor role
         $guidanceUser->assignRole('guidance_counselor');
+        */
 
-        // 3. Create Discipline Head User
+        // 3. Create Discipline Head User - OLD ACCOUNT (COMMENTED OUT)
+        // This was using the old GuidanceDiscipline model before separation
+        /*
         $disciplineHeadUser = User::firstOrCreate(
             ['email' => 'discipline.head@nicolites.edu'],
             [
@@ -390,8 +407,11 @@ class RolePermissionSeeder extends Seeder
         
         // Assign discipline head role
         $disciplineHeadUser->assignRole('discipline_head');
+        */
 
-        // 4. Create Discipline Officer User
+        // 4. Create Discipline Officer User - OLD ACCOUNT (COMMENTED OUT)
+        // This was using the old GuidanceDiscipline model before separation
+        /*
         $disciplineOfficerUser = User::firstOrCreate(
             ['email' => 'discipline.officer@nicolites.edu'],
             [
@@ -423,8 +443,9 @@ class RolePermissionSeeder extends Seeder
         
         // Assign discipline officer role
         $disciplineOfficerUser->assignRole('discipline_officer');
+        */
 
-        // 5. Create Teacher User
+        // 3. Create Teacher User
         $teacherUser = User::firstOrCreate(
             ['email' => 'teacher@nicolites.edu'],
             [
@@ -650,15 +671,20 @@ class RolePermissionSeeder extends Seeder
         // Assign head counselor role
         $headCounselorUser->assignRole('head_counselor');
 
-        // 11. Create Faculty Head User (separate system with faculty_head guard)
-        $facultyHeadUser = \App\Models\FacultyHead::firstOrCreate(
-            ['employee_id' => 'FH001'],
+        // 11. Create Faculty Head User
+        $facultyHeadUser = User::firstOrCreate(
+            ['email' => 'faculty.head@nicolites.edu'],
             [
-                'user_id' => User::firstOrCreate([
-                    'email' => 'faculty.head@nicolites.edu',
-                    'name' => 'Dr. Antonio Gonzales',
-                    'password' => bcrypt('facultyhead2024'),
-                ])->id,
+                'name' => 'Dr. Antonio Gonzales',
+                'password' => bcrypt('facultyhead2024'),
+            ]
+        );
+        
+        // Create Faculty Head record
+        \App\Models\FacultyHead::firstOrCreate(
+            ['user_id' => $facultyHeadUser->id],
+            [
+                'user_id' => $facultyHeadUser->id,
                 'employee_id' => 'FH001',
                 'department' => 'Academic Affairs',
                 'position' => 'Faculty Head',
@@ -680,8 +706,95 @@ class RolePermissionSeeder extends Seeder
             ]
         );
         
-        // Assign faculty head role (using faculty_head guard)
+        // Assign faculty head role
         $facultyHeadUser->assignRole('faculty_head');
+
+        // 12. Create Cashier Users
+        $cashierUser = Cashier::firstOrCreate(
+            ['email' => 'cashier@nicolites.edu'],
+            [
+                'employee_id' => 'CASH001',
+                'first_name' => 'Maria',
+                'middle_name' => 'Santos',
+                'last_name' => 'Dela Cruz',
+                'suffix' => null,
+                'email' => 'cashier@nicolites.edu',
+                'password' => Hash::make('cashier123'),
+                'phone_number' => '09123456789',
+                'address' => '123 Finance Street, Quezon City',
+                'city' => 'Quezon City',
+                'province' => 'Metro Manila',
+                'zip_code' => '1100',
+                'date_of_birth' => '1988-04-15',
+                'gender' => 'female',
+                'position' => 'Senior Cashier',
+                'department' => 'Finance',
+                'hire_date' => '2021-02-01',
+                'salary' => 25000.00,
+                'employment_status' => 'active',
+                'emergency_contact_name' => 'Juan Dela Cruz',
+                'emergency_contact_phone' => '09987654321',
+                'emergency_contact_relationship' => 'spouse',
+                'qualifications' => 'Bachelor of Science in Accounting, Certified Bookkeeper',
+                'notes' => 'Senior cashier with 3+ years experience in school finance',
+                'is_active' => true,
+            ]
+        );
+
+        // Assign cashier role
+        $cashierUser->assignRole('cashier');
+
+        // Create assistant cashier
+        $assistantCashier = Cashier::firstOrCreate(
+            ['email' => 'assistant.cashier@nicolites.edu'],
+            [
+                'employee_id' => 'CASH002',
+                'first_name' => 'Ana',
+                'middle_name' => 'Reyes',
+                'last_name' => 'Garcia',
+                'suffix' => null,
+                'email' => 'assistant.cashier@nicolites.edu',
+                'password' => Hash::make('assistant123'),
+                'phone_number' => '09234567890',
+                'address' => '456 Payment Avenue, Manila City',
+                'city' => 'Manila',
+                'province' => 'Metro Manila',
+                'zip_code' => '1000',
+                'date_of_birth' => '1992-08-20',
+                'gender' => 'female',
+                'position' => 'Assistant Cashier',
+                'department' => 'Finance',
+                'hire_date' => '2023-06-15',
+                'salary' => 20000.00,
+                'employment_status' => 'active',
+                'emergency_contact_name' => 'Pedro Garcia',
+                'emergency_contact_phone' => '09876543210',
+                'emergency_contact_relationship' => 'father',
+                'qualifications' => 'Bachelor of Science in Business Administration',
+                'notes' => 'Assistant cashier handling daily transactions',
+                'is_active' => true,
+            ]
+        );
+
+        // Assign cashier role
+        $assistantCashier->assignRole('cashier');
+        
+        // =================================================================
+        // DEVELOPMENT LOGIN CREDENTIALS - FOR TESTING PURPOSES ONLY
+        // =================================================================
+        $this->command->info('=== DEVELOPMENT LOGIN CREDENTIALS ===');
+        $this->command->info('admin@nicolites.edu / admin123');
+        $this->command->info('registrar@nicolites.edu / registrar123');
+        $this->command->info('assistant.registrar@nicolites.edu / assistant123');
+        $this->command->info('cashier@nicolites.edu / cashier123');
+        $this->command->info('assistant.cashier@nicolites.edu / assistant123');
+        $this->command->info('teacher@nicolites.edu / teacher123');
+        $this->command->info('faculty.head@nicolites.edu / facultyhead2024');
+        $this->command->info('guidance.counselor.new@nicolites.edu / guidance2024');
+        $this->command->info('head.counselor@nicolites.edu / headcounselor2024');
+        $this->command->info('discipline.head.new@nicolites.edu / discipline2024');
+        $this->command->info('discipline.officer.new@nicolites.edu / officer2024');
+        $this->command->info('=== ALL ACCOUNTS READY FOR TESTING ===');
         
     }
 }

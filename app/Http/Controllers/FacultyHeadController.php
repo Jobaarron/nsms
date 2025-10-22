@@ -16,15 +16,18 @@ class FacultyHeadController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('auth:faculty_head');
+        $this->middleware('auth')->except(['showLoginForm', 'login']);
+        $this->middleware('role:faculty_head')->except(['showLoginForm', 'login']);
     }
+
 
     /**
      * Faculty Head Dashboard
      */
     public function index()
     {
-        $facultyHead = Auth::guard('faculty_head')->user();
+        $user = Auth::user();
+        $facultyHead = $user->facultyHead; // Get faculty head profile through relationship
         $currentAcademicYear = date('Y') . '-' . (date('Y') + 1);
         
         // Get statistics
@@ -66,19 +69,32 @@ class FacultyHeadController extends Controller
      */
     public function login(Request $request)
     {
-        $credentials = $request->validate([
-            'employee_id' => 'required|string',
+        $request->validate([
+            'email' => 'required|email',
             'password' => 'required',
         ]);
 
-        if (Auth::guard('faculty_head')->attempt($credentials)) {
-            $request->session()->regenerate();
-            return redirect()->intended(route('faculty-head.dashboard'));
+        $credentials = $request->only('email', 'password');
+        $remember = $request->has('remember');
+
+        if (Auth::attempt($credentials, $remember)) {
+            $user = Auth::user();
+            
+            // Check if user has faculty_head role
+            if ($user->hasRole('faculty_head')) {
+                $request->session()->regenerate();
+                return redirect()->intended(route('faculty-head.dashboard'));
+            } else {
+                Auth::logout();
+                return back()->withErrors([
+                    'email' => 'You do not have faculty head privileges.',
+                ])->onlyInput('email');
+            }
         }
 
         return back()->withErrors([
-            'employee_id' => 'The provided credentials do not match our records.',
-        ])->onlyInput('employee_id');
+            'email' => 'The provided credentials do not match our records.',
+        ])->onlyInput('email');
     }
 
     /**
@@ -86,7 +102,7 @@ class FacultyHeadController extends Controller
      */
     public function logout(Request $request)
     {
-        Auth::guard('faculty_head')->logout();
+        Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
         return redirect()->route('faculty-head.login');
@@ -495,4 +511,5 @@ class FacultyHeadController extends Controller
             'active' => $isActive
         ]);
     }
+
 }

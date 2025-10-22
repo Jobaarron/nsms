@@ -36,10 +36,10 @@
         </div>
       </div>
       <div class="col-6 col-lg-3">
-        <div class="card card-summary card-payment h-100">
+        <div class="card card-summary card-application h-100">
           <div class="card-body text-center">
-            <i class="ri-file-check-line display-6 mb-2"></i>
-            <div>Pending Reviews</div>
+            <i class="ri-task-line display-6 mb-2"></i>
+            <div>Pending Grade Reviews</div>
             <h3>{{ $stats['pending_submissions'] }}</h3>
           </div>
         </div>

@@ -10,6 +10,8 @@ use Spatie\Permission\Traits\HasRoles;
 class Cashier extends Authenticatable
 {
     use HasFactory, Notifiable, HasRoles;
+    
+    protected $guard_name = 'web';
 
     /**
      * The attributes that are mass assignable.

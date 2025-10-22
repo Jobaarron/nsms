@@ -104,6 +104,11 @@ class User extends Authenticatable
         return $this->hasOne(Teacher::class);
     }
 
+    public function facultyHead()
+    {
+        return $this->hasOne(FacultyHead::class);
+    }
+
     // public function guidanceCounsellor()
     // {
     //     return $this->hasOne(GuidanceCounsellor::class);
