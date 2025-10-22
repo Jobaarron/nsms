@@ -20,6 +20,7 @@ use App\Http\Controllers\DisciplineController;
 use App\Http\Controllers\PaymentScheduleController;
 use App\Http\Controllers\CashierController;
 use App\Http\Controllers\DataChangeRequestController;
+use App\Http\Controllers\PdfController;
 
 
 
@@ -330,6 +331,10 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
         
         // Counseling Session Routes
         Route::prefix('counseling-sessions')->name('counseling-sessions.')->group(function () {
+            // Show create summary form
+            Route::get('/{counselingSession}/summary/create', [App\Http\Controllers\GuidanceController::class, 'createCounselingSummaryForm'])->name('summary.create');
+              // Approve counseling session (AJAX)
+              Route::post('/approve', [App\Http\Controllers\GuidanceController::class, 'approveCounselingSession'])->name('approve');
             Route::get('/', [App\Http\Controllers\GuidanceController::class, 'counselingSessionsIndex'])->name('index');
             Route::post('/', [App\Http\Controllers\GuidanceController::class, 'scheduleCounselingSession'])->name('schedule');
             Route::get('/{counselingSession}', [App\Http\Controllers\GuidanceController::class, 'showCounselingSession'])->name('show');
@@ -343,6 +348,10 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
             Route::get('/export', [App\Http\Controllers\GuidanceController::class, 'exportCounselingSessions'])->name('export');
             Route::get('/', [App\Http\Controllers\GuidanceController::class, 'counselingSessionsIndex'])
                 ->name('index');
+                
+// AJAX route for counseling session approval
+Route::post('/guidance/counseling-sessions/approve', [GuidanceController::class, 'approveCounselingSession'])->name('guidance.counseling-sessions.approve');
+
 
             Route::post('/', [App\Http\Controllers\GuidanceController::class, 'scheduleCounselingSession'])
                 ->name('schedule');
@@ -672,3 +681,6 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::post('/logout', [CashierController::class, 'logout'])->name('logout');
     });
 });
+
+// PDF route for counseling session
+Route::get('/pdf/counseling-session', [PdfController::class, 'show']);

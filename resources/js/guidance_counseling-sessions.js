@@ -1,9 +1,93 @@
+// Set session ID for approval modal
+function setApproveSessionId(id) {
+    document.getElementById('approveSessionId').value = id;
+}
+
+window.setApproveSessionId = setApproveSessionId;
+
+// Approve counseling session
+function submitApproveSession(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+    const submitBtn = form.querySelector('button[type="submit"]');
+    submitBtn.innerHTML = '<i class="ri-loader-4-line me-2 spinner-border spinner-border-sm"></i>Approving...';
+    submitBtn.disabled = true;
+
+    // Debug: log form data
+    for (let [key, value] of formData.entries()) {
+        console.log(key + ':', value);
+    }
+
+    fetch('/guidance/counseling-sessions/approve', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+        }
+    })
+    .then(async response => {
+        if (!response.ok) {
+            // Try to parse validation errors
+            let errorMsg = 'Error approving session';
+            try {
+                const errorData = await response.json();
+                if (errorData.errors) {
+                    errorMsg = Object.values(errorData.errors).map(arr => arr.join(' ')).join(' ');
+                }
+            } catch (e) {}
+            showAlert(errorMsg, 'danger');
+            throw new Error(errorMsg);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            showAlert('Session approved and scheduled!', 'success');
+            closeModal('approveSessionModal');
+            refreshCounselingSessions();
+        } else {
+            showAlert(data.message || 'Failed to approve session', 'danger');
+        }
+    })
+    .catch(error => {
+        showAlert(error.message || 'Error approving session', 'danger');
+    })
+    .finally(() => {
+        submitBtn.innerHTML = 'Approve';
+        submitBtn.disabled = false;
+    });
+}
+
+window.submitApproveSession = submitApproveSession;
+
 // Guidance Counseling Sessions JavaScript
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Counseling Sessions page loaded');
     
     // Initialize page functionality
     initializeCounselingSessions();
+
+    // Instant search for counseling sessions table
+    const searchInput = document.getElementById('search-filter');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const searchTerm = searchInput.value.trim().toLowerCase();
+            const rows = document.querySelectorAll('#counseling-sessions-table tbody tr');
+            rows.forEach(row => {
+                // Find student name in first cell, inside .fw-semibold if present
+                let studentCell = row.querySelector('td:first-child .fw-semibold');
+                if (!studentCell) {
+                    studentCell = row.querySelector('td:first-child');
+                }
+                if (studentCell) {
+                    const text = studentCell.textContent.trim().toLowerCase();
+                    row.style.display = text.includes(searchTerm) ? '' : 'none';
+                }
+            });
+        });
+    }
 });
 
 // Initialize counseling sessions functionality
@@ -111,139 +195,6 @@ function submitCounselingSession(event) {
         submitBtn.innerHTML = originalText;
         submitBtn.disabled = false;
     });
-}
-
-// View counseling session details
-function viewCounselingSession(sessionId) {
-    fetch(`/guidance/counseling-sessions/${sessionId}`, {
-        method: 'GET',
-        headers: {
-            'Accept': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-        }
-    })
-    .then(response => {
-        if (!response.ok) {
-            if (response.status === 404) {
-                showAlert('Counseling session not found', 'warning');
-                return;
-            }
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.success) {
-            showCounselingSessionModal(data.session);
-        } else {
-            showAlert('Failed to load session details', 'danger');
-        }
-    })
-    .catch(error => {
-        console.error('Error loading session:', error);
-        showAlert('Error loading session details', 'danger');
-    });
-}
-
-// Show counseling session details modal
-function showCounselingSessionModal(session) {
-    const modalHtml = `
-        <div class="modal fade" id="viewCounselingSessionModal" tabindex="-1">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Counseling Session Details</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Student</label>
-                                <p class="form-control-plaintext">${session.student_name}</p>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Session Type</label>
-                                <p class="form-control-plaintext">
-                                    <span class="badge ${session.session_type_class}">
-                                        <i class="${session.session_type_icon} me-1"></i>
-                                        ${session.session_type_text}
-                                    </span>
-                                </p>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Date & Time</label>
-                                <p class="form-control-plaintext">${session.scheduled_date} at ${session.scheduled_time}</p>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Duration</label>
-                                <p class="form-control-plaintext">${session.duration} minutes</p>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Location</label>
-                                <p class="form-control-plaintext">${session.location || 'TBD'}</p>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Status</label>
-                                <p class="form-control-plaintext">
-                                    <span class="badge ${session.status_class}">${session.status_text}</span>
-                                </p>
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label fw-bold">Reason</label>
-                                <p class="form-control-plaintext">${session.reason}</p>
-                            </div>
-                            ${session.notes ? `
-                            <div class="col-12">
-                                <label class="form-label fw-bold">Notes</label>
-                                <p class="form-control-plaintext">${session.notes}</p>
-                            </div>
-                            ` : ''}
-                            ${session.follow_up_required ? `
-                            <div class="col-12">
-                                <label class="form-label fw-bold">Follow-up Required</label>
-                                <p class="form-control-plaintext">
-                                    <span class="badge bg-warning">Yes</span>
-                                    ${session.follow_up_date ? ` - Scheduled for ${session.follow_up_date}` : ''}
-                                </p>
-                            </div>
-                            ` : ''}
-                            ${session.summary ? `
-                            <div class="col-12">
-                                <label class="form-label fw-bold">Session Summary</label>
-                                <p class="form-control-plaintext">${session.summary}</p>
-                            </div>
-                            ` : ''}
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        ${session.status === 'scheduled' ? `
-                            <button type="button" class="btn btn-success" onclick="completeCounselingSession(${session.id})">
-                                <i class="ri-check-line me-2"></i>Mark Complete
-                            </button>
-                            <button type="button" class="btn btn-warning" onclick="rescheduleCounselingSession(${session.id})">
-                                <i class="ri-calendar-todo-line me-2"></i>Reschedule
-                            </button>
-                        ` : ''}
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    // Remove existing modal if any
-    const existingModal = document.getElementById('viewCounselingSessionModal');
-    if (existingModal) {
-        existingModal.remove();
-    }
-    
-    // Add new modal to body
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
-    
-    // Show modal
-    const modal = new bootstrap.Modal(document.getElementById('viewCounselingSessionModal'));
-    modal.show();
 }
 
 // Complete counseling session
@@ -490,16 +441,12 @@ function editCounselingSession(sessionId) {
 // Filter counseling sessions
 function filterCounselingSessions() {
     const status = document.getElementById('status-filter')?.value || '';
-    const type = document.getElementById('type-filter')?.value || '';
-    const date = document.getElementById('date-filter')?.value || '';
     const search = document.getElementById('search-filter')?.value || '';
-    
+
     const params = new URLSearchParams();
     if (status) params.append('status', status);
-    if (type) params.append('type', type);
-    if (date) params.append('date', date);
     if (search) params.append('search', search);
-    
+
     const url = `/guidance/counseling-sessions${params.toString() ? '?' + params.toString() : ''}`;
     window.location.href = url;
 }
@@ -507,15 +454,11 @@ function filterCounselingSessions() {
 // Clear filters
 function clearFilters() {
     const statusFilter = document.getElementById('status-filter');
-    const typeFilter = document.getElementById('type-filter');
-    const dateFilter = document.getElementById('date-filter');
     const searchFilter = document.getElementById('search-filter');
-    
+
     if (statusFilter) statusFilter.value = '';
-    if (typeFilter) typeFilter.value = '';
-    if (dateFilter) dateFilter.value = '';
     if (searchFilter) searchFilter.value = '';
-    
+
     window.location.href = '/guidance/counseling-sessions';
 }
 
@@ -573,8 +516,6 @@ function showAlert(message, type = 'info') {
         }
     }, 5000);
 }
-
-
 
 // Start inline scheduling for a session
 function startInlineScheduling(sessionId) {
@@ -689,9 +630,88 @@ function cancelInlineScheduling(sessionId) {
     });
 }
 
+// Show Approve Counseling Session modal
+function showApproveCounselingModal(sessionId) {
+    const modal = document.getElementById('approveCounselingModal');
+    if (modal) {
+        // Optionally set sessionId in a hidden field if needed
+        modal.querySelector('form').reset();
+        // Show modal using Bootstrap
+        const bsModal = new bootstrap.Modal(modal);
+        bsModal.show();
+    }
+}
+
+// Show static counseling request form PDF in modal
+function showPdfModal(sessionId = null) {
+    try {
+        // Use new PdfController route for data fetch
+        let pdfUrl = "/pdf/counseling-session";
+        if (sessionId) {
+            pdfUrl += `?session_id=${sessionId}`;
+        }
+        // Debug: log PDF URL and sessionId
+        console.log('PDF URL:', pdfUrl);
+        console.log('Session ID:', sessionId);
+
+        const pdfFrame = document.getElementById('pdfFrame');
+        const modalElement = document.getElementById('pdfPreviewModal');
+
+        if (!pdfFrame) {
+            showAlert('PDF viewer not available. Please refresh the page.', 'danger');
+            return;
+        }
+        if (!modalElement) {
+            showAlert('PDF modal not available. Please refresh the page.', 'danger');
+            return;
+        }
+        if (typeof bootstrap === 'undefined') {
+            showAlert('UI framework not loaded. Please refresh the page.', 'danger');
+            return;
+        }
+
+        pdfFrame.src = pdfUrl;
+        const modal = new bootstrap.Modal(modalElement);
+        modal.show();
+
+        pdfFrame.onload = function() {
+            pdfFrame.style.width = '100%';
+            pdfFrame.style.height = '100%';
+            pdfFrame.style.display = 'block';
+        };
+        pdfFrame.onerror = function() {
+            showAlert('Failed to load PDF file. Please check if the file exists.', 'danger');
+        };
+    } catch (error) {
+        showAlert('Error opening PDF: ' + error.message, 'danger');
+    }
+}
+
+// Download PDF function
+
+
+// Debug PDF modal function
+function debugPdfModal() {
+    console.log('=== PDF Modal Debug Info ===');
+    console.log('Bootstrap:', typeof bootstrap);
+    console.log('Modal Element:', document.getElementById('pdfPreviewModal'));
+    console.log('PDF Frame:', document.getElementById('pdfFrame'));
+    console.log('showPdfModal function:', typeof showPdfModal);
+    
+    // Test if we can create a modal
+    const testModal = document.getElementById('pdfPreviewModal');
+    if (testModal) {
+        console.log('Modal found, attempting to show...');
+        const modal = new bootstrap.Modal(testModal);
+        modal.show();
+    } else {
+        console.error('Modal not found in DOM');
+    }
+}
+
 // Expose functions to global scope for onclick handlers
-window.submitCounselingSession = submitCounselingSession;
-window.viewCounselingSession = viewCounselingSession;
+    window.showPdfModal = showPdfModal;
+    window.debugPdfModal = debugPdfModal;
 window.completeCounselingSession = completeCounselingSession;
 window.scheduleRecommendedSession = scheduleRecommendedSession;
 window.rescheduleCounselingSession = rescheduleCounselingSession;
@@ -704,3 +724,7 @@ window.printCounselingSessions = printCounselingSessions;
 window.startInlineScheduling = startInlineScheduling;
 window.saveInlineScheduling = saveInlineScheduling;
 window.cancelInlineScheduling = cancelInlineScheduling;
+window.showApproveCounselingModal = showApproveCounselingModal;
+window.showPdfModal = showPdfModal;
+window.downloadPdf = downloadPdf;
+window.debugPdfModal = debugPdfModal;
