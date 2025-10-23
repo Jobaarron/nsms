@@ -292,6 +292,7 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
     Route::post('/login', [App\Http\Controllers\GuidanceController::class, 'login'])->name('login.submit');
     
     // Protected routes
+    
     Route::middleware(['web'])->group(function () {
         // Dashboard
         Route::get('/', [App\Http\Controllers\GuidanceController::class, 'dashboard'])->name('dashboard');
@@ -393,6 +394,7 @@ Route::prefix('api/violations')->name('api.violations.')->group(function () {
 
 
 
+
 // Student routes
 Route::get('/student', [StudentController::class, 'index']);
 Route::prefix('student')->name('student.')->group(function () {
@@ -404,14 +406,8 @@ Route::prefix('student')->name('student.')->group(function () {
     // Protected student routes
     Route::middleware('auth:student')->group(function () {
         Route::get('/dashboard', [StudentController::class, 'index'])->name('dashboard');
-        Route::get('/violations', [StudentController::class, 'violations'])->name('violations');
-
-
-        // Student Narrative Report - View PDF Only
-        Route::get('/narrative-report/view', function() {
-            $pdfPath = 'storage/Student-narrative-report/Student.pdf';
-            return view('student.narrative_pdf', compact('pdfPath'));
-        })->name('narrative.view');
+    Route::match(['get', 'post'], '/violations', [StudentController::class, 'violations'])->name('violations');
+    Route::post('/violations/reply/{violation}', [StudentController::class, 'submitViolationReply'])->name('violations.reply');
 
         // Student Narrative Report - Reply Form
         Route::get('/narrative-report/reply', function() {
@@ -437,6 +433,9 @@ Route::prefix('student')->name('student.')->group(function () {
         Route::post('/logout', [StudentController::class, 'logout'])->name('logout');
     });
 });
+
+// Student Narrative Report - View PDF Only (always available)
+Route::get('/narrative-report/view/{studentId}/{violationId}', [PdfController::class, 'studentNarrativePdf'])->name('student.pdf.studentNarrative');
 
 
 // Enrollee routes

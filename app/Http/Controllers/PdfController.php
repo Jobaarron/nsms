@@ -168,4 +168,55 @@ class PdfController extends Controller
         return response($pdf->Output('Counseling-Request-Form.pdf', 'S'))
             ->header('Content-Type', 'application/pdf');
     }
+    
+        /**
+         * Generate dynamic Student Narrative Report PDF using TCPDF.
+         */
+        public function studentNarrativePdf($studentId, $violationId)
+        {
+            $student = \App\Models\Student::findOrFail($studentId);
+            $violation = $student->violations()->findOrFail($violationId);
+            $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
+            $templatePath = storage_path('app/public/Student-narrative-report/Student.pdf');
+            $pdf->setSourceFile($templatePath);
+            $tplId = $pdf->importPage(1);
+            $size = $pdf->getTemplateSize($tplId);
+            $pdf->SetMargins(0, 0, 0);
+            $orientation = ($size['width'] > $size['height']) ? 'L' : 'P';
+            $pdf->AddPage($orientation, [$size['width'], $size['height']]);
+            $pdf->SetFont('dejavusans', '', 10);
+            $pdf->useTemplate($tplId);
+
+            // Overlay student data (adjust coordinates as needed for your template)
+            $pdf->SetXY(24, 58); $pdf->Write(0, $student->full_name ?? '');
+            $pdf->SetXY(141, 57); $pdf->Write(0, $student->grade_level ?? '');
+            $pdf->SetXY(47, 56); $pdf->Write(0, $student->section ?? '');
+
+            // Overlay specific violation date and time
+            $pdf->SetXY(120, 40); $pdf->Write(0, $violation->violation_date ? $violation->violation_date->format('Y-m-d') : '');
+            $pdf->SetXY(176, 40); $pdf->Write(0, $violation->violation_time ?? '');
+             
+            // Overlay student printed name
+            $pdf->SetXY(76, 292); $pdf->Write(0, $student->full_name ?? '');
+            // Overlay student statement (adjust coordinates as needed)
+            if (!empty($violation->student_statement)) {
+                $pdf->SetXY(18, 84); // Example position, adjust as needed
+                $pdf->MultiCell(160, 8, $violation->student_statement);
+                }
+
+                // Overlay incident feelings
+                if (!empty($violation->incident_feelings)) {
+                    $pdf->SetXY(18, 156); // Adjust Y as needed for spacing
+                    $pdf->MultiCell(160, 8, $violation->incident_feelings);
+                }
+
+                // Overlay action plan
+                if (!empty($violation->action_plan)) {
+                    $pdf->SetXY(18, 219); // Adjust Y as needed for spacing
+                    $pdf->MultiCell(160, 8, $violation->action_plan);
+            }
+
+            return response($pdf->Output('Student-Narrative-Report.pdf', 'S'))->header('Content-Type', 'application/pdf');
+        }
+
 }

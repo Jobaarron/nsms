@@ -39,6 +39,8 @@ class Violation extends Model
         'resolved_by',
         'resolved_at',
         'student_statement',
+         'incident_feelings',
+        'action_plan',
         'disciplinary_action',
         'parent_notified',
         'parent_notification_date',
@@ -56,6 +58,8 @@ class Violation extends Model
         'resolved_at' => 'date',
         'parent_notification_date' => 'date',
         'parent_notified' => 'boolean',
+        'incident_feelings' => 'string',
+        'action_plan' => 'string',
     ];
 
     /**

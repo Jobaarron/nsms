@@ -109,10 +109,10 @@
                 <td>{{ $violation->action_taken ?? '-' }}</td>
                 <td>
                   <!-- View PDF -->
-                  <a href="#" data-bs-toggle="modal" 
-                     data-bs-target="#pdfModal" 
-                     data-pdf="{{ asset('storage/Student-narrative-report/' . ($violation->pdf_path ?? 'Student.pdf')) }}"
-                     title="View PDF">
+                    <a href="#" data-bs-toggle="modal" 
+                       data-bs-target="#pdfModal" 
+                       data-pdf="{{ route('student.pdf.studentNarrative', ['studentId' => $student->id, 'violationId' => $violation->id]) }}"
+                       title="View PDF">
                     <i class="ri-eye-line" style="font-size:1.5em;color:#198754;margin-right:10px;"></i>
                   </a>
 
@@ -137,7 +137,7 @@
               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-              <form method="POST" action="#">
+              <form method="POST" id="replyForm" action="#">
                 @csrf
                 <div class="mb-4">
                   <label for="incident" class="form-label fw-bold">Please state the incident based on your understanding.</label>
@@ -153,6 +153,21 @@
                 </div>
                 <button type="submit" class="btn btn-success">Submit Reply</button>
               </form>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var replyModal = document.getElementById('replyModal');
+  var replyForm = document.getElementById('replyForm');
+  var violationLinks = document.querySelectorAll('[data-bs-target="#replyModal"]');
+
+  violationLinks.forEach(function(link) {
+    link.addEventListener('click', function() {
+      var violationId = link.getAttribute('data-id');
+      var actionUrl = "{{ route('student.violations.reply', ['violation' => 'VIOLATION_ID']) }}".replace('VIOLATION_ID', violationId);
+      replyForm.setAttribute('action', actionUrl);
+    });
+  });
+});
+</script>
             </div>
           </div>
         </div>
