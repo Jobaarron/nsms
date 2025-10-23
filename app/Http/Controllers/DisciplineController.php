@@ -246,6 +246,7 @@ class DisciplineController extends Controller
             return redirect()->route('discipline.login');
         }
 
+
         $validatedData = $request->validate([
             'student_id' => 'required|exists:students,id',
             'title' => 'required|string|max:255',
@@ -257,6 +258,17 @@ class DisciplineController extends Controller
             'status' => 'nullable|in:pending,investigating,in_progress,resolved,dismissed',
             'urgency_level' => 'nullable|in:low,medium,high,urgent',
         ]);
+
+        // Map major_category numeric values to ENUM strings and handle 'null' string
+        if (isset($validatedData['major_category'])) {
+            if ($validatedData['major_category'] == '3' || $validatedData['major_category'] === 3) {
+                $validatedData['major_category'] = 'major';
+            } elseif ($validatedData['major_category'] == '2' || $validatedData['major_category'] === 2) {
+                $validatedData['major_category'] = 'minor';
+            } elseif ($validatedData['major_category'] === 'null' || $validatedData['major_category'] === null) {
+                $validatedData['major_category'] = null;
+            }
+        }
 
         // Set default urgency_level if not provided
         if (!isset($validatedData['urgency_level']) || $validatedData['urgency_level'] === null) {
