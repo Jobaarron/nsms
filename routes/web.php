@@ -405,7 +405,19 @@ Route::prefix('student')->name('student.')->group(function () {
     Route::middleware('auth:student')->group(function () {
         Route::get('/dashboard', [StudentController::class, 'index'])->name('dashboard');
         Route::get('/violations', [StudentController::class, 'violations'])->name('violations');
-        
+
+
+        // Student Narrative Report - View PDF Only
+        Route::get('/narrative-report/view', function() {
+            $pdfPath = 'storage/Student-narrative-report/Student.pdf';
+            return view('student.narrative_pdf', compact('pdfPath'));
+        })->name('narrative.view');
+
+        // Student Narrative Report - Reply Form
+        Route::get('/narrative-report/reply', function() {
+            return view('student.narrative_report');
+        })->name('narrative.reply');
+
         // Enrollment routes
         Route::get('/enrollment', [StudentController::class, 'enrollment'])->name('enrollment');
         Route::post('/enrollment', [StudentController::class, 'submitEnrollment'])->name('enrollment.submit');
