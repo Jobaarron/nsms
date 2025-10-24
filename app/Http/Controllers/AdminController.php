@@ -131,7 +131,7 @@ class AdminController extends Controller
 
     public function manageUsers()
     {
-        $users = User::with(['roles', 'admin', 'teacher', 'guidanceDiscipline'])->get();
+        $users = User::with(['roles', 'admin', 'teacher', 'guidance', 'discipline'])->get();
         $roles = Role::with(['permissions', 'users'])->get();
         $permissions = Permission::with('roles')->get();
         

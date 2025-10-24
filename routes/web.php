@@ -67,12 +67,12 @@ Route::prefix('admin')->group(function () {
     Route::post('/login', [AdminController::class, 'login'])->name('admin.login.submit');
     
     // Protected admin routes - use auth middleware
-    Route::middleware(['auth'])->group(function () {
-        // Dashboard
-        Route::middleware(['auth', 'role:admin'])->name('admin.')->group(function () {
+    Route::middleware(['auth', 'role:admin'])->name('admin.')->group(function () {
         
         Route::get('/dashboard', [AdminController::class, 'index'])->name('dashboard');
         Route::get('/dashboard/stats', [AdminController::class, 'getStats'])->name('dashboard.stats');
+        Route::get('/', [AdminController::class, 'index'])->name('dashboard');
+        Route::post('/logout', [AdminController::class, 'logout'])->name('logout');
 
         // Forwarded Case Meetings for President (Admin)
         Route::get('/forwarded-cases', [AdminController::class, 'forwardedCases'])->name('forwarded.cases');
@@ -84,8 +84,6 @@ Route::prefix('admin')->group(function () {
 
         // View summary report for case meeting
         Route::get('/case-meetings/{caseMeeting}/summary', [AdminController::class, 'viewSummaryReport'])->name('case-meetings.summary');
-        Route::get('/', [AdminController::class, 'index'])->name('admin.dashboard');
-        Route::post('/logout', [AdminController::class, 'logout'])->name('admin.logout');
         
        
      
@@ -166,7 +164,6 @@ Route::prefix('admin')->group(function () {
             Route::post('/contact-messages/bulk-action', [ContactController::class, 'bulkAction'])->name('admin.contact.bulk');
         });
     });
-});
 });
 
    

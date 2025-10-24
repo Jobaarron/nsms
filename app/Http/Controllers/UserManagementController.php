@@ -29,7 +29,7 @@ class UserManagementController extends Controller
      */
     public function index()
     {
-        $users = User::with(['roles', 'admin', 'teacher', 'student', 'guidanceDiscipline'])->get();
+        $users = User::with(['roles', 'admin', 'teacher', 'student', 'guidance', 'discipline'])->get();
         $enrollees = Enrollee::all(); // Get all enrollees separately since they use different auth model
         $roles = Role::with(['permissions', 'users'])->get();
         $permissions = Permission::with('roles')->get();
@@ -213,7 +213,7 @@ class UserManagementController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Guidance user created successfully!',
-                'user' => $user->load(['roles', 'guidanceDiscipline'])
+                'user' => $user->load(['roles', 'guidance', 'discipline'])
             ]);
 
         } catch (\Exception $e) {
@@ -278,7 +278,7 @@ class UserManagementController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Discipline user created successfully!',
-                'user' => $user->load(['roles', 'guidanceDiscipline'])
+                'user' => $user->load(['roles', 'guidance', 'discipline'])
             ]);
 
         } catch (\Exception $e) {
@@ -338,7 +338,7 @@ class UserManagementController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Guidance Counselor created successfully!',
-                'user' => $user->load(['roles', 'guidanceDiscipline'])
+                'user' => $user->load(['roles', 'guidance', 'discipline'])
             ]);
 
         } catch (\Exception $e) {
@@ -398,7 +398,7 @@ class UserManagementController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Discipline Head created successfully!',
-                'user' => $user->load(['roles', 'guidanceDiscipline'])
+                'user' => $user->load(['roles', 'guidance', 'discipline'])
             ]);
 
         } catch (\Exception $e) {
@@ -458,7 +458,7 @@ class UserManagementController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Discipline Officer created successfully!',
-                'user' => $user->load(['roles', 'guidanceDiscipline'])
+                'user' => $user->load(['roles', 'guidance', 'discipline'])
             ]);
 
         } catch (\Exception $e) {
@@ -593,7 +593,7 @@ class UserManagementController extends Controller
     public function show($id)
     {
         try {
-            $user = User::with(['roles', 'admin', 'teacher', 'guidanceDiscipline'])->findOrFail($id);
+            $user = User::with(['roles', 'admin', 'teacher', 'guidance', 'discipline'])->findOrFail($id);
             
             return response()->json([
                 'success' => true,
@@ -613,7 +613,7 @@ class UserManagementController extends Controller
     public function update(Request $request, $id)
     {
         try {
-            $user = User::with(['roles', 'admin', 'teacher', 'guidanceDiscipline'])->findOrFail($id);
+            $user = User::with(['roles', 'admin', 'teacher', 'guidance', 'discipline'])->findOrFail($id);
             
             $request->validate([
                 'name' => 'required|string|max:255',
@@ -643,8 +643,15 @@ class UserManagementController extends Controller
                     'specialization' => $request->specialization,
                     'hire_date' => $request->hire_date,
                 ]);
-            } elseif (($user->hasRole('guidance') || $user->hasRole('discipline')) && $user->guidanceDiscipline) {
-                $user->guidanceDiscipline->update([
+            } elseif ($user->hasRole('guidance') && $user->guidance) {
+                $user->guidance->update([
+                    'employee_id' => $request->employee_id,
+                    'position' => $request->position,
+                    'specialization' => $request->specialization,
+                    'hire_date' => $request->hire_date,
+                ]);
+            } elseif ($user->hasRole('discipline') && $user->discipline) {
+                $user->discipline->update([
                     'employee_id' => $request->employee_id,
                     'position' => $request->position,
                     'specialization' => $request->specialization,
@@ -657,7 +664,7 @@ class UserManagementController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'User updated successfully!',
-                'user' => $user->fresh(['roles', 'admin', 'teacher', 'guidanceDiscipline'])
+                'user' => $user->fresh(['roles', 'admin', 'teacher', 'guidance', 'discipline'])
             ]);
 
         } catch (\Exception $e) {
@@ -696,8 +703,11 @@ class UserManagementController extends Controller
             if ($user->teacher) {
                 $user->teacher->delete();
             }
-            if ($user->guidanceDiscipline) {
-                $user->guidanceDiscipline->delete();
+            if ($user->guidance) {
+                $user->guidance->delete();
+            }
+            if ($user->discipline) {
+                $user->discipline->delete();
             }
 
             // Delete user

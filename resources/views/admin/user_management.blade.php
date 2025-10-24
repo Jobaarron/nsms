@@ -462,7 +462,7 @@
                                             </div>
                                         </td>
                                         <td>{{ $staff->email }}</td>
-                                        <td>{{ $staff->guidanceDiscipline->employee_id ?? 'N/A' }}</td>
+                                        <td>{{ $staff->guidance->employee_id ?? $staff->discipline->employee_id ?? 'N/A' }}</td>
                                         <td>
                                             @php
                                                 $roleType = 'Discipline';
@@ -483,8 +483,8 @@
                                             @endphp
                                             <span class="badge bg-{{ $badgeColor }}">{{ $roleType }}</span>
                                         </td>
-                                        <td>{{ $staff->guidanceDiscipline->position ?? 'N/A' }}</td>
-                                        <td>{{ $staff->guidanceDiscipline->specialization ?? 'N/A' }}</td>
+                                        <td>{{ $staff->guidance->position ?? $staff->discipline->position ?? 'N/A' }}</td>
+                                        <td>{{ $staff->guidance->specialization ?? $staff->discipline->specialization ?? 'N/A' }}</td>
                                         <td>
                                             <span class="badge bg-{{ $staff->status === 'active' ? 'success' : 'secondary' }}">
                                                 {{ ucfirst($staff->status ?? 'active') }}

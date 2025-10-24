@@ -67,7 +67,7 @@
           <li class="nav-item">
             <a class="nav-link d-flex align-items-center py-3 px-3 rounded" href="{{ route('admin.forwarded.cases') }}">
               <i class="ri-file-list-3-line me-2 fs-5"></i>
-              <span>Guidance and Discipline</span>
+              <span>Forwarded Case Meetings</span>
             </a>
           </li>
           <li class="nav-item mt-4">
