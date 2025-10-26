@@ -55,7 +55,13 @@ export default defineConfig({
                 'resources/js/cashier-fees.js',
                 'resources/js/enrollee-data-change-requests.js',
                 'resources/js/registrar-data-change-requests.js',
-                'resources/js/registrar-document-management.js'
+                'resources/js/registrar-document-management.js',
+                'resources/js/faculty-head-assign-teacher.js',
+                'resources/js/faculty-head-activate-submission.js',
+                'resources/js/faculty-head-dashboard.js',
+                'resources/js/faculty-head-view-grades.js',
+                'resources/js/faculty-head-approve-grades.js',
+                'resources/js/grade-submission-checker.js'
                 
             ],
             refresh: true,

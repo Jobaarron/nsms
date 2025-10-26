@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -17,7 +18,7 @@ return new class extends Migration
             // Core relationships
             $table->foreignId('student_id')->constrained('students')->onDelete('cascade');
             $table->foreignId('subject_id')->constrained('subjects')->onDelete('cascade');
-            $table->foreignId('teacher_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('teacher_id')->constrained('teachers')->onDelete('cascade');
             
             // Academic period
             $table->string('academic_year', 10)->default(date('Y') . '-' . (date('Y') + 1));
@@ -47,6 +48,12 @@ return new class extends Migration
      */
     public function down(): void
     {
+        // Disable foreign key checks temporarily
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        
         Schema::dropIfExists('grades');
+        
+        // Re-enable foreign key checks
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
     }
 };

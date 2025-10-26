@@ -15,7 +15,8 @@ use App\Models\Admin;
 use App\Models\Student;
 use App\Models\Enrollee;
 use App\Models\Teacher;
-use App\Models\GuidanceDiscipline;
+use App\Models\Guidance;
+use App\Models\Discipline;
 use App\Traits\AdminAuthentication;
 use Illuminate\Support\Facades\Log;
 
@@ -36,7 +37,7 @@ class AdminController extends Controller
             'total_students' => Student::count(),
             'total_teachers' => Teacher::count(),
             'total_admins' => Admin::count(),
-            'total_guidance' => GuidanceDiscipline::count(),
+            'total_guidance' => Guidance::count() + Discipline::count(),
             'total_roles' => Role::count(),
             'total_permissions' => Permission::count()
         ];
@@ -130,7 +131,7 @@ class AdminController extends Controller
 
     public function manageUsers()
     {
-        $users = User::with(['roles', 'admin', 'teacher', 'guidanceDiscipline'])->get();
+        $users = User::with(['roles', 'admin', 'teacher', 'guidance', 'discipline'])->get();
         $roles = Role::with(['permissions', 'users'])->get();
         $permissions = Permission::with('roles')->get();
         

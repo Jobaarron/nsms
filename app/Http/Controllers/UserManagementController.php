@@ -12,7 +12,8 @@ use App\Models\Admin;
 use App\Models\Teacher;
 use App\Models\Student;
 use App\Models\Enrollee;
-use App\Models\GuidanceDiscipline;
+use App\Models\Guidance;
+use App\Models\Discipline;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 
@@ -28,7 +29,7 @@ class UserManagementController extends Controller
      */
     public function index()
     {
-        $users = User::with(['roles', 'admin', 'teacher', 'student', 'guidanceDiscipline'])->get();
+        $users = User::with(['roles', 'admin', 'teacher', 'student', 'guidance', 'discipline'])->get();
         $enrollees = Enrollee::all(); // Get all enrollees separately since they use different auth model
         $roles = Role::with(['permissions', 'users'])->get();
         $permissions = Permission::with('roles')->get();
@@ -170,7 +171,7 @@ class UserManagementController extends Controller
             $request->validate([
                 'name' => 'required|string|max:255',
                 'email' => 'required|string|email|max:255|unique:users',
-                'employee_id' => 'nullable|string|max:255|unique:guidance_discipline,employee_id',
+                'employee_id' => 'nullable|string|max:255|unique:guidances,employee_id',
                 'position' => 'nullable|string|max:255',
                 'specialization' => 'nullable|string|max:255',
                 'hire_date' => 'nullable|date'
@@ -192,16 +193,15 @@ class UserManagementController extends Controller
             $lastName = isset($nameParts[1]) ? $nameParts[1] : '';
 
             // Create guidance record
-            GuidanceDiscipline::create([
+            Guidance::create([
                 'user_id' => $user->id,
                 'employee_id' => $request->employee_id ?: 'GDN' . str_pad($user->id, 3, '0', STR_PAD_LEFT),
                 'first_name' => $firstName,
                 'last_name' => $lastName,
                 'position' => $request->position,
-                'specialization' => $request->specialization,
+                'specialization' => $request->specialization ?: 'guidance_counselor',
                 'hire_date' => $request->hire_date,
-                'department' => 'guidance',
-                'type' => 'guidance'
+                'is_active' => true
             ]);
 
             // Assign guidance counselor role (updated to match RolePermissionSeeder)
@@ -213,7 +213,7 @@ class UserManagementController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Guidance user created successfully!',
-                'user' => $user->load(['roles', 'guidanceDiscipline'])
+                'user' => $user->load(['roles', 'guidance', 'discipline'])
             ]);
 
         } catch (\Exception $e) {
@@ -236,7 +236,7 @@ class UserManagementController extends Controller
             $request->validate([
                 'name' => 'required|string|max:255',
                 'email' => 'required|string|email|max:255|unique:users',
-                'employee_id' => 'nullable|string|max:255|unique:guidance_discipline,employee_id',
+                'employee_id' => 'nullable|string|max:255|unique:disciplines,employee_id',
                 'position' => 'nullable|string|max:255',
                 'specialization' => 'nullable|string|max:255',
                 'hire_date' => 'nullable|date'
@@ -258,16 +258,15 @@ class UserManagementController extends Controller
             $lastName = isset($nameParts[1]) ? $nameParts[1] : '';
 
             // Create discipline record
-            GuidanceDiscipline::create([
+            Discipline::create([
                 'user_id' => $user->id,
                 'employee_id' => $request->employee_id ?: 'DSC' . str_pad($user->id, 3, '0', STR_PAD_LEFT),
                 'first_name' => $firstName,
                 'last_name' => $lastName,
                 'position' => $request->position,
-                'specialization' => $request->specialization,
+                'specialization' => $request->specialization ?: 'discipline_head',
                 'hire_date' => $request->hire_date,
-                'department' => 'discipline',
-                'type' => 'discipline'
+                'is_active' => true
             ]);
 
             // Assign discipline role
@@ -279,7 +278,7 @@ class UserManagementController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Discipline user created successfully!',
-                'user' => $user->load(['roles', 'guidanceDiscipline'])
+                'user' => $user->load(['roles', 'guidance', 'discipline'])
             ]);
 
         } catch (\Exception $e) {
@@ -318,14 +317,16 @@ class UserManagementController extends Controller
                 'email_verified_at' => now(),
             ]);
 
-            // Create guidance discipline record
-            GuidanceDiscipline::create([
+            // Create guidance record
+            Guidance::create([
                 'user_id' => $user->id,
-                'employee_id' => $request->employee_id,
+                'employee_id' => $request->employee_id ?: 'GC' . str_pad($user->id, 3, '0', STR_PAD_LEFT),
+                'first_name' => explode(' ', $request->name, 2)[0],
+                'last_name' => explode(' ', $request->name, 2)[1] ?? '',
                 'position' => $request->position,
-                'specialization' => $request->specialization,
+                'specialization' => $request->specialization ?: 'guidance_counselor',
                 'hire_date' => $request->hire_date,
-                'type' => 'guidance'
+                'is_active' => true
             ]);
 
             // Assign guidance counselor role
@@ -337,7 +338,7 @@ class UserManagementController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Guidance Counselor created successfully!',
-                'user' => $user->load(['roles', 'guidanceDiscipline'])
+                'user' => $user->load(['roles', 'guidance', 'discipline'])
             ]);
 
         } catch (\Exception $e) {
@@ -376,14 +377,16 @@ class UserManagementController extends Controller
                 'email_verified_at' => now(),
             ]);
 
-            // Create guidance discipline record
-            GuidanceDiscipline::create([
+            // Create discipline record
+            Discipline::create([
                 'user_id' => $user->id,
-                'employee_id' => $request->employee_id,
+                'employee_id' => $request->employee_id ?: 'DH' . str_pad($user->id, 3, '0', STR_PAD_LEFT),
+                'first_name' => explode(' ', $request->name, 2)[0],
+                'last_name' => explode(' ', $request->name, 2)[1] ?? '',
                 'position' => $request->position,
-                'specialization' => $request->specialization,
+                'specialization' => $request->specialization ?: 'discipline_head',
                 'hire_date' => $request->hire_date,
-                'type' => 'discipline'
+                'is_active' => true
             ]);
 
             // Assign discipline head role
@@ -395,7 +398,7 @@ class UserManagementController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Discipline Head created successfully!',
-                'user' => $user->load(['roles', 'guidanceDiscipline'])
+                'user' => $user->load(['roles', 'guidance', 'discipline'])
             ]);
 
         } catch (\Exception $e) {
@@ -434,14 +437,16 @@ class UserManagementController extends Controller
                 'email_verified_at' => now(),
             ]);
 
-            // Create guidance discipline record
-            GuidanceDiscipline::create([
+            // Create discipline record
+            Discipline::create([
                 'user_id' => $user->id,
-                'employee_id' => $request->employee_id,
+                'employee_id' => $request->employee_id ?: 'DO' . str_pad($user->id, 3, '0', STR_PAD_LEFT),
+                'first_name' => explode(' ', $request->name, 2)[0],
+                'last_name' => explode(' ', $request->name, 2)[1] ?? '',
                 'position' => $request->position,
-                'specialization' => $request->specialization,
+                'specialization' => $request->specialization ?: 'discipline_officer',
                 'hire_date' => $request->hire_date,
-                'type' => 'discipline'
+                'is_active' => true
             ]);
 
             // Assign discipline officer role
@@ -453,7 +458,7 @@ class UserManagementController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Discipline Officer created successfully!',
-                'user' => $user->load(['roles', 'guidanceDiscipline'])
+                'user' => $user->load(['roles', 'guidance', 'discipline'])
             ]);
 
         } catch (\Exception $e) {
@@ -588,7 +593,7 @@ class UserManagementController extends Controller
     public function show($id)
     {
         try {
-            $user = User::with(['roles', 'admin', 'teacher', 'guidanceDiscipline'])->findOrFail($id);
+            $user = User::with(['roles', 'admin', 'teacher', 'guidance', 'discipline'])->findOrFail($id);
             
             return response()->json([
                 'success' => true,
@@ -608,7 +613,7 @@ class UserManagementController extends Controller
     public function update(Request $request, $id)
     {
         try {
-            $user = User::with(['roles', 'admin', 'teacher', 'guidanceDiscipline'])->findOrFail($id);
+            $user = User::with(['roles', 'admin', 'teacher', 'guidance', 'discipline'])->findOrFail($id);
             
             $request->validate([
                 'name' => 'required|string|max:255',
@@ -638,8 +643,15 @@ class UserManagementController extends Controller
                     'specialization' => $request->specialization,
                     'hire_date' => $request->hire_date,
                 ]);
-            } elseif (($user->hasRole('guidance') || $user->hasRole('discipline')) && $user->guidanceDiscipline) {
-                $user->guidanceDiscipline->update([
+            } elseif ($user->hasRole('guidance') && $user->guidance) {
+                $user->guidance->update([
+                    'employee_id' => $request->employee_id,
+                    'position' => $request->position,
+                    'specialization' => $request->specialization,
+                    'hire_date' => $request->hire_date,
+                ]);
+            } elseif ($user->hasRole('discipline') && $user->discipline) {
+                $user->discipline->update([
                     'employee_id' => $request->employee_id,
                     'position' => $request->position,
                     'specialization' => $request->specialization,
@@ -652,7 +664,7 @@ class UserManagementController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'User updated successfully!',
-                'user' => $user->fresh(['roles', 'admin', 'teacher', 'guidanceDiscipline'])
+                'user' => $user->fresh(['roles', 'admin', 'teacher', 'guidance', 'discipline'])
             ]);
 
         } catch (\Exception $e) {
@@ -691,8 +703,11 @@ class UserManagementController extends Controller
             if ($user->teacher) {
                 $user->teacher->delete();
             }
-            if ($user->guidanceDiscipline) {
-                $user->guidanceDiscipline->delete();
+            if ($user->guidance) {
+                $user->guidance->delete();
+            }
+            if ($user->discipline) {
+                $user->discipline->delete();
             }
 
             // Delete user

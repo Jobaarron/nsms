@@ -26,6 +26,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize tab event listeners
     setupTabEventListeners();
+    
+    // Check for auto-open parameter from dashboard
+    checkForAutoOpenModal();
 });
 
 // Setup CSRF token for all AJAX requests
@@ -475,6 +478,25 @@ function viewApplication(applicationId) {
     .finally(() => {
         hideLoading();
     });
+}
+
+// Check for auto-open modal parameter from dashboard
+function checkForAutoOpenModal() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const viewApplicationId = urlParams.get('view');
+    
+    if (viewApplicationId && window.location.pathname.includes('/registrar/applications')) {
+        console.log('Auto-opening application modal for ID:', viewApplicationId);
+        
+        // Wait a bit for the page to fully load, then open the modal
+        setTimeout(() => {
+            viewApplication(viewApplicationId);
+            
+            // Clean up the URL parameter after opening the modal
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, document.title, newUrl);
+        }, 500);
+    }
 }
 
 // Populate application modal with comprehensive data

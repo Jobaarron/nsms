@@ -31,7 +31,7 @@ return new class extends Migration
             $table->enum('status', ['pending', 'investigating', 'in_progress', 'resolved', 'dismissed', 'forwarded'])->default('pending');
             $table->text('sanction')->nullable();
             $table->text('resolution')->nullable();
-            $table->foreignId('resolved_by')->nullable()->constrained('guidance_discipline')->onDelete('set null');
+            $table->foreignId('resolved_by')->nullable()->constrained('disciplines')->onDelete('set null');
             $table->date('resolved_at')->nullable();
             $table->text('student_statement')->nullable();
             $table->text('disciplinary_action')->nullable();

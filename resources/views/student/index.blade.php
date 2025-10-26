@@ -255,7 +255,19 @@
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label text-muted small">Section</label>
-                                    <div class="fw-semibold">{{ $student->section ?? 'To be assigned' }}</div>
+                                    <div class="fw-semibold">
+                                        @if($student->section)
+                                            {{ $student->section }}
+                                            @if($student->strand)
+                                                <br><span class="badge bg-info">{{ $student->strand }}</span>
+                                                @if($student->track)
+                                                    <span class="badge bg-warning ms-1">{{ $student->track }}</span>
+                                                @endif
+                                            @endif
+                                        @else
+                                            <span class="text-muted">Processing assignment...</span>
+                                        @endif
+                                    </div>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label text-muted small">Academic Year</label>

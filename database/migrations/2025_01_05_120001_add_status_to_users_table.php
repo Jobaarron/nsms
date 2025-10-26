@@ -12,7 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->foreignId('teacher_id')->after('id')->nullable()->constrained('teachers')->onDelete('set null');
+            $table->enum('status', ['active', 'inactive', 'suspended', 'pending'])
+                  ->default('active')
+                  ->after('email_verified_at');
         });
     }
 
@@ -22,8 +24,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropForeign(['teacher_id']);
-            $table->dropColumn('teacher_id');
+            $table->dropColumn('status');
         });
     }
 };

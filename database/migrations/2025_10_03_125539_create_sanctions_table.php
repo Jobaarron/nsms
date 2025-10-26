@@ -25,7 +25,7 @@ return new class extends Migration
             $table->text('notes')->nullable(); // Additional notes about the sanction
             $table->boolean('is_automatic')->default(true); // Whether this was automatically calculated
             $table->boolean('is_approved')->default(false); // Whether the sanction has been approved
-            $table->foreignId('approved_by')->nullable()->constrained('guidance_discipline')->onDelete('set null');
+            $table->foreignId('approved_by')->nullable()->constrained('disciplines')->onDelete('set null');
             $table->timestamp('approved_at')->nullable();
             $table->timestamps();
 

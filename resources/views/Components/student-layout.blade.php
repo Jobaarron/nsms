@@ -27,6 +27,9 @@
 
   <!-- App CSS (includes Bootstrap 5 via Vite) -->
   @vite('resources/sass/app.scss')
+  
+  <!-- Student JavaScript - Load in HEAD for onclick handlers -->
+  @vite('resources/js/student-grades.js')
   @vite(['resources/css/index_student.css'])
 
   <style>
@@ -85,6 +88,18 @@
           <li class="nav-item mb-2">
             <a class="nav-link {{ request()->routeIs('student.face-registration') ? 'active' : '' }}" href="{{ route('student.face-registration') }}">
               <i class="ri-user-smile-line me-2"></i>ID Capturing
+            </a>
+          </li>
+          
+          <!-- <li class="nav-item mb-2">
+            <a class="nav-link {{ request()->routeIs('student.schedule.*') ? 'active' : '' }}" href="{{ route('student.schedule.index') }}">
+              <i class="ri-calendar-line me-2"></i>Class Schedule
+            </a>
+          </li> -->
+          
+          <li class="nav-item mb-2">
+            <a class="nav-link {{ request()->routeIs('student.grades.*') ? 'active' : '' }}" href="{{ route('student.grades.index') }}">
+              <i class="ri-file-text-line me-2"></i>Grades
             </a>
           </li>
           

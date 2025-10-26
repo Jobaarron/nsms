@@ -67,12 +67,12 @@ Route::prefix('admin')->group(function () {
     Route::post('/login', [AdminController::class, 'login'])->name('admin.login.submit');
     
     // Protected admin routes - use auth middleware
-    Route::middleware(['auth'])->group(function () {
-        // Dashboard
-        Route::middleware(['auth', 'role:admin'])->name('admin.')->group(function () {
+    Route::middleware(['auth', 'role:admin'])->name('admin.')->group(function () {
         
         Route::get('/dashboard', [AdminController::class, 'index'])->name('dashboard');
         Route::get('/dashboard/stats', [AdminController::class, 'getStats'])->name('dashboard.stats');
+        Route::get('/', [AdminController::class, 'index'])->name('dashboard');
+        Route::post('/logout', [AdminController::class, 'logout'])->name('logout');
 
         // Forwarded Case Meetings for President (Admin)
         Route::get('/forwarded-cases', [AdminController::class, 'forwardedCases'])->name('forwarded.cases');
@@ -84,8 +84,6 @@ Route::prefix('admin')->group(function () {
 
         // View summary report for case meeting
         Route::get('/case-meetings/{caseMeeting}/summary', [AdminController::class, 'viewSummaryReport'])->name('case-meetings.summary');
-        Route::get('/', [AdminController::class, 'index'])->name('admin.dashboard');
-        Route::post('/logout', [AdminController::class, 'logout'])->name('admin.logout');
         
        
      
@@ -167,7 +165,6 @@ Route::prefix('admin')->group(function () {
         });
     });
 });
-});
 
    
 
@@ -177,9 +174,9 @@ Route::prefix('admin')->group(function () {
 
 // Inside the auth middleware group
 Route::middleware(['auth'])->group(function () {
-    // Dashboard - accessible to all authenticated users
-    Route::get('/admin', [AdminController::class, 'index'])->name('admin.dashboard');
-    Route::post('/logout', [AdminController::class, 'logout'])->name('admin.logout');
+    // Dashboard - accessible to all authenticated users (duplicate removed)
+    // Route::get('/admin', [AdminController::class, 'index'])->name('admin.dashboard');
+    // Route::post('/logout', [AdminController::class, 'logout'])->name('admin.logout');
     
     // User management - requires 'Manage users' permission
     Route::middleware(['permission:Manage users'])->group(function () {
@@ -216,12 +213,147 @@ Route::get('/teacher', [TeacherController::class, 'index'])
     ->name('teacher.dashboard')
     ->middleware(['auth', 'role:teacher']);
 
+// Teacher Dashboard AJAX Routes
+Route::get('/teacher/dashboard/stats', [TeacherController::class, 'getDashboardStats'])
+    ->name('teacher.dashboard.stats')
+    ->middleware(['auth', 'role:teacher']);
+
+// Teacher Quick Access Routes (shortcuts for dashboard)
+Route::get('/teacher/schedule', [App\Http\Controllers\TeacherScheduleController::class, 'index'])
+    ->name('teacher.schedule')
+    ->middleware(['auth', 'role:teacher|faculty_head']);
+
+Route::get('/teacher/grades', [App\Http\Controllers\TeacherGradeController::class, 'index'])
+    ->name('teacher.grades')
+    ->middleware(['auth', 'role:teacher|faculty_head']);
+
 // Teacher Counseling Recommendation Routes
 Route::middleware(['auth', 'role:teacher'])->prefix('teacher')->name('teacher.')->group(function () {
     Route::get('/recommend-counseling', [TeacherController::class, 'showRecommendForm'])
         ->name('recommend-counseling.form');
     Route::post('/recommend-counseling', [TeacherController::class, 'recommendToCounseling'])
         ->name('recommend-counseling');
+});
+
+// Teacher Schedule Routes (Extended functionality)
+Route::middleware(['auth', 'role:teacher|faculty_head'])->prefix('teacher')->name('teacher.')->group(function () {
+    Route::get('/schedule/calendar', [App\Http\Controllers\TeacherScheduleController::class, 'calendar'])
+        ->name('schedule.calendar');
+    Route::get('/my-students', [App\Http\Controllers\TeacherScheduleController::class, 'allStudents'])
+        ->name('my-students');
+    Route::get('/schedule/students', [App\Http\Controllers\TeacherScheduleController::class, 'students'])
+        ->name('schedule.students');
+    Route::get('/schedule/data', [App\Http\Controllers\TeacherScheduleController::class, 'getScheduleData'])
+        ->name('schedule.data');
+    Route::get('/classes/list', [App\Http\Controllers\TeacherScheduleController::class, 'getClassList'])
+        ->name('classes.list');
+});
+
+// Teacher Grade Routes (Extended functionality)
+Route::middleware(['auth', 'role:teacher|faculty_head'])->prefix('teacher')->name('teacher.')->group(function () {
+    Route::get('/grades/create', [App\Http\Controllers\TeacherGradeController::class, 'create'])
+        ->name('grades.create');
+    Route::post('/grades', [App\Http\Controllers\TeacherGradeController::class, 'store'])
+        ->name('grades.store');
+    Route::get('/grades/{submission}/edit', [App\Http\Controllers\TeacherGradeController::class, 'edit'])
+        ->name('grades.edit');
+    Route::put('/grades/{submission}', [App\Http\Controllers\TeacherGradeController::class, 'update'])
+        ->name('grades.update');
+    Route::delete('/grades/{submission}', [App\Http\Controllers\TeacherGradeController::class, 'destroy'])
+        ->name('grades.destroy');
+    
+    // Check grade submission status
+    Route::get('/check-submission-status', [App\Http\Controllers\TeacherController::class, 'checkSubmissionStatus'])
+        ->name('check-submission-status');
+    
+    // Grade entry form for specific assignment
+    Route::get('/grades/submit/{assignment}', [App\Http\Controllers\TeacherGradeController::class, 'showGradeEntry'])
+        ->name('grades.submit');
+    Route::post('/grades/submit/{assignment}', [App\Http\Controllers\TeacherGradeController::class, 'submitGrades'])
+        ->name('grades.submit.store');
+    Route::get('/grades/{submission}/data', [App\Http\Controllers\TeacherGradeController::class, 'getSubmissionData'])
+        ->name('grades.data');
+});
+
+// Student Schedule Routes
+Route::middleware('auth:student')->prefix('student')->name('student.')->group(function () {
+    Route::get('/schedule', [App\Http\Controllers\StudentScheduleController::class, 'index'])
+        ->name('schedule.index');
+    Route::get('/schedule/calendar', [App\Http\Controllers\StudentScheduleController::class, 'weeklyCalendar'])
+        ->name('schedule.calendar');
+    Route::get('/schedule/data', [App\Http\Controllers\StudentScheduleController::class, 'getScheduleData'])
+        ->name('schedule.data');
+});
+
+// Student Grade Routes
+Route::middleware('auth:student')->prefix('student')->name('student.')->group(function () {
+    Route::get('/grades', [App\Http\Controllers\StudentGradeController::class, 'index'])
+        ->name('grades.index');
+    Route::get('/grades/{quarter}', [App\Http\Controllers\StudentGradeController::class, 'quarter'])
+        ->name('grades.quarter');
+    Route::get('/grades/data/ajax', [App\Http\Controllers\StudentGradeController::class, 'getGradesData'])
+        ->name('grades.data');
+    Route::get('/grades/report/{quarter?}', [App\Http\Controllers\StudentGradeController::class, 'report'])
+        ->name('grades.report');
+});
+
+// Faculty Head Authentication Routes
+Route::get('/faculty-head/login', [App\Http\Controllers\FacultyHeadController::class, 'showLoginForm'])
+    ->name('faculty-head.login');
+Route::post('/faculty-head/login', [App\Http\Controllers\FacultyHeadController::class, 'login'])
+    ->name('faculty-head.login.submit');
+Route::post('/faculty-head/logout', [App\Http\Controllers\FacultyHeadController::class, 'logout'])
+    ->name('faculty-head.logout');
+
+// Faculty Head Routes (Protected by web guard with role check)
+Route::middleware(['auth', 'role:faculty_head'])->prefix('faculty-head')->name('faculty-head.')->group(function () {
+    Route::get('/', [App\Http\Controllers\FacultyHeadController::class, 'index'])
+        ->name('dashboard');
+    
+    // Assign adviser per class
+    Route::get('/assign-adviser', [App\Http\Controllers\FacultyHeadController::class, 'assignAdviser'])
+        ->name('assign-adviser');
+    Route::post('/assign-adviser', [App\Http\Controllers\FacultyHeadController::class, 'storeAdviser'])
+        ->name('assign-adviser.store');
+    
+    // Assign teacher per subject/section
+    Route::get('/assign-teacher', [App\Http\Controllers\FacultyHeadController::class, 'assignTeacherForm'])
+        ->name('assign-teacher');
+    Route::post('/assign-teacher', [App\Http\Controllers\FacultyHeadController::class, 'storeTeacherAssignment'])
+        ->name('assign-teacher.store');
+    
+    // Remove assignment (both teacher and adviser)
+    Route::delete('/remove-assignment/{assignment}', [App\Http\Controllers\FacultyHeadController::class, 'removeAssignment'])
+        ->name('remove-assignment');
+    
+    
+    // View submitted grades from teachers
+    Route::get('/view-grades', [App\Http\Controllers\FacultyHeadController::class, 'viewGrades'])
+        ->name('view-grades');
+    
+    // Approve/reject submitted grades from teachers
+    Route::get('/approve-grades', [App\Http\Controllers\FacultyHeadController::class, 'approveGrades'])
+        ->name('approve-grades');
+    Route::post('/approve-grades/{submission}', [App\Http\Controllers\FacultyHeadController::class, 'approveSubmission'])
+        ->name('approve-grades.approve');
+    Route::post('/reject-grades/{submission}', [App\Http\Controllers\FacultyHeadController::class, 'rejectSubmission'])
+        ->name('approve-grades.reject');
+    
+    // Activate grade submission
+    Route::get('/activate-submission', [App\Http\Controllers\FacultyHeadController::class, 'activateSubmission'])
+        ->name('activate-submission');
+    Route::post('/activate-submission/toggle', [App\Http\Controllers\FacultyHeadController::class, 'toggleGradeSubmissionStatus'])
+        ->name('activate-submission.toggle');
+    Route::post('/activate-submission/quarter', [App\Http\Controllers\FacultyHeadController::class, 'updateQuarterSettings'])
+        ->name('activate-submission.quarter');
+    
+    // API endpoint for checking grade submission status (used by teacher views)
+    Route::get('/api/grade-submission-status', [App\Http\Controllers\FacultyHeadController::class, 'getGradeSubmissionStatus'])
+        ->name('api.grade-submission-status');
+    
+    // API endpoint for getting subjects by grade level (used by assign teacher form)
+    Route::get('/api/subjects-by-grade', [App\Http\Controllers\FacultyHeadController::class, 'getSubjectsByGrade'])
+        ->name('api.subjects-by-grade');
 });
 
 
@@ -600,10 +732,18 @@ Route::prefix('registrar')->name('registrar.')->group(function () {
         
         // Logout
         Route::post('/logout', function(Request $request) {
+            // Clear all authentication guards to prevent session conflicts
             Auth::guard('registrar')->logout();
+            Auth::guard('web')->logout();
+            Auth::guard('enrollee')->logout();
+            Auth::guard('student')->logout();
+            
+            // Completely clear the session
             $request->session()->invalidate();
             $request->session()->regenerateToken();
-            return redirect()->route('registrar.login');
+            $request->session()->flush();
+            
+            return redirect()->route('registrar.login')->with('success', 'Logged out successfully');
         })->name('logout');
     });
 });

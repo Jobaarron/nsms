@@ -164,12 +164,12 @@ class GuidanceController extends Controller
         }
 
         // Get current user's guidance record
-        $guidanceRecord = $user->guidance ?? $user->guidanceDiscipline ?? null;
+        $guidanceRecord = $user->guidance ?? null;
 
         \Log::info('Schedule Case Meeting: Guidance Record Check', [
             'user_id' => $user->id,
             'has_guidance' => $user->guidance ? true : false,
-            'has_guidance_discipline' => $user->guidanceDiscipline ? true : false,
+            'has_guidance_discipline' => false, // Legacy field - now using separate guidance/discipline tables
             'guidance_record_id' => $guidanceRecord ? $guidanceRecord->id : null,
             'guidance_is_active' => $guidanceRecord ? $guidanceRecord->is_active : null,
         ]);
