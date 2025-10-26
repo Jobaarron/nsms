@@ -16,7 +16,8 @@ class SubjectSeeder extends Seeder
         $currentYear = date('Y');
         $academicYear = $currentYear . '-' . ($currentYear + 1);
 
-        // Nursery, Junior Casa, Senior Casa, Kinder Subjects
+        // Nursery, Junior Casa, Senior Casa, Kinder Subjects - COMMENTED OUT AS REQUESTED
+        /*
         $earlyChildhoodGrades = ['Nursery', 'Junior Casa', 'Senior Casa', 'Kinder'];
         foreach ($earlyChildhoodGrades as $gradeLevel) {
             $subjects = [
@@ -25,7 +26,10 @@ class SubjectSeeder extends Seeder
                 'English',
                 'Mathematics',
                 'Science',
-                'MAPEH (Music, Arts, Physical Education & Health)',
+                'Music',
+                'Arts',
+                'Physical Education',
+                'Health',
                 'Values Education',
             ];
 
@@ -38,6 +42,7 @@ class SubjectSeeder extends Seeder
                 ]);
             }
         }
+        */
 
         // Grades 1-3 Subjects (1st, 2nd, 3rd, 4th Grading)
         for ($grade = 1; $grade <= 3; $grade++) {
@@ -48,7 +53,10 @@ class SubjectSeeder extends Seeder
                 'Mathematics',
                 'Araling Panlipunan (AP)',
                 'Edukasyon sa Pagpapakatao (EsP / Values)',
-                'MAPEH (Music, Arts, Physical Education & Health)',
+                'Music',
+                'Arts',
+                'Physical Education',
+                'Health',
                 'Science',
             ];
 
@@ -71,7 +79,10 @@ class SubjectSeeder extends Seeder
                 'Science',
                 'Araling Panlipunan (AP)',
                 'Edukasyon sa Pagpapakatao (EsP / Values)',
-                'MAPEH (Music, Arts, Physical Education & Health)',
+                'Music',
+                'Arts',
+                'Physical Education',
+                'Health',
                 'Technology & Livelihood Education / Edukasyong Pantahanan at Pangkabuhayan',
             ];
 
@@ -95,7 +106,10 @@ class SubjectSeeder extends Seeder
                 'Araling Panlipunan (AP)',
                 'Technology & Livelihood Education (TLE)',
                 'Values Education',
-                'MAPEH (Music, Arts, Physical Education & Health)',
+                'Music',
+                'Arts',
+                'Physical Education',
+                'Health',
             ];
 
             foreach ($subjects as $subjectName) {

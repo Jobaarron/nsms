@@ -255,12 +255,22 @@ Route::middleware(['auth', 'role:teacher|faculty_head'])->prefix('teacher')->nam
         ->name('grades.create');
     Route::post('/grades', [App\Http\Controllers\TeacherGradeController::class, 'store'])
         ->name('grades.store');
-    Route::get('/grades/{submission}', [App\Http\Controllers\TeacherGradeController::class, 'show'])
-        ->name('grades.show');
-    Route::post('/grades/{submission}/submit', [App\Http\Controllers\TeacherGradeController::class, 'submit'])
+    Route::get('/grades/{submission}/edit', [App\Http\Controllers\TeacherGradeController::class, 'edit'])
+        ->name('grades.edit');
+    Route::put('/grades/{submission}', [App\Http\Controllers\TeacherGradeController::class, 'update'])
+        ->name('grades.update');
+    Route::delete('/grades/{submission}', [App\Http\Controllers\TeacherGradeController::class, 'destroy'])
+        ->name('grades.destroy');
+    
+    // Check grade submission status
+    Route::get('/check-submission-status', [App\Http\Controllers\TeacherController::class, 'checkSubmissionStatus'])
+        ->name('check-submission-status');
+    
+    // Grade entry form for specific assignment
+    Route::get('/grades/submit/{assignment}', [App\Http\Controllers\TeacherGradeController::class, 'showGradeEntry'])
         ->name('grades.submit');
-    Route::post('/grades/upload', [App\Http\Controllers\TeacherGradeController::class, 'upload'])
-        ->name('grades.upload');
+    Route::post('/grades/submit/{assignment}', [App\Http\Controllers\TeacherGradeController::class, 'submitGrades'])
+        ->name('grades.submit.store');
     Route::get('/grades/{submission}/data', [App\Http\Controllers\TeacherGradeController::class, 'getSubmissionData'])
         ->name('grades.data');
 });
@@ -312,6 +322,11 @@ Route::middleware(['auth', 'role:faculty_head'])->prefix('faculty-head')->name('
     Route::post('/assign-teacher', [App\Http\Controllers\FacultyHeadController::class, 'storeTeacherAssignment'])
         ->name('assign-teacher.store');
     
+    // Remove assignment (both teacher and adviser)
+    Route::delete('/remove-assignment/{assignment}', [App\Http\Controllers\FacultyHeadController::class, 'removeAssignment'])
+        ->name('remove-assignment');
+    
+    
     // View submitted grades from teachers
     Route::get('/view-grades', [App\Http\Controllers\FacultyHeadController::class, 'viewGrades'])
         ->name('view-grades');
@@ -327,8 +342,18 @@ Route::middleware(['auth', 'role:faculty_head'])->prefix('faculty-head')->name('
     // Activate grade submission
     Route::get('/activate-submission', [App\Http\Controllers\FacultyHeadController::class, 'activateSubmission'])
         ->name('activate-submission');
-    Route::post('/activate-submission', [App\Http\Controllers\FacultyHeadController::class, 'toggleGradeSubmission'])
+    Route::post('/activate-submission/toggle', [App\Http\Controllers\FacultyHeadController::class, 'toggleGradeSubmissionStatus'])
         ->name('activate-submission.toggle');
+    Route::post('/activate-submission/quarter', [App\Http\Controllers\FacultyHeadController::class, 'updateQuarterSettings'])
+        ->name('activate-submission.quarter');
+    
+    // API endpoint for checking grade submission status (used by teacher views)
+    Route::get('/api/grade-submission-status', [App\Http\Controllers\FacultyHeadController::class, 'getGradeSubmissionStatus'])
+        ->name('api.grade-submission-status');
+    
+    // API endpoint for getting subjects by grade level (used by assign teacher form)
+    Route::get('/api/subjects-by-grade', [App\Http\Controllers\FacultyHeadController::class, 'getSubjectsByGrade'])
+        ->name('api.subjects-by-grade');
 });
 
 

@@ -46,14 +46,10 @@
               feature will be disabled system-wide.
             </p>
             <div class="mt-4">
-              <form action="{{ route('faculty-head.activate-submission.toggle') }}" method="POST" id="toggleForm">
-                @csrf
-                <input type="hidden" name="active" value="{{ $isActive ? '0' : '1' }}">
-                <button type="button" class="btn btn-lg {{ $isActive ? 'btn-danger' : 'btn-success' }}" onclick="confirmToggle()">
-                  <i class="{{ $isActive ? 'ri-pause-circle-line' : 'ri-play-circle-line' }} me-2"></i>
-                  {{ $isActive ? 'Deactivate' : 'Activate' }} Grade Submission
-                </button>
-              </form>
+              <button type="button" class="btn btn-lg {{ $isActive ? 'btn-danger' : 'btn-success' }}" id="toggleSubmissionBtn" data-active="{{ $isActive ? '1' : '0' }}">
+                <i class="{{ $isActive ? 'ri-pause-circle-line' : 'ri-play-circle-line' }} me-2" id="toggleIcon"></i>
+                <span id="toggleText">{{ $isActive ? 'Deactivate' : 'Activate' }} Grade Submission</span>
+              </button>
             </div>
           </div>
         </div>
@@ -74,7 +70,7 @@
               <div class="card-body text-center">
                 <h6>1st Quarter</h6>
                 <div class="form-check form-switch d-flex justify-content-center">
-                  <input class="form-check-input" type="checkbox" id="q1Switch" checked>
+                  <input class="form-check-input quarter-switch" type="checkbox" id="q1Switch" data-quarter="q1" {{ $quarterSettings['q1_active'] ? 'checked' : '' }}>
                 </div>
                 <small class="text-muted">Aug - Oct</small>
               </div>
@@ -85,7 +81,7 @@
               <div class="card-body text-center">
                 <h6>2nd Quarter</h6>
                 <div class="form-check form-switch d-flex justify-content-center">
-                  <input class="form-check-input" type="checkbox" id="q2Switch" checked>
+                  <input class="form-check-input quarter-switch" type="checkbox" id="q2Switch" data-quarter="q2" {{ $quarterSettings['q2_active'] ? 'checked' : '' }}>
                 </div>
                 <small class="text-muted">Nov - Jan</small>
               </div>
@@ -96,7 +92,7 @@
               <div class="card-body text-center">
                 <h6>3rd Quarter</h6>
                 <div class="form-check form-switch d-flex justify-content-center">
-                  <input class="form-check-input" type="checkbox" id="q3Switch" checked>
+                  <input class="form-check-input quarter-switch" type="checkbox" id="q3Switch" data-quarter="q3" {{ $quarterSettings['q3_active'] ? 'checked' : '' }}>
                 </div>
                 <small class="text-muted">Feb - Apr</small>
               </div>
@@ -107,7 +103,7 @@
               <div class="card-body text-center">
                 <h6>4th Quarter</h6>
                 <div class="form-check form-switch d-flex justify-content-center">
-                  <input class="form-check-input" type="checkbox" id="q4Switch" checked>
+                  <input class="form-check-input quarter-switch" type="checkbox" id="q4Switch" data-quarter="q4" {{ $quarterSettings['q4_active'] ? 'checked' : '' }}>
                 </div>
                 <small class="text-muted">May - Jul</small>
               </div>
@@ -158,6 +154,3 @@
   </div>
 </x-faculty-head-layout>
 
-@push('scripts')
-<script src="{{ asset('js/faculty-head-activate-submission.js') }}"></script>
-@endpush

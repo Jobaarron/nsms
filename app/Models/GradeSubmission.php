@@ -64,6 +64,17 @@ class GradeSubmission extends Model
     // Get faculty assignment for this submission
     public function facultyAssignment()
     {
+        return $this->belongsTo(FacultyAssignment::class, 'teacher_id', 'teacher_id')
+                    ->where('subject_id', $this->subject_id)
+                    ->where('grade_level', $this->grade_level)
+                    ->where('section', $this->section)
+                    ->where('academic_year', $this->academic_year)
+                    ->where('status', 'active');
+    }
+
+    // Get faculty assignment record (helper method)
+    public function getFacultyAssignment()
+    {
         return FacultyAssignment::where('teacher_id', $this->teacher_id)
                                ->where('subject_id', $this->subject_id)
                                ->where('grade_level', $this->grade_level)

@@ -27,12 +27,18 @@ class TeacherController extends Controller
         $currentAcademicYear = date('Y') . '-' . (date('Y') + 1);
         
         try {
+            // Get teacher record first
+            $teacherRecord = Teacher::where('user_id', $teacher->id)->first();
+            
             // Get teacher's assignments
-            $assignments = FacultyAssignment::where('teacher_id', $teacher->id)
-                ->where('academic_year', $currentAcademicYear)
-                ->where('status', 'active')
-                ->with(['subject', 'teacher'])
-                ->get();
+            $assignments = collect();
+            if ($teacherRecord) {
+                $assignments = FacultyAssignment::where('teacher_id', $teacherRecord->id)
+                    ->where('academic_year', $currentAcademicYear)
+                    ->where('status', 'active')
+                    ->with(['subject', 'teacher.user'])
+                    ->get();
+            }
             
             // Get recent grade submissions
             $recentSubmissions = GradeSubmission::where('teacher_id', $teacher->id)
@@ -61,12 +67,42 @@ class TeacherController extends Controller
             ];
         }
         
+        // Get grade submission status
+        $gradeSubmissionActive = \App\Models\Setting::get('grade_submission_active', false);
+        $quarterSettings = [
+            'q1_active' => \App\Models\Setting::get('grade_submission_q1_active', false),
+            'q2_active' => \App\Models\Setting::get('grade_submission_q2_active', false),
+            'q3_active' => \App\Models\Setting::get('grade_submission_q3_active', false),
+            'q4_active' => \App\Models\Setting::get('grade_submission_q4_active', false),
+        ];
+        
         return view('teacher.index', compact(
             'assignments',
             'stats',
             'recentSubmissions',
-            'currentAcademicYear'
+            'currentAcademicYear',
+            'gradeSubmissionActive',
+            'quarterSettings'
         ));
+    }
+
+    /**
+     * Check grade submission status for AJAX requests
+     */
+    public function checkSubmissionStatus()
+    {
+        $isActive = \App\Models\Setting::get('grade_submission_active', false);
+        $quarterSettings = [
+            'q1_active' => \App\Models\Setting::get('grade_submission_q1_active', false),
+            'q2_active' => \App\Models\Setting::get('grade_submission_q2_active', false),
+            'q3_active' => \App\Models\Setting::get('grade_submission_q3_active', false),
+            'q4_active' => \App\Models\Setting::get('grade_submission_q4_active', false),
+        ];
+
+        return response()->json([
+            'active' => $isActive,
+            'quarters' => $quarterSettings
+        ]);
     }
 
     /**

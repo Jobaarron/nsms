@@ -27,19 +27,27 @@ class TeacherGradeController extends Controller
         $currentAcademicYear = date('Y') . '-' . (date('Y') + 1);
         
         try {
-            // Get teacher's assignments
-            $assignments = FacultyAssignment::where('teacher_id', $teacher->teacher->id)
-                ->where('academic_year', $currentAcademicYear)
-                ->where('status', 'active')
-                ->with(['subject', 'teacher'])
-                ->get();
+            // Get teacher record first
+            $teacherRecord = \App\Models\Teacher::where('user_id', $teacher->id)->first();
             
-            // Get grade submissions
-            $submissions = GradeSubmission::where('teacher_id', $teacher->teacher->id)
-                ->where('academic_year', $currentAcademicYear)
-                ->with(['subject'])
-                ->orderBy('created_at', 'desc')
-                ->get();
+            // Get teacher's assignments
+            $assignments = collect();
+            $submissions = collect();
+            
+            if ($teacherRecord) {
+                $assignments = FacultyAssignment::where('teacher_id', $teacherRecord->id)
+                    ->where('academic_year', $currentAcademicYear)
+                    ->where('status', 'active')
+                    ->with(['subject', 'teacher.user'])
+                    ->get();
+                
+                // Get grade submissions
+                $submissions = GradeSubmission::where('teacher_id', $teacherRecord->id)
+                    ->where('academic_year', $currentAcademicYear)
+                    ->with(['subject'])
+                    ->orderBy('created_at', 'desc')
+                    ->get();
+            }
             
             // Group submissions by status
             $submissionsByStatus = $submissions->groupBy('status');
@@ -50,7 +58,132 @@ class TeacherGradeController extends Controller
             $submissionsByStatus = collect();
         }
         
-        return view('teacher.grades', compact('teacher', 'assignments', 'submissions', 'submissionsByStatus', 'currentAcademicYear'));
+        return view('teacher.grades', compact('assignments', 'submissions', 'submissionsByStatus', 'currentAcademicYear'));
+    }
+
+    /**
+     * Show grade entry form for specific assignment
+     */
+    public function showGradeEntry(FacultyAssignment $assignment)
+    {
+        $teacher = Auth::user();
+        $teacherRecord = \App\Models\Teacher::where('user_id', $teacher->id)->first();
+        
+        // Verify this assignment belongs to the current teacher
+        if (!$teacherRecord || $assignment->teacher_id !== $teacherRecord->id) {
+            abort(403, 'Unauthorized access to this assignment.');
+        }
+
+        // Check if grade submission is active
+        $isActive = \App\Models\Setting::get('grade_submission_active', false);
+        if (!$isActive) {
+            return redirect()->route('teacher.grades')->with('error', 'Grade submission is currently disabled by the faculty head.');
+        }
+
+        // Get students automatically enrolled in this class
+        $studentsQuery = Student::where('grade_level', $assignment->grade_level)
+                               ->where('section', $assignment->section)
+                               ->where('academic_year', $assignment->academic_year)
+                               ->where('is_active', true);
+
+        // For Senior High School, match strand and track
+        if (in_array($assignment->grade_level, ['Grade 11', 'Grade 12'])) {
+            if ($assignment->strand) {
+                $studentsQuery->where('strand', $assignment->strand);
+            }
+            
+            if ($assignment->track) {
+                $studentsQuery->where('track', $assignment->track);
+            }
+        }
+
+        $students = $studentsQuery->orderBy('last_name')
+                                 ->orderBy('first_name')
+                                 ->get();
+
+        // Get or create grade submission record
+        $submission = GradeSubmission::firstOrCreate(
+            [
+                'teacher_id' => $teacherRecord->id,
+                'subject_id' => $assignment->subject_id,
+                'grade_level' => $assignment->grade_level,
+                'section' => $assignment->section,
+                'academic_year' => $assignment->academic_year,
+                'quarter' => request('quarter', '1st') // Default to 1st quarter
+            ],
+            [
+                'status' => 'draft',
+                'total_students' => $students->count(),
+                'grades_entered' => 0,
+                'grades_data' => []
+            ]
+        );
+
+        // Get existing grades for this submission
+        $existingGrades = [];
+        if ($submission->grades_data) {
+            foreach ($submission->grades_data as $gradeData) {
+                $existingGrades[$gradeData['student_id']] = $gradeData;
+            }
+        }
+
+        return view('teacher.grade-entry', compact(
+            'assignment', 
+            'students', 
+            'submission', 
+            'existingGrades'
+        ));
+    }
+
+    /**
+     * Submit grades for review
+     */
+    public function submitGrades(Request $request, FacultyAssignment $assignment)
+    {
+        $teacher = Auth::user();
+        $teacherRecord = \App\Models\Teacher::where('user_id', $teacher->id)->first();
+        
+        // Verify this assignment belongs to the current teacher
+        if (!$teacherRecord || $assignment->teacher_id !== $teacherRecord->id) {
+            abort(403, 'Unauthorized access to this assignment.');
+        }
+
+        $request->validate([
+            'quarter' => 'required|in:1st,2nd,3rd,4th',
+            'grades' => 'required|array',
+            'grades.*.student_id' => 'required|exists:students,id',
+            'grades.*.grade' => 'required|numeric|min:0|max:100',
+            'grades.*.remarks' => 'nullable|string|max:255',
+            'action' => 'required|in:save_draft,submit_for_review'
+        ]);
+
+        // Get or update grade submission
+        $submission = GradeSubmission::updateOrCreate(
+            [
+                'teacher_id' => $teacherRecord->id,
+                'subject_id' => $assignment->subject_id,
+                'grade_level' => $assignment->grade_level,
+                'section' => $assignment->section,
+                'academic_year' => $assignment->academic_year,
+                'quarter' => $request->quarter
+            ],
+            [
+                'grades_data' => $request->grades,
+                'total_students' => count($request->grades),
+                'grades_entered' => count(array_filter($request->grades, function($grade) {
+                    return !empty($grade['grade']);
+                })),
+                'submission_notes' => $request->notes,
+                'status' => $request->action === 'submit_for_review' ? 'submitted' : 'draft',
+                'submitted_at' => $request->action === 'submit_for_review' ? now() : null
+            ]
+        );
+
+        $message = $request->action === 'submit_for_review' 
+            ? 'Grades submitted successfully for faculty head review!'
+            : 'Grades saved as draft successfully!';
+
+        return redirect()->route('teacher.grades')->with('success', $message);
     }
 
     /**

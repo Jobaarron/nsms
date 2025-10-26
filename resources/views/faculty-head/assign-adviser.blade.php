@@ -43,18 +43,29 @@
           </div>
           <div class="col-md-3">
             <label class="form-label">Grade Level</label>
-            <select name="grade_level" class="form-select" required>
+            <select name="grade_level" id="grade_level_adviser" class="form-select" required>
               <option value="">Select Grade</option>
-              @foreach($classes->pluck('grade_level')->unique() as $grade)
+              @php
+                $gradeOrder = [
+                  'Nursery', 'Junior Casa', 'Senior Casa', 'Kinder',
+                  'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6',
+                  'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'
+                ];
+                $availableGrades = $sections->pluck('grade_level')->unique();
+                $orderedGrades = collect($gradeOrder)->filter(function($grade) use ($availableGrades) {
+                  return $availableGrades->contains($grade);
+                });
+              @endphp
+              @foreach($orderedGrades as $grade)
                 <option value="{{ $grade }}">{{ $grade }}</option>
               @endforeach
             </select>
           </div>
           <div class="col-md-2">
             <label class="form-label">Section</label>
-            <select name="section" class="form-select" required>
+            <select name="section" id="section_adviser" class="form-select" required>
               <option value="">Select Section</option>
-              @foreach($classes->pluck('section')->unique() as $section)
+              @foreach($sections->pluck('section_name')->unique()->sort() as $section)
                 <option value="{{ $section }}">{{ $section }}</option>
               @endforeach
             </select>
@@ -85,13 +96,12 @@
       </div>
       <div class="card-body">
         <div class="table-responsive">
-          <table class="table table-hover">
-            <thead>
+          <table class="table table-hover align-middle">
+            <thead class="table-light">
               <tr>
+                <th>Teacher</th>
                 <th>Class</th>
-                <th>Adviser</th>
                 <th>Assigned Date</th>
-                <th>Effective Date</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
@@ -99,10 +109,16 @@
             <tbody>
               @forelse($advisers as $adviser)
               <tr>
-                <td>{{ $adviser->grade_level }} - {{ $adviser->section }}</td>
-                <td>{{ $adviser->teacher->name }}</td>
-                <td>{{ $adviser->assigned_date->format('M d, Y') }}</td>
-                <td>{{ $adviser->effective_date->format('M d, Y') }}</td>
+                <td>
+                  <div class="fw-medium">{{ $adviser->teacher->user->name }}</div>
+                  <div class="small text-muted">Class Adviser</div>
+                </td>
+                <td>
+                  <span class="badge bg-primary">{{ $adviser->grade_level }} - {{ $adviser->section }}</span>
+                </td>
+                <td>
+                  <div class="small">{{ $adviser->assigned_date->format('M d, Y') }}</div>
+                </td>
                 <td>
                   @if($adviser->status === 'active')
                     <span class="badge bg-success">Active</span>
@@ -112,15 +128,18 @@
                 </td>
                 <td>
                   @if($adviser->status === 'active')
-                    <button class="btn btn-sm btn-outline-danger" onclick="removeAssignment({{ $adviser->id }})">
-                      <i class="ri-user-unfollow-line me-1"></i>Remove
+                    <button class="btn btn-sm btn-outline-danger" onclick="removeAssignment({{ $adviser->id }})" title="Remove Class Adviser">
+                      <i class="ri-user-unfollow-line"></i>
                     </button>
                   @endif
                 </td>
               </tr>
               @empty
               <tr>
-                <td colspan="6" class="text-center text-muted">No class advisers assigned yet</td>
+                <td colspan="5" class="text-center text-muted py-4">
+                  <i class="ri-user-star-line display-6 mb-2 d-block"></i>
+                  No class advisers assigned yet
+                </td>
               </tr>
               @endforelse
             </tbody>
@@ -131,6 +150,3 @@
   </main>
 </x-faculty-head-layout>
 
-@push('scripts')
-<script src="{{ asset('js/faculty-head-assign-adviser.js') }}"></script>
-@endpush

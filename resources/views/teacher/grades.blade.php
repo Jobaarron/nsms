@@ -3,8 +3,14 @@
   <main class="col-12 col-md-10 px-4 py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h1 class="section-title mb-0">Grade Submissions</h1>
-      <div class="text-muted">
-        <i class="ri-file-text-line me-1"></i>{{ $currentAcademicYear }}
+      <div class="d-flex align-items-center gap-3">
+        <div class="text-muted">
+          <i class="ri-file-text-line me-1"></i>{{ $currentAcademicYear }}
+        </div>
+        <div class="d-flex align-items-center">
+          <span class="text-muted me-2">Submission Status:</span>
+          <span class="grade-submission-status badge bg-secondary">Checking...</span>
+        </div>
       </div>
     </div>
 
@@ -76,11 +82,13 @@
             <select name="subject_id" class="form-select" required>
               <option value="">Select Subject</option>
               @foreach($assignments as $assignment)
+                @if($assignment->subject_id && $assignment->subject)
                 <option value="{{ $assignment->subject_id }}" 
                         data-grade="{{ $assignment->grade_level }}" 
                         data-section="{{ $assignment->section }}">
                   {{ $assignment->subject->subject_name }} ({{ $assignment->grade_level }} - {{ $assignment->section }})
                 </option>
+                @endif
               @endforeach
             </select>
           </div>
@@ -129,21 +137,47 @@
               @forelse($submissions as $submission)
               <tr>
                 <td>
-                  <strong>{{ $submission->subject->subject_name }}</strong>
-                  <br><small class="text-muted">{{ $submission->subject->subject_code }}</small>
+                  <div class="fw-medium">{{ $submission->subject->subject_name }}</div>
+                  @if($submission->subject->subject_code)
+                    <div class="small text-muted">{{ $submission->subject->subject_code }}</div>
+                  @endif
                 </td>
-                <td>{{ $submission->grade_level }} - {{ $submission->section }}</td>
-                <td>{{ $submission->quarter }}</td>
                 <td>
+                  <div>{{ $submission->grade_level }} - {{ $submission->section }}</div>
+                  @php
+                    $assignment = \App\Models\FacultyAssignment::where('teacher_id', $submission->teacher_id)
+                      ->where('subject_id', $submission->subject_id)
+                      ->where('grade_level', $submission->grade_level)
+                      ->where('section', $submission->section)
+                      ->where('academic_year', $submission->academic_year)
+                      ->first();
+                  @endphp
+                  @if($assignment && $assignment->strand)
+                    <div class="mt-1">
+                      <span class="badge bg-info">{{ $assignment->strand }}</span>
+                      @if($assignment->track)
+                        <span class="badge bg-warning ms-1">{{ $assignment->track }}</span>
+                      @endif
+                    </div>
+                  @endif
+                </td>
+                <td>{{ $submission->quarter }}</td>
+                <td>{{ $submission->total_students }}</td>
+                <td>
+                  @php
+                    $percentage = $submission->total_students > 0 ? ($submission->grades_entered / $submission->total_students) * 100 : 0;
+                  @endphp
                   <div class="progress" style="height: 20px;">
-                    <div class="progress-bar" role="progressbar" 
-                         style="width: {{ $submission->completion_percentage }}%"
-                         aria-valuenow="{{ $submission->completion_percentage }}" 
-                         aria-valuemin="0" aria-valuemax="100">
-                      {{ $submission->completion_percentage }}%
+                    <div class="progress-bar {{ $percentage == 100 ? 'bg-success' : 'bg-primary' }}" 
+                         role="progressbar" 
+                         style="width: {{ $percentage }}%"
+                         aria-valuenow="{{ $percentage }}" 
+                         aria-valuemin="0" 
+                         aria-valuemax="100">
+                      {{ number_format($percentage, 0) }}%
                     </div>
                   </div>
-                  <small class="text-muted">{{ $submission->grades_entered }}/{{ $submission->total_students }} students</small>
+                  <small class="text-muted">{{ $submission->grades_entered }}/{{ $submission->total_students }} entered</small>
                 </td>
                 <td>
                   @switch($submission->status)
@@ -163,35 +197,48 @@
                       <span class="badge bg-info">Revision Requested</span>
                       @break
                   @endswitch
+                  @if($submission->review_notes)
+                    <div class="small text-muted mt-1" title="{{ $submission->review_notes }}">
+                      <i class="ri-message-line"></i> Has feedback
+                    </div>
+                  @endif
                 </td>
                 <td>
                   @if($submission->submitted_at)
-                    {{ $submission->submitted_at->format('M d, Y') }}
+                    <div class="small">{{ $submission->submitted_at->format('M d, Y') }}</div>
+                    <div class="small text-muted">{{ $submission->submitted_at->format('g:i A') }}</div>
                   @else
                     <span class="text-muted">Not submitted</span>
                   @endif
                 </td>
                 <td>
                   <div class="btn-group btn-group-sm">
-                    <a href="{{ route('teacher.grades.show', $submission) }}" class="btn btn-outline-primary">
-                      <i class="ri-eye-line"></i>
-                    </a>
-                    @if($submission->canEdit())
-                      <a href="{{ route('teacher.grades.create', [
-                        'subject_id' => $submission->subject_id,
-                        'grade_level' => $submission->grade_level,
-                        'section' => $submission->section,
-                        'quarter' => $submission->quarter
-                      ]) }}" class="btn btn-outline-secondary">
+                    @if(in_array($submission->status, ['draft', 'revision_requested']))
+                      <a href="{{ route('teacher.grades.submit', $submission->getFacultyAssignment()) }}?quarter={{ $submission->quarter }}" 
+                         class="btn btn-outline-primary" title="Edit Grades">
                         <i class="ri-edit-line"></i>
                       </a>
+                    @else
+                      <button class="btn btn-outline-secondary" title="View Only" disabled>
+                        <i class="ri-eye-line"></i>
+                      </button>
+                    @endif
+                    
+                    @if($submission->review_notes)
+                      <button class="btn btn-outline-info" title="View Feedback" onclick="showFeedback('{{ addslashes($submission->review_notes) }}')">
+                        <i class="ri-message-line"></i>
+                      </button>
                     @endif
                   </div>
                 </td>
               </tr>
               @empty
               <tr>
-                <td colspan="7" class="text-center text-muted">No grade submissions found</td>
+                <td colspan="8" class="text-center text-muted py-4">
+                  <i class="ri-file-list-line display-6 mb-2 d-block"></i>
+                  No grade submissions yet
+                  <div class="small">Start by clicking "Submit Grades" on your assignments above.</div>
+                </td>
               </tr>
               @endforelse
             </tbody>
@@ -202,6 +249,48 @@
   </main>
 </x-teacher-layout>
 
+<script>
+function showFeedback(notes) {
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.tabIndex = -1;
+    
+    modal.innerHTML = `
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="ri-message-line me-2"></i>Faculty Head Feedback
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="ri-information-line me-2"></i>
+                        <strong>Review Notes:</strong>
+                    </div>
+                    <p class="mb-0">${notes}</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    const bootstrapModal = new bootstrap.Modal(modal);
+    bootstrapModal.show();
+    
+    // Clean up modal when hidden
+    modal.addEventListener('hidden.bs.modal', function() {
+        document.body.removeChild(modal);
+    });
+}
+</script>
+
 @push('scripts')
+@vite('resources/js/grade-submission-checker.js')
 <script src="{{ asset('js/teacher-grades.js') }}"></script>
 @endpush

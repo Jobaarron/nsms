@@ -6,6 +6,8 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf-token" content="{{ csrf_token() }}">
 
   <title>Faculty Head Portal | Nicolites Portal</title>
@@ -19,6 +21,10 @@
   <!-- App CSS & JS (includes Bootstrap 5 via Vite) -->
   @vite(['resources/sass/app.scss','resources/js/app.js'])
   @vite(['resources/css/index_faculty_head.css'])
+  
+  <!-- Faculty Head JavaScript - Load in HEAD for onclick handlers -->
+  @vite('resources/js/faculty-head-assign-teacher.js')
+  @vite('resources/js/faculty-head-activate-submission.js')
 
 </head>
 <body>
@@ -57,14 +63,8 @@
           </li>
           
           <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('faculty-head.view-grades.*') ? 'active' : '' }}" href="{{ route('faculty-head.view-grades') }}">
-              <i class="ri-file-list-3-line me-2"></i>View Submitted Grades
-            </a>
-          </li>
-          
-          <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('faculty-head.approve-grades.*') ? 'active' : '' }}" href="{{ route('faculty-head.approve-grades') }}">
-              <i class="ri-checkbox-circle-line me-2"></i>Approve/Reject Grades
+            <a class="nav-link {{ request()->routeIs('faculty-head.view-grades.*') || request()->routeIs('faculty-head.approve-grades.*') ? 'active' : '' }}" href="{{ route('faculty-head.view-grades') }}">
+              <i class="ri-file-list-3-line me-2"></i>Review & Approve Grades
             </a>
           </li>
           

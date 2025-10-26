@@ -20,7 +20,7 @@ return new class extends Migration
             
             // Core assignment relationships - following the same pattern as grade_submissions
             $table->foreignId('teacher_id')->constrained('teachers')->onDelete('cascade');
-            $table->foreignId('subject_id')->constrained('subjects')->onDelete('cascade');
+            $table->foreignId('subject_id')->nullable()->constrained('subjects')->onDelete('cascade'); // Nullable for class advisers
             $table->foreignId('assigned_by')->constrained('users')->onDelete('cascade');
             
             // Class identification
@@ -54,8 +54,9 @@ return new class extends Migration
             $table->index(['assignment_type', 'status'], 'fa_assignment_status_idx');
             $table->index(['grade_level', 'section', 'academic_year'], 'fa_class_lookup_idx');
             
-            // Unique constraint to prevent duplicate assignments - same pattern as grade_submissions
-            $table->unique(['teacher_id', 'subject_id', 'grade_level', 'section', 'academic_year'], 'unique_faculty_assignment');
+            // Note: Removed unique constraints to allow multiple schedules for same teacher/subject/class
+            // Application logic will handle schedule conflicts and class adviser uniqueness
+            // This allows faculty heads to assign same teacher to same class with different schedules
         });
     }
 

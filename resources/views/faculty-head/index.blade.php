@@ -29,12 +29,25 @@
       <div class="col-6 col-lg-3">
         <div class="card card-summary card-status h-100">
           <div class="card-body text-center">
-            <i class="ri-user-settings-line display-6 mb-2"></i>
-            <div>Active Assignments</div>
-            <h3>{{ $stats['total_assignments'] }}</h3>
+            <i class="ri-book-open-line display-6 mb-2"></i>
+            <div>Active Subject Assignments</div>
+            <h3>{{ $stats['active_subject_assignments'] }}</h3>
           </div>
         </div>
       </div>
+      <div class="col-6 col-lg-3">
+        <div class="card card-summary card-application h-100">
+          <div class="card-body text-center">
+            <i class="ri-user-star-line display-6 mb-2"></i>
+            <div>Active Adviser Assignments</div>
+            <h3>{{ $stats['active_adviser_assignments'] }}</h3>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECOND ROW OF STATS -->
+    <div class="row g-3 mb-4">
       <div class="col-6 col-lg-3">
         <div class="card card-summary card-application h-100">
           <div class="card-body text-center">
@@ -100,11 +113,11 @@
       </div>
     </div>
 
-    <!-- RECENT ASSIGNMENTS -->
-    <div class="card">
+    <!-- RECENT SUBJECT ASSIGNMENTS -->
+    <div class="card mb-4">
       <div class="card-header">
         <h5 class="mb-0">
-          <i class="ri-user-settings-line me-2"></i>Recent Teacher Assignments
+          <i class="ri-book-open-line me-2"></i>Recent Subject Teacher Assignments
         </h5>
       </div>
       <div class="card-body">
@@ -115,28 +128,66 @@
                 <th>Teacher</th>
                 <th>Subject</th>
                 <th>Class</th>
-                <th>Type</th>
+                <th>Strand/Track</th>
                 <th>Assigned Date</th>
               </tr>
             </thead>
             <tbody>
-              @forelse($recentAssignments as $assignment)
+              @forelse($recentSubjectAssignments as $assignment)
               <tr>
-                <td>{{ $assignment->teacher->name }}</td>
-                <td>{{ $assignment->subject->subject_name ?? 'Class Adviser' }}</td>
+                <td>{{ $assignment->teacher->user->name }}</td>
+                <td>{{ $assignment->subject->subject_name }}</td>
                 <td>{{ $assignment->grade_level }} - {{ $assignment->section }}</td>
                 <td>
-                  @if($assignment->isClassAdviser())
-                    <span class="badge bg-primary">Class Adviser</span>
+                  @if($assignment->strand)
+                    <span class="badge bg-info">{{ $assignment->strand }}</span>
+                    @if($assignment->track)
+                      <br><span class="badge bg-warning mt-1">{{ $assignment->track }}</span>
+                    @endif
                   @else
-                    <span class="badge bg-secondary">Subject Teacher</span>
+                    <span class="text-muted">-</span>
                   @endif
                 </td>
                 <td>{{ $assignment->created_at->format('M d, Y') }}</td>
               </tr>
               @empty
               <tr>
-                <td colspan="5" class="text-center text-muted">No recent assignments</td>
+                <td colspan="5" class="text-center text-muted">No recent subject assignments</td>
+              </tr>
+              @endforelse
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- RECENT ADVISER ASSIGNMENTS -->
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0">
+          <i class="ri-user-star-line me-2"></i>Recent Class Adviser Assignments
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>Teacher</th>
+                <th>Class</th>
+                <th>Assigned Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              @forelse($recentAdviserAssignments as $assignment)
+              <tr>
+                <td>{{ $assignment->teacher->user->name }}</td>
+                <td>{{ $assignment->grade_level }} - {{ $assignment->section }}</td>
+                <td>{{ $assignment->created_at->format('M d, Y') }}</td>
+              </tr>
+              @empty
+              <tr>
+                <td colspan="3" class="text-center text-muted">No recent adviser assignments</td>
               </tr>
               @endforelse
             </tbody>
@@ -148,5 +199,5 @@
 </x-faculty-head-layout>
 
 @push('scripts')
-<script src="{{ asset('js/faculty-head-dashboard.js') }}"></script>
+@vite('resources/js/faculty-head-dashboard.js')
 @endpush

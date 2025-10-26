@@ -15,6 +15,8 @@ class FacultyAssignment extends Model
         'assigned_by',
         'grade_level',
         'section',
+        'strand',
+        'track',
         'academic_year',
         'assignment_type',
         'status',
@@ -23,13 +25,19 @@ class FacultyAssignment extends Model
         'end_date',
         'notes',
         'student_count',
-        'weekly_hours'
+        'weekly_hours',
+        'schedule_day',
+        'schedule_start_time',
+        'schedule_end_time',
+        'room_name'
     ];
 
     protected $casts = [
         'assigned_date' => 'date',
         'effective_date' => 'date',
-        'end_date' => 'date'
+        'end_date' => 'date',
+        'schedule_start_time' => 'datetime:H:i',
+        'schedule_end_time' => 'datetime:H:i'
     ];
 
     // Relationships - interconnected with existing system
@@ -127,6 +135,31 @@ class FacultyAssignment extends Model
         return $this->assignment_type === 'subject_teacher';
     }
 
+    // Get formatted schedule display
+    public function getFormattedScheduleAttribute()
+    {
+        if (!$this->schedule_day || !$this->schedule_start_time || !$this->schedule_end_time) {
+            return 'Not scheduled';
+        }
+
+        $startTime = $this->schedule_start_time ? $this->schedule_start_time->format('g:i A') : '';
+        $endTime = $this->schedule_end_time ? $this->schedule_end_time->format('g:i A') : '';
+        
+        return "{$this->schedule_day} {$startTime} - {$endTime}";
+    }
+
+    // Get formatted schedule with room
+    public function getFullScheduleAttribute()
+    {
+        $schedule = $this->formatted_schedule;
+        if ($schedule === 'Not scheduled') {
+            return $schedule;
+        }
+        
+        $room = $this->room_name ? " | Room: {$this->room_name}" : '';
+        return $schedule . $room;
+    }
+
     // Get teacher's full teaching load
     public static function getTeacherLoad($teacherId, $academicYear = null)
     {
@@ -139,7 +172,7 @@ class FacultyAssignment extends Model
                   ->get();
     }
 
-    // Check if teacher is already assigned to this class
+    // Check if teacher is already assigned to this class (deprecated - now allows multiple schedules)
     public static function isTeacherAssigned($teacherId, $subjectId, $gradeLevel, $section, $academicYear)
     {
         return self::where('teacher_id', $teacherId)
@@ -149,5 +182,116 @@ class FacultyAssignment extends Model
                   ->where('academic_year', $academicYear)
                   ->where('status', 'active')
                   ->exists();
+    }
+
+    // Simple method to get teacher assignments for a specific academic year
+    public static function getTeacherAssignments($teacherId, $academicYear = null)
+    {
+        $academicYear = $academicYear ?: (date('Y') . '-' . (date('Y') + 1));
+        
+        return self::where('teacher_id', $teacherId)
+                  ->where('academic_year', $academicYear)
+                  ->where('status', 'active')
+                  ->with(['subject', 'teacher.user'])
+                  ->get();
+    }
+
+    // Model boot method for validation using Eloquent relationships
+    protected static function boot()
+    {
+        parent::boot();
+        
+        // Auto-set academic year if not provided
+        static::creating(function ($assignment) {
+            if (!$assignment->academic_year) {
+                $assignment->academic_year = date('Y') . '-' . (date('Y') + 1);
+            }
+            
+            // Validate class adviser uniqueness (only one adviser per class)
+            if ($assignment->assignment_type === 'class_adviser') {
+                $existingAdviser = self::where('grade_level', $assignment->grade_level)
+                                     ->where('section', $assignment->section)
+                                     ->where('academic_year', $assignment->academic_year)
+                                     ->where('assignment_type', 'class_adviser')
+                                     ->where('status', 'active')
+                                     ->with(['teacher.user'])
+                                     ->first();
+                
+                if ($existingAdviser) {
+                    throw new \Exception("Class adviser conflict: {$existingAdviser->teacher->user->name} is already assigned as adviser for {$assignment->grade_level} - {$assignment->section}.");
+                }
+            }
+            
+            // Check for duplicate subject assignments (prevent same teacher teaching same subject to same class)
+            if ($assignment->assignment_type === 'subject_teacher') {
+                $existingQuery = self::where('teacher_id', $assignment->teacher_id)
+                                   ->where('subject_id', $assignment->subject_id)
+                                   ->where('grade_level', $assignment->grade_level)
+                                   ->where('section', $assignment->section)
+                                   ->where('academic_year', $assignment->academic_year)
+                                   ->where('status', 'active');
+
+                // For Senior High School, also check strand and track
+                if (in_array($assignment->grade_level, ['Grade 11', 'Grade 12'])) {
+                    if ($assignment->strand) {
+                        $existingQuery->where('strand', $assignment->strand);
+                    }
+                    if ($assignment->track) {
+                        $existingQuery->where('track', $assignment->track);
+                    }
+                }
+
+                $existingAssignment = $existingQuery->with(['teacher.user', 'subject'])->first();
+                
+                if ($existingAssignment) {
+                    $classInfo = $assignment->grade_level . ' - ' . $assignment->section;
+                    if ($assignment->strand) {
+                        $classInfo .= ' (' . $assignment->strand;
+                        if ($assignment->track) {
+                            $classInfo .= ' - ' . $assignment->track;
+                        }
+                        $classInfo .= ')';
+                    }
+                    
+                    throw new \Exception("Assignment conflict: {$existingAssignment->teacher->user->name} is already assigned to teach {$existingAssignment->subject->subject_name} for {$classInfo}.");
+                }
+            }
+        });
+        
+        // Validate on update as well
+        static::updating(function ($assignment) {
+            // Validate class adviser uniqueness on update
+            if ($assignment->assignment_type === 'class_adviser') {
+                $existingAdviser = self::where('grade_level', $assignment->grade_level)
+                                     ->where('section', $assignment->section)
+                                     ->where('academic_year', $assignment->academic_year)
+                                     ->where('assignment_type', 'class_adviser')
+                                     ->where('status', 'active')
+                                     ->where('id', '!=', $assignment->id) // Exclude current record
+                                     ->with(['teacher.user'])
+                                     ->first();
+                
+                if ($existingAdviser) {
+                    throw new \Exception("Class adviser conflict: {$existingAdviser->teacher->user->name} is already assigned as adviser for {$assignment->grade_level} - {$assignment->section}.");
+                }
+            }
+            
+            // Validate duplicate subject assignments on update
+            if ($assignment->assignment_type === 'subject_teacher') {
+                $existingAssignment = self::where('teacher_id', $assignment->teacher_id)
+                                        ->where('subject_id', $assignment->subject_id)
+                                        ->where('grade_level', $assignment->grade_level)
+                                        ->where('section', $assignment->section)
+                                        ->where('academic_year', $assignment->academic_year)
+                                        ->where('status', 'active')
+                                        ->where('id', '!=', $assignment->id) // Exclude current record
+                                        ->with(['teacher.user', 'subject'])
+                                        ->first();
+                
+                if ($existingAssignment) {
+                    throw new \Exception("Assignment conflict: {$existingAssignment->teacher->user->name} is already assigned to teach {$existingAssignment->subject->subject_name} for {$assignment->grade_level} - {$assignment->section}.");
+                }
+            }
+        });
     }
 }

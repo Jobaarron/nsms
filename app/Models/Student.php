@@ -43,6 +43,7 @@ class Student extends Authenticatable
         'strand',
         'track',
         'section',
+        'section_id',
         'student_type',
         'enrollment_status',
         'academic_year',
@@ -91,6 +92,40 @@ class Student extends Authenticatable
     ];
     
     protected $guard_name = 'student';
+
+    /**
+     * Boot the model and set up model events
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Auto-assign section when creating a new student
+        static::creating(function ($student) {
+            // Only auto-assign if section is not already set
+            if (empty($student->section) && !empty($student->grade_level) && !empty($student->academic_year)) {
+                $sectionData = self::autoAssignSection(
+                    $student->grade_level,
+                    $student->academic_year,
+                    $student->strand,
+                    $student->track
+                );
+                
+                $student->section = $sectionData['section'];
+                $student->section_id = $sectionData['section_id'];
+            }
+        });
+
+        // Update section count when student is deleted
+        static::deleting(function ($student) {
+            if ($student->section_id) {
+                $section = Section::find($student->section_id);
+                if ($section) {
+                    $section->removeStudent();
+                }
+            }
+        });
+    }
     
     /**
      * Get the name of the unique identifier for the user.
@@ -120,6 +155,14 @@ class Student extends Authenticatable
     public function enrollee()
     {
         return $this->belongsTo(Enrollee::class, 'enrollee_id');
+    }
+
+    /**
+     * Get the section this student belongs to
+     */
+    public function sectionModel()
+    {
+        return $this->belongsTo(Section::class, 'section_id');
     }
 
     public function getFullNameAttribute()
@@ -262,11 +305,67 @@ class Student extends Authenticatable
             return collect(); // Return empty collection if not paid
         }
 
-        return $this->grades()
-                   ->where('quarter', $quarter)
-                   ->where('academic_year', $academicYear)
-                   ->with(['subject', 'teacher'])
-                   ->get();
+        // Get approved grades from the grades table (final grades)
+        $finalGrades = $this->grades()
+                          ->where('quarter', $quarter)
+                          ->where('academic_year', $academicYear)
+                          ->where('is_final', true)
+                          ->with(['subject', 'teacher.user'])
+                          ->get();
+
+        // If no final grades, check for approved grade submissions
+        if ($finalGrades->isEmpty()) {
+            $approvedSubmissions = \App\Models\GradeSubmission::where('status', 'approved')
+                ->where('academic_year', $academicYear)
+                ->where('quarter', $quarter)
+                ->whereHas('teacher', function($query) {
+                    $query->whereHas('facultyAssignments', function($subQuery) {
+                        $subQuery->where('grade_level', $this->grade_level)
+                                ->where('section', $this->section)
+                                ->where('academic_year', $this->academic_year);
+                        
+                        // Match strand and track for SHS students
+                        if (in_array($this->grade_level, ['Grade 11', 'Grade 12'])) {
+                            if ($this->strand) {
+                                $subQuery->where('strand', $this->strand);
+                            }
+                            if ($this->track) {
+                                $subQuery->where('track', $this->track);
+                            }
+                        }
+                    });
+                })
+                ->with(['subject', 'teacher.user'])
+                ->get();
+
+            // Convert approved submissions to grade format
+            $gradesFromSubmissions = collect();
+            foreach ($approvedSubmissions as $submission) {
+                $gradesData = $submission->grades_data;
+                foreach ($gradesData as $gradeData) {
+                    if ($gradeData['student_id'] == $this->id) {
+                        $gradesFromSubmissions->push((object)[
+                            'id' => null,
+                            'student_id' => $this->id,
+                            'subject_id' => $submission->subject_id,
+                            'teacher_id' => $submission->teacher_id,
+                            'grade' => $gradeData['grade'],
+                            'remarks' => $gradeData['remarks'] ?? null,
+                            'quarter' => $quarter,
+                            'academic_year' => $academicYear,
+                            'is_final' => true,
+                            'subject' => $submission->subject,
+                            'teacher' => $submission->teacher,
+                            'submitted_at' => $submission->approved_at
+                        ]);
+                    }
+                }
+            }
+            
+            return $gradesFromSubmissions;
+        }
+
+        return $finalGrades;
     }
 
     /**
@@ -305,29 +404,135 @@ class Student extends Authenticatable
     {
         $academicYear = $academicYear ?: $this->academic_year;
         
-        $grades = $this->grades()
-                      ->where('academic_year', $academicYear)
-                      ->where('is_final', true)
-                      ->with('subject')
-                      ->get();
-        
         $performance = [
-            'total_subjects' => $grades->groupBy('subject_id')->count(),
+            'total_subjects' => 0,
             'quarters' => [],
             'general_average' => null
         ];
         
         foreach (['1st', '2nd', '3rd', '4th'] as $quarter) {
-            $quarterGrades = $grades->where('quarter', $quarter);
+            // Use the updated getGradesForQuarter method that checks both final grades and approved submissions
+            $quarterGrades = $this->getGradesForQuarter($quarter, $academicYear);
+            
             if ($quarterGrades->isNotEmpty()) {
+                $grades = $quarterGrades->pluck('grade')->filter();
                 $performance['quarters'][$quarter] = [
-                    'average' => $quarterGrades->avg('grade'),
+                    'average' => $grades->avg(),
                     'subjects_count' => $quarterGrades->count(),
-                    'passing_count' => $quarterGrades->where('grade', '>=', 75)->count()
+                    'passing_count' => $grades->filter(function($grade) { return $grade >= 75; })->count()
                 ];
+                
+                // Update total subjects count
+                $performance['total_subjects'] = max($performance['total_subjects'], $quarterGrades->count());
             }
         }
         
+        // Calculate general average from all quarters
+        if (!empty($performance['quarters'])) {
+            $allAverages = collect($performance['quarters'])->pluck('average')->filter();
+            $performance['general_average'] = $allAverages->avg();
+        }
+        
         return $performance;
+    }
+
+    /**
+     * Automatically assign section based on capacity and strand/track
+     */
+    public static function autoAssignSection($gradeLevel, $academicYear, $strand = null, $track = null)
+    {
+        // For Senior High School, consider strand/track in section assignment
+        $isSeniorHigh = in_array($gradeLevel, ['Grade 11', 'Grade 12']);
+        
+        // Create section description with strand/track info
+        $sectionDescription = $gradeLevel;
+        if ($isSeniorHigh && $strand) {
+            $sectionDescription .= " - {$strand}";
+            if ($track) {
+                $sectionDescription .= " - {$track}";
+            }
+        }
+
+        // Get available sections for this grade level and academic year
+        $sectionsQuery = Section::where('grade_level', $gradeLevel)
+                               ->where('academic_year', $academicYear)
+                               ->where('is_active', true)
+                               ->orderBy('section_name'); // A, B, C order
+
+        $sections = $sectionsQuery->get();
+
+        // If no sections exist, create default sections
+        if ($sections->isEmpty()) {
+            $defaultSections = ['A', 'B', 'C', 'D', 'E', 'F'];
+            foreach ($defaultSections as $sectionName) {
+                Section::create([
+                    'section_name' => $sectionName,
+                    'grade_level' => $gradeLevel,
+                    'academic_year' => $academicYear,
+                    'max_students' => 30, // Default capacity
+                    'current_students' => 0,
+                    'is_active' => true,
+                    'description' => "Section {$sectionName} for {$sectionDescription}"
+                ]);
+            }
+            $sections = $sectionsQuery->get();
+        }
+
+        // Find first available section
+        foreach ($sections as $section) {
+            if ($section->hasAvailableSlots()) {
+                // For Senior High, check if we should group by strand/track
+                if ($isSeniorHigh && $strand) {
+                    // Count students with same strand/track in this section
+                    $sameStrandTrackCount = self::where('grade_level', $gradeLevel)
+                        ->where('section', $section->section_name)
+                        ->where('academic_year', $academicYear)
+                        ->where('strand', $strand)
+                        ->when($track, function($query) use ($track) {
+                            return $query->where('track', $track);
+                        })
+                        ->count();
+                    
+                    // If section has mixed strands/tracks and capacity allows, prefer grouping
+                    $totalInSection = self::where('grade_level', $gradeLevel)
+                        ->where('section', $section->section_name)
+                        ->where('academic_year', $academicYear)
+                        ->count();
+                    
+                    // If section is empty or has same strand/track students, use it
+                    if ($totalInSection === 0 || $sameStrandTrackCount > 0) {
+                        $section->addStudent();
+                        return [
+                            'section' => $section->section_name,
+                            'section_id' => $section->id
+                        ];
+                    }
+                } else {
+                    // For elementary/JHS, just use first available section
+                    $section->addStudent();
+                    return [
+                        'section' => $section->section_name,
+                        'section_id' => $section->id
+                    ];
+                }
+            }
+        }
+
+        // If all sections are full or no suitable section found, create a new one
+        $nextSectionLetter = chr(ord('A') + $sections->count());
+        $newSection = Section::create([
+            'section_name' => $nextSectionLetter,
+            'grade_level' => $gradeLevel,
+            'academic_year' => $academicYear,
+            'max_students' => 30,
+            'current_students' => 1, // This student will be the first
+            'is_active' => true,
+            'description' => "Section {$nextSectionLetter} for {$sectionDescription}"
+        ]);
+
+        return [
+            'section' => $newSection->section_name,
+            'section_id' => $newSection->id
+        ];
     }
 }

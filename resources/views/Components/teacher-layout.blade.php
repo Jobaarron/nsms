@@ -19,6 +19,9 @@
   <!-- App CSS & JS (includes Bootstrap 5 via Vite) -->
   @vite(['resources/sass/app.scss','resources/js/app.js'])
   @vite(['resources/css/index_teacher.css'])
+  
+  <!-- Teacher JavaScript - Load in HEAD for onclick handlers -->
+  @vite('resources/js/teacher-dashboard.js')
 
   
 </head>
@@ -45,11 +48,11 @@
             </a>
           </li>
           
-          <li class="nav-item mb-2">
+          <!-- <li class="nav-item mb-2">
             <a class="nav-link {{ request()->routeIs('teacher.schedule*') ? 'active' : '' }}" href="{{ route('teacher.schedule') }}">
               <i class="ri-calendar-line me-2"></i>Class Schedule
             </a>
-          </li>
+          </li> -->
           
           <li class="nav-item mb-2">
             <a class="nav-link {{ request()->routeIs('teacher.grades*') ? 'active' : '' }}" href="{{ route('teacher.grades') }}">
@@ -57,11 +60,11 @@
             </a>
           </li>
           
-          <li class="nav-item mb-2">
+          <!-- <li class="nav-item mb-2">
             <a class="nav-link {{ request()->routeIs('teacher.my-students') ? 'active' : '' }}" href="{{ route('teacher.my-students') }}">
               <i class="ri-team-line me-2"></i>My Students
             </a>
-          </li>
+          </li> -->
           
           
           <li class="nav-item mb-2">

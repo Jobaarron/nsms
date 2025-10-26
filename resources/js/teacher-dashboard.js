@@ -12,14 +12,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function initializeDashboard() {
     // Add click handlers for quick action cards
-    const actionCards = document.querySelectorAll('.card-body .btn');
+    const actionCards = document.querySelectorAll('.card-body .btn:not(.disabled):not([disabled])');
     actionCards.forEach(button => {
         button.addEventListener('click', function(e) {
-            // Add loading state
-            if (!this.href || this.href === '#') {
-                e.preventDefault();
-                showComingSoon();
-            } else {
+            // Only add loading animation for buttons with valid hrefs
+            if (this.href && this.href !== '#' && !this.classList.contains('disabled') && !this.disabled) {
                 // Add loading animation
                 const originalText = this.innerHTML;
                 this.innerHTML = '<i class="ri-loader-2-line me-2 spinner"></i>Loading...';
@@ -103,40 +100,6 @@ function animateNumber(element, from, to) {
     }, stepDuration);
 }
 
-function showComingSoon() {
-    // Create and show coming soon modal
-    const modal = document.createElement('div');
-    modal.className = 'modal fade';
-    modal.tabIndex = -1;
-    
-    modal.innerHTML = `
-        <div class="modal-dialog modal-sm">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Coming Soon</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body text-center">
-                    <i class="ri-time-line display-1 text-muted mb-3"></i>
-                    <p>This feature is coming soon!</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-    
-    const bootstrapModal = new bootstrap.Modal(modal);
-    bootstrapModal.show();
-    
-    // Clean up modal when hidden
-    modal.addEventListener('hidden.bs.modal', function() {
-        document.body.removeChild(modal);
-    });
-}
 
 // Add CSS for spinner animation
 const style = document.createElement('style');
@@ -155,3 +118,92 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+// Teacher Assignment Actions
+window.submitGrades = function(assignmentId) {
+    console.log('Submit grades for assignment:', assignmentId);
+    
+    // Check if grade submission is active
+    fetch('/teacher/check-submission-status')
+        .then(response => response.json())
+        .then(data => {
+            if (data.active) {
+                // Show quarter selection modal first
+                showQuarterSelectionModal(assignmentId);
+            } else {
+                alert('Grade submission is currently disabled by the faculty head.');
+            }
+        })
+        .catch(error => {
+            console.error('Error checking submission status:', error);
+            alert('Unable to check grade submission status. Please try again.');
+        });
+};
+
+function showQuarterSelectionModal(assignmentId) {
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.tabIndex = -1;
+    
+    modal.innerHTML = `
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Select Quarter</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Select the quarter for grade submission:</p>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <button class="btn btn-outline-primary w-100" onclick="redirectToGradeEntry(${assignmentId}, '1st')">
+                                <i class="ri-calendar-line me-2"></i>1st Quarter
+                            </button>
+                        </div>
+                        <div class="col-6">
+                            <button class="btn btn-outline-primary w-100" onclick="redirectToGradeEntry(${assignmentId}, '2nd')">
+                                <i class="ri-calendar-line me-2"></i>2nd Quarter
+                            </button>
+                        </div>
+                        <div class="col-6">
+                            <button class="btn btn-outline-primary w-100" onclick="redirectToGradeEntry(${assignmentId}, '3rd')">
+                                <i class="ri-calendar-line me-2"></i>3rd Quarter
+                            </button>
+                        </div>
+                        <div class="col-6">
+                            <button class="btn btn-outline-primary w-100" onclick="redirectToGradeEntry(${assignmentId}, '4th')">
+                                <i class="ri-calendar-line me-2"></i>4th Quarter
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    const bootstrapModal = new bootstrap.Modal(modal);
+    bootstrapModal.show();
+    
+    // Clean up modal when hidden
+    modal.addEventListener('hidden.bs.modal', function() {
+        document.body.removeChild(modal);
+    });
+}
+
+window.redirectToGradeEntry = function(assignmentId, quarter) {
+    window.location.href = `/teacher/grades/submit/${assignmentId}?quarter=${quarter}`;
+};
+
+window.viewClassDetails = function(assignmentId) {
+    console.log('View class details for assignment:', assignmentId);
+    // Redirect to teacher grades page to view submissions for this assignment
+    window.location.href = '/teacher/grades';
+};
+
+window.manageClass = function(assignmentId) {
+    console.log('Manage class for assignment:', assignmentId);
+    // Redirect to teacher grades page to manage submissions for this assignment
+    window.location.href = '/teacher/grades';
+};

@@ -1,198 +1,262 @@
-// Student Grades JavaScript
+// Student Grades JavaScript - No jQuery/Bootstrap dependencies
+
+// Make functions globally available immediately
+window.viewQuarterGrades = viewQuarterGrades;
+window.closeModal = closeModal;
+
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize grade loading functionality
-    initializeGradeLoading();
+    console.log('Student grades JS loaded');
 });
 
-function initializeGradeLoading() {
-    // Add click handlers for quarter cards
-    const quarterCards = document.querySelectorAll('[href*="grades/"]');
-    quarterCards.forEach(card => {
-        card.addEventListener('click', function(e) {
-            const quarter = this.href.split('/').pop();
-            if (quarter && ['1st', '2nd', '3rd', '4th'].includes(quarter)) {
-                loadQuarterGrades(quarter);
-            }
-        });
-    });
-}
-
-function loadQuarterGrades(quarter) {
-    // Show loading state
-    showLoading();
-    
-    fetch(`/student/grades/data/ajax?quarter=${quarter}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.error) {
-                showError(data.error);
-            } else {
-                displayGradeData(data, quarter);
-            }
-        })
-        .catch(error => {
-            console.error('Error loading grades:', error);
-            showError('Failed to load grade data. Please try again.');
-        })
-        .finally(() => {
-            hideLoading();
-        });
-}
-
-function displayGradeData(data, quarter) {
-    // Create modal or update existing content to show grades
-    const modal = createGradeModal(data, quarter);
-    document.body.appendChild(modal);
-    
-    const bootstrapModal = new bootstrap.Modal(modal);
-    bootstrapModal.show();
-    
-    // Clean up modal when hidden
-    modal.addEventListener('hidden.bs.modal', function() {
-        document.body.removeChild(modal);
-    });
-}
-
-function createGradeModal(data, quarter) {
-    const modal = document.createElement('div');
-    modal.className = 'modal fade';
-    modal.tabIndex = -1;
-    
-    let gradesHtml = '';
-    if (data.grades && data.grades.length > 0) {
-        gradesHtml = data.grades.map(grade => `
-            <tr>
-                <td>${grade.subject}</td>
-                <td>${grade.teacher}</td>
-                <td class="text-center">
-                    <span class="badge ${grade.is_passing ? 'bg-success' : 'bg-danger'}">
-                        ${grade.grade}
-                    </span>
-                </td>
-                <td>${grade.remarks || '-'}</td>
-                <td>
-                    <span class="badge ${grade.is_passing ? 'bg-success' : 'bg-danger'}">
-                        ${grade.status}
-                    </span>
-                </td>
-            </tr>
-        `).join('');
-    } else {
-        gradesHtml = '<tr><td colspan="5" class="text-center text-muted">No grades available</td></tr>';
+function viewQuarterGrades(quarter) {
+    // Set modal title
+    const modalQuarter = document.getElementById('modalQuarter');
+    if (modalQuarter) {
+        modalQuarter.textContent = quarter;
     }
     
-    modal.innerHTML = `
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">${quarter} Quarter Grades</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    // Show modal using pure JavaScript
+    showModal();
+    
+    // Reset content to loading state
+    const gradesContent = document.getElementById('gradesContent');
+    if (gradesContent) {
+        gradesContent.innerHTML = `
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
                 </div>
-                <div class="modal-body">
-                    ${data.stats ? `
-                    <div class="row g-3 mb-4">
-                        <div class="col-3">
-                            <div class="card text-center">
-                                <div class="card-body">
-                                    <h5>${data.stats.total_subjects}</h5>
-                                    <small>Total Subjects</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-3">
-                            <div class="card text-center">
-                                <div class="card-body">
-                                    <h5>${data.stats.average_grade}</h5>
-                                    <small>Average Grade</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-3">
-                            <div class="card text-center">
-                                <div class="card-body">
-                                    <h5>${data.stats.passing_count}</h5>
-                                    <small>Passing</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-3">
-                            <div class="card text-center">
-                                <div class="card-body">
-                                    <h5>${data.stats.failing_count}</h5>
-                                    <small>Failing</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    ` : ''}
-                    
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Subject</th>
-                                    <th>Teacher</th>
-                                    <th class="text-center">Grade</th>
-                                    <th>Remarks</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${gradesHtml}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <a href="/student/grades/report/${quarter}" class="btn btn-primary" target="_blank">
-                        <i class="ri-printer-line me-2"></i>Print Report
-                    </a>
-                </div>
+                <div class="mt-2">Loading grades...</div>
             </div>
-        </div>
-    `;
+        `;
+    }
     
-    return modal;
+    // Clear summary
+    const gradesSummary = document.getElementById('gradesSummary');
+    if (gradesSummary) {
+        gradesSummary.innerHTML = '';
+    }
+    
+    // Fetch grades via AJAX
+    fetch(`/student/grades/${quarter}`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayGrades(data.grades, data.stats, quarter);
+        } else {
+            displayError(data.message || 'Failed to load grades');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        displayError('An error occurred while loading grades');
+    });
 }
 
-function showLoading() {
-    const loading = document.createElement('div');
-    loading.id = 'loading-overlay';
-    loading.className = 'loading-overlay';
-    loading.innerHTML = '<div class="loading-spinner"></div>';
-    document.body.appendChild(loading);
-}
-
-function hideLoading() {
-    const loading = document.getElementById('loading-overlay');
-    if (loading) {
-        document.body.removeChild(loading);
+function showModal() {
+    const modalElement = document.getElementById('gradesModal');
+    if (modalElement) {
+        modalElement.classList.add('show');
+        modalElement.style.display = 'block';
+        modalElement.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('modal-open');
+        
+        // Add backdrop
+        let backdrop = document.getElementById('modalBackdrop');
+        if (!backdrop) {
+            backdrop = document.createElement('div');
+            backdrop.className = 'modal-backdrop fade show';
+            backdrop.id = 'modalBackdrop';
+            document.body.appendChild(backdrop);
+        }
+        
+        // Setup close functionality
+        setupModalClose();
     }
 }
 
-function showError(message) {
-    const alert = document.createElement('div');
-    alert.className = 'alert alert-danger alert-dismissible fade show';
-    alert.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
+function setupModalClose() {
+    const modalElement = document.getElementById('gradesModal');
+    if (!modalElement) return;
     
-    const container = document.querySelector('main');
-    if (container) {
-        container.insertBefore(alert, container.firstChild);
+    // Close buttons
+    const closeButtons = modalElement.querySelectorAll('[data-bs-dismiss="modal"]');
+    closeButtons.forEach(button => {
+        button.onclick = closeModal;
+    });
+    
+    // Backdrop click
+    const backdrop = document.getElementById('modalBackdrop');
+    if (backdrop) {
+        backdrop.onclick = closeModal;
+    }
+    
+    // Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeModal();
+        }
+    });
+}
+
+function closeModal() {
+    const modalElement = document.getElementById('gradesModal');
+    const backdrop = document.getElementById('modalBackdrop');
+    
+    if (modalElement) {
+        modalElement.classList.remove('show');
+        modalElement.style.display = 'none';
+        modalElement.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('modal-open');
+    }
+    
+    if (backdrop) {
+        backdrop.remove();
+    }
+}
+
+function displayGrades(grades, stats, quarter) {
+    let html = '';
+    
+    if (grades && grades.length > 0) {
+        // Statistics summary
+        if (stats) {
+            html += `
+                <div class="row g-2 mb-4">
+                    <div class="col-6 col-md-3">
+                        <div class="card bg-light h-100">
+                            <div class="card-body text-center p-3">
+                                <i class="ri-book-line fs-1 text-primary mb-2 d-block"></i>
+                                <div class="small text-muted">Total Subjects</div>
+                                <h5 class="mb-0">${stats.total_subjects}</h5>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card bg-light h-100">
+                            <div class="card-body text-center p-3">
+                                <i class="ri-trophy-line fs-1 text-warning mb-2 d-block"></i>
+                                <div class="small text-muted">Average</div>
+                                <h5 class="mb-0 ${(stats.average_grade || 0) >= 75 ? 'text-success' : 'text-danger'}">${(stats.average_grade || 0).toFixed(1)}</h5>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card bg-light h-100">
+                            <div class="card-body text-center p-3">
+                                <i class="ri-check-double-line fs-1 text-success mb-2 d-block"></i>
+                                <div class="small text-muted">Passed</div>
+                                <h5 class="mb-0 text-success">${stats.passing_count}</h5>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card bg-light h-100">
+                            <div class="card-body text-center p-3">
+                                <i class="ri-close-circle-line fs-1 text-danger mb-2 d-block"></i>
+                                <div class="small text-muted">Failed</div>
+                                <h5 class="mb-0 text-danger">${stats.failing_count}</h5>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
         
-        // Auto-hide after 5 seconds
-        setTimeout(() => {
-            if (alert.parentNode) {
-                alert.parentNode.removeChild(alert);
+        // Grades table
+        html += `
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th class="ps-3">Subject</th>
+                            <th>Teacher</th>
+                            <th class="text-center">Grade</th>
+                            <th>Remarks</th>
+                            <th class="text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        grades.forEach(grade => {
+            const isPassing = parseFloat(grade.grade) >= 75;
+            html += `
+                <tr>
+                    <td class="ps-3">
+                        <div class="fw-semibold">${grade.subject ? grade.subject.subject_name : 'Unknown Subject'}</div>
+                        ${grade.subject && grade.subject.subject_code ? `<small class="text-muted">${grade.subject.subject_code}</small>` : ''}
+                    </td>
+                    <td>
+                        <div class="fw-medium">${grade.teacher && grade.teacher.user ? grade.teacher.user.name : 'Unknown Teacher'}</div>
+                    </td>
+                    <td class="text-center">
+                        <span class="fw-bold fs-4 ${isPassing ? 'text-success' : 'text-danger'}">
+                            ${parseFloat(grade.grade).toFixed(0)}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="text-muted">${grade.remarks || '-'}</span>
+                    </td>
+                    <td class="text-center">
+                        <span class="badge ${isPassing ? 'bg-success' : 'bg-danger'} px-3 py-2">
+                            ${isPassing ? 'Passed' : 'Failed'}
+                        </span>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+        
+        // Update summary in footer
+        if (stats) {
+            const gradesSummary = document.getElementById('gradesSummary');
+            if (gradesSummary) {
+                gradesSummary.innerHTML = `
+                    <small class="text-muted">
+                        General Average: <strong class="${(stats.average_grade || 0) >= 75 ? 'text-success' : 'text-danger'}">${(stats.average_grade || 0).toFixed(2)}</strong> | 
+                        ${stats.passing_count}/${stats.total_subjects} Subjects Passed
+                    </small>
+                `;
             }
-        }, 5000);
+        }
+    } else {
+        html = `
+            <div class="text-center py-5">
+                <i class="ri-file-list-line display-4 text-muted mb-3"></i>
+                <h5>No Grades Available</h5>
+                <p class="text-muted">No grades found for ${quarter} quarter.</p>
+            </div>
+        `;
+    }
+    
+    const gradesContent = document.getElementById('gradesContent');
+    if (gradesContent) {
+        gradesContent.innerHTML = html;
+    }
+}
+
+function displayError(message) {
+    const gradesContent = document.getElementById('gradesContent');
+    if (gradesContent) {
+        gradesContent.innerHTML = `
+            <div class="text-center py-5">
+                <i class="ri-error-warning-line display-4 text-danger mb-3"></i>
+                <h5>Error Loading Grades</h5>
+                <p class="text-muted">${message}</p>
+            </div>
+        `;
     }
 }

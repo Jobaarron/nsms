@@ -22,9 +22,41 @@
       </div>
     @endif
 
+    <!-- GRADE SUBMISSION STATUS -->
+    <div class="alert {{ $gradeSubmissionActive ? 'alert-success' : 'alert-warning' }} mb-4">
+      <div class="d-flex align-items-center">
+        <i class="{{ $gradeSubmissionActive ? 'ri-check-circle-line' : 'ri-pause-circle-line' }} me-2 fs-4"></i>
+        <div>
+          <h6 class="mb-1">Grade Submission Status</h6>
+          <p class="mb-0">
+            Grade submission is currently <strong>{{ $gradeSubmissionActive ? 'ACTIVE' : 'INACTIVE' }}</strong>.
+            @if($gradeSubmissionActive)
+              You can submit grades for review.
+            @else
+              Grade submission is currently disabled by the faculty head.
+            @endif
+          </p>
+          @if($gradeSubmissionActive)
+            <div class="mt-2">
+              <small class="text-muted">
+                Active quarters: 
+                @if($quarterSettings['q1_active']) <span class="badge bg-primary me-1">Q1</span> @endif
+                @if($quarterSettings['q2_active']) <span class="badge bg-primary me-1">Q2</span> @endif
+                @if($quarterSettings['q3_active']) <span class="badge bg-primary me-1">Q3</span> @endif
+                @if($quarterSettings['q4_active']) <span class="badge bg-primary me-1">Q4</span> @endif
+                @if(!$quarterSettings['q1_active'] && !$quarterSettings['q2_active'] && !$quarterSettings['q3_active'] && !$quarterSettings['q4_active'])
+                  <span class="text-muted">No quarters currently active</span>
+                @endif
+              </small>
+            </div>
+          @endif
+        </div>
+      </div>
+    </div>
+
     <!-- DASHBOARD STATISTICS -->
     <div class="row g-3 mb-4">
-      <div class="col-6 col-lg-3">
+      <!-- <div class="col-6 col-lg-3">
         <div class="card card-summary card-application h-100">
           <div class="card-body text-center">
             <i class="ri-book-2-line display-6 mb-2"></i>
@@ -32,8 +64,8 @@
             <h3>{{ $stats['total_classes'] ?? 0 }}</h3>
           </div>
         </div>
-      </div>
-      <div class="col-6 col-lg-3">
+      </div> -->
+      <!-- <div class="col-6 col-lg-3">
         <div class="card card-summary card-status h-100">
           <div class="card-body text-center">
             <i class="ri-group-line display-6 mb-2"></i>
@@ -41,7 +73,7 @@
             <h3>{{ $stats['total_students'] ?? 0 }}</h3>
           </div>
         </div>
-      </div>
+      </div> -->
       <div class="col-6 col-lg-3">
         <div class="card card-summary card-payment h-100">
           <div class="card-body text-center">
@@ -51,7 +83,7 @@
           </div>
         </div>
       </div>
-      <div class="col-6 col-lg-3">
+      <!-- <div class="col-6 col-lg-3">
         <div class="card card-summary card-schedule h-100">
           <div class="card-body text-center">
             <i class="ri-time-line display-6 mb-2"></i>
@@ -59,61 +91,91 @@
             <h3>{{ $stats['weekly_hours'] ?? 0 }}</h3>
           </div>
         </div>
-      </div>
+      </div> -->
     </div>
 
     <!-- MY CLASS ASSIGNMENTS -->
-    <div class="card mb-4">
+    <div class="card">
       <div class="card-header">
         <h5 class="mb-0">
-          <i class="ri-book-line me-2"></i>My Class Assignments
+          <i class="ri-book-open-line me-2"></i>My Class Assignments
         </h5>
       </div>
       <div class="card-body">
         <div class="table-responsive">
-          <table class="table table-hover">
-            <thead>
+          <table class="table table-hover align-middle">
+            <thead class="table-light">
               <tr>
                 <th>Subject</th>
                 <th>Grade & Section</th>
                 <th>Assignment Type</th>
-                <th>Students</th>
+                <th>Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              @forelse($assignments ?? [] as $assignment)
+              @forelse($assignments as $assignment)
               <tr>
                 <td>
-                  <strong>{{ $assignment->subject->subject_name ?? 'N/A' }}</strong>
-                  <br><small class="text-muted">{{ $assignment->subject->subject_code ?? '' }}</small>
-                </td>
-                <td>{{ $assignment->grade_level ?? 'N/A' }} - {{ $assignment->section ?? 'N/A' }}</td>
-                <td>
-                  @if($assignment->assignment_type === 'class_adviser')
-                    <span class="badge bg-primary">Class Adviser</span>
-                  @else
-                    <span class="badge bg-secondary">Subject Teacher</span>
+                  <div class="fw-medium">{{ $assignment->subject->subject_name ?? 'Class Adviser' }}</div>
+                  @if($assignment->subject)
+                    <div class="small text-muted">{{ $assignment->subject->subject_code }}</div>
                   @endif
                 </td>
-                <td>{{ $assignment->student_count ?? 0 }}</td>
+                <td>
+                  <div>
+                    <span class="badge bg-primary">{{ $assignment->grade_level }} - {{ $assignment->section }}</span>
+                    @if($assignment->strand)
+                      <br><span class="badge bg-info mt-1">{{ $assignment->strand }}</span>
+                      @if($assignment->track)
+                        <span class="badge bg-warning ms-1">{{ $assignment->track }}</span>
+                      @endif
+                    @endif
+                  </div>
+                </td>
+                <td>
+                  @if($assignment->assignment_type === 'subject_teacher')
+                    <span class="badge bg-info">Subject Teacher</span>
+                  @else
+                    <span class="badge bg-warning">Class Adviser</span>
+                  @endif
+                </td>
+                <td>
+                  @if($assignment->status === 'active')
+                    <span class="badge bg-success">Active</span>
+                  @else
+                    <span class="badge bg-secondary">Inactive</span>
+                  @endif
+                </td>
                 <td>
                   <div class="btn-group btn-group-sm">
-                    <a href="{{ route('teacher.schedule') }}" class="btn btn-outline-primary">
-                      <i class="ri-calendar-line me-1"></i>Schedule
-                    </a>
-                    <a href="{{ route('teacher.grades') }}" class="btn btn-outline-secondary">
-                      <i class="ri-file-list-3-line me-1"></i>Grades
-                    </a>
+                    @if($assignment->assignment_type === 'subject_teacher')
+                      @if($gradeSubmissionActive)
+                        <button class="btn btn-outline-success" title="Submit Grades" onclick="submitGrades('{{ $assignment->id }}')">
+                          <i class="ri-file-list-3-line"></i>
+                        </button>
+                      @else
+                        <button class="btn btn-outline-secondary" title="Grade Submission Disabled" disabled>
+                          <i class="ri-file-list-3-line"></i>
+                        </button>
+                      @endif
+                      <button class="btn btn-outline-primary" title="View Class Details" onclick="viewClassDetails('{{ $assignment->id }}')">
+                        <i class="ri-eye-line"></i>
+                      </button>
+                    @else
+                      <button class="btn btn-outline-info" title="Manage Class" onclick="manageClass('{{ $assignment->id }}')">
+                        <i class="ri-settings-3-line"></i>
+                      </button>
+                    @endif
                   </div>
                 </td>
               </tr>
               @empty
               <tr>
                 <td colspan="5" class="text-center text-muted py-4">
-                  <i class="ri-book-line display-1 text-muted mb-3"></i>
-                  <h5>No Class Assignments</h5>
-                  <p class="text-muted">You haven't been assigned to any classes yet.</p>
+                  <i class="ri-book-open-line display-6 mb-2 d-block"></i>
+                  No Class Assignments
+                  <div class="small">You haven't been assigned to any classes yet. Contact the faculty head for assignments.</div>
                 </td>
               </tr>
               @endforelse

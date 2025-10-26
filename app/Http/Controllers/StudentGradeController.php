@@ -57,9 +57,15 @@ class StudentGradeController extends Controller
             return redirect()->route('student.grades.index')->with('error', 'Invalid quarter selected.');
         }
 
+        $currentAcademicYear = $student->academic_year;
+        
+        // Get available quarters and performance data for overview
+        $availableQuarters = $this->getAvailableQuarters($student, $currentAcademicYear);
+        $performance = $student->getAcademicPerformance($currentAcademicYear);
+
         // Check payment for this quarter
         if (!$student->hasPaidForQuarter($quarter)) {
-            return view('student.grades', compact('student', 'quarter'));
+            return view('student.grades', compact('student', 'quarter', 'currentAcademicYear', 'availableQuarters', 'performance'));
         }
 
         // Get grades for the quarter
@@ -71,7 +77,24 @@ class StudentGradeController extends Controller
         // Get grading system (quarterly vs semester)
         $gradingSystem = Grade::getGradingSystem($student->grade_level);
         
-        return view('student.grades', compact('student', 'grades', 'quarter', 'stats', 'gradingSystem'));
+        // Handle AJAX requests
+        if (request()->ajax()) {
+            if ($grades->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No grades found for this quarter'
+                ]);
+            }
+            
+            return response()->json([
+                'success' => true,
+                'grades' => $grades,
+                'stats' => $stats,
+                'quarter' => $quarter
+            ]);
+        }
+        
+        return view('student.grades', compact('student', 'grades', 'quarter', 'stats', 'gradingSystem', 'currentAcademicYear', 'availableQuarters', 'performance'));
     }
 
     /**
@@ -155,24 +178,16 @@ class StudentGradeController extends Controller
         $quarters = [];
         
         foreach (['1st', '2nd', '3rd', '4th'] as $quarter) {
-            $hasGrades = Grade::where('student_id', $student->id)
-                            ->where('quarter', $quarter)
-                            ->where('academic_year', $academicYear)
-                            ->where('is_final', true)
-                            ->exists();
-                            
+            // Use the updated getGradesForQuarter method from Student model
+            $quarterGrades = $student->getGradesForQuarter($quarter, $academicYear);
             $hasPaid = $student->hasPaidForQuarter($quarter);
             
-            if ($hasGrades && $hasPaid) {
+            if ($quarterGrades->isNotEmpty() && $hasPaid) {
                 $quarters[] = [
                     'quarter' => $quarter,
                     'has_grades' => true,
                     'has_paid' => true,
-                    'grade_count' => Grade::where('student_id', $student->id)
-                                        ->where('quarter', $quarter)
-                                        ->where('academic_year', $academicYear)
-                                        ->where('is_final', true)
-                                        ->count()
+                    'grade_count' => $quarterGrades->count()
                 ];
             }
         }
