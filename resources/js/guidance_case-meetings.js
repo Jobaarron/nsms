@@ -151,11 +151,7 @@ window.viewCaseMeeting = function(meetingId) {
                                                     <tr><td><strong>Date:</strong></td><td>${meeting.scheduled_date ? new Date(meeting.scheduled_date).toLocaleDateString() : 'N/A'}</td></tr>
                                                     <tr><td><strong>Time:</strong></td><td>${meeting.scheduled_time ? meeting.scheduled_time.substring(0,5) : 'N/A'}</td></tr>
                                                 </tbody>
-                                            </table>
-                                            <!-- Narrative PDF Attachment (if available) -->
-                                            ${narrativePdfUrl ? `<div class="mt-4"><label class="form-label fw-bold">Student Narrative Report (PDF):</label><div><a href="${narrativePdfUrl}" target="_blank" class="btn btn-outline-primary btn-sm"><i class="ri-attachment-2"></i> View Attachment</a></div></div>` : '<div class="mt-4 text-muted small">No narrative report available.</div>'}
-
-                                            <!-- Case Meeting Attachment (if available) -->
+                                            </table>                                            <!-- Case Meeting Attachment (if available) -->
                                             ${caseMeetingAttachmentUrl ? `<div class="mt-3"><label class="form-label fw-bold">Case Meeting Attachment (PDF):</label><div><a href="${caseMeetingAttachmentUrl}" target="_blank" class="btn btn-outline-success btn-sm"><i class="ri-attachment-2"></i> View Attachment</a></div></div>` : ''}
                                         </div>
                                 <div class="col-md-6">
@@ -167,8 +163,8 @@ window.viewCaseMeeting = function(meetingId) {
                                     ` : ''}
                                     ${meeting.recommendations ? `
                                         <div class="mb-3">
-                                            <label class="form-label fw-bold">Recommendations:</label>
-                                            <p>${meeting.recommendations}</p>
+                                                                                    <tr><td><strong>Date:</strong></td><td>${meeting.scheduled_date ? meeting.scheduled_date : 'N/A'}</td></tr>
+                                                                                    <tr><td><strong>Time:</strong></td><td>${meeting.scheduled_time ? meeting.scheduled_time : 'N/A'}</td></tr>
                                         </div>
                                     ` : ''}
                                     ${meeting.notes ? `

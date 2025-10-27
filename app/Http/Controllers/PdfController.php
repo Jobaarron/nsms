@@ -253,13 +253,25 @@ class PdfController extends Controller
         }
         $pdf->SetXY(76, 292); $pdf->Write(0, $student->full_name ?? '');
 
-        // Add more overlays as needed for case meeting details
-        if (!empty($caseMeeting->notes)) {
-            $pdf->SetXY(18, 84);
-            $pdf->MultiCell(160, 8, $caseMeeting->notes);
+          if (!empty($violation->student_statement)) {
+                $pdf->SetXY(18, 84); // Example position, adjust as needed
+                $pdf->MultiCell(160, 8, $violation->student_statement);
+                }
+
+                // Overlay incident feelings
+                if (!empty($violation->incident_feelings)) {
+                    $pdf->SetXY(18, 156); // Adjust Y as needed for spacing
+                    $pdf->MultiCell(160, 8, $violation->incident_feelings);
+                }
+
+                // Overlay action plan
+                if (!empty($violation->action_plan)) {
+                    $pdf->SetXY(18, 219); // Adjust Y as needed for spacing
+                    $pdf->MultiCell(160, 8, $violation->action_plan);
+            }
+
+            return response($pdf->Output('Student-Narrative-Report.pdf', 'S'))->header('Content-Type', 'application/pdf');
         }
 
-        return response($pdf->Output('Case-Meeting-Report.pdf', 'S'))->header('Content-Type', 'application/pdf');
-    }
 
 }
