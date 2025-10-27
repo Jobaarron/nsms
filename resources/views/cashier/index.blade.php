@@ -1,32 +1,4 @@
 <x-cashier-layout>
-    @push('styles')
-        @vite('resources/css/index_student.css')
-        <style>
-            /* Chart Container Constraints */
-            .chart-container {
-                position: relative !important;
-                overflow: hidden !important;
-                max-height: 400px !important;
-            }
-            
-            .chart-container canvas {
-                max-height: 100% !important;
-                width: 100% !important;
-                height: auto !important;
-            }
-            
-            /* Prevent infinite chart expansion */
-            #revenueTrendChart, #paymentMethodChart, #dailyRevenueChart {
-                max-height: 350px !important;
-            }
-            
-            /* Card body constraints for charts */
-            .card-body .chart-container {
-                margin: 0 !important;
-                padding: 0 !important;
-            }
-        </style>
-    @endpush
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <!-- Page Header -->
@@ -184,8 +156,8 @@
                             </div>
                         </div>
                     </div>
-                    <div class="chart-container" style="position: relative; height: 300px; width: 100%;">
-                        <canvas id="paymentMethodChart"></canvas>
+                    <div class="chart-container">
+                        <canvas id="paymentMethodChart" style="max-height: 300px;"></canvas>
                     </div>
                 </div>
             </div>
@@ -201,8 +173,8 @@
                     <small class="text-muted">Monthly revenue for the last 6 months</small>
                 </div>
                 <div class="card-body">
-                    <div class="chart-container" style="position: relative; height: 300px; width: 100%;">
-                        <canvas id="revenueTrendChart"></canvas>
+                    <div class="chart-container">
+                        <canvas id="revenueTrendChart" style="max-height: 300px;"></canvas>
                     </div>
                 </div>
             </div>
@@ -221,8 +193,8 @@
                     <small class="text-muted">Daily payment confirmations this month</small>
                 </div>
                 <div class="card-body">
-                    <div class="chart-container" style="position: relative; height: 250px; width: 100%;">
-                        <canvas id="dailyRevenueChart"></canvas>
+                    <div class="chart-container">
+                        <canvas id="dailyRevenueChart" style="max-height: 250px;"></canvas>
                     </div>
                 </div>
             </div>

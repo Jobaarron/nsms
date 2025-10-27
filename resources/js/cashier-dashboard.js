@@ -31,7 +31,8 @@ function initializeCharts() {
     try {
         // Check if Chart.js is loaded
         if (typeof Chart === 'undefined') {
-            console.error('Chart.js is not loaded. Please include Chart.js before this script.');
+            // console.error('Chart.js is not loaded. Please include Chart.js before this script.');
+            console.log('Hello World!');
             return;
         }
 
@@ -91,8 +92,7 @@ function initializePaymentMethodChart() {
         },
         options: {
             responsive: true,
-            maintainAspectRatio: true,
-            aspectRatio: 1.5,
+            maintainAspectRatio: false,
             plugins: {
                 legend: {
                     position: 'bottom',
@@ -153,8 +153,7 @@ function initializeRevenueTrendChart() {
         },
         options: {
             responsive: true,
-            maintainAspectRatio: true,
-            aspectRatio: 2,
+            maintainAspectRatio: false,
             plugins: {
                 legend: {
                     display: false
@@ -217,8 +216,7 @@ function initializeDailyRevenueChart() {
         },
         options: {
             responsive: true,
-            maintainAspectRatio: true,
-            aspectRatio: 3,
+            maintainAspectRatio: false,
             plugins: {
                 legend: {
                     display: false

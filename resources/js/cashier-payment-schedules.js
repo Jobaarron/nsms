@@ -566,8 +566,34 @@ window.displayPaymentScheduleModal = function(schedule) {
     document.body.insertAdjacentHTML('beforeend', modalHtml);
     
     // Show modal
-    const modal = new bootstrap.Modal(document.getElementById('paymentScheduleModal'));
-    modal.show();
+    const modalElement = document.getElementById('paymentScheduleModal');
+    if (typeof bootstrap !== 'undefined') {
+        const modal = new bootstrap.Modal(modalElement);
+        modal.show();
+    } else {
+        // Fallback for when Bootstrap is not available in global scope
+        modalElement.classList.add('show');
+        modalElement.style.display = 'block';
+        modalElement.setAttribute('aria-modal', 'true');
+        modalElement.setAttribute('role', 'dialog');
+        
+        // Add backdrop
+        const backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop fade show';
+        document.body.appendChild(backdrop);
+        
+        // Add close functionality
+        const closeButtons = modalElement.querySelectorAll('[data-bs-dismiss="modal"]');
+        closeButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                modalElement.classList.remove('show');
+                modalElement.style.display = 'none';
+                modalElement.removeAttribute('aria-modal');
+                modalElement.removeAttribute('role');
+                document.body.removeChild(backdrop);
+            });
+        });
+    }
 };
 
 window.approvePaymentSchedule = function(studentId, paymentMethod) {
@@ -714,8 +740,14 @@ function confirmFromModal() {
     if (currentPaymentId) {
         processPayment(currentPaymentId, 'confirm');
         // Close modal
-        const modal = bootstrap.Modal.getInstance(document.getElementById('confirmModal'));
-        if (modal) modal.hide();
+        const modalElement = document.getElementById('confirmModal');
+        if (typeof bootstrap !== 'undefined') {
+            const modal = bootstrap.Modal.getInstance(modalElement);
+            if (modal) modal.hide();
+        } else {
+            modalElement.style.display = 'none';
+            modalElement.classList.remove('show');
+        }
     }
 }
 
@@ -723,8 +755,14 @@ function rejectFromModal() {
     if (currentPaymentId) {
         processPayment(currentPaymentId, 'reject');
         // Close modal
-        const modal = bootstrap.Modal.getInstance(document.getElementById('rejectModal'));
-        if (modal) modal.hide();
+        const modalElement = document.getElementById('rejectModal');
+        if (typeof bootstrap !== 'undefined') {
+            const modal = bootstrap.Modal.getInstance(modalElement);
+            if (modal) modal.hide();
+        } else {
+            modalElement.style.display = 'none';
+            modalElement.classList.remove('show');
+        }
     }
 }
 
@@ -757,8 +795,14 @@ function processConfirmation() {
                 loadPaymentSchedules();
                 loadPaymentStatistics();
                 // Close modal
-                const modal = bootstrap.Modal.getInstance(document.getElementById('confirmModal'));
-                if (modal) modal.hide();
+                const modalElement = document.getElementById('confirmModal');
+                if (typeof bootstrap !== 'undefined') {
+                    const modal = bootstrap.Modal.getInstance(modalElement);
+                    if (modal) modal.hide();
+                } else {
+                    modalElement.style.display = 'none';
+                    modalElement.classList.remove('show');
+                }
             } else {
                 showAlert(data.message || 'Failed to confirm payment.', 'danger');
             }
@@ -800,8 +844,14 @@ function processRejection() {
                 loadPaymentSchedules();
                 loadPaymentStatistics();
                 // Close modal
-                const modal = bootstrap.Modal.getInstance(document.getElementById('rejectModal'));
-                if (modal) modal.hide();
+                const modalElement = document.getElementById('rejectModal');
+                if (typeof bootstrap !== 'undefined') {
+                    const modal = bootstrap.Modal.getInstance(modalElement);
+                    if (modal) modal.hide();
+                } else {
+                    modalElement.style.display = 'none';
+                    modalElement.classList.remove('show');
+                }
             } else {
                 showAlert(data.message || 'Failed to reject payment.', 'danger');
             }

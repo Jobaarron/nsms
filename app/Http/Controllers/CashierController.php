@@ -303,6 +303,91 @@ class CashierController extends Controller
     }
 
     /**
+     * Get payment history data for AJAX requests.
+     */
+    public function getPaymentHistoryData(Request $request)
+    {
+        // Get payment data without grouping to avoid SQL errors
+        $query = Payment::with(['payable', 'fee', 'cashier']);
+
+        // Apply filters
+        if ($request->filled('status')) {
+            $query->where('confirmation_status', $request->status);
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                // Prioritize Student ID search first
+                $q->whereHasMorph('payable', [Student::class, Enrollee::class], function($subQuery, $type) use ($search) {
+                      if ($type === Student::class) {
+                          $subQuery->where('student_id', 'like', "%{$search}%");
+                      } elseif ($type === Enrollee::class) {
+                          $subQuery->where('application_id', 'like', "%{$search}%");
+                      }
+                  })
+                  ->orWhereHasMorph('payable', [Student::class, Enrollee::class], function($subQuery, $type) use ($search) {
+                      $subQuery->where('first_name', 'like', "%{$search}%")
+                               ->orWhere('last_name', 'like', "%{$search}%")
+                               ->orWhere('full_name', 'like', "%{$search}%");
+                  })
+                  ->orWhere('transaction_id', 'like', "%{$search}%")
+                  ->orWhere('reference_number', 'like', "%{$search}%");
+            });
+        }
+
+        $allPayments = $query->orderBy('created_at', 'desc')->get();
+        
+        // Group payments by student and payment method for consolidation
+        $consolidatedPayments = collect();
+        $grouped = $allPayments->groupBy(function($payment) {
+            $studentId = $payment->payable ? ($payment->payable->student_id ?? $payment->payable->application_id) : 'unknown';
+            return $studentId . '_' . $payment->payment_method;
+        });
+        
+        foreach ($grouped as $key => $paymentGroup) {
+            $firstPayment = $paymentGroup->first();
+            $totalAmount = $paymentGroup->sum('amount');
+            $paymentCount = $paymentGroup->count();
+            $latestDate = $paymentGroup->max('created_at');
+            
+            // Create consolidated payment object
+            $consolidatedPayment = $firstPayment->toArray();
+            $consolidatedPayment['total_amount_paid'] = $totalAmount;
+            $consolidatedPayment['payment_count'] = $paymentCount;
+            $consolidatedPayment['latest_payment'] = $latestDate;
+            
+            $consolidatedPayments->push((object) $consolidatedPayment);
+        }
+        
+        // Paginate the consolidated results
+        $perPage = 20;
+        $currentPage = request()->get('page', 1);
+        $pagedData = $consolidatedPayments->forPage($currentPage, $perPage);
+        
+        $paginatedPayments = new \Illuminate\Pagination\LengthAwarePaginator(
+            $pagedData,
+            $consolidatedPayments->count(),
+            $perPage,
+            $currentPage,
+            ['path' => request()->url(), 'pageName' => 'page']
+        );
+
+        return response()->json([
+            'success' => true,
+            'payments' => $paginatedPayments
+        ]);
+    }
+
+    /**
      * Confirm a payment.
      */
     public function confirmPayment(Request $request, Payment $payment)

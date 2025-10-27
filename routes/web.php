@@ -790,6 +790,7 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::get('/due-payments', [CashierController::class, 'duePayments'])->name('due-payments');
         Route::get('/completed-payments', [CashierController::class, 'completedPayments'])->name('completed-payments');
         Route::get('/payment-history', [CashierController::class, 'paymentHistory'])->name('payment-history');
+        Route::get('/api/payment-history', [CashierController::class, 'getPaymentHistoryData'])->name('api.payment-history');
         
         // Payment Actions
         Route::post('/payments/{payment}/confirm', [CashierController::class, 'confirmPayment'])->name('payments.confirm');

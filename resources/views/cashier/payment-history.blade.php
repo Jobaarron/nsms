@@ -1,7 +1,4 @@
 <x-cashier-layout>
-    @push('styles')
-        @vite('resources/css/index_student.css')
-    @endpush
     @vite(['resources/js/cashier-payment-schedules.js'])
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
@@ -113,6 +110,8 @@
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     }
                 })
@@ -172,7 +171,8 @@
                             <small class="text-muted">${student.first_name} ${student.last_name}</small>
                         </td>
                         <td>
-                            <span class="fw-bold text-success">₱${formatNumber(payment.total_amount || payment.amount)}</span>
+                            <span class="fw-bold text-success">₱${formatNumber(payment.total_amount_paid || payment.amount)}</span>
+                            ${payment.payment_count > 1 ? `<br><small class="text-muted">${payment.payment_count} installments</small>` : ''}
                         </td>
                         <td>${statusBadge}</td>
                         <td>
@@ -192,7 +192,7 @@
                         </td>
                         <td>
                             <div class="btn-group btn-group-sm">
-                                <button class="btn btn-outline-primary" onclick="viewPaymentDetails(${payment.id})" title="View Details">
+                                <button class="btn btn-outline-primary" onclick="viewPaymentHistoryDetails(${payment.id})" title="View Details">
                                     <i class="ri-eye-line"></i>
                                 </button>
                                 ${payment.confirmation_status === 'confirmed' ? `
@@ -322,7 +322,7 @@
 
             let currentPaymentId = null;
 
-            function viewPaymentDetails(paymentId) {
+            function viewPaymentHistoryDetails(paymentId) {
                 fetch(`/cashier/payments/${paymentId}/details`)
                     .then(response => response.json())
                     .then(data => {
@@ -338,7 +338,21 @@
                                 printBtn.style.display = 'none';
                             }
                             
-                            new bootstrap.Modal(document.getElementById('paymentDetailsModal')).show();
+                            const modalElement = document.getElementById('paymentDetailsModal');
+                            if (typeof bootstrap !== 'undefined') {
+                                new bootstrap.Modal(modalElement).show();
+                            } else {
+                                // Fallback for when Bootstrap is not available
+                                modalElement.classList.add('show');
+                                modalElement.style.display = 'block';
+                                modalElement.setAttribute('aria-modal', 'true');
+                                modalElement.setAttribute('role', 'dialog');
+                                
+                                // Add backdrop
+                                const backdrop = document.createElement('div');
+                                backdrop.className = 'modal-backdrop fade show';
+                                document.body.appendChild(backdrop);
+                            }
                         }
                     })
                     .catch(error => {

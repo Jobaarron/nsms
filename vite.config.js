@@ -17,6 +17,7 @@ export default defineConfig({
                 'resources/css/admin_generator.css',
                 'resources/css/manage_users.css',
                 'resources/css/index_student.css',
+                'resources/css/index_cashier.css',
                 'resources/css/index_enrollee.css',
                 'resources/css/index_registrar.css',
                 'resources/css/enrollee-documents.css',
