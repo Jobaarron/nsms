@@ -1,3 +1,34 @@
+// Reject counseling session (simple version for action button)
+function rejectCounselingSession(sessionId) {
+    if (confirm('Are you sure you want to reject this counseling session?')) {
+        fetch(`/guidance/counseling-sessions/${sessionId}/reject-with-feedback`, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+            },
+            body: JSON.stringify({ feedback: 'Rejected by guidance staff.' })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('Counseling session rejected successfully', 'success');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                showAlert(data.message || 'Failed to reject session', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error rejecting session:', error);
+            showAlert('Error rejecting session', 'danger');
+        });
+    }
+}
+window.rejectCounselingSession = rejectCounselingSession;
 // Show counseling session detail modal (schedule tab)
 function showSessionDetailModal(sessionId) {
     const modalElem = document.getElementById('sessionDetailModal');
