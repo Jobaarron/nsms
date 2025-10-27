@@ -33,6 +33,10 @@ window.rejectCounselingSession = rejectCounselingSession;
 function showSessionDetailModal(sessionId) {
     const modalElem = document.getElementById('sessionDetailModal');
     const modalBody = document.getElementById('sessionDetailModalBody');
+    if (!modalElem) {
+        showAlert('Session detail modal not found in DOM. Please check your HTML.', 'danger');
+        return;
+    }
     if (modalBody) {
         modalBody.innerHTML = '<div class="text-center text-muted py-5"><i class="ri-loader-4-line spinner-border spinner-border-sm"></i> Loading details...</div>';
     }

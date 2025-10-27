@@ -371,6 +371,23 @@
     </div>
 
     <!-- Counseling Summary Modal -->
+    <!-- Session Detail Modal (for showSessionDetailModal) -->
+    <div class="modal fade" id="sessionDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Counseling Session Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="sessionDetailModalBody">
+                    <!-- Details will be loaded here by JS -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="modal fade" id="counselingSummaryModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
