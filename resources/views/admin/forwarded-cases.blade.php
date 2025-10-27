@@ -40,7 +40,7 @@
                             <!-- Date cell: Date (bold), time (muted, small, below) -->
                             <td style="min-width:120px;">
                                 <div class="fw-bold">{{ $meeting->scheduled_date->format('M d, Y') }}</div>
-                                <div class="text-muted small">{{ $meeting->scheduled_time->format('h:i A') }}</div>
+                                <div class="text-muted small">{{ $meeting->scheduled_time ? $meeting->scheduled_time->format('h:i A') : '' }}</div>
                             </td>
                             <!-- Sanction cell: Main sanction (bold), others (muted, small, below) -->
                             <td style="min-width:220px;">
@@ -389,7 +389,7 @@ function generateSummaryHTML(meeting) {
                     <div class="col-md-6">
                         <p><strong>Meeting Type:</strong> ${meeting.meeting_type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>
                         <p><strong>Scheduled Date:</strong> ${meeting.scheduled_date ? new Date(meeting.scheduled_date).toLocaleDateString() : 'TBD'}</p>
-                        <p><strong>Scheduled Time:</strong> ${meeting.scheduled_time ? new Date(meeting.scheduled_time).toLocaleTimeString() : 'TBD'}</p>
+                        <p><strong>Scheduled Time:</strong> ${meeting.scheduled_time ? meeting.scheduled_time : 'TBD'}</p>
                     </div>
                 </div>
             </div>
