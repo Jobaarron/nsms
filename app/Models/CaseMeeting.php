@@ -36,6 +36,7 @@ class CaseMeeting extends Model
     // Removed automatic status syncing between CaseMeeting and related violations
     protected $fillable = [
         'student_id',
+        'violation_id', // <-- added
         'counselor_id',
         'meeting_type',
         'scheduled_date',
@@ -55,6 +56,13 @@ class CaseMeeting extends Model
         'forwarded_at',
         'completed_at',
     ];
+    /**
+     * Get the violation associated with this case meeting.
+     */
+    public function violation(): BelongsTo
+    {
+        return $this->belongsTo(Violation::class, 'violation_id');
+    }
 
     protected $casts = [
         'scheduled_date' => 'date',

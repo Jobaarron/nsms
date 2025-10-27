@@ -11,7 +11,7 @@
         <div class="card-body">
           <div class="d-flex align-items-center">
             <div class="flex-shrink-0">
-              <i class="ri-user-3-line fs-2 text-primary"></i>
+              <i class="ri-user-3-line fs-2 admin-green-icon"></i>
             </div>
             <div class="flex-grow-1 ms-3">
               <div class="fw-bold fs-4">{{ $totalUsers ?? 0 }}</div>
@@ -26,7 +26,7 @@
         <div class="card-body">
           <div class="d-flex align-items-center">
             <div class="flex-shrink-0">
-              <i class="ri-user-add-line fs-2 text-warning"></i>
+              <i class="ri-user-add-line fs-2 admin-green-light-icon"></i>
             </div>
             <div class="flex-grow-1 ms-3">
               <div class="fw-bold fs-4">{{ $userStats['total_enrollees'] ?? 0 }}</div>
@@ -41,7 +41,7 @@
         <div class="card-body">
           <div class="d-flex align-items-center">
             <div class="flex-shrink-0">
-              <i class="ri-graduation-cap-line fs-2 text-success"></i>
+              <i class="ri-graduation-cap-line fs-2 admin-green-dark-icon"></i>
             </div>
             <div class="flex-grow-1 ms-3">
               <div class="fw-bold fs-4">{{ $userStats['total_students'] ?? 0 }}</div>
@@ -56,7 +56,7 @@
         <div class="card-body">
           <div class="d-flex align-items-center">
             <div class="flex-shrink-0">
-              <i class="ri-shield-user-line fs-2 text-info"></i>
+              <i class="ri-shield-user-line fs-2 admin-green-accent-icon"></i>
             </div>
             <div class="flex-grow-1 ms-3">
               <div class="fw-bold fs-4">{{ $userStats['total_roles'] ?? 0 }}</div>
@@ -136,9 +136,9 @@
   <div class="row g-3 mb-5">
     <div class="col-lg-6">
       <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white">
+  <div class="card-header admin-card-header">
           <h5 class="card-title mb-0">
-            <i class="ri-pie-chart-line me-2"></i>User Distribution
+            <i class="ri-pie-chart-line me-2 admin-green-icon"></i><span class="user-distribution-black">User Distribution</span>
           </h5>
         </div>
         <div class="card-body">
@@ -188,7 +188,7 @@
         datasets: [{
           data: {!! json_encode($chartData['user_types']['data']) !!},
           backgroundColor: [
-            '#0d6efd', '#ffc107', '#198754', '#dc3545', '#6c757d', '#20c997'
+            '#43b36a', '#2b7a3b', '#7be495', '#198754', '#20c997', '#a3e635'
           ],
           borderWidth: 2,
           borderColor: '#fff'
@@ -214,8 +214,8 @@
         datasets: [{
           label: 'Applications',
           data: {!! json_encode($chartData['enrollment_status']['data']) !!},
-          backgroundColor: ['#ffc107', '#198754', '#0d6efd'],
-          borderColor: ['#ffc107', '#198754', '#0d6efd'],
+          backgroundColor: ['#43b36a', '#7be495', '#198754'],
+          borderColor: ['#2b7a3b', '#43b36a', '#198754'],
           borderWidth: 1
         }]
       },
@@ -244,8 +244,8 @@
         datasets: [{
           label: 'Applications',
           data: {!! json_encode($chartData['monthly_applications']['data']) !!},
-          borderColor: '#0d6efd',
-          backgroundColor: 'rgba(13, 110, 253, 0.1)',
+          borderColor: '#43b36a',
+          backgroundColor: 'rgba(67, 179, 106, 0.1)',
           borderWidth: 3,
           fill: true,
           tension: 0.4

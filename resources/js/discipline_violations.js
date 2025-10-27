@@ -59,7 +59,7 @@ window.SanctionSystem = {
     
     // Add violation to student history
     addViolationToHistory(studentId, severity, category) {
-        if (!this.studentViolations.has(studentId)) {
+    if (!this.studentViolations.has(studentId)) {
             this.studentViolations.set(studentId, {
                 minorCount: 0,
                 majorCount: 0,
@@ -162,12 +162,12 @@ window.SanctionSystem = {
                     notes: "Second minor offense"
                 };
             case 3:
-                return {
-                    sanction: "One step lower in Deportment Grade",
-                    deportmentGrade: "Lowered by one step",
-                    suspension: "None", 
-                    notes: "Third minor offense - cumulative sanction"
-                };
+        return {
+          sanction: "Escalated sanction",
+          deportmentGrade: "Lowered by one step",
+          suspension: "None",
+          notes: "Third minor offense - cumulative sanction"
+        };
             default:
                 return {
                     sanction: "One step lower in Deportment Grade",
@@ -249,89 +249,130 @@ function setupEnhancedViolationSubmission() {
     const violationForm = document.getElementById('recordViolationForm');
     if (!violationForm) return;
 
-    violationForm.addEventListener('submit', async function(e) {
-        e.preventDefault();
+  violationForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
 
-        if (!window.selectedStudents || window.selectedStudents.length === 0) {
-            alert('Please select at least one student for the violation.');
-            return;
+    if (!window.selectedStudents || window.selectedStudents.length === 0) {
+      alert('Please select at least one student for the violation.');
+      return;
+    }
+
+    const submitBtn = document.querySelector('#recordViolationModal button[type="submit"]');
+    const originalText = submitBtn.textContent;
+
+    // Show loading state
+    submitBtn.textContent = 'Submitting...';
+    submitBtn.disabled = true;
+
+    try {
+      const title = getViolationTitle();
+      const severity = window.titleToSeverityMap[title]?.severity || 'minor';
+      const category = window.titleToSeverityMap[title]?.category || null;
+
+      // Process each student
+      const results = [];
+      for (const student of window.selectedStudents) {
+        const formData = new FormData();
+        formData.append('student_id', student.id);
+        formData.append('title', title);
+        formData.append('violation_date', document.getElementById('violationDate').value);
+        formData.append('violation_time', document.getElementById('violationTime').value);
+        formData.append('severity', severity);
+        formData.append('major_category', category);
+        formData.append('status', 'pending');
+
+        const csrfTokenEl = document.querySelector('meta[name="csrf-token"]');
+        const csrfToken = csrfTokenEl ? csrfTokenEl.getAttribute('content') : '';
+        formData.append('_token', csrfToken);
+
+        const response = await fetch('/discipline/violations', {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': csrfToken
+          },
+          body: formData
+        });
+
+        if (response.status === 401) {
+          // User is not authenticated, redirect to login
+          alert('Your session has expired. Please log in again.');
+          window.location.href = '/discipline/login';
+          return;
         }
 
-        const submitBtn = document.querySelector('#recordViolationModal button[type="submit"]');
-        const originalText = submitBtn.textContent;
-
-        // Show loading state
-        submitBtn.textContent = 'Submitting...';
-        submitBtn.disabled = true;
-
-        try {
-            const title = getViolationTitle();
-            const severity = window.titleToSeverityMap[title]?.severity || 'minor';
-            const category = window.titleToSeverityMap[title]?.category || null;
-
-            // Process each student
-            const results = [];
-            for (const student of window.selectedStudents) {
-                const formData = new FormData();
-                formData.append('student_id', student.id);
-                formData.append('title', title);
-                formData.append('violation_date', document.getElementById('violationDate').value);
-                formData.append('violation_time', document.getElementById('violationTime').value);
-                formData.append('severity', severity);
-                formData.append('major_category', category);
-                formData.append('status', 'pending');
-
-                const csrfTokenEl = document.querySelector('meta[name="csrf-token"]');
-                const csrfToken = csrfTokenEl ? csrfTokenEl.getAttribute('content') : '';
-                formData.append('_token', csrfToken);
-
-                const response = await fetch('/discipline/violations', {
-                    method: 'POST',
-                    credentials: 'include',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken
-                    },
-                    body: formData
-                });
-
-                if (response.status === 401) {
-                    // User is not authenticated, redirect to login
-                    alert('Your session has expired. Please log in again.');
-                    window.location.href = '/discipline/login';
-                    return;
-                }
-
-                if (!response.ok) {
-                    throw new Error(`Server error: ${response.status}`);
-                }
-
-                const data = await response.json();
-                if (!data.success) {
-                    throw new Error(data.message || 'Submission failed');
-                }
-
-                results.push({
-                    student: student.name,
-                    data: data
-                });
-            }
-
-            alert(`Violation recorded successfully for ${window.selectedStudents.length} student(s)!`);
-
-            // Close modal and refresh
-            const modal = bootstrap.Modal.getInstance(document.getElementById('recordViolationModal'));
-            if (modal) modal.hide();
-            window.location.reload();
-
-        } catch (err) {
-            console.error('Violation submission error:', err);
-            alert('Error submitting violation: ' + err.message);
-        } finally {
-            submitBtn.textContent = originalText;
-            submitBtn.disabled = false;
+        if (response.status === 409) {
+          // Duplicate violation detected
+          showDuplicateViolationModal();
+          submitBtn.textContent = originalText;
+          submitBtn.disabled = false;
+          return;
         }
-    });
+
+        if (!response.ok) {
+          throw new Error(`Server error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (!data.success) {
+          throw new Error(data.message || 'Submission failed');
+        }
+
+        results.push({
+          student: student.name,
+          data: data
+        });
+      }
+
+      alert(`Violation recorded successfully for ${window.selectedStudents.length} student(s)!`);
+
+      // Close modal and refresh
+      const modal = bootstrap.Modal.getInstance(document.getElementById('recordViolationModal'));
+      if (modal) modal.hide();
+      window.location.reload();
+
+    } catch (err) {
+      console.error('Violation submission error:', err);
+      alert('Error submitting violation: ' + err.message);
+    } finally {
+      submitBtn.textContent = originalText;
+      submitBtn.disabled = false;
+    }
+  });
+}
+
+// Show modal for duplicate violation
+function showDuplicateViolationModal(message) {
+  let modal = document.getElementById('duplicateViolationModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.id = 'duplicateViolationModal';
+    modal.tabIndex = -1;
+    modal.innerHTML = `
+    <div class="modal-dialog">
+      <div class="modal-content" style="background:#fff; border:2px solid #198754;">
+        <div class="modal-header" style="background:#198754; color:#fff;">
+          <h5 class="modal-title" style="color:#fff;">Duplicate Violation</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0" style="color:#198754;">${message || 'No same violation within the same date is allowed.'}</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn" style="background:#198754;color:#fff;" data-bs-dismiss="modal">OK</button>
+        </div>
+      </div>
+    </div>`;
+    document.body.appendChild(modal);
+  } else {
+    // Update message if modal already exists
+    const msgP = modal.querySelector('.modal-body p');
+    if (msgP) msgP.textContent = message || 'No same violation within the same date is allowed.';
+  }
+  const bsModal = new bootstrap.Modal(modal);
+  bsModal.show();
 }
 
 
@@ -526,7 +567,7 @@ window.editViolation = function(violationId) {
                 </div>
             </div>
 
-            <h6 class="mt-3 mb-3">Violation Details</h6>
+           
             <div class="mb-2">
                 <label class="form-label fw-bold small">Title</label>
                 <input type="text" class="form-control form-control-sm" id="edit_title" name="title" value="${violation.title || ''}" required>
@@ -1163,16 +1204,22 @@ window.viewViolation = function(violationId) {
     fetch(`/discipline/violations/${violationId}`, { credentials: 'include' })
       .then(response => response.json())
       .then(data => {
+        // Build the PDF URL for the narrative report
+        let narrativePdfUrl = '';
+        if (data.student && data.id && data.severity === 'major') {
+          narrativePdfUrl = `/narrative-report/view/${data.student.id}/${data.id}`;
+        }
+
         document.getElementById('viewViolationModalBody').innerHTML = `
           <div class="row">
             <div class="col-md-6">
               <h6>Student Information</h6>
               <table class="table table-sm">
                 <tbody>
-                  <tr><td><strong>Name:</strong></td><td>${data.student.first_name} ${data.student.last_name}</td></tr>
-                  <tr><td><strong>Student ID:</strong></td><td>${data.student.student_id || 'N/A'}</td></tr>
-                  <tr><td><strong>Grade Level:</strong></td><td>${data.student.grade_level || 'N/A'}</td></tr>
-                  <tr><td><strong>Section:</strong></td><td>${data.student.section || 'N/A'}</td></tr>
+                  <tr><td><strong>Name:</strong></td><td>${data.student && data.student.first_name ? data.student.first_name : 'N/A'} ${data.student && data.student.last_name ? data.student.last_name : ''}</td></tr>
+                  <tr><td><strong>Student ID:</strong></td><td>${data.student && data.student.student_id ? data.student.student_id : 'N/A'}</td></tr>
+                  <tr><td><strong>Grade Level:</strong></td><td>${data.student && data.student.grade_level ? data.student.grade_level : 'N/A'}</td></tr>
+                  <tr><td><strong>Section:</strong></td><td>${data.student && data.student.section ? data.student.section : 'N/A'}</td></tr>
                 </tbody>
               </table>
               
@@ -1188,42 +1235,36 @@ window.viewViolation = function(violationId) {
                   <tr><td><strong>Time:</strong></td><td>${data.violation_time ? (data.violation_time.length > 5 ? data.violation_time.substring(0, 5) : data.violation_time) : 'N/A'}</td></tr>
                 </tbody>
               </table>
+              <!-- Narrative PDF Attachment (if available) -->
+              ${narrativePdfUrl ? `<div class="mt-4"><label class="form-label fw-bold">Student Narrative Report (PDF):</label><div><a href="${narrativePdfUrl}" target="_blank" class="btn btn-outline-primary btn-sm"><i class="ri-attachment-2"></i> View Attachment</a></div></div>` : ''}
             </div>
             <div class="col-md-6">
-
-              
-              
               ${data.resolution ? `
                 <div class="mb-3">
                   <label class="form-label fw-bold">Resolution:</label>
                   <p>${data.resolution}</p>
                 </div>
               ` : ''}
-              
               ${data.disciplinary_action ? `
                 <div class="mb-3">
                   <label class="form-label fw-bold">Disciplinary Action:</label>
                   <p>${data.disciplinary_action}</p>
                 </div>
               ` : ''}
-              
               ${data.notes ? `
                 <div class="mb-3">
                   <label class="form-label fw-bold">Notes:</label>
                   <p>${data.notes}</p>
                 </div>
               ` : ''}
-              
               <div class="mb-3">
                 <label class="form-label fw-bold">Reported By:</label>
                 <p>${data.reported_by ? (data.reported_by.first_name + ' ' + data.reported_by.last_name) : 'N/A'}</p>
               </div>
-              
               <div class="mb-3">
                 <label class="form-label fw-bold">Reported On:</label>
                 <p>${new Date(data.created_at).toLocaleDateString()} at ${new Date(data.created_at).toLocaleTimeString()}</p>
               </div>
-              
               ${data.resolved_by ? `
                 <div class="mb-3">
                   <label class="form-label fw-bold">Resolved By:</label>
@@ -1277,7 +1318,7 @@ window.deleteViolation = function(violationId) {
           throw new Error('Delete failed with status: ' + response.status);
         }
       })
-      .then(data => {
+  .then((data) => {
         if (data.success) {
           // Remove the row from table
           const rows = document.querySelectorAll('#violationsTable tbody tr');
@@ -1931,29 +1972,29 @@ function initializeIncidentStudentSearch() {
         });
 
         incidentStudentSearch.addEventListener('keydown', function(e) {
-            const items = incidentStudentSuggestions.querySelectorAll('.suggestion-item');
+      const items = incidentStudentSuggestions.querySelectorAll('.suggestion-item');
 
-            if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                incidentCurrentFocus = incidentCurrentFocus < items.length - 1 ? incidentCurrentFocus + 1 : 0;
-                incidentUpdateFocus(items);
-            } else if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                incidentCurrentFocus = incidentCurrentFocus > 0 ? incidentCurrentFocus - 1 : items.length - 1;
-                incidentUpdateFocus(items);
-            } else if (e.key === 'Enter') {
-                e.preventDefault();
-                if (incidentCurrentFocus >= 0 && items[incidentCurrentFocus]) {
-                    const item = items[incidentCurrentFocus];
-                    const studentId = item.getAttribute('data-student-id');
-                    const studentName = item.getAttribute('data-student-name');
-                    incidentSelectStudent(studentId, studentName);
-                }
-            } else if (e.key === 'Escape') {
-                incidentStudentSuggestions.style.display = 'none';
-                incidentCurrentFocus = -1;
-            }
-        });
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        incidentCurrentFocus = incidentCurrentFocus < items.length - 1 ? incidentCurrentFocus + 1 : 0;
+        incidentUpdateFocus(items);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        incidentCurrentFocus = incidentCurrentFocus > 0 ? incidentCurrentFocus - 1 : items.length - 1;
+        incidentUpdateFocus(items);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (incidentCurrentFocus >= 0 && items[incidentCurrentFocus]) {
+          const item = items[incidentCurrentFocus];
+          const studentId = item.getAttribute('data-student-id');
+          const studentName = item.getAttribute('data-student-name');
+          incidentSelectStudent(studentId, studentName);
+        }
+      } else if (e.key === 'Escape') {
+        incidentStudentSuggestions.style.display = 'none';
+        incidentCurrentFocus = -1;
+      }
+    });
 
         document.addEventListener('click', function(e) {
             if (!incidentStudentSearch.contains(e.target) && !incidentStudentSuggestions.contains(e.target)) {
@@ -1984,64 +2025,61 @@ function showIncidentForm() {
     const modal = document.createElement('div');
     modal.className = 'modal fade';
     modal.id = 'incidentFormModal';
-    modal.innerHTML = `
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Incident Form</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                                                                       </div>
-                <div class="modal-body">
-                    <form id="incidentForm">
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Offense/Title</label>
-                            <select class="form-select" id="incidentViolation" required>
-                                <!-- Options will be populated by JavaScript -->
-                            </select>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Reported Students</label>
-                            <div class="position-relative">
-                              <input type="text" class="form-control" id="incidentStudentSearch" placeholder="Type student name or ID..." autocomplete="off">
-                              <div id="incidentStudentSuggestions" class="suggestions-list" style="display: none;">
-                                <!-- Suggestions will be populated here -->
-                              </div>
-                            </div>
-                            <div id="incidentSelectedStudentsContainer" class="mt-2">
-                              <!-- Selected students will be added here -->
-                            </div>
-                            <small class="text-muted">Add multiple students involved in the incident</small>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Reporter</label>
-                            <input type="text" class="form-control" id="incidentReporter" required>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Date</label>
-                                <input type="date" class="form-control" id="incidentDate" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Time</label>
-                                <input type="time" class="form-control" id="incidentTime" required>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Details</label>
-                            <textarea class="form-control" id="incidentDetails" rows="4" required></textarea>
-                        </div>
-
-
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-success" onclick="generateIncidentForm()">Generate Incident Form</button>
-                    <button type="submit" form="incidentForm" class="btn btn-success">Submit Incident</button>
-                </div>
-            </div>
+  modal.innerHTML = `
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Incident Form</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
-    `;
+        <div class="modal-body">
+          <form id="incidentForm">
+            <div class="mb-3">
+              <label class="form-label fw-bold">Offense/Title</label>
+              <select class="form-select" id="incidentViolation" required>
+                <!-- Options will be populated by JavaScript -->
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">Reported Students</label>
+              <div class="position-relative">
+                <input type="text" class="form-control" id="incidentStudentSearch" placeholder="Type student name or ID..." autocomplete="off">
+                <div id="incidentStudentSuggestions" class="suggestions-list" style="display: none;">
+                <!-- Suggestions will be populated here -->
+                </div>
+              </div>
+              <div id="incidentSelectedStudentsContainer" class="mt-2">
+                <!-- Selected students will be added here -->
+              </div>
+              <small class="text-muted">Add multiple students involved in the incident</small>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">Reporter</label>
+              <input type="text" class="form-control" id="incidentReporter" required>
+            </div>
+            <div class="row">
+              <div class="col-md-6">
+                <label class="form-label fw-bold">Date</label>
+                <input type="date" class="form-control" id="incidentDate" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-bold">Time</label>
+                <input type="time" class="form-control" id="incidentTime" required>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">Details</label>
+              <textarea class="form-control" id="incidentDetails" rows="4" required></textarea>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" form="incidentForm" class="btn btn-success">Submit Incident</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  `;
     document.body.appendChild(modal);
 
     // Initialize incident selected students from violation form
@@ -2201,28 +2239,35 @@ function showIncidentForm() {
                     body: formData
                 });
 
-                if (!response.ok) {
-                    const responseText = await response.text();
-                    if (responseText.startsWith('<')) {
-                        throw new Error('Authentication required. Please log in again.');
-                    } else {
-                        throw new Error(`Server error: ${response.status}. ${responseText.substring(0, 200)}`);
-                    }
-                }
+        if (response.status === 409) {
+          showDuplicateViolationModal('A violation with the same title already exists for this student on this date.');
+          submitBtn.textContent = originalText;
+          submitBtn.disabled = false;
+          return;
+        }
 
-                const responseText = await response.text();
-                let data;
-                try {
-                    data = JSON.parse(responseText);
-                } catch (parseError) {
-                    throw new Error(`Server returned invalid JSON. Status: ${response.status}. Response: ${responseText.substring(0, 200)}`);
-                }
+        if (!response.ok) {
+          const responseText = await response.text();
+          if (responseText.startsWith('<')) {
+            throw new Error('Authentication required. Please log in again.');
+          } else {
+            throw new Error(`Server error: ${response.status}. ${responseText.substring(0, 200)}`);
+          }
+        }
 
-                if (!data.success) {
-                    throw new Error(data.message || `Server error: ${response.status}`);
-                }
+        const responseText = await response.text();
+        let data;
+        try {
+          data = JSON.parse(responseText);
+        } catch (parseError) {
+          throw new Error(`Server returned invalid JSON. Status: ${response.status}. Response: ${responseText.substring(0, 200)}`);
+        }
 
-                results.push(data);
+        if (!data.success) {
+          throw new Error(data.message || `Server error: ${response.status}`);
+        }
+
+        results.push(data);
             }
 
             alert(`Incident recorded successfully for ${window.incidentSelectedStudents.length} student(s)!`);
@@ -2234,8 +2279,12 @@ function showIncidentForm() {
             window.location.reload();
 
         } catch (err) {
-            console.error('Incident submission error:', err);
-            alert('Error submitting incident: ' + err.message);
+      if (err && err.message && err.message.includes('A violation with the same title already exists for this student on this date.')) {
+        showDuplicateViolationModal('A violation with the same title already exists for this student on this date.');
+      } else {
+        console.error('Incident submission error:', err);
+        alert('Error submitting incident: ' + err.message);
+      }
         } finally {
             submitBtn.textContent = originalText;
             submitBtn.disabled = false;

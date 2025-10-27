@@ -20,6 +20,7 @@ use App\Http\Controllers\DisciplineController;
 use App\Http\Controllers\PaymentScheduleController;
 use App\Http\Controllers\CashierController;
 use App\Http\Controllers\DataChangeRequestController;
+use App\Http\Controllers\PdfController;
 
 
 
@@ -423,6 +424,7 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
     Route::post('/login', [App\Http\Controllers\GuidanceController::class, 'login'])->name('login.submit');
     
     // Protected routes
+    
     Route::middleware(['web'])->group(function () {
         // Dashboard
         Route::get('/', [App\Http\Controllers\GuidanceController::class, 'dashboard'])->name('dashboard');
@@ -459,9 +461,25 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
             Route::post('/{caseMeeting}/forward', [App\Http\Controllers\GuidanceController::class, 'forwardToPresident'])
                 ->name('forward');
         });
+
+        // PDF route for case meeting attachment (moved outside case-meetings group)
+        Route::get('/pdf/case-meeting/{caseMeetingId}', [PdfController::class, 'caseMeetingAttachmentPdf'])->name('pdf.case-meeting.attachment');
         
         // Counseling Session Routes
-        Route::prefix('counseling-sessions')->name('counseling-sessions.')->group(function () {
+    Route::prefix('counseling-sessions')->name('counseling-sessions.')->group(function () {
+
+    // AJAX: Store counseling summary report
+    Route::post('/{counselingSession}/summary-report', [App\Http\Controllers\GuidanceController::class, 'createCounselingSummaryReport'])->name('summary-report');
+
+    // Counseling session detail API for modal (now inside counseling-sessions group)
+    Route::get('/api/counseling-sessions/{id}', [App\Http\Controllers\GuidanceController::class, 'apiShowCounselingSession'])->middleware(['auth'])->name('api.show');
+        
+            // AJAX: Reject counseling session with feedback and archive
+            Route::post('/{counselingSession}/reject-with-feedback', [App\Http\Controllers\GuidanceController::class, 'rejectCounselingSessionWithFeedback'])->name('reject-with-feedback');
+            // Show create summary form
+            Route::get('/{counselingSession}/summary/create', [App\Http\Controllers\GuidanceController::class, 'createCounselingSummaryForm'])->name('summary.create');
+              // Approve counseling session (AJAX)
+              Route::post('/approve', [App\Http\Controllers\GuidanceController::class, 'approveCounselingSession'])->name('approve');
             Route::get('/', [App\Http\Controllers\GuidanceController::class, 'counselingSessionsIndex'])->name('index');
             Route::post('/', [App\Http\Controllers\GuidanceController::class, 'scheduleCounselingSession'])->name('schedule');
             Route::get('/{counselingSession}', [App\Http\Controllers\GuidanceController::class, 'showCounselingSession'])->name('show');
@@ -475,6 +493,10 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
             Route::get('/export', [App\Http\Controllers\GuidanceController::class, 'exportCounselingSessions'])->name('export');
             Route::get('/', [App\Http\Controllers\GuidanceController::class, 'counselingSessionsIndex'])
                 ->name('index');
+                
+// AJAX route for counseling session approval
+Route::post('/guidance/counseling-sessions/approve', [GuidanceController::class, 'approveCounselingSession'])->name('guidance.counseling-sessions.approve');
+
 
             Route::post('/', [App\Http\Controllers\GuidanceController::class, 'scheduleCounselingSession'])
                 ->name('schedule');
@@ -516,6 +538,7 @@ Route::prefix('api/violations')->name('api.violations.')->group(function () {
 
 
 
+
 // Student routes
 Route::get('/student', [StudentController::class, 'index']);
 Route::prefix('student')->name('student.')->group(function () {
@@ -527,8 +550,14 @@ Route::prefix('student')->name('student.')->group(function () {
     // Protected student routes
     Route::middleware('auth:student')->group(function () {
         Route::get('/dashboard', [StudentController::class, 'index'])->name('dashboard');
-        Route::get('/violations', [StudentController::class, 'violations'])->name('violations');
-        
+    Route::match(['get', 'post'], '/violations', [StudentController::class, 'violations'])->name('violations');
+    Route::post('/violations/reply/{violation}', [StudentController::class, 'submitViolationReply'])->name('violations.reply');
+
+        // Student Narrative Report - Reply Form
+        Route::get('/narrative-report/reply', function() {
+            return view('student.narrative_report');
+        })->name('narrative.reply');
+
         // Enrollment routes
         Route::get('/enrollment', [StudentController::class, 'enrollment'])->name('enrollment');
         Route::post('/enrollment', [StudentController::class, 'submitEnrollment'])->name('enrollment.submit');
@@ -548,6 +577,9 @@ Route::prefix('student')->name('student.')->group(function () {
         Route::post('/logout', [StudentController::class, 'logout'])->name('logout');
     });
 });
+
+// Student Narrative Report - View PDF Only (always available)
+Route::get('/narrative-report/view/{studentId}/{violationId}', [PdfController::class, 'studentNarrativePdf'])->name('student.pdf.studentNarrative');
 
 
 // Enrollee routes
@@ -813,3 +845,6 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::post('/logout', [CashierController::class, 'logout'])->name('logout');
     });
 });
+
+// PDF route for counseling session
+Route::get('/pdf/counseling-session', [PdfController::class, 'show']);

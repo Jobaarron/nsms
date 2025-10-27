@@ -34,6 +34,8 @@ return new class extends Migration
             $table->foreignId('resolved_by')->nullable()->constrained('disciplines')->onDelete('set null');
             $table->date('resolved_at')->nullable();
             $table->text('student_statement')->nullable();
+            $table->text('incident_feelings')->nullable();
+            $table->text('action_plan')->nullable();
             $table->text('disciplinary_action')->nullable();
             $table->boolean('parent_notified')->default(false);
             $table->date('parent_notification_date')->nullable();

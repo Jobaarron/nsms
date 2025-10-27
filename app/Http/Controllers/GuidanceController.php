@@ -347,18 +347,9 @@ class GuidanceController extends Controller
                     'id' => $caseMeeting->id,
                     'student_name' => $caseMeeting->student ? $caseMeeting->student->full_name : 'Unknown',
                     'student_id' => $caseMeeting->student ? $caseMeeting->student->student_id : 'Unknown',
-                    'counselor_name' => $caseMeeting->counselor ? $caseMeeting->counselor->name : 'Unknown',
-                    'meeting_type' => $caseMeeting->meeting_type,
-                    'meeting_type_display' => ucwords(str_replace('_', ' ', $caseMeeting->meeting_type)),
-                    'scheduled_date' => $caseMeeting->scheduled_date ? $caseMeeting->scheduled_date->format('M d, Y') : null,
-                    'scheduled_time' => $caseMeeting->scheduled_time ? $caseMeeting->scheduled_time->format('h:i A') : null,
-                    'location' => $caseMeeting->location,
                     'status' => $caseMeeting->status,
                     'status_text' => ucfirst($caseMeeting->status),
                     'status_class' => $this->getStatusClass($caseMeeting->status),
-                    'urgency_level' => $caseMeeting->urgency_level,
-                    'urgency_color' => $this->getUrgencyColor($caseMeeting->urgency_level),
-                    'reason' => $caseMeeting->reason,
                     'notes' => $caseMeeting->notes,
                     'summary' => $caseMeeting->summary,
                     'recommendations' => $caseMeeting->recommendations,
@@ -366,6 +357,10 @@ class GuidanceController extends Controller
                     'follow_up_date' => $caseMeeting->follow_up_date ? $caseMeeting->follow_up_date->format('M d, Y') : null,
                     'completed_at' => $caseMeeting->completed_at ? $caseMeeting->completed_at->format('M d, Y h:i A') : null,
                     'forwarded_to_president' => $caseMeeting->forwarded_to_president,
+                    'scheduled_date' => $caseMeeting->scheduled_date ? $caseMeeting->scheduled_date->format('M d, Y') : null,
+                    'scheduled_time' => $caseMeeting->scheduled_time ? $caseMeeting->scheduled_time->format('h:i A') : null,
+                    'scheduled_by_name' => $caseMeeting->counselor ? ($caseMeeting->counselor->first_name . ' ' . $caseMeeting->counselor->last_name) : null,
+                    'created_at' => $caseMeeting->created_at ? $caseMeeting->created_at->format('Y-m-d H:i:s') : null,
                     'sanctions' => $caseMeeting->sanctions->map(function ($sanction) {
                         return [
                             'id' => $sanction->id,
@@ -601,8 +596,13 @@ class GuidanceController extends Controller
     public function counselingSessionsIndex()
     {
         $counselingSessions = CounselingSession::with(['student', 'counselor', 'recommender'])
-            ->orderByRaw("CASE WHEN status = 'recommended' THEN 0 ELSE 1 END, scheduled_date DESC")
+            ->orderByRaw("CASE WHEN status = 'recommended' THEN 0 ELSE 1 END, start_date DESC")
             ->paginate(20);
+
+        $scheduledSessions = CounselingSession::with('student')
+            ->where('status', 'scheduled')
+            ->orderBy('start_date', 'desc')
+            ->get();
 
         $students = Student::select('id', 'first_name', 'last_name', 'student_id')
             ->orderBy('last_name', 'asc')
@@ -613,7 +613,7 @@ class GuidanceController extends Controller
             ->orderBy('first_name')
             ->get();
 
-        return view('guidance.counseling-sessions', compact('counselingSessions', 'students', 'counselors'));
+        return view('guidance.counseling-sessions', compact('counselingSessions', 'scheduledSessions', 'students', 'counselors'));
     }
 
     /**
@@ -642,7 +642,19 @@ class GuidanceController extends Controller
         $validatedData['counselor_id'] = $guidanceRecord->id;
         $validatedData['status'] = 'scheduled';
 
-        $counselingSession = CounselingSession::create($validatedData);
+        // Auto-set session_no based on count of previous sessions for this student
+        $studentId = $validatedData['student_id'];
+        $sessionCount = CounselingSession::where('student_id', $studentId)->count();
+        $validatedData['session_no'] = $sessionCount + 1;
+
+        $counselingSession = CounselingSession::create([
+            ...$validatedData,
+            'referral_academic' => isset($validatedData['referral_academic']) ? json_encode($validatedData['referral_academic']) : null,
+            'referral_academic_other' => $validatedData['referral_academic_other'] ?? null,
+            'referral_social' => isset($validatedData['referral_social']) ? json_encode($validatedData['referral_social']) : null,
+            'referral_social_other' => $validatedData['referral_social_other'] ?? null,
+            'incident_description' => $validatedData['incident_description'] ?? null,
+        ]);
 
         return redirect()->route('guidance.counseling-sessions.index')
             ->with('success', 'Counseling session scheduled successfully.');
@@ -789,7 +801,7 @@ class GuidanceController extends Controller
         }
 
         $counselingSessions = CounselingSession::with(['student', 'counselor', 'recommender'])
-            ->orderByRaw("CASE WHEN status = 'recommended' THEN 0 ELSE 1 END, scheduled_date DESC")
+            ->orderByRaw("CASE WHEN status = 'recommended' THEN 0 ELSE 1 END, start_date DESC")
             ->paginate(20);
 
         $students = Student::select('id', 'first_name', 'last_name', 'student_id')
@@ -1080,5 +1092,191 @@ class GuidanceController extends Controller
             'career' => 'bg-warning',
             default => 'bg-secondary'
         };
+    }
+
+    /**
+     * Approve counseling session via AJAX
+     */
+    public function approveCounselingSession(Request $request)
+    {
+        $request->validate([
+            'session_id' => 'required|exists:counseling_sessions,id',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'time_limit' => 'required|integer|min:1|max:240',
+            'time' => 'required|date_format:H:i',
+        ]);
+
+
+        $session = CounselingSession::findOrFail($request->session_id);
+        $session->start_date = $request->start_date;
+        $session->end_date = $request->end_date;
+        $session->time_limit = $request->time_limit;
+        $session->time = $request->time;
+        $session->status = 'scheduled';
+
+        // Auto-set session_no: count all scheduled+completed sessions for this student (excluding this one if already scheduled)
+        $studentId = $session->student_id;
+        $sessionCount = CounselingSession::where('student_id', $studentId)
+            ->whereIn('status', ['scheduled', 'completed'])
+            ->where('id', '!=', $session->id)
+            ->count();
+        $session->session_no = $sessionCount + 1;
+
+        $session->save();
+
+        // Archive the approved session in archive_violations
+        $user = Auth::user();
+        $disciplineId = $user && $user->discipline ? $user->discipline->id : null;
+        $guidanceId = $user && $user->guidance ? $user->guidance->id : null;
+        $reportedBy = $disciplineId ?? $guidanceId;
+        if (!$reportedBy) {
+            $reportedBy = $user ? $user->id : 1;
+        }
+        $archiveData = [
+            'counseling_session_id' => $session->id,
+            'student_id' => $session->student_id,
+            'counselor_id' => $session->counselor_id,
+            'title' => 'Counseling Session Approved',
+            'description' => $session->reason ?? $session->notes ?? 'Approved counseling session',
+            'reason' => $session->reason,
+            'notes' => $session->notes,
+            'archived_at' => now(),
+            'violation_date' => $session->start_date ?? now(),
+            'reported_by' => $reportedBy,
+            'feedback' => null,
+        ];
+        \App\Models\ArchiveViolation::create($archiveData);
+
+        return response()->json(['success' => true]);
+    }
+    /**
+     * Reject counseling session with feedback and archive it
+     */
+    public function rejectCounselingSessionWithFeedback(Request $request, CounselingSession $counselingSession)
+    {   
+        $request->validate([
+            'feedback' => 'required|string',
+        ]);
+
+        // Archive the session with feedback
+        $user = Auth::user();
+        // Try to get discipline or guidance id for reported_by
+        $disciplineId = $user && $user->discipline ? $user->discipline->id : null;
+        $guidanceId = $user && $user->guidance ? $user->guidance->id : null;
+        $reportedBy = $disciplineId ?? $guidanceId;
+        if (!$reportedBy) {
+            // Fallback: use user id if neither discipline nor guidance exists
+            $reportedBy = $user ? $user->id : 1;
+        }
+        $archiveData = [
+            'counseling_session_id' => $counselingSession->id,
+            'student_id' => $counselingSession->student_id,
+            'counselor_id' => $counselingSession->counselor_id,
+            'title' => 'Counseling Session Rejection',
+            'description' => $counselingSession->reason ?? $counselingSession->notes ?? 'Rejected counseling session',
+            'reason' => $counselingSession->reason,
+            'notes' => $counselingSession->notes,
+            'feedback' => $request->feedback,
+            'archived_at' => now(),
+            'violation_date' => $counselingSession->scheduled_date ?? now(),
+            'reported_by' => $reportedBy,
+        ];
+
+        // Use ArchiveViolation model to store archive
+        \App\Models\ArchiveViolation::create($archiveData);
+
+        // Update the session status to rejected
+        $counselingSession->update([
+            'status' => 'rejected',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Counseling session rejected and archived with feedback.'
+        ]);
+    }
+        /**
+     * API: Get counseling session details (for modal)
+     */
+    public function apiShowCounselingSession($id)
+    {
+        $session = \App\Models\CounselingSession::with(['student', 'counselor'])
+            ->find($id);
+        if (!$session) {
+            return response()->json(['success' => false, 'message' => 'Session not found.']);
+        }
+        $student = $session->student;
+        $counselor = $session->counselor;
+        $documentsHtml = '';
+        // If you have documents, render them here. Otherwise, show placeholder.
+        // Example: $documentsHtml = '<a href="/path/to/doc.pdf">Document.pdf</a>';
+        return response()->json([
+            'success' => true,
+            'session' => [
+                'session_no' => $session->session_no,
+                'status_display' => ucfirst($session->status),
+                'reason' => $session->reason,
+                'notes' => $session->notes,
+                'scheduled_date' => $session->start_date ? $session->start_date->format('Y-m-d') : null,
+                'scheduled_time' => $session->time ? $session->time->format('H:i') : null,
+                'location' => $session->location,
+                'counselor_name' => $counselor ? ($counselor->first_name . ' ' . $counselor->last_name) : null,
+                'student_full_name' => $student ? ($student->full_name ?? ($student->first_name . ' ' . $student->last_name)) : null,
+                'student_lrn' => $student ? $student->lrn : null,
+                'student_birthdate' => ($student && $student->date_of_birth) ? (method_exists($student->date_of_birth, 'format') ? $student->date_of_birth->format('F j, Y') : (string)$student->date_of_birth) : null,
+                'student_gender' => $student ? $student->gender : null,
+                'student_nationality' => $student ? $student->nationality : null,
+                'student_religion' => $student ? $student->religion : null,
+                'student_photo_url' => $student && $student->photo_url ? $student->photo_url : null,
+                'documents_html' => $documentsHtml,
+            ]
+        ]);
+    }
+      /**
+     * Store counseling summary report for a session
+     */
+    public function createCounselingSummaryReport(Request $request, CounselingSession $counselingSession)
+    {
+        try {
+            if (!$counselingSession) {
+                \Log::error('CounselingSession not found for summary report', ['id' => $request->route('counselingSession')]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Counseling session not found.'
+                ], 404);
+            }
+            $validatedData = $request->validate([
+                'counseling_summary_report' => 'required|string',
+            ]);
+            $counselingSession->counseling_summary_report = $validatedData['counseling_summary_report'];
+            $counselingSession->save();
+            // Always return JSON for AJAX or fetch requests
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Counseling summary report saved successfully.',
+                    'counselingSession' => $counselingSession
+                ]);
+            }
+            // Fallback for non-AJAX requests
+            return redirect()->route('guidance.counseling-sessions.index')
+                ->with('success', 'Counseling summary report saved successfully.');
+        } catch (\Exception $e) {
+            \Log::error('Error saving counseling summary report', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'request' => $request->all(),
+            ]);
+            // Always return JSON for AJAX or fetch requests
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error saving summary report.'
+                ], 500);
+            }
+            // Fallback for non-AJAX requests
+            return redirect()->back()->with('error', 'Error saving summary report.');
+        }
     }
 }

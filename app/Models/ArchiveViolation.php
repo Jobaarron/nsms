@@ -35,6 +35,7 @@ class ArchiveViolation extends Model
         'notes',
         'archived_at',
         'archive_reason',
+        'feedback',
     ];
 
     protected $casts = [

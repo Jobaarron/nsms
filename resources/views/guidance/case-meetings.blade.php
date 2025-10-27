@@ -5,11 +5,11 @@
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Automatically open the PDF modal when viewing details
-        var caseMeetingId = {{ $caseMeeting->id }};
-        var pdfUrl = `/storage/incident_forms/case_meeting_${caseMeetingId}.pdf`;
-        document.getElementById('incidentFormPdfIframe').src = pdfUrl;
-        var modal = new bootstrap.Modal(document.getElementById('incidentFormPdfPreviewModal'));
-        modal.show();
+    var caseMeetingId = {{ $caseMeeting->id }};
+    var pdfUrl = `/guidance/pdf/case-meeting/${caseMeetingId}`;
+    document.getElementById('incidentFormPdfIframe').src = pdfUrl;
+    var modal = new bootstrap.Modal(document.getElementById('incidentFormPdfPreviewModal'));
+    modal.show();
     });
     </script>
     <!-- Case Meeting Detail View -->
@@ -32,6 +32,9 @@
                     <button class="btn btn-outline-info" onclick="openIncidentFormPdfPreview({{ $caseMeeting->id }})">
                         <i class="ri-file-pdf-line me-2"></i>View Incident PDF
                     </button>
+                    <a href="{{ url('guidance/pdf/case-meeting/' . $caseMeeting->id) }}" target="_blank" class="btn btn-outline-success">
+                        <i class="ri-attachment-2"></i> View Attachment
+                    </a>
     <!-- INCIDENT FORM PDF PREVIEW MODAL (READ-ONLY) -->
     <div class="modal fade" id="incidentFormPdfPreviewModal" tabindex="-1" aria-labelledby="incidentFormPdfPreviewModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl">
@@ -51,9 +54,8 @@
     </div>
     <script>
     function openIncidentFormPdfPreview(caseMeetingId) {
-        // You should generate the correct PDF URL for the case meeting here
-        // Example: `/storage/incident_forms/case_meeting_${caseMeetingId}.pdf`
-        var pdfUrl = `/storage/incident_forms/case_meeting_${caseMeetingId}.pdf`;
+        // Use the dynamic PDF route for the case meeting
+        var pdfUrl = `/guidance/pdf/case-meeting/${caseMeetingId}`;
         document.getElementById('incidentFormPdfIframe').src = pdfUrl;
         var modal = new bootstrap.Modal(document.getElementById('incidentFormPdfPreviewModal'));
         modal.show();
@@ -98,10 +100,7 @@
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold">Meeting Type</label>
-                            <div>
-                                <span class="badge bg-secondary">{{ ucwords(str_replace('_', ' ', $caseMeeting->meeting_type)) }}</span>
-                            </div>
+                            <!-- Meeting Type removed -->
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Status</label>
@@ -125,10 +124,7 @@
 
                         @if($caseMeeting->location)
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold">Location</label>
-                            <div>
-                                <i class="ri-map-pin-line me-2 text-muted"></i>{{ $caseMeeting->location }}
-                            </div>
+                            <!-- Location removed -->
                         </div>
                         @endif
                         @if($caseMeeting->completed_at)
@@ -140,8 +136,7 @@
                         </div>
                         @endif
                         <div class="col-12">
-                            <label class="form-label fw-semibold">Reason</label>
-                            <div class="border rounded p-3 bg-light">{{ $caseMeeting->reason }}</div>
+                            <!-- Reason removed -->
                         </div>
                         @if($caseMeeting->notes)
                         <div class="col-12">
@@ -186,20 +181,7 @@
             </div>
 
             <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white border-0">
-                    <h6 class="card-title mb-0">Counselor Information</h6>
-                </div>
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="avatar-lg bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3">
-                            <i class="ri-user-star-line fs-1 text-info"></i>
-                        </div>
-                        <div class="flex-grow-1">
-                            <div class="fw-semibold fs-5">{{ $caseMeeting->counselor ? $caseMeeting->counselor->name : 'Unknown' }}</div>
-                            <small class="text-muted">Guidance Counselor</small>
-                        </div>
-                    </div>
-                </div>
+                <!-- Counselor Information removed -->
             </div>
         </div>
     </div>
@@ -705,104 +687,8 @@
                     <h5 class="modal-title">Case Meeting Details</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Student</label>
-                            <div class="d-flex align-items-center">
-                                <div class="avatar-sm bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3">
-                                    <i class="ri-user-line text-primary"></i>
-                                </div>
-                                <div>
-                                    <div class="fw-semibold" id="view_student_name">N/A</div>
-                                    <small class="text-muted" id="view_student_id">N/A</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Counselor</label>
-                            <div class="d-flex align-items-center">
-                                <div class="avatar-sm bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3">
-                                    <i class="ri-user-star-line text-info"></i>
-                                </div>
-                                <div>
-                                    <div class="fw-semibold" id="view_counselor_name">N/A</div>
-                                    <small class="text-muted">Guidance Counselor</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Meeting Type</label>
-                            <div>
-                                <span class="badge bg-secondary" id="view_meeting_type">N/A</span>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Status</label>
-                            <div>
-                                <span class="badge" id="view_status">N/A</span>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Scheduled Date & Time</label>
-                            <div>
-                                <div class="fw-semibold" id="view_scheduled_date">TBD</div>
-                                <small class="text-muted" id="view_scheduled_time">TBD</small>
-                            </div>
-                        </div>
-
-                        <div class="col-md-6" id="view_location_container" style="display: none;">
-                            <label class="form-label fw-semibold">Location</label>
-                            <div>
-                                <i class="ri-map-pin-line me-2 text-muted"></i><span id="view_location"></span>
-                            </div>
-                        </div>
-                        <div class="col-md-6" id="view_completed_at_container" style="display: none;">
-                            <label class="form-label fw-semibold">Completed At</label>
-                            <div>
-                                <i class="ri-calendar-check-line me-2 text-success"></i><span id="view_completed_at"></span>
-                            </div>
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label fw-semibold">Reason</label>
-                            <div class="border rounded p-3 bg-light" id="view_reason">N/A</div>
-                        </div>
-                        <div class="col-12" id="view_notes_container" style="display: none;">
-                            <label class="form-label fw-semibold">Notes</label>
-                            <div class="border rounded p-3 bg-light" id="view_notes"></div>
-                        </div>
-                        <div class="col-12" id="view_summary_container" style="display: none;">
-                            <label class="form-label fw-semibold">Case Summary</label>
-                            <div class="border rounded p-3 bg-light" id="view_summary"></div>
-                        </div>
-                        <div class="col-12" id="view_recommendations_container" style="display: none;">
-                            <label class="form-label fw-semibold">Recommendations</label>
-                            <div class="border rounded p-3 bg-light" id="view_recommendations"></div>
-                        </div>
-                        <div class="col-12" id="view_follow_up_container" style="display: none;">
-                            <label class="form-label fw-semibold">Follow-up</label>
-                            <div class="border rounded p-3 bg-light" id="view_follow_up">
-                                <div class="d-flex align-items-center">
-                                    <i class="ri-calendar-event-line me-2 text-warning"></i>
-                                    <span id="view_follow_up_text"></span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Sanctions Section -->
-                    <div class="mt-4" id="view_sanctions_container" style="display: none;">
-                        <h6 class="fw-semibold mb-3">Sanctions</h6>
-                        <div class="list-group list-group-flush" id="view_sanctions_list">
-                            <!-- Sanctions will be populated here -->
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <div class="d-flex gap-2" id="view_actions_container">
-                        <!-- Actions will be populated here -->
-                    </div>
+                <div class="modal-body" id="viewCaseMeetingModalBody">
+                    <!-- Dynamic content will be injected here by JS -->
                 </div>
             </div>
         </div>

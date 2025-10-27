@@ -764,4 +764,20 @@ class StudentController extends Controller
         
         Log::info("Student payment totals refreshed - ID: {$student->id}, Total Paid: {$totalPaid}, Total Due: {$totalFeesDue}, Fully Paid: " . ($isFullyPaid ? 'Yes' : 'No'));
     }
+
+    public function submitViolationReply(Request $request, Violation $violation)
+    {
+        $request->validate([
+            'incident' => 'required|string',
+            'feeling' => 'required|string',
+            'action_plan' => 'required|string',
+        ]);
+
+        $violation->student_statement = $request->incident;
+        $violation->incident_feelings = $request->feeling;
+        $violation->action_plan = $request->action_plan;
+        $violation->save();
+
+        return redirect()->route('student.violations')->with('info', 'Your reply has been submitted successfully.');
+    }
 }

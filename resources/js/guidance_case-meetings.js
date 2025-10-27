@@ -105,170 +105,126 @@ window.clearFilters = function() {
 };
 
 window.viewCaseMeeting = function(meetingId) {
-    // Fetch meeting data and populate view modal
-    fetch(`/guidance/case-meetings/${meetingId}`, {
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'Accept': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            const meeting = data.meeting;
-
-            // Populate modal fields
-            document.getElementById('view_student_name').textContent = meeting.student_name || 'N/A';
-            document.getElementById('view_student_id').textContent = meeting.student_id || 'N/A';
-            document.getElementById('view_counselor_name').textContent = meeting.counselor_name || 'N/A';
-            document.getElementById('view_meeting_type').textContent = meeting.meeting_type_display || 'N/A';
-            document.getElementById('view_status').textContent = meeting.status_text || 'N/A';
-            document.getElementById('view_status').className = `badge ${meeting.status_class || 'bg-secondary'}`;
-            document.getElementById('view_scheduled_date').textContent = meeting.scheduled_date || 'TBD';
-            document.getElementById('view_scheduled_time').textContent = meeting.scheduled_time || 'TBD';
+        // Fetch meeting data and populate view modal
+        fetch(`/guidance/case-meetings/${meetingId}`, {
+                headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                }
+        })
+        .then(response => response.json())
+                .then(data => {
+                        if (data.success) {
+                                const meeting = data.meeting;
+                                // Debug: log meeting object to check for student_id, violation_id, and possible narrative_report_url
+                                console.log('Meeting data:', meeting);
 
 
-            document.getElementById('view_reason').textContent = meeting.reason || 'N/A';
+                                // Build the PDF URL for the narrative report
+                                let narrativePdfUrl = '';
+                                if (meeting.student_id && meeting.violation_id) {
+                                    narrativePdfUrl = `/narrative-report/view/${meeting.student_id}/${meeting.violation_id}`;
+                                } else if (meeting.narrative_report_url) {
+                                    narrativePdfUrl = meeting.narrative_report_url;
+                                }
 
-            // Handle optional fields
-            const locationContainer = document.getElementById('view_location_container');
-            const locationSpan = document.getElementById('view_location');
-            if (meeting.location) {
-                locationSpan.textContent = meeting.location;
-                locationContainer.style.display = '';
-            } else {
-                locationContainer.style.display = 'none';
-            }
+                                // Build the PDF URL for the case meeting attachment (new guidance route)
+                                let caseMeetingAttachmentUrl = '';
+                                if (meeting.id) {
+                                    caseMeetingAttachmentUrl = `/guidance/pdf/case-meeting/${meeting.id}`;
+                                }
 
-            const completedAtContainer = document.getElementById('view_completed_at_container');
-            const completedAtSpan = document.getElementById('view_completed_at');
-            if (meeting.completed_at) {
-                completedAtSpan.textContent = new Date(meeting.completed_at).toLocaleString();
-                completedAtContainer.style.display = '';
-            } else {
-                completedAtContainer.style.display = 'none';
-            }
-
-            const notesContainer = document.getElementById('view_notes_container');
-            const notesDiv = document.getElementById('view_notes');
-            if (meeting.notes) {
-                notesDiv.textContent = meeting.notes;
-                notesContainer.style.display = '';
-            } else {
-                notesContainer.style.display = 'none';
-            }
-
-            const summaryContainer = document.getElementById('view_summary_container');
-            const summaryDiv = document.getElementById('view_summary');
-            if (meeting.summary) {
-                summaryDiv.textContent = meeting.summary;
-                summaryContainer.style.display = '';
-            } else {
-                summaryContainer.style.display = 'none';
-            }
-
-            const recommendationsContainer = document.getElementById('view_recommendations_container');
-            const recommendationsDiv = document.getElementById('view_recommendations');
-            if (meeting.recommendations) {
-                recommendationsDiv.textContent = meeting.recommendations;
-                recommendationsContainer.style.display = '';
-            } else {
-                recommendationsContainer.style.display = 'none';
-            }
-
-            const followUpContainer = document.getElementById('view_follow_up_container');
-            const followUpText = document.getElementById('view_follow_up_text');
-            if (meeting.follow_up_required) {
-                followUpText.textContent = meeting.follow_up_date ? `Scheduled for ${new Date(meeting.follow_up_date).toLocaleDateString()}` : 'Required';
-                followUpContainer.style.display = '';
-            } else {
-                followUpContainer.style.display = 'none';
-            }
-
-            // Handle sanctions
-            const sanctionsContainer = document.getElementById('view_sanctions_container');
-            const sanctionsList = document.getElementById('view_sanctions_list');
-            sanctionsList.innerHTML = '';
-            if (meeting.sanctions && meeting.sanctions.length > 0) {
-                meeting.sanctions.forEach(sanction => {
-                    const sanctionItem = document.createElement('div');
-                    sanctionItem.className = 'list-group-item px-0';
-                    sanctionItem.innerHTML = `
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div class="flex-grow-1">
-                                <div class="fw-semibold">${sanction.type}</div>
-                                ${sanction.description ? `<small class="text-muted">${sanction.description}</small>` : ''}
-                                <div class="small text-muted mt-1">
-                                    <i class="ri-calendar-line me-1"></i>${new Date(sanction.created_at).toLocaleDateString()}
+                                // Compose modal HTML (two-column, similar to violation modal)
+                                document.getElementById('viewCaseMeetingModalBody').innerHTML = `
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <h6>Student Information</h6>
+                                            <table class="table table-sm">
+                                                <tbody>
+                                                    <tr><td><strong>Name:</strong></td><td>${meeting.student_name || 'N/A'}</td></tr>
+                                                    <tr><td><strong>Student ID:</strong></td><td>${meeting.student_id || 'N/A'}</td></tr>
+                                                    <tr><td><strong>Status:</strong></td><td>
+                                                        <span class="badge bg-${meeting.status_class ? meeting.status_class.replace('bg-', '') : 'secondary'}">
+                                                            ${meeting.status_text || 'N/A'}
+                                                        </span>
+                                                    </td></tr>
+                                                    <tr><td><strong>Date:</strong></td><td>${meeting.scheduled_date ? new Date(meeting.scheduled_date).toLocaleDateString() : 'N/A'}</td></tr>
+                                                    <tr><td><strong>Time:</strong></td><td>${meeting.scheduled_time ? meeting.scheduled_time.substring(0,5) : 'N/A'}</td></tr>
+                                                </tbody>
+                                            </table>                                            <!-- Case Meeting Attachment (if available) -->
+                                            ${caseMeetingAttachmentUrl ? `<div class="mt-3"><label class="form-label fw-bold">Case Meeting Attachment (PDF):</label><div><a href="${caseMeetingAttachmentUrl}" target="_blank" class="btn btn-outline-success btn-sm"><i class="ri-attachment-2"></i> View Attachment</a></div></div>` : ''}
+                                        </div>
+                                <div class="col-md-6">
+                                    ${meeting.summary ? `
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Summary:</label>
+                                            <p>${meeting.summary}</p>
+                                        </div>
+                                    ` : ''}
+                                    ${meeting.recommendations ? `
+                                        <div class="mb-3">
+                                                                                    <tr><td><strong>Date:</strong></td><td>${meeting.scheduled_date ? meeting.scheduled_date : 'N/A'}</td></tr>
+                                                                                    <tr><td><strong>Time:</strong></td><td>${meeting.scheduled_time ? meeting.scheduled_time : 'N/A'}</td></tr>
+                                        </div>
+                                    ` : ''}
+                                    ${meeting.notes ? `
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Notes:</label>
+                                            <p>${meeting.notes}</p>
+                                        </div>
+                                    ` : ''}
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Scheduled By:</label>
+                                        <p>${meeting.scheduled_by_name || 'N/A'}</p>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Scheduled On:</label>
+                                        <p>${meeting.created_at ? new Date(meeting.created_at).toLocaleDateString() + ' at ' + new Date(meeting.created_at).toLocaleTimeString() : 'N/A'}</p>
+                                    </div>
+                                    ${meeting.completed_at ? `
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Completed On:</label>
+                                            <p>${new Date(meeting.completed_at).toLocaleDateString()} at ${new Date(meeting.completed_at).toLocaleTimeString()}</p>
+                                        </div>
+                                    ` : ''}
+                                    ${meeting.follow_up_required ? `
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Follow Up:</label>
+                                            <p>${meeting.follow_up_date ? 'Scheduled for ' + new Date(meeting.follow_up_date).toLocaleDateString() : 'Required'}</p>
+                                        </div>
+                                    ` : ''}
+                                    <!-- Sanctions (if any) -->
+                                    ${(meeting.sanctions && meeting.sanctions.length > 0) ? `
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Sanctions:</label>
+                                            <ul class="list-group">
+                                                ${meeting.sanctions.map(sanction => `
+                                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                        <span>
+                                                            <span class="fw-semibold">${sanction.type}</span>
+                                                            ${sanction.description ? `<small class='text-muted ms-2'>${sanction.description}</small>` : ''}
+                                                            <div class="small text-muted mt-1"><i class="ri-calendar-line me-1"></i>${new Date(sanction.created_at).toLocaleDateString()}</div>
+                                                        </span>
+                                                        <span class="badge bg-${getSanctionStatusColor(sanction.status || 'pending')}">${ucfirst(sanction.status || 'pending')}</span>
+                                                    </li>
+                                                `).join('')}
+                                            </ul>
+                                        </div>
+                                    ` : ''}
                                 </div>
                             </div>
-                            <span class="badge bg-${getSanctionStatusColor(sanction.status || 'pending')}">${ucfirst(sanction.status || 'pending')}</span>
-                        </div>
-                    `;
-                    sanctionsList.appendChild(sanctionItem);
-                });
-                sanctionsContainer.style.display = '';
-            } else {
-                sanctionsContainer.style.display = 'none';
-            }
-
-            // Handle actions
-            const actionsContainer = document.getElementById('view_actions_container');
-            actionsContainer.innerHTML = '';
-
-            // Complete button
-            if (meeting.status === 'scheduled' || meeting.status === 'in_progress') {
-                const completeBtn = document.createElement('button');
-                completeBtn.className = 'btn btn-success';
-                completeBtn.onclick = () => completeCaseMeeting(meeting.id);
-                completeBtn.innerHTML = '<i class="ri-checkbox-circle-line me-2"></i>Mark as Completed';
-                actionsContainer.appendChild(completeBtn);
-            }
-
-            // Create summary button
-            if (!meeting.summary) {
-                const summaryBtn = document.createElement('button');
-                summaryBtn.className = 'btn btn-info';
-                summaryBtn.onclick = () => openCreateSummaryModal(meeting.id);
-                summaryBtn.innerHTML = '<i class="ri-file-text-line me-2"></i>Create Summary';
-                actionsContainer.appendChild(summaryBtn);
-            }
-
-            // Forward button
-            if (meeting.summary && meeting.status === 'pre_completed' && !meeting.forwarded_to_president) {
-                const forwardBtn = document.createElement('button');
-                forwardBtn.className = 'btn btn-warning';
-                forwardBtn.onclick = () => forwardToPresident(meeting.id);
-                forwardBtn.innerHTML = '<i class="ri-send-plane-line me-2"></i>Forward to President';
-                actionsContainer.appendChild(forwardBtn);
-            }
-            // Disable other action buttons except edit/view if not allowed
-            if (!['in_progress','scheduled','pre_completed','submitted','completed'].includes(meeting.status)) {
-                const disabledBtn = document.createElement('button');
-                disabledBtn.className = 'btn btn-secondary';
-                disabledBtn.disabled = true;
-                disabledBtn.innerText = 'Action Disabled';
-                actionsContainer.appendChild(disabledBtn);
-            }
-
-            // // Edit button
-            // const editBtn = document.createElement('button');
-            // editBtn.className = 'btn btn-outline-primary';
-            // editBtn.onclick = () => editCaseMeeting(meeting.id);
-            // editBtn.innerHTML = '<i class="ri-edit-line me-2"></i>Edit Meeting';
-            // actionsContainer.appendChild(editBtn);
-
-            // Show modal
-            const modal = new bootstrap.Modal(document.getElementById('viewCaseMeetingModal'));
-            modal.show();
-        } else {
-            showAlert('danger', 'Failed to load meeting details');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showAlert('danger', 'Error loading meeting details');
-    });
+                        `;
+                        // Show modal
+                        const modal = new bootstrap.Modal(document.getElementById('viewCaseMeetingModal'));
+                        modal.show();
+                } else {
+                        showAlert('danger', 'Failed to load meeting details');
+                }
+        })
+        .catch(error => {
+                console.error('Error:', error);
+                showAlert('danger', 'Error loading meeting details');
+        });
 };
 
 window.openScheduleMeetingModal = function(studentId = 0) {

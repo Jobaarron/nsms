@@ -714,9 +714,14 @@ public function submittedCases()
 
         $caseMeeting->load(['student', 'counselor', 'sanctions']);
 
+        // Convert to array and format scheduled_time for summary modal (h:i A)
+        $meetingArr = $caseMeeting->toArray();
+        $meetingArr['scheduled_time'] = $caseMeeting->scheduled_time ? $caseMeeting->scheduled_time->format('h:i A') : null;
+        $meetingArr['scheduled_date'] = $caseMeeting->scheduled_date ? $caseMeeting->scheduled_date->format('Y-m-d') : null;
+
         return response()->json([
             'success' => true,
-            'meeting' => $caseMeeting
+            'meeting' => $meetingArr
         ]);
     }
 // REMOVED: generateAdmin() method
