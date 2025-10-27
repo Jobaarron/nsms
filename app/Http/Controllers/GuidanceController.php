@@ -1125,6 +1125,75 @@ class GuidanceController extends Controller
 
         $session->save();
 
+        // Archive the approved session in archive_violations
+        $user = Auth::user();
+        $disciplineId = $user && $user->discipline ? $user->discipline->id : null;
+        $guidanceId = $user && $user->guidance ? $user->guidance->id : null;
+        $reportedBy = $disciplineId ?? $guidanceId;
+        if (!$reportedBy) {
+            $reportedBy = $user ? $user->id : 1;
+        }
+        $archiveData = [
+            'counseling_session_id' => $session->id,
+            'student_id' => $session->student_id,
+            'counselor_id' => $session->counselor_id,
+            'title' => 'Counseling Session Approved',
+            'description' => $session->reason ?? $session->notes ?? 'Approved counseling session',
+            'reason' => $session->reason,
+            'notes' => $session->notes,
+            'archived_at' => now(),
+            'violation_date' => $session->start_date ?? now(),
+            'reported_by' => $reportedBy,
+            'feedback' => null,
+        ];
+        \App\Models\ArchiveViolation::create($archiveData);
+
         return response()->json(['success' => true]);
+    }
+    /**
+     * Reject counseling session with feedback and archive it
+     */
+    public function rejectCounselingSessionWithFeedback(Request $request, CounselingSession $counselingSession)
+    {
+        $request->validate([
+            'feedback' => 'required|string',
+        ]);
+
+        // Archive the session with feedback
+        $user = Auth::user();
+        // Try to get discipline or guidance id for reported_by
+        $disciplineId = $user && $user->discipline ? $user->discipline->id : null;
+        $guidanceId = $user && $user->guidance ? $user->guidance->id : null;
+        $reportedBy = $disciplineId ?? $guidanceId;
+        if (!$reportedBy) {
+            // Fallback: use user id if neither discipline nor guidance exists
+            $reportedBy = $user ? $user->id : 1;
+        }
+        $archiveData = [
+            'counseling_session_id' => $counselingSession->id,
+            'student_id' => $counselingSession->student_id,
+            'counselor_id' => $counselingSession->counselor_id,
+            'title' => 'Counseling Session Rejection',
+            'description' => $counselingSession->reason ?? $counselingSession->notes ?? 'Rejected counseling session',
+            'reason' => $counselingSession->reason,
+            'notes' => $counselingSession->notes,
+            'feedback' => $request->feedback,
+            'archived_at' => now(),
+            'violation_date' => $counselingSession->scheduled_date ?? now(),
+            'reported_by' => $reportedBy,
+        ];
+
+        // Use ArchiveViolation model to store archive
+        \App\Models\ArchiveViolation::create($archiveData);
+
+        // Update the session status to rejected
+        $counselingSession->update([
+            'status' => 'rejected',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Counseling session rejected and archived with feedback.'
+        ]);
     }
 }

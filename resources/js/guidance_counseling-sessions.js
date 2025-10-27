@@ -65,7 +65,6 @@ window.submitApproveSession = submitApproveSession;
 // Guidance Counseling Sessions JavaScript
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Counseling Sessions page loaded');
-    
     // Initialize page functionality
     initializeCounselingSessions();
 
@@ -85,6 +84,63 @@ document.addEventListener('DOMContentLoaded', function() {
                     const text = studentCell.textContent.trim().toLowerCase();
                     row.style.display = text.includes(searchTerm) ? '' : 'none';
                 }
+            });
+        });
+    }
+
+    // Handle feedback form submission (Reject with feedback)
+    const feedbackForm = document.getElementById('feedbackForm');
+    if (feedbackForm) {
+        feedbackForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const feedback = feedbackForm.elements['feedback'].value.trim();
+            if (!feedback) {
+                showAlert('Please provide feedback for rejection.', 'warning');
+                return;
+            }
+            // Try to get sessionId from PDF iframe src (if available)
+            let sessionId = null;
+            const pdfFrame = document.getElementById('pdfFrame');
+            if (pdfFrame && pdfFrame.src) {
+                try {
+                    const url = new URL(pdfFrame.src, window.location.origin);
+                    sessionId = url.searchParams.get('session_id');
+                } catch (e) {}
+            }
+            if (!sessionId) {
+                showAlert('Session ID not found. Please try again.', 'danger');
+                return;
+            }
+            const submitBtn = feedbackForm.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="ri-loader-4-line me-2 spinner-border spinner-border-sm"></i>Submitting...';
+            submitBtn.disabled = true;
+            fetch(`/guidance/counseling-sessions/${sessionId}/reject-with-feedback`, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                },
+                body: JSON.stringify({ feedback })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('Feedback submitted and session archived.', 'success');
+                    closeModal('feedbackModal');
+                    setTimeout(() => { window.location.reload(); }, 1500);
+                } else {
+                    showAlert(data.message || 'Failed to submit feedback.', 'danger');
+                }
+            })
+            .catch(error => {
+                showAlert(error.message || 'Error submitting feedback.', 'danger');
+            })
+            .finally(() => {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
             });
         });
     }
@@ -687,8 +743,44 @@ function showPdfModal(sessionId = null) {
     }
 }
 
-// Download PDF function
-
+// Accept PDF session: close PDF modal and open Approve Counseling Session modal
+function acceptPdfSession(sessionId = null) {
+    // Hide the PDF modal
+    const pdfModalElem = document.getElementById('pdfPreviewModal');
+    if (pdfModalElem) {
+        try {
+            let pdfModal = bootstrap.Modal.getInstance(pdfModalElem);
+            if (!pdfModal) pdfModal = bootstrap.Modal.getOrCreateInstance(pdfModalElem);
+            pdfModal.hide();
+        } catch (e) {
+            pdfModalElem.classList.remove('show');
+            pdfModalElem.setAttribute('aria-hidden', 'true');
+            pdfModalElem.style.display = 'none';
+            document.body.classList.remove('modal-open');
+            let backdrops = document.getElementsByClassName('modal-backdrop');
+            while (backdrops.length > 0) backdrops[0].parentNode.removeChild(backdrops[0]);
+        }
+    }
+    // Try to extract sessionId from PDF iframe src if not provided
+    if (!sessionId) {
+        const pdfFrame = document.getElementById('pdfFrame');
+        if (pdfFrame && pdfFrame.src) {
+            const url = new URL(pdfFrame.src, window.location.origin);
+            sessionId = url.searchParams.get('session_id');
+        }
+    }
+    // Show Approve Counseling Session modal
+    setTimeout(() => {
+        const approveModalElem = document.getElementById('approveSessionModal');
+        if (approveModalElem) {
+            // Set session id if available
+            const approveSessionIdInput = document.getElementById('approveSessionId');
+            if (approveSessionIdInput && sessionId) approveSessionIdInput.value = sessionId;
+            let approveModal = bootstrap.Modal.getOrCreateInstance(approveModalElem);
+            approveModal.show();
+        }
+    }, 400); // Wait for fade-out
+}
 
 // Debug PDF modal function
 function debugPdfModal() {
@@ -710,8 +802,9 @@ function debugPdfModal() {
 }
 
 // Expose functions to global scope for onclick handlers
-    window.showPdfModal = showPdfModal;
-    window.debugPdfModal = debugPdfModal;
+window.showPdfModal = showPdfModal;
+window.debugPdfModal = debugPdfModal;
+window.acceptPdfSession = acceptPdfSession;
 window.completeCounselingSession = completeCounselingSession;
 window.scheduleRecommendedSession = scheduleRecommendedSession;
 window.rescheduleCounselingSession = rescheduleCounselingSession;
@@ -725,6 +818,4 @@ window.startInlineScheduling = startInlineScheduling;
 window.saveInlineScheduling = saveInlineScheduling;
 window.cancelInlineScheduling = cancelInlineScheduling;
 window.showApproveCounselingModal = showApproveCounselingModal;
-window.showPdfModal = showPdfModal;
 window.downloadPdf = downloadPdf;
-window.debugPdfModal = debugPdfModal;

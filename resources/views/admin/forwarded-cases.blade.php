@@ -99,7 +99,8 @@
     {{-- Filter/Search Bar removed --}}
 </div>
 
-    <!-- View Summary Modal -->
+
+    <!-- View Summary Modal (restored for summary JS compatibility) -->
     <div class="modal fade" id="viewSummaryModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content minimalist-modal">
@@ -114,6 +115,24 @@
                             <span class="visually-hidden">Loading...</span>
                         </div>
                     </div>
+                </div>
+                <div class="modal-footer border-0 pt-0" style="background:transparent;">
+                    <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal" style="border-radius:6px;box-shadow:none;">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Incident Form PDF Preview Modal (optional, for future use) -->
+    <div class="modal fade" id="incidentFormPdfPreviewModal" tabindex="-1" aria-labelledby="incidentFormPdfPreviewModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content minimalist-modal">
+                <div class="modal-header border-0 pb-0" style="background:transparent;">
+                    <h5 class="modal-title fw-semibold" id="incidentFormPdfPreviewModalLabel" style="letter-spacing:0.5px;">Incident Form PDF Preview</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="background: #fff; min-height: 600px;">
+                    <iframe id="incidentFormPdfIframe" src="" width="100%" height="600px" style="border: none;"></iframe>
                 </div>
                 <div class="modal-footer border-0 pt-0" style="background:transparent;">
                     <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal" style="border-radius:6px;box-shadow:none;">Close</button>

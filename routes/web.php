@@ -334,7 +334,9 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
         Route::get('/pdf/case-meeting/{caseMeetingId}', [PdfController::class, 'caseMeetingAttachmentPdf'])->name('pdf.case-meeting.attachment');
         
         // Counseling Session Routes
-        Route::prefix('counseling-sessions')->name('counseling-sessions.')->group(function () {
+    Route::prefix('counseling-sessions')->name('counseling-sessions.')->group(function () {
+            // AJAX: Reject counseling session with feedback and archive
+            Route::post('/{counselingSession}/reject-with-feedback', [App\Http\Controllers\GuidanceController::class, 'rejectCounselingSessionWithFeedback'])->name('reject-with-feedback');
             // Show create summary form
             Route::get('/{counselingSession}/summary/create', [App\Http\Controllers\GuidanceController::class, 'createCounselingSummaryForm'])->name('summary.create');
               // Approve counseling session (AJAX)
