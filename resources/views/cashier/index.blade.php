@@ -1,8 +1,32 @@
 <x-cashier-layout>
     @push('styles')
         @vite('resources/css/index_student.css')
+        <style>
+            /* Chart Container Constraints */
+            .chart-container {
+                position: relative !important;
+                overflow: hidden !important;
+                max-height: 400px !important;
+            }
+            
+            .chart-container canvas {
+                max-height: 100% !important;
+                width: 100% !important;
+                height: auto !important;
+            }
+            
+            /* Prevent infinite chart expansion */
+            #revenueTrendChart, #paymentMethodChart, #dailyRevenueChart {
+                max-height: 350px !important;
+            }
+            
+            /* Card body constraints for charts */
+            .card-body .chart-container {
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+        </style>
     @endpush
-    @vite(['resources/js/cashier-payment-schedules.js'])
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <!-- Page Header -->
@@ -160,7 +184,9 @@
                             </div>
                         </div>
                     </div>
-                    <canvas id="paymentMethodChart" height="200"></canvas>
+                    <div class="chart-container" style="position: relative; height: 300px; width: 100%;">
+                        <canvas id="paymentMethodChart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
@@ -175,7 +201,9 @@
                     <small class="text-muted">Monthly revenue for the last 6 months</small>
                 </div>
                 <div class="card-body">
-                    <canvas id="revenueTrendChart" height="200"></canvas>
+                    <div class="chart-container" style="position: relative; height: 300px; width: 100%;">
+                        <canvas id="revenueTrendChart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
@@ -193,7 +221,9 @@
                     <small class="text-muted">Daily payment confirmations this month</small>
                 </div>
                 <div class="card-body">
-                    <canvas id="dailyRevenueChart" height="150"></canvas>
+                    <div class="chart-container" style="position: relative; height: 250px; width: 100%;">
+                        <canvas id="dailyRevenueChart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
@@ -284,183 +314,19 @@
     @push('scripts')
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <script>
-            // Payment Method Distribution Chart (Doughnut)
-            const paymentMethodCtx = document.getElementById('paymentMethodChart').getContext('2d');
-            const paymentMethodData = @json($paymentMethodData);
-            
-            new Chart(paymentMethodCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Full Payment', 'Quarterly', 'Monthly'],
-                    datasets: [{
-                        data: [
-                            paymentMethodData.full.amount,
-                            paymentMethodData.quarterly.amount,
-                            paymentMethodData.monthly.amount
-                        ],
-                        backgroundColor: [
-                            'rgba(13, 110, 253, 0.8)',
-                            'rgba(13, 202, 240, 0.8)',
-                            'rgba(255, 193, 7, 0.8)'
-                        ],
-                        borderColor: [
-                            'rgba(13, 110, 253, 1)',
-                            'rgba(13, 202, 240, 1)',
-                            'rgba(255, 193, 7, 1)'
-                        ],
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                padding: 20,
-                                usePointStyle: true
-                            }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const label = context.label || '';
-                                    const value = new Intl.NumberFormat('en-PH', {
-                                        style: 'currency',
-                                        currency: 'PHP'
-                                    }).format(context.parsed);
-                                    return label + ': ' + value;
-                                }
-                            }
-                        }
-                    }
+            // Initialize dashboard with backend data
+            document.addEventListener('DOMContentLoaded', function() {
+                // Set chart data from backend
+                if (typeof setCashierDashboardData === 'function') {
+                    setCashierDashboardData({
+                        paymentMethodData: @json($paymentMethodData),
+                        monthlyRevenue: @json($monthlyRevenue),
+                        dailyRevenue: @json($dailyRevenue)
+                    });
+                } else {
+                    console.error('setCashierDashboardData function not found. Make sure cashier-dashboard.js is loaded.');
                 }
             });
-
-            // Revenue Trend Chart (Line)
-            const revenueTrendCtx = document.getElementById('revenueTrendChart').getContext('2d');
-            const monthlyRevenue = @json($monthlyRevenue);
-            
-            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            const revenueLabels = monthlyRevenue.map(item => monthNames[item.month - 1] + ' ' + item.year);
-            const revenueData = monthlyRevenue.map(item => item.total);
-            
-            new Chart(revenueTrendCtx, {
-                type: 'line',
-                data: {
-                    labels: revenueLabels,
-                    datasets: [{
-                        label: 'Monthly Revenue',
-                        data: revenueData,
-                        borderColor: 'rgba(25, 135, 84, 1)',
-                        backgroundColor: 'rgba(25, 135, 84, 0.1)',
-                        borderWidth: 3,
-                        fill: true,
-                        tension: 0.4,
-                        pointBackgroundColor: 'rgba(25, 135, 84, 1)',
-                        pointBorderColor: '#fff',
-                        pointBorderWidth: 2,
-                        pointRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return 'Revenue: ' + new Intl.NumberFormat('en-PH', {
-                                        style: 'currency',
-                                        currency: 'PHP'
-                                    }).format(context.parsed.y);
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function(value) {
-                                    return '₱' + new Intl.NumberFormat().format(value);
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-
-            // Daily Revenue Chart (Bar)
-            const dailyRevenueCtx = document.getElementById('dailyRevenueChart').getContext('2d');
-            const dailyRevenue = @json($dailyRevenue);
-            
-            const dailyLabels = Array.from({length: new Date().getDate()}, (_, i) => i + 1);
-            const dailyData = dailyLabels.map(day => {
-                const dayData = dailyRevenue.find(item => item.day === day);
-                return dayData ? dayData.total : 0;
-            });
-            
-            new Chart(dailyRevenueCtx, {
-                type: 'bar',
-                data: {
-                    labels: dailyLabels,
-                    datasets: [{
-                        label: 'Daily Revenue',
-                        data: dailyData,
-                        backgroundColor: 'rgba(13, 202, 240, 0.8)',
-                        borderColor: 'rgba(13, 202, 240, 1)',
-                        borderWidth: 1,
-                        borderRadius: 4,
-                        borderSkipped: false
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return 'Revenue: ' + new Intl.NumberFormat('en-PH', {
-                                        style: 'currency',
-                                        currency: 'PHP'
-                                    }).format(context.parsed.y);
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function(value) {
-                                    return '₱' + new Intl.NumberFormat().format(value);
-                                }
-                            }
-                        },
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Day of Month'
-                            }
-                        }
-                    }
-                }
-            });
-
-            function viewPaymentDetails(paymentId) {
-                // Implementation for viewing payment details
-                console.log('View payment details for ID:', paymentId);
-                // This would open a modal with payment details
-            }
         </script>
     @endpush
 </x-cashier-layout>

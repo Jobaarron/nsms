@@ -61,7 +61,8 @@ export default defineConfig({
                 'resources/js/faculty-head-dashboard.js',
                 'resources/js/faculty-head-view-grades.js',
                 'resources/js/faculty-head-approve-grades.js',
-                'resources/js/grade-submission-checker.js'
+                'resources/js/grade-submission-checker.js',
+                'resources/js/cashier-dashboard.js'
                 
             ],
             refresh: true,

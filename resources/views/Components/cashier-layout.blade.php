@@ -25,6 +25,10 @@
   <!-- App CSS (includes Bootstrap 5 via Vite) -->
   @vite('resources/sass/app.scss')
   @vite(['resources/css/index_student.css'])
+  @vite(['resources/js/app.js'])
+  @vite(['resources/js/cashier-dashboard.js'])
+    <!-- Additional Scripts -->
+    @stack('scripts')
 
   <style>
     :root {
@@ -136,10 +140,6 @@
     </div>
   </div>
 
-  <!-- Bootstrap JS -->
-  @vite(['resources/js/app.js'])
-  
-  <!-- Additional Scripts -->
-  @stack('scripts')
+
 </body>
 </html>
