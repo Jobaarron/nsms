@@ -1,3 +1,91 @@
+// Show counseling session detail modal (schedule tab)
+function showSessionDetailModal(sessionId) {
+    const modalElem = document.getElementById('sessionDetailModal');
+    const modalBody = document.getElementById('sessionDetailModalBody');
+    if (modalBody) {
+        modalBody.innerHTML = '<div class="text-center text-muted py-5"><i class="ri-loader-4-line spinner-border spinner-border-sm"></i> Loading details...</div>';
+    }
+    // Show modal
+    const modal = bootstrap.Modal.getOrCreateInstance(modalElem);
+    modal.show();
+    // Fetch session details via AJAX
+        fetch(`/guidance/counseling-sessions/api/counseling-sessions/${sessionId}`)
+                .then(response => response.json())
+                .then(data => {
+                        if (data.success && data.session) {
+                                const s = data.session;
+                                // Schedule/Status Card (left column)
+            const scheduleStatusBox = `
+                     <div class="card mb-3 border-primary h-100" style="border-width:2px; min-height:420px;">
+                                                                                                        <div class="card-header bg-primary bg-opacity-10 text-primary d-flex align-items-center" style="font-weight:500; font-size:1.25rem;">
+                                                                                                            <i class="ri-calendar-check-line me-2"></i> Schedule & Status
+                                                                                                        </div>
+                                                                                                        <div class="card-body p-4">
+                                                                                                            <ul class="ps-3" style="font-size:1.25rem; list-style:none; padding-left:0;">
+                                                                                                                <li class="mb-2">Date: <span class='fw-normal'>${s.scheduled_date ?? '-'}</span></li>
+                                                                                                                <li class="mb-2">Time: <span class='fw-normal'>${s.scheduled_time ?? '-'}</span></li>
+                                                                                                                <li class="mb-2">Status: ${s.status_display ? `<span class='fw-normal badge bg-success'>${s.status_display}</span>` : '-'}</li>
+                                                                                                            </ul>
+                                                                                                        </div>
+                                                                                                    </div>
+                                 `;
+                                // Personal Info Card (top right)
+                                const personalInfo = `
+                                    <div class="card mb-3 border-success" style="border-width:2px;">
+                                        <div class="card-header bg-success bg-opacity-10 text-success d-flex align-items-center" style="font-weight:500;">
+                                            <i class="ri-user-3-line me-2"></i> Personal Information
+                                        </div>
+                                        <div class="card-body p-3">
+                                            <table class="table table-borderless mb-0">
+                                                <tbody>
+                                                    <tr><td class="fw-bold">Full Name</td><td>${s.student_full_name ?? '-'}</td></tr>
+                                                    <tr><td class="fw-bold">Date of Birth</td><td>${s.student_birthdate ?? '-'}${s.student_age ? ` (${s.student_age} years old)` : ''}</td></tr>
+                                                    <tr><td class="fw-bold">Gender</td><td>${s.student_gender ?? '-'}</td></tr>
+                                                    <tr><td class="fw-bold">Nationality</td><td>${s.student_nationality ?? '-'}</td></tr>
+                                                    <tr><td class="fw-bold">Religion</td><td>${s.student_religion ?? '-'}</td></tr>
+                                                    <tr><td class="fw-bold">Student Type</td><td><span class="badge bg-success">${s.student_type_badge ?? 'New'}</span> <span class="text-muted small ms-1">${s.student_type_desc ?? ''}</span></td></tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                `;
+                                // Documents Card (bottom right)
+                                const pdfUrl = `/pdf/counseling-session?session_id=${sessionId}`;
+                                const documentsCard = `
+                                    <div class="card border-success" style="border-width:2px;">
+                                        <div class="card-header bg-success bg-opacity-10 text-success" style="font-weight:500;">
+                                            <span><i class="ri-file-list-3-line me-2"></i> Documents</span>
+                                        </div>
+                                        <div class="w-100 px-3 pt-2 pb-0">
+                                            <a href="${pdfUrl}" class="btn btn-sm btn-outline-success w-100 mb-2" target="_blank" title="Download Counseling Session PDF">
+                                                <i class="ri-download-2-line"></i> Student Profile Recommendation Letter
+                                            </a>
+                                        </div>
+                                        <div class="card-body p-3">
+                                            ${s.documents_html ?? '<span class="text-muted">No documents uploaded.</span>'}
+                                        </div>
+                                    </div>
+                                `;
+                                modalBody.innerHTML = `
+                                    <div class="row g-3">
+                                        <div class="col-12 col-lg-6">
+                                            ${scheduleStatusBox}
+                                        </div>
+                                        <div class="col-12 col-lg-6 d-flex flex-column">
+                                            ${personalInfo}
+                                            ${documentsCard}
+                                        </div>
+                                    </div>
+                                `;
+                        } else {
+                                modalBody.innerHTML = '<div class="text-danger">Failed to load session details.</div>';
+                        }
+                })
+                .catch(() => {
+                        modalBody.innerHTML = '<div class="text-danger">Error loading session details.</div>';
+                });
+}
+window.showSessionDetailModal = showSessionDetailModal;
 // Set session ID for approval modal
 function setApproveSessionId(id) {
     document.getElementById('approveSessionId').value = id;

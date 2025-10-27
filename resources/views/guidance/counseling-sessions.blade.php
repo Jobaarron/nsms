@@ -178,12 +178,12 @@
                                     <td>{{ ucfirst($session->status) }}</td>
                                     <td>
                                         <div class="btn-group btn-group-sm action-buttons">
-                                            <a href="{{ route('guidance.counseling-sessions.show', $session->id) }}" class="btn btn-outline-primary" title="View Details">
+                                            <button type="button" class="btn btn-outline-primary" title="View Details" onclick="showSessionDetailModal({{ $session->id }})">
                                                 <i class="ri-eye-line"></i>
-                                            </a>
-                                            <a href="{{ route('guidance.counseling-sessions.summary.create', $session->id) }}" class="btn btn-outline-success" title="Create Summary">
+                                            </button>
+                                            <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#counselingSummaryModal" onclick="setCounselingSummarySessionId({{ $session->id }})" title="Add Summary Report">
                                                 <i class="ri-file-add-line"></i>
-                                            </a>
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -370,6 +370,31 @@
         </div>
     </div>
 
+    <!-- Counseling Summary Modal -->
+    <div class="modal fade" id="counselingSummaryModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Submit Counseling Summary Report</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="counselingSummaryForm" onsubmit="submitCounselingSummary(event)">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="counseling_summary_report" class="form-label">Counseling Summary Report</label>
+                            <textarea class="form-control" id="counseling_summary_report" name="counseling_summary_report" rows="5" required></textarea>
+                        </div>
+                        <input type="hidden" id="counseling_summary_session_id" name="session_id">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success">Submit</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Alert Container for dynamic alerts -->
     <div id="alert-container" class="position-fixed top-0 end-0 p-3" style="z-index: 9999;"></div>
 
@@ -438,8 +463,76 @@
             }
         }
 
-        // Expose to global scope
-        window.rejectCounselingSession = rejectCounselingSession;
+        let counselingSummarySessionId = null;
+        function setCounselingSummarySessionId(sessionId) {
+            counselingSummarySessionId = sessionId;
+            document.getElementById('counseling_summary_session_id').value = sessionId;
+            document.getElementById('counseling_summary_report').value = '';
+        }
+
+        function submitCounselingSummary(event) {
+            event.preventDefault();
+            const sessionId = document.getElementById('counseling_summary_session_id').value;
+            const summary = document.getElementById('counseling_summary_report').value;
+            fetch(`/guidance/counseling-sessions/${sessionId}/summary-report`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                },
+                body: JSON.stringify({ counseling_summary_report: summary })
+            })
+            .then(async response => {
+                let data = null;
+                let isJson = response.headers.get('content-type')?.includes('application/json');
+                if (isJson) {
+                    data = await response.json();
+                } else {
+                    let text = await response.text();
+                    data = { message: text };
+                }
+                if (response.ok && data.success) {
+                    showAlert('Summary report submitted successfully!', 'success');
+                    setTimeout(() => location.reload(), 1200);
+                } else {
+                    let msg = data && typeof data.message === 'string' ? data.message : (typeof data === 'object' ? JSON.stringify(data) : 'Failed to save summary report.');
+                    alert(msg);
+                    console.error('Summary report error:', data);
+                }
+            })
+            .catch(error => {
+                alert(error && error.message ? error.message : 'Error submitting summary report.');
+                console.error('Network or JS error:', error);
+            });
+        }
     </script>
 
 </x-guidance-layout>
+
+<script>
+// Fallback showAlert if not defined globally (for summary report modal)
+if (typeof showAlert !== 'function') {
+    function showAlert(message, type = 'info') {
+        const alertHtml = `
+            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                <i class="ri-information-line me-2"></i>${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        let container = document.getElementById('alert-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'alert-container';
+            container.className = 'position-fixed top-0 end-0 p-3';
+            container.style.zIndex = '9999';
+            document.body.appendChild(container);
+        }
+        container.insertAdjacentHTML('beforeend', alertHtml);
+        setTimeout(() => {
+            const alerts = container.querySelectorAll('.alert');
+            if (alerts.length > 0) alerts[0].remove();
+        }, 5000);
+    }
+}
+</script>

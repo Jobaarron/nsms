@@ -22,6 +22,7 @@ class CounselingSession extends Model
         'referral_social',
         'referral_social_other',
         'incident_description',
+        'counseling_summary_report',
     ];
 
     protected $casts = [

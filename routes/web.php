@@ -335,6 +335,13 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
         
         // Counseling Session Routes
     Route::prefix('counseling-sessions')->name('counseling-sessions.')->group(function () {
+
+    // AJAX: Store counseling summary report
+    Route::post('/{counselingSession}/summary-report', [App\Http\Controllers\GuidanceController::class, 'createCounselingSummaryReport'])->name('summary-report');
+
+    // Counseling session detail API for modal (now inside counseling-sessions group)
+    Route::get('/api/counseling-sessions/{id}', [App\Http\Controllers\GuidanceController::class, 'apiShowCounselingSession'])->middleware(['auth'])->name('api.show');
+        
             // AJAX: Reject counseling session with feedback and archive
             Route::post('/{counselingSession}/reject-with-feedback', [App\Http\Controllers\GuidanceController::class, 'rejectCounselingSessionWithFeedback'])->name('reject-with-feedback');
             // Show create summary form

@@ -1154,7 +1154,7 @@ class GuidanceController extends Controller
      * Reject counseling session with feedback and archive it
      */
     public function rejectCounselingSessionWithFeedback(Request $request, CounselingSession $counselingSession)
-    {
+    {   
         $request->validate([
             'feedback' => 'required|string',
         ]);
@@ -1195,5 +1195,88 @@ class GuidanceController extends Controller
             'success' => true,
             'message' => 'Counseling session rejected and archived with feedback.'
         ]);
+    }
+        /**
+     * API: Get counseling session details (for modal)
+     */
+    public function apiShowCounselingSession($id)
+    {
+        $session = \App\Models\CounselingSession::with(['student', 'counselor'])
+            ->find($id);
+        if (!$session) {
+            return response()->json(['success' => false, 'message' => 'Session not found.']);
+        }
+        $student = $session->student;
+        $counselor = $session->counselor;
+        $documentsHtml = '';
+        // If you have documents, render them here. Otherwise, show placeholder.
+        // Example: $documentsHtml = '<a href="/path/to/doc.pdf">Document.pdf</a>';
+        return response()->json([
+            'success' => true,
+            'session' => [
+                'session_no' => $session->session_no,
+                'status_display' => ucfirst($session->status),
+                'reason' => $session->reason,
+                'notes' => $session->notes,
+                'scheduled_date' => $session->start_date ? $session->start_date->format('Y-m-d') : null,
+                'scheduled_time' => $session->time ? $session->time->format('H:i') : null,
+                'location' => $session->location,
+                'counselor_name' => $counselor ? ($counselor->first_name . ' ' . $counselor->last_name) : null,
+                'student_full_name' => $student ? ($student->full_name ?? ($student->first_name . ' ' . $student->last_name)) : null,
+                'student_lrn' => $student ? $student->lrn : null,
+                'student_birthdate' => ($student && $student->date_of_birth) ? (method_exists($student->date_of_birth, 'format') ? $student->date_of_birth->format('F j, Y') : (string)$student->date_of_birth) : null,
+                'student_gender' => $student ? $student->gender : null,
+                'student_nationality' => $student ? $student->nationality : null,
+                'student_religion' => $student ? $student->religion : null,
+                'student_photo_url' => $student && $student->photo_url ? $student->photo_url : null,
+                'documents_html' => $documentsHtml,
+            ]
+        ]);
+    }
+      /**
+     * Store counseling summary report for a session
+     */
+    public function createCounselingSummaryReport(Request $request, CounselingSession $counselingSession)
+    {
+        try {
+            if (!$counselingSession) {
+                \Log::error('CounselingSession not found for summary report', ['id' => $request->route('counselingSession')]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Counseling session not found.'
+                ], 404);
+            }
+            $validatedData = $request->validate([
+                'counseling_summary_report' => 'required|string',
+            ]);
+            $counselingSession->counseling_summary_report = $validatedData['counseling_summary_report'];
+            $counselingSession->save();
+            // Always return JSON for AJAX or fetch requests
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Counseling summary report saved successfully.',
+                    'counselingSession' => $counselingSession
+                ]);
+            }
+            // Fallback for non-AJAX requests
+            return redirect()->route('guidance.counseling-sessions.index')
+                ->with('success', 'Counseling summary report saved successfully.');
+        } catch (\Exception $e) {
+            \Log::error('Error saving counseling summary report', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'request' => $request->all(),
+            ]);
+            // Always return JSON for AJAX or fetch requests
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error saving summary report.'
+                ], 500);
+            }
+            // Fallback for non-AJAX requests
+            return redirect()->back()->with('error', 'Error saving summary report.');
+        }
     }
 }
