@@ -219,4 +219,47 @@ class PdfController extends Controller
             return response($pdf->Output('Student-Narrative-Report.pdf', 'S'))->header('Content-Type', 'application/pdf');
         }
 
+            /**
+     * Generate dynamic Case Meeting PDF using TCPDF.
+     */
+    public function caseMeetingAttachmentPdf($caseMeetingId)
+    {
+        $caseMeeting = \App\Models\CaseMeeting::with(['violation', 'student'])->findOrFail($caseMeetingId);
+        $student = $caseMeeting->student ?? ($caseMeeting->violation->student ?? null);
+        $violation = $caseMeeting->violation ?? null;
+        $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
+        $templatePath = storage_path('app/public/Case-Meeting-Report/CaseMeeting.pdf');
+        if (!file_exists($templatePath)) {
+            abort(404, 'Case Meeting PDF template not found.');
+        }
+        $pdf->setSourceFile($templatePath);
+        $tplId = $pdf->importPage(1);
+        $size = $pdf->getTemplateSize($tplId);
+        $pdf->SetMargins(0, 0, 0);
+        $orientation = ($size['width'] > $size['height']) ? 'L' : 'P';
+        $pdf->AddPage($orientation, [$size['width'], $size['height']]);
+        $pdf->SetFont('dejavusans', '', 10);
+        $pdf->useTemplate($tplId);
+
+        // Overlay case meeting and student data (adjust coordinates as needed for your template)
+        if ($student) {
+            $pdf->SetXY(24, 58); $pdf->Write(0, $student->full_name ?? '');
+            $pdf->SetXY(141, 57); $pdf->Write(0, $student->grade_level ?? '');
+            $pdf->SetXY(47, 56); $pdf->Write(0, $student->section ?? '');
+        }
+        if ($violation) {
+            $pdf->SetXY(120, 40); $pdf->Write(0, $violation->violation_date ? $violation->violation_date->format('Y-m-d') : '');
+            $pdf->SetXY(176, 40); $pdf->Write(0, $violation->violation_time ?? '');
+        }
+        $pdf->SetXY(76, 292); $pdf->Write(0, $student->full_name ?? '');
+
+        // Add more overlays as needed for case meeting details
+        if (!empty($caseMeeting->notes)) {
+            $pdf->SetXY(18, 84);
+            $pdf->MultiCell(160, 8, $caseMeeting->notes);
+        }
+
+        return response($pdf->Output('Case-Meeting-Report.pdf', 'S'))->header('Content-Type', 'application/pdf');
+    }
+
 }

@@ -241,7 +241,7 @@
 
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary">Submit Violation</button>
+          <button type="submit" class="btn btn-success">Submit Violation</button>
         </div>
       </form>
     </div>

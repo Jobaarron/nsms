@@ -336,18 +336,27 @@ body {
 
 /* Logout Button */
 .btn-logout {
-  background: linear-gradient(135deg, var(--secondary-color) 0%, var(--primary-color) 100%);
+  background: var(--primary-color);
   color: #fff;
   border: none;
   font-weight: 600;
   transition: all 0.3s ease;
+  box-shadow: none;
+  outline: none;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+  font-size: 1rem;
+  padding: 0.5rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-logout:hover {
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--dark-red) 100%);
+  background: var(--secondary-color);
   color: #fff;
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(139, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(43, 122, 59, 0.15);
 }
 
 /* Responsive Design */

@@ -117,7 +117,7 @@
                                                 </div>
                                             </div>
                                         </td>
-                                        <td>{{ $user->email }}</td>
+                                        <td class="user-email-cell">{{ $user->email }}</td>
                                         <td>
                                             @forelse($user->roles as $role)
                                                 <span class="badge bg-info me-1">{{ $role->name }}</span>
@@ -152,7 +152,7 @@
                                                 </div>
                                             </div>
                                         </td>
-                                        <td>{{ $enrollee->email }}</td>
+                                        <td class="user-email-cell">{{ $enrollee->email }}</td>
                                         <td>
                                             <span class="badge bg-warning">applicant</span>
                                         </td>

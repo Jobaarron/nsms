@@ -329,6 +329,9 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
             Route::post('/{caseMeeting}/forward', [App\Http\Controllers\GuidanceController::class, 'forwardToPresident'])
                 ->name('forward');
         });
+
+        // PDF route for case meeting attachment (moved outside case-meetings group)
+        Route::get('/pdf/case-meeting/{caseMeetingId}', [PdfController::class, 'caseMeetingAttachmentPdf'])->name('pdf.case-meeting.attachment');
         
         // Counseling Session Routes
         Route::prefix('counseling-sessions')->name('counseling-sessions.')->group(function () {

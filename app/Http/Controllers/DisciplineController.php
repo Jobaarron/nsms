@@ -235,6 +235,7 @@ class DisciplineController extends Controller
      */
     public function storeViolation(Request $request)
     {
+
         // Check if user is authenticated
         if (!Auth::check()) {
             if ($request->wantsJson() || $request->ajax()) {
@@ -245,7 +246,6 @@ class DisciplineController extends Controller
             }
             return redirect()->route('discipline.login');
         }
-
 
         $validatedData = $request->validate([
             'student_id' => 'required|exists:students,id',
@@ -258,6 +258,21 @@ class DisciplineController extends Controller
             'status' => 'nullable|in:pending,investigating,in_progress,resolved,dismissed',
             'urgency_level' => 'nullable|in:low,medium,high,urgent',
         ]);
+
+        // Prevent duplicate violation for same student, title, and date
+        $exists = Violation::where('student_id', $validatedData['student_id'])
+            ->where('title', $validatedData['title'])
+            ->whereDate('violation_date', $validatedData['violation_date'])
+            ->exists();
+        if ($exists) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'A violation with the same title already exists for this student on this date.'
+                ], 409);
+            }
+            return back()->withErrors(['error' => 'A violation with the same title already exists for this student on this date.']);
+        }
 
         // Map major_category numeric values to ENUM strings and handle 'null' string
         if (isset($validatedData['major_category'])) {
@@ -434,6 +449,7 @@ class DisciplineController extends Controller
 
             return back()->withErrors(['error' => 'Failed to create violation: ' . $e->getMessage()]);
         }
+
     }
 
     /**
@@ -615,6 +631,7 @@ class DisciplineController extends Controller
         // Create case meeting with violation data
         $caseMeeting = CaseMeeting::create([
             'student_id' => $violation->student_id,
+            'violation_id' => $violation->id, // <-- link the violation
             'counselor_id' => $guidanceCounselor ? $guidanceCounselor->id : null,
             'meeting_type' => 'case_meeting',
             'location' => 'Guidance Office',
