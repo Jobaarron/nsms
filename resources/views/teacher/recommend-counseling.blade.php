@@ -15,18 +15,18 @@
     }
     .card-header {
       background: #fff;
-      color: #198754;
+      color: #000;
       border-bottom: 1px solid #198754;
     }
     .section-title, h5, h6, strong {
-      color: #198754 !important;
+      color: #000 !important;
     }
     .form-check-input:checked {
       background-color: #198754;
       border-color: #198754;
     }
     .form-check-label {
-      color: #155724;
+      color: #000;
     }
     .btn-warning {
       background-color: #198754;
@@ -40,7 +40,7 @@
     }
     .btn-outline-secondary {
       border-color: #198754;
-      color: #198754;
+      color: #000;
       background-color: #fff;
     }
     .btn-outline-secondary:hover {
@@ -49,7 +49,7 @@
     }
     .btn-outline-success {
       border-color: #198754;
-      color: #198754;
+      color: #000;
       background-color: #fff;
     }
     .btn-outline-success:hover {
@@ -84,7 +84,7 @@
     }
     .alert-info {
       background-color: #e6ffed;
-      color: #155724;
+      color: #000;
       border-color: #198754;
     }
     #referral-checklist {
@@ -97,7 +97,7 @@
     #incident_description {
   border: 1px solid #198754;
   background: #fff;
-  color: #155724;
+  color: #000;
     }
   </style>
   <main class="col-12 col-md-10 px-4 py-4">
