@@ -199,7 +199,13 @@
                       <strong>Academic:</strong>
                       <div class="form-check"><input class="form-check-input" type="checkbox" name="referral_academic[]" value="Attendance"><label class="form-check-label">Attendance (excessive absenteeism)</label></div>
                       <div class="form-check"><input class="form-check-input" type="checkbox" name="referral_academic[]" value="Activity Sheets/Assignments"><label class="form-check-label">Activity Sheets/Assignments</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" name="referral_academic[]" value="Others"><label class="form-check-label">Others <input type="text" name="referral_academic_other" class="form-control form-control-sm d-inline-block w-auto ms-2" placeholder="Specify"></label></div>
+                      <div class="form-check mb-1">
+                        <input class="form-check-input" type="checkbox" name="referral_academic[]" value="Others" id="referral_academic_others">
+                        <label class="form-check-label" for="referral_academic_others">Others</label>
+                      </div>
+                      <div class="mb-2 ms-4">
+                        <input type="text" name="referral_academic_other" class="form-control form-control-sm w-auto d-inline-block" placeholder="Specify (optional)">
+                      </div>
                     </div>
                     <div class="col-md-6">
                       <div class="form-check"><input class="form-check-input" type="checkbox" name="referral_academic[]" value="Exams"><label class="form-check-label">Exams</label></div>
@@ -213,7 +219,13 @@
                       <div class="form-check"><input class="form-check-input" type="checkbox" name="referral_social[]" value="Bullying"><label class="form-check-label">Bullying</label></div>
                       <div class="form-check"><input class="form-check-input" type="checkbox" name="referral_social[]" value="Social Skills/Friends"><label class="form-check-label">Social Skills/Friends</label></div>
                       <div class="form-check"><input class="form-check-input" type="checkbox" name="referral_social[]" value="Negative Attitude"><label class="form-check-label">Negative Attitude</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" name="referral_social[]" value="Others"><label class="form-check-label">Others <input type="text" name="referral_social_other" class="form-control form-control-sm d-inline-block w-auto ms-2" placeholder="Specify"></label></div>
+                      <div class="form-check mb-1">
+                        <input class="form-check-input" type="checkbox" name="referral_social[]" value="Others" id="referral_social_others">
+                        <label class="form-check-label" for="referral_social_others">Others</label>
+                      </div>
+                      <div class="mb-2 ms-4">
+                        <input type="text" name="referral_social_other" class="form-control form-control-sm w-auto d-inline-block" placeholder="Specify (optional)">
+                      </div>
                     </div>
                     <div class="col-md-6">
                       <div class="form-check"><input class="form-check-input" type="checkbox" name="referral_social[]" value="Honesty"><label class="form-check-label">Honesty</label></div>
@@ -228,41 +240,6 @@
                     <h6>Incident Details</h6>
                     <div class="mb-2">
                       <textarea class="form-control" id="incident_description" name="incident_description" rows="3" placeholder="Describe the incident or concern in detail..."></textarea>
-                    </div>
-                  </div>
-                    </div>
-                  </div>
-                </div>
-                <!-- Reason for referral checklist -->
-                <div id="referral-checklist" class="mt-4" style="display:none;">
-                  <h6>Reason for referral <small>(check all that apply):</small></h6>
-                  <div class="row">
-                    <div class="col-md-6">
-                      <strong>Academic:</strong>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" name="referral_academic[]" value="Attendance"><label class="form-check-label">Attendance (excessive absenteeism)</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" name="referral_academic[]" value="Activity Sheets/Assignments"><label class="form-check-label">Activity Sheets/Assignments</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" name="referral_academic[]" value="Others"><label class="form-check-label">Others <input type="text" name="referral_academic_other" class="form-control form-control-sm d-inline-block w-auto ms-2" placeholder="Specify"></label></div>
-                    </div>
-                    <div class="col-md-6">
-                      <div class="form-check"><input class="form-check-input" type="checkbox" name="referral_academic[]" value="Exams"><label class="form-check-label">Exams</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" name="referral_academic[]" value="Quiz"><label class="form-check-label">Quiz</label></div>
-                    </div>
-                  </div>
-                  <div class="row mt-3">
-                    <div class="col-md-6">
-                      <strong>Personal/Social:</strong>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" name="referral_social[]" value="Anger Management"><label class="form-check-label">Anger Management</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" name="referral_social[]" value="Bullying"><label class="form-check-label">Bullying</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" name="referral_social[]" value="Social Skills/Friends"><label class="form-check-label">Social Skills/Friends</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" name="referral_social[]" value="Negative Attitude"><label class="form-check-label">Negative Attitude</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" name="referral_social[]" value="Others"><label class="form-check-label">Others <input type="text" name="referral_social_other" class="form-control form-control-sm d-inline-block w-auto ms-2" placeholder="Specify"></label></div>
-                    </div>
-                    <div class="col-md-6">
-                      <div class="form-check"><input class="form-check-input" type="checkbox" name="referral_social[]" value="Honesty"><label class="form-check-label">Honesty</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" name="referral_social[]" value="Self-esteem"><label class="form-check-label">Self-esteem</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" name="referral_social[]" value="Personal Hygiene"><label class="form-check-label">Personal Hygiene</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" name="referral_social[]" value="Adjustment"><label class="form-check-label">Adjustment</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" name="referral_social[]" value="Family Conflict"><label class="form-check-label">Family Conflict</label></div>
                     </div>
                   </div>
                 </div>

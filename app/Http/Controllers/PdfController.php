@@ -82,6 +82,11 @@ class PdfController extends Controller
                 $pdf->Write(0, $check);
             }
         }
+        // Show 'Others (specify)' text for Academic
+        if (!empty($referralAcademicOther)) {
+            $pdf->SetXY(38, 90);
+            $pdf->Write(0,$referralAcademicOther);
+        }
         $socialPositions = [
             'Anger Management' => [22, 103],
             'Bullying' => [22, 107],
@@ -100,6 +105,11 @@ class PdfController extends Controller
                 $pdf->Write(0, $check);
             }
         }
+        // Show 'Others (specify)' text for Social
+        if (!empty($referralSocialOther)) {
+            $pdf->SetXY(38, 120);
+            $pdf->Write(0, $referralSocialOther);
+        }
         $pdf->SetXY(47,129);
         $pdf->MultiCell(150, 6, $session->incident_description ?? '');
 
@@ -109,7 +119,7 @@ class PdfController extends Controller
         $pdf->Write(0, $session->start_date ? $session->start_date->format('Y-m-d') : ($session->created_at ? $session->created_at->format('Y-m-d') : ''));
         $pdf->SetXY(128, 43 + $yOffset);
         $pdf->Write(0, $session->id ?? '');
-        $pdf->SetXY(46, 52 + $yOffset);
+        $pdf->SetXY(46, 53 + $yOffset);
         $pdf->Write(0, $session->student->full_name ?? '');
         $pdf->SetXY(129, 53 + $yOffset);
         $pdf->Write(0, $session->student->contact_number ?? '');
@@ -143,6 +153,11 @@ class PdfController extends Controller
                 $pdf->Write(0, $check);
             }
         }
+        // Show 'Others (specify)' text for Academic (lower form)
+        if (!empty($referralAcademicOther)) {
+            $pdf->SetXY(38, 97 + $yOffset);
+            $pdf->Write(0,$referralAcademicOther);
+        }
         $socialPositions = [
             'Anger Management' => [22, 109],
             'Bullying' => [22, 114],
@@ -160,6 +175,11 @@ class PdfController extends Controller
                 $pdf->SetXY($x, $y + $yOffset);
                 $pdf->Write(0, $check);
             }
+        }
+        // Show 'Others (specify)' text for Social (lower form)
+        if (!empty($referralSocialOther)) {
+            $pdf->SetXY(38, 127 + $yOffset);
+            $pdf->Write(0,$referralSocialOther);
         }
         $pdf->SetXY(47,135 + $yOffset);
         $pdf->MultiCell(150, 6, $session->incident_description ?? '');

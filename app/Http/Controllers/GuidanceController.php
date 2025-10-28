@@ -630,6 +630,11 @@ class GuidanceController extends Controller
             'location' => 'nullable|string|max:255',
             'reason' => 'required|string',
             'notes' => 'nullable|string',
+            'referral_academic' => 'nullable|array',
+            'referral_academic_other' => 'nullable|string',
+            'referral_social' => 'nullable|array',
+            'referral_social_other' => 'nullable|string',
+            'incident_description' => 'nullable|string',
         ]);
 
         // Get current user's guidance record
@@ -647,11 +652,20 @@ class GuidanceController extends Controller
         $sessionCount = CounselingSession::where('student_id', $studentId)->count();
         $validatedData['session_no'] = $sessionCount + 1;
 
+        // Remove 'Others' from the checklist arrays before saving
+        $referralAcademic = $validatedData['referral_academic'] ?? [];
+        if (($key = array_search('Others', $referralAcademic)) !== false) {
+            unset($referralAcademic[$key]);
+        }
+        $referralSocial = $validatedData['referral_social'] ?? [];
+        if (($key = array_search('Others', $referralSocial)) !== false) {
+            unset($referralSocial[$key]);
+        }
         $counselingSession = CounselingSession::create([
             ...$validatedData,
-            'referral_academic' => isset($validatedData['referral_academic']) ? json_encode($validatedData['referral_academic']) : null,
+            'referral_academic' => !empty($referralAcademic) ? json_encode(array_values($referralAcademic)) : null,
             'referral_academic_other' => $validatedData['referral_academic_other'] ?? null,
-            'referral_social' => isset($validatedData['referral_social']) ? json_encode($validatedData['referral_social']) : null,
+            'referral_social' => !empty($referralSocial) ? json_encode(array_values($referralSocial)) : null,
             'referral_social_other' => $validatedData['referral_social_other'] ?? null,
             'incident_description' => $validatedData['incident_description'] ?? null,
         ]);
