@@ -152,7 +152,7 @@ window.viewCaseMeeting = function(meetingId) {
                                                     <tr><td><strong>Time:</strong></td><td>${meeting.scheduled_time ? meeting.scheduled_time.substring(0,5) : 'N/A'}</td></tr>
                                                 </tbody>
                                             </table>                                            <!-- Case Meeting Attachment (if available) -->
-                                            ${caseMeetingAttachmentUrl ? `<div class="mt-3"><label class="form-label fw-bold">Case Meeting Attachment (PDF):</label><div><a href="${caseMeetingAttachmentUrl}" target="_blank" class="btn btn-outline-success btn-sm"><i class="ri-attachment-2"></i> View Attachment</a></div></div>` : ''}
+                                            ${caseMeetingAttachmentUrl ? `<div class="mt-3"><label class="form-label fw-bold">Case Meeting Attachment (PDF):</label><div><a href="${caseMeetingAttachmentUrl}" target="_blank" class="btn btn-outline-success btn-sm"><i class="ri-attachment-2"></i> Student Narrative Report</a></div></div>` : ''}
                                         </div>
                                 <div class="col-md-6">
                                     ${meeting.summary ? `
