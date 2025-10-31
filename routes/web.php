@@ -477,6 +477,8 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
             Route::post('/{caseMeeting}/forward', [App\Http\Controllers\GuidanceController::class, 'forwardToPresident'])
                 ->name('forward');
         });
+        // Overall Disciplinary Conference Summary Report (all students)
+        Route::get('/conference-summary-report/pdf', [PdfController::class, 'conferenceSummaryReportAllPdf'])->name('pdf.conference-summary-report.all');
 
     Route::get('/observationreport/pdf/{caseMeeting}', [App\Http\Controllers\PdfController::class, 'teacherObservationReportPdf']);
         // PDF route for case meeting attachment (moved outside case-meetings group)

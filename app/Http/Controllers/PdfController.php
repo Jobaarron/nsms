@@ -1,33 +1,3 @@
-    /**
-     * Generate overall Disciplinary Conference Summary Report PDF for all students.
-     * @return \Illuminate\Http\Response
-     */
-    public function conferenceSummaryReportAllPdf()
-    {
-        $students = \App\Models\Student::all();
-        $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
-        $templatePath = storage_path('app/public/Discplinary-Summary-Report/Summary Report.pdf');
-        if (!file_exists($templatePath)) {
-            abort(404, 'Disciplinary Conference Summary Report PDF template not found.');
-        }
-        $pdf->setSourceFile($templatePath);
-        $tplId = $pdf->importPage(1);
-        $size = $pdf->getTemplateSize($tplId);
-        $pdf->SetMargins(0, 0, 0);
-        $orientation = ($size['width'] > $size['height']) ? 'L' : 'P';
-
-        foreach ($students as $student) {
-            $pdf->AddPage($orientation, [$size['width'], $size['height']]);
-            $pdf->SetFont('dejavusans', '', 10);
-            $pdf->useTemplate($tplId);
-            $pdf->SetXY(24, 58); $pdf->Write(0, $student->full_name ?? '');
-            $pdf->SetXY(141, 57); $pdf->Write(0, $student->grade_level ?? '');
-            $pdf->SetXY(47, 56); $pdf->Write(0, $student->section ?? '');
-        }
-
-        return response($pdf->Output('Disciplinary-Conference-Summary-Report-All.pdf', 'S'))
-            ->header('Content-Type', 'application/pdf');
-    }
 <?php
 namespace App\Http\Controllers;
 
@@ -361,6 +331,8 @@ class PdfController extends Controller
         // Overlay the required data (adjust coordinates as needed for your template)
         $pdf->SetXY(27, 62); // Teacher Name
         $pdf->Write(0, $teacherName ?? '');
+        $pdf->SetXY(87, 292); // Teacher Name
+        $pdf->Write(0, $teacherName ?? '');
         // Optionally, overlay the teacher user_id (for demonstration, place at 40, 50)
         if ($teacherUserId) {
             $pdf->SetXY(40, 50); // Teacher user_id
@@ -368,43 +340,74 @@ class PdfController extends Controller
         }
         $pdf->SetXY(120, 45); // Scheduled Date
         $pdf->Write(0, $caseMeeting->scheduled_date ? (is_string($caseMeeting->scheduled_date) ? $caseMeeting->scheduled_date : $caseMeeting->scheduled_date->format('Y-m-d')) : '');
-        $pdf->SetXY(170, 45); // Scheduled Time
+        $pdf->SetXY(174, 45); // Scheduled Time
         $pdf->Write(0, $caseMeeting->scheduled_time ? (is_string($caseMeeting->scheduled_time) ? $caseMeeting->scheduled_time : $caseMeeting->scheduled_time->format('H:i')) : '');
         $pdf->SetXY(18, 90); // Teacher Statement
         $pdf->MultiCell(150, 8, $caseMeeting->teacher_statement ?? '');
-        $pdf->SetXY(18, 200); // Action Plan
+        $pdf->SetXY(18, 199); // Action Plan
         $pdf->MultiCell(150, 8, $caseMeeting->action_plan ?? '');
 
         return response($pdf->Output('Teacher-Observation-Report.pdf', 'S'))->header('Content-Type', 'application/pdf');
     }
-        /**
-     * Generate Disciplinary Conference Summary Report PDF using TCPDF.
-     * @param int $studentId
+
+    /**
+     * Generate Disciplinary Conference Summary Report PDF for all students using TCPDF.
      * @return \Illuminate\Http\Response
      */
-    public function conferenceSummaryReportPdf($studentId)
+    public function conferenceSummaryReportAllPdf()
     {
-        $student = \App\Models\Student::findOrFail($studentId);
+        $students = \App\Models\Student::all();
         $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
         $templatePath = storage_path('app/public/Discplinary-Summary-Report/Summary Report.pdf');
         if (!file_exists($templatePath)) {
             abort(404, 'Disciplinary Conference Summary Report PDF template not found.');
         }
+
+        // Prepare the first page
         $pdf->setSourceFile($templatePath);
         $tplId = $pdf->importPage(1);
         $size = $pdf->getTemplateSize($tplId);
-        $pdf->SetMargins(0, 0, 0);
         $orientation = ($size['width'] > $size['height']) ? 'L' : 'P';
         $pdf->AddPage($orientation, [$size['width'], $size['height']]);
         $pdf->SetFont('dejavusans', '', 10);
         $pdf->useTemplate($tplId);
 
-        // Overlay student data at specified coordinates
-        $pdf->SetXY(24, 58); $pdf->Write(0, $student->full_name ?? '');
-        $pdf->SetXY(141, 57); $pdf->Write(0, $student->grade_level ?? '');
-        $pdf->SetXY(47, 56); $pdf->Write(0, $student->section ?? '');
+        // Table starting coordinates (adjust as needed for your template)
+        $startY = 59; // Y coordinate of first row (after header)
+        $rowHeight = 6; // Height of each row
+        $maxRowsPerPage = 25; // Adjust based on your template
+        $currentRow = 0;
 
-        return response($pdf->Output('Disciplinary-Conference-Summary-Report.pdf', 'S'))
+        foreach ($students as $index => $student) {
+            // Fetch the latest CaseMeeting for this student (or adjust as needed)
+            $caseMeeting = \App\Models\CaseMeeting::where('student_id', $student->id)->orderByDesc('id')->first();
+            $caseMeetingId = $caseMeeting ? $caseMeeting->id : '';
+
+            // Calculate Y position for this row
+            $y = $startY + ($currentRow * $rowHeight);
+            if ($y > ($size['height'] - 20)) { // If out of space, add new page
+                $pdf->AddPage($orientation, [$size['width'], $size['height']]);
+                $pdf->useTemplate($tplId);
+                $y = $startY;
+                $currentRow = 0;
+            }
+
+            // Write each column (adjust X positions and widths as needed)
+            $pdf->SetFont('dejavusans', '', 8);
+            $pdf->SetXY(22, $y); // No.
+            $pdf->Write(0, $caseMeetingId);
+            $pdf->SetXY(30, $y); // Name
+            $pdf->Write(0, $student->full_name ?? '');
+            $pdf->SetXY(84, $y); // Grade/Section
+            $pdf->Write(0, ($student->grade_level ?? '') . ' - ' . ($student->section ?? ''));
+            $pdf->SetXY(122, $y); // DCR Case No. (repeat CaseMeeting id)
+            $pdf->Write(0, $caseMeetingId);
+            // Issues/Concerns and Remarks left blank, but no border/cell
+
+            $currentRow++;
+        }
+
+        return response($pdf->Output('Disciplinary-Conference-Summary-Report-All.pdf', 'S'))
             ->header('Content-Type', 'application/pdf');
     }
 

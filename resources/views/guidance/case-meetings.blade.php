@@ -189,7 +189,7 @@
                             </div>
                         </div>
                         <div class="col-md-3 d-flex align-items-end">
-                            <button class="btn btn-success w-100" type="button" onclick="window.open('/guidance/disciplinary-conference-summary-report', '_blank')">
+                            <button class="btn btn-success w-100" type="button" onclick="window.open('/guidance/conference-summary-report/pdf', '_blank')">
                                 <i class="ri-file-list-3-line me-1"></i> SUMMARY REPORT
                             </button>
                         </div>
@@ -459,7 +459,7 @@
                             </div>
                         </div>
                         <div class="col-md-3 d-flex align-items-end">
-                            <button class="btn btn-success w-auto" type="button" onclick="window.open('/guidance/disciplinary-conference-summary-report', '_blank')">
+                            <button class="btn btn-success w-auto" type="button" onclick="window.open('/guidance/conference-summary-report/pdf', '_blank')">
                                 <i class="ri-file-list-3-line me-1"></i> Conference Summary Report
                             </button>
                         </div>
