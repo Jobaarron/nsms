@@ -160,34 +160,39 @@
                         <div class="avatar-lg bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3">
                             <i class="ri-user-line fs-1 text-primary"></i>
                         </div>
-                        <div class="flex-grow-1">
-                            <div class="fw-semibold fs-5">{{ $caseMeeting->student ? $caseMeeting->student->full_name : 'Unknown' }}</div>
-                            <small class="text-muted">{{ $caseMeeting->student ? $caseMeeting->student->student_id : 'Unknown' }}</small>
+                        <div class="col-md-3">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" id="status-filter" onchange="filterCaseMeetings()">
+                                <option value="">All Status</option>
+                                <option value="scheduled">Scheduled</option>
+                                <option value="pre_completed">Pre-Completed</option>
+                                <option value="submitted">Submitted</option>
+                                <option value="completed">Completed</option>
+                                <option value="cancelled">Cancelled</option>
+                            </select>
                         </div>
-                    </div>
-                    @if($caseMeeting->student)
-                        <div class="row g-2 text-sm">
-                            <div class="col-6">
-                                <strong>Grade:</strong><br>
-                                {{ $caseMeeting->student->grade ?? 'N/A' }}
-                            </div>
-                            <div class="col-6">
-                                <strong>Section:</strong><br>
-                                {{ $caseMeeting->student->section ?? 'N/A' }}
+                        <div class="col-md-3">
+                            <label class="form-label">Date Range</label>
+                            <div class="input-group">
+                                <input type="date" class="form-control" id="date-filter-start" placeholder="From">
+                                <span class="input-group-text">to</span>
+                                <input type="date" class="form-control" id="date-filter-end" placeholder="To">
                             </div>
                         </div>
-                    @endif
-                </div>
-            </div>
-
-            <div class="card border-0 shadow-sm">
-                <!-- Counselor Information removed -->
-            </div>
-        </div>
-    </div>
-
-    <!-- Case Summary -->
-    @if($caseMeeting->summary)
+                        <div class="col-md-3">
+                            <label class="form-label">Search</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="search-filter" placeholder="Search student name..." onkeyup="filterCaseMeetings()">
+                                <button class="btn btn-outline-secondary" onclick="clearFilters()">
+                                    <i class="ri-close-line"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button class="btn btn-success w-100" type="button" onclick="window.open('/guidance/disciplinary-conference-summary-report', '_blank')">
+                                <i class="ri-file-list-3-line me-1"></i> SUMMARY REPORT
+                            </button>
+                        </div>
     <div class="row mb-4">
         <div class="col-12">
             <div class="card border-0 shadow-sm">
@@ -216,7 +221,7 @@
             </div>
         </div>
     </div>
-    @endif
+    
 
     <!-- Sanctions -->
     @if($caseMeeting->sanctions->isNotEmpty())
@@ -452,6 +457,11 @@
                                     <i class="ri-close-line"></i>
                                 </button>
                             </div>
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button class="btn btn-success w-auto" type="button" onclick="window.open('/guidance/disciplinary-conference-summary-report', '_blank')">
+                                <i class="ri-file-list-3-line me-1"></i> Conference Summary Report
+                            </button>
                         </div>
                     </div>
                 </div>

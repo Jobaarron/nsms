@@ -1,3 +1,33 @@
+    /**
+     * Generate overall Disciplinary Conference Summary Report PDF for all students.
+     * @return \Illuminate\Http\Response
+     */
+    public function conferenceSummaryReportAllPdf()
+    {
+        $students = \App\Models\Student::all();
+        $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
+        $templatePath = storage_path('app/public/Discplinary-Summary-Report/Summary Report.pdf');
+        if (!file_exists($templatePath)) {
+            abort(404, 'Disciplinary Conference Summary Report PDF template not found.');
+        }
+        $pdf->setSourceFile($templatePath);
+        $tplId = $pdf->importPage(1);
+        $size = $pdf->getTemplateSize($tplId);
+        $pdf->SetMargins(0, 0, 0);
+        $orientation = ($size['width'] > $size['height']) ? 'L' : 'P';
+
+        foreach ($students as $student) {
+            $pdf->AddPage($orientation, [$size['width'], $size['height']]);
+            $pdf->SetFont('dejavusans', '', 10);
+            $pdf->useTemplate($tplId);
+            $pdf->SetXY(24, 58); $pdf->Write(0, $student->full_name ?? '');
+            $pdf->SetXY(141, 57); $pdf->Write(0, $student->grade_level ?? '');
+            $pdf->SetXY(47, 56); $pdf->Write(0, $student->section ?? '');
+        }
+
+        return response($pdf->Output('Disciplinary-Conference-Summary-Report-All.pdf', 'S'))
+            ->header('Content-Type', 'application/pdf');
+    }
 <?php
 namespace App\Http\Controllers;
 
@@ -346,6 +376,36 @@ class PdfController extends Controller
         $pdf->MultiCell(150, 8, $caseMeeting->action_plan ?? '');
 
         return response($pdf->Output('Teacher-Observation-Report.pdf', 'S'))->header('Content-Type', 'application/pdf');
+    }
+        /**
+     * Generate Disciplinary Conference Summary Report PDF using TCPDF.
+     * @param int $studentId
+     * @return \Illuminate\Http\Response
+     */
+    public function conferenceSummaryReportPdf($studentId)
+    {
+        $student = \App\Models\Student::findOrFail($studentId);
+        $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
+        $templatePath = storage_path('app/public/Discplinary-Summary-Report/Summary Report.pdf');
+        if (!file_exists($templatePath)) {
+            abort(404, 'Disciplinary Conference Summary Report PDF template not found.');
+        }
+        $pdf->setSourceFile($templatePath);
+        $tplId = $pdf->importPage(1);
+        $size = $pdf->getTemplateSize($tplId);
+        $pdf->SetMargins(0, 0, 0);
+        $orientation = ($size['width'] > $size['height']) ? 'L' : 'P';
+        $pdf->AddPage($orientation, [$size['width'], $size['height']]);
+        $pdf->SetFont('dejavusans', '', 10);
+        $pdf->useTemplate($tplId);
+
+        // Overlay student data at specified coordinates
+        $pdf->SetXY(24, 58); $pdf->Write(0, $student->full_name ?? '');
+        $pdf->SetXY(141, 57); $pdf->Write(0, $student->grade_level ?? '');
+        $pdf->SetXY(47, 56); $pdf->Write(0, $student->section ?? '');
+
+        return response($pdf->Output('Disciplinary-Conference-Summary-Report.pdf', 'S'))
+            ->header('Content-Type', 'application/pdf');
     }
 
 }
