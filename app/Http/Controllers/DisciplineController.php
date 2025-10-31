@@ -247,25 +247,73 @@ class DisciplineController extends Controller
             return redirect()->route('discipline.login');
         }
 
-        $validatedData = $request->validate([
-            'student_id' => 'required|exists:students,id',
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'severity' => 'required|in:minor,major,severe',
-            'major_category' => 'nullable|string|required_if:severity,major',
-            'violation_date' => 'required|date',
-            'violation_time' => 'nullable',
-            'status' => 'nullable|in:pending,investigating,in_progress,resolved,dismissed',
-            'urgency_level' => 'nullable|in:low,medium,high,urgent',
-            'force_duplicate' => 'nullable|boolean',
+        try {
+            $validatedData = $request->validate([
+                'student_id' => 'required|exists:students,id',
+                'title' => 'required|string|max:255',
+                'description' => 'nullable|string',
+                'severity' => 'required|in:minor,major,severe',
+                'major_category' => 'nullable|string',
+                'violation_date' => 'required|date',
+                'violation_time' => 'nullable|string',
+                'status' => 'nullable|in:pending,investigating,in_progress,resolved,dismissed',
+                'urgency_level' => 'nullable|in:low,medium,high,urgent',
+                'force_duplicate' => 'nullable',
+                'location' => 'nullable|string',
+                'witnesses' => 'nullable|string',
+                'evidence' => 'nullable|string',
+                'notes' => 'nullable|string',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Validation failed:', [
+                'errors' => $e->errors(),
+                'request_data' => $request->all()
+            ]);
+            
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed: ' . implode(', ', array_flatten($e->errors())),
+                    'errors' => $e->errors()
+                ], 422); // Use 422 for validation errors, not 409
+            }
+            throw $e;
+        }
+
+        // Log request data for debugging
+        \Log::info('Violation submission request data:', [
+            'force_duplicate' => $request->input('force_duplicate'),
+            'force_duplicate_type' => gettype($request->input('force_duplicate')),
+            'all_request_data' => $request->all()
         ]);
 
         // Check for duplicate violation unless force_duplicate is true
-        if (!$request->input('force_duplicate', false)) {
+        $forceDuplicate = $request->input('force_duplicate', false);
+        
+        // Handle string 'true' as boolean
+        if ($forceDuplicate === 'true') {
+            $forceDuplicate = true;
+        }
+        
+        \Log::info('Force duplicate check:', [
+            'force_duplicate_raw' => $request->input('force_duplicate'),
+            'force_duplicate_processed' => $forceDuplicate,
+            'will_check_duplicates' => !$forceDuplicate
+        ]);
+        
+        if (!$forceDuplicate) {
             $exists = Violation::where('student_id', $validatedData['student_id'])
                 ->where('title', $validatedData['title'])
                 ->whereDate('violation_date', $validatedData['violation_date'])
                 ->exists();
+                
+            \Log::info('Duplicate check result:', [
+                'exists' => $exists,
+                'student_id' => $validatedData['student_id'],
+                'title' => $validatedData['title'],
+                'violation_date' => $validatedData['violation_date']
+            ]);
+                
             if ($exists) {
                 if ($request->wantsJson() || $request->ajax()) {
                     return response()->json([

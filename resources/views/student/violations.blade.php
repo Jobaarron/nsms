@@ -1,3 +1,18 @@
+<style>
+  /* Fix hover for View PDF (outline-primary) and Reply (outline-info) */
+  .btn-outline-primary:hover, .btn-outline-primary:focus {
+    color: #fff !important;
+    background-color: #0d6efd !important;
+    border-color: #0d6efd !important;
+    box-shadow: 0 0 0 0.2rem rgba(13,110,253,.25);
+  }
+  .btn-outline-info:hover, .btn-outline-info:focus {
+    color: #fff !important;
+    background-color: #0dcaf0 !important;
+    border-color: #0dcaf0 !important;
+    box-shadow: 0 0 0 0.2rem rgba(13,202,240,.25);
+  }
+</style>
 <x-student-layout>
   @vite(['resources/css/student_violations.css', 'resources/js/student-violation.js'])
 
@@ -106,21 +121,25 @@
                 <td>{{ $violation->action_taken ?? '-' }}</td>
                 <td>
                   @if ($violation->effective_severity === 'major')
-                    <!-- View PDF -->
-                    <a href="#" data-bs-toggle="modal" 
-                       data-bs-target="#pdfModal" 
-                       data-pdf="{{ route('student.pdf.studentNarrative', ['studentId' => $student->id, 'violationId' => $violation->id]) }}"
-                       title="View PDF">
-                      <i class="ri-eye-line"></i>
-                    </a>
-
-                    <!-- Reply -->
-                    <a href="#" data-bs-toggle="modal" data-bs-target="#replyModal"
-                       data-id="{{ $violation->id }}" title="Reply to Narrative Report">
-                      <i class="ri-chat-1-line"></i>
-                    </a>
+                    <div class="btn-group" role="group">
+                      <button type="button" class="btn btn-sm btn-outline-primary"
+                              data-bs-toggle="modal"
+                              data-bs-target="#pdfModal"
+                              data-pdf="{{ route('student.pdf.studentNarrative', ['studentId' => $student->id, 'violationId' => $violation->id]) }}"
+                              title="View PDF">
+                        <i class="ri-eye-line"></i>
+                      </button>
+                      <button type="button" class="btn btn-sm btn-outline-info"
+                              data-bs-toggle="modal"
+                              data-bs-target="#replyModal"
+                              data-id="{{ $violation->id }}"
+                              title="Reply to Narrative Report">
+                        <i class="ri-chat-1-line"></i>
+                      </button>
+                    </div>
                   @endif
                 </td>
+</script>
               </tr>
             @endforeach
           </tbody>
