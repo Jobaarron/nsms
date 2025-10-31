@@ -35,7 +35,7 @@
                             data-student="{{ strtolower($report->student->name ?? '') }}" 
                             data-violation="{{ strtolower($report->violation->title ?? '') }}"
                         >
-                            <td>{{ $report->student?->name ?? '-' }}</td>
+                            <td>{{ $report->student?->full_name ?? $report->student?->name ?? '-' }}</td>
                             <td>{{ $report->violation?->title ?? '-' }}</td>
                             <td>
                                 @php
@@ -65,25 +65,53 @@
                                     -
                                 @endif
                             </td>
-                            <td>{{ $report->reported_by ?? '-' }}</td>
+                            <td>
+                                @if($report->counselor)
+                                    @if($report->counselor->first_name || $report->counselor->last_name)
+                                        {{ trim($report->counselor->first_name . ' ' . $report->counselor->last_name) }}
+                                    @elseif($report->counselor->user)
+                                        {{ $report->counselor->user->name }}
+                                    @else
+                                        -
+                                    @endif
+                                @else
+                                    -
+                                @endif
+                            </td>
                             <td>
                                 <div class="btn-group" role="group">
                                     <button 
                                         type="button" 
-                                        class="btn btn-sm btn-outline-primary" 
-                                        data-bs-toggle="modal" 
-                                        data-bs-target="#viewModal" 
-                                        data-id="{{ $report->id }}" 
+                                        class="btn btn-sm btn-outline-primary view-pdf-btn" 
+                                        data-pdf-url="{{ url('/teacher/observationreport/pdf/' . $report->id) }}" 
                                         title="View Report"
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#pdfModal"
                                     >
                                         <i class="ri-eye-line"></i>
                                     </button>
+<!-- PDF Modal -->
+<div class="modal fade" id="pdfModal" tabindex="-1" aria-labelledby="pdfModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="pdfModalLabel">Teacher Observation Report PDF</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="height:80vh;">
+                <iframe id="pdfFrame" src="" width="100%" height="100%" style="border:none;"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
                                     <button 
                                         type="button" 
-                                        class="btn btn-sm btn-outline-info" 
+                                        class="btn btn-sm btn-outline-info reply-btn" 
                                         data-bs-toggle="modal" 
                                         data-bs-target="#replyModal" 
                                         data-id="{{ $report->id }}" 
+                                        data-teacher_statement="{{ $report->teacher_statement ?? '' }}"
+                                        data-action_plan="{{ $report->action_plan ?? '' }}"
                                         title="Reply"
                                     >
                                         <i class="ri-chat-1-line"></i>
@@ -106,21 +134,66 @@
     @endif
 </div>
 
+<!-- Reply Modal -->
+<div class="modal fade" id="replyModal" tabindex="-1" aria-labelledby="replyModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="replyForm" method="POST">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title" id="replyModalLabel">Teacher Reply</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="teacher_statement" class="form-label">Teacher Statement</label>
+                        <textarea class="form-control" id="teacher_statement" name="teacher_statement" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="action_plan" class="form-label">Action Plan</label>
+                        <textarea class="form-control" id="action_plan" name="action_plan" rows="3" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-success">Submit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const searchInput = document.getElementById('reportSearch');
-    if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            const searchTerm = searchInput.value.trim().toLowerCase();
-            document.querySelectorAll('.report-row').forEach(row => {
-                const student = row.dataset.student || '';
-                const violation = row.dataset.violation || '';
-                row.style.display = (!searchTerm || student.includes(searchTerm) || violation.includes(searchTerm))
-                    ? ''
-                    : 'none';
-            });
+    // Handle Reply button click to populate modal and set form action
+    document.querySelectorAll('.reply-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const caseMeetingId = btn.getAttribute('data-id');
+            const teacherStatement = btn.getAttribute('data-teacher_statement') || '';
+            const actionPlan = btn.getAttribute('data-action_plan') || '';
+            document.getElementById('teacher_statement').value = teacherStatement;
+            document.getElementById('action_plan').value = actionPlan;
+            document.getElementById('replyForm').action = '/teacher/observationreport/reply/' + caseMeetingId;
+        });
+    });
+
+    // Handle View Report button to show PDF in modal
+    document.querySelectorAll('.view-pdf-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const pdfUrl = btn.getAttribute('data-pdf-url');
+            document.getElementById('pdfFrame').src = pdfUrl;
+        });
+    });
+
+    // Clear PDF src when modal is closed (optional, for cleanup)
+    const pdfModal = document.getElementById('pdfModal');
+    if (pdfModal) {
+        pdfModal.addEventListener('hidden.bs.modal', function () {
+            document.getElementById('pdfFrame').src = '';
         });
     }
 });
+</script>
+// ...existing code...
 </script>
 </x-teacher-layout>

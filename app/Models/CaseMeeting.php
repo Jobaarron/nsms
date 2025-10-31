@@ -44,6 +44,8 @@ class CaseMeeting extends Model
         'location',
         'reason',
         'notes',
+        'teacher_statement',
+        'action_plan',
         'status',
         'summary',
         'recommendations',

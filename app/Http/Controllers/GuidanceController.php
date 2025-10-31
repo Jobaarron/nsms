@@ -366,6 +366,9 @@ class GuidanceController extends Controller
                     'student_statement' => $caseMeeting->violation ? $caseMeeting->violation->student_statement : null,
                     'incident_feelings' => $caseMeeting->violation ? $caseMeeting->violation->incident_feelings : null,
                     'action_plan' => $caseMeeting->violation ? $caseMeeting->violation->action_plan : null,
+                    // Add teacher reply fields from the case meeting itself
+                    'teacher_statement' => $caseMeeting->teacher_statement,
+                    'teacher_action_plan' => $caseMeeting->action_plan,
                     'sanctions' => $caseMeeting->sanctions->map(function ($sanction) {
                         return [
                             'id' => $sanction->id,

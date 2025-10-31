@@ -293,5 +293,59 @@ class PdfController extends Controller
             return response($pdf->Output('Student-Narrative-Report.pdf', 'S'))->header('Content-Type', 'application/pdf');
         }
 
+    /**
+     * Generate Teacher Observation Report PDF using TCPDF.
+     *
+     * @param int $caseMeetingId
+     * @return \Illuminate\Http\Response
+     */
+    public function teacherObservationReportPdf($caseMeetingId)
+    {
+        $caseMeeting = \App\Models\CaseMeeting::with(['violation', 'student'])->findOrFail($caseMeetingId);
+
+        // Attempt to get teacher name and user_id from the violation's teacher, fallback to null
+        $teacherName = null;
+        $teacherUserId = null;
+        if ($caseMeeting->violation && method_exists($caseMeeting->violation, 'teacher')) {
+            $teacher = $caseMeeting->violation->teacher;
+            if ($teacher) {
+                $teacherName = $teacher->full_name ?? $teacher->name ?? null;
+                // $teacherUserId = $teacher->user_id ?? null;
+            }
+        }
+
+        $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
+        $templatePath = storage_path('app/public/Teacher-Report/Teacher-Observation-Report.pdf');
+        if (!file_exists($templatePath)) {
+            abort(404, 'Teacher Observation Report PDF template not found.');
+        }
+        $pdf->setSourceFile($templatePath);
+        $tplId = $pdf->importPage(1);
+        $size = $pdf->getTemplateSize($tplId);
+        $pdf->SetMargins(0, 0, 0);
+        $orientation = ($size['width'] > $size['height']) ? 'L' : 'P';
+        $pdf->AddPage($orientation, [$size['width'], $size['height']]);
+        $pdf->SetFont('dejavusans', '', 10);
+        $pdf->useTemplate($tplId);
+
+        // Overlay the required data (adjust coordinates as needed for your template)
+        $pdf->SetXY(27, 62); // Teacher Name
+        $pdf->Write(0, $teacherName ?? '');
+        // Optionally, overlay the teacher user_id (for demonstration, place at 40, 50)
+        if ($teacherUserId) {
+            $pdf->SetXY(40, 50); // Teacher user_id
+            $pdf->Write(0, 'User ID: ' . $teacherUserId);
+        }
+        $pdf->SetXY(120, 45); // Scheduled Date
+        $pdf->Write(0, $caseMeeting->scheduled_date ? (is_string($caseMeeting->scheduled_date) ? $caseMeeting->scheduled_date : $caseMeeting->scheduled_date->format('Y-m-d')) : '');
+        $pdf->SetXY(170, 45); // Scheduled Time
+        $pdf->Write(0, $caseMeeting->scheduled_time ? (is_string($caseMeeting->scheduled_time) ? $caseMeeting->scheduled_time : $caseMeeting->scheduled_time->format('H:i')) : '');
+        $pdf->SetXY(18, 90); // Teacher Statement
+        $pdf->MultiCell(150, 8, $caseMeeting->teacher_statement ?? '');
+        $pdf->SetXY(18, 200); // Action Plan
+        $pdf->MultiCell(150, 8, $caseMeeting->action_plan ?? '');
+
+        return response($pdf->Output('Teacher-Observation-Report.pdf', 'S'))->header('Content-Type', 'application/pdf');
+    }
 
 }

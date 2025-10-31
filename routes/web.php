@@ -242,6 +242,14 @@ Route::middleware(['auth', 'role:teacher'])->prefix('teacher')->name('teacher.')
     // Alias route for compatibility with 'teacher.observationreport' references
     Route::get('/observationreport', [TeacherController::class, 'showObservationReport'])
         ->name('observationreport');
+
+    // Route to serve the dynamic teacher observation report PDF
+    Route::get('/observationreport/pdf/{caseMeeting}', [App\Http\Controllers\PdfController::class, 'teacherObservationReportPdf'])
+        ->name('observationreport.pdf');
+
+    // Teacher Observation Report: Teacher Reply (update case meeting)
+    Route::post('/observationreport/reply/{caseMeeting}', [App\Http\Controllers\TeacherController::class, 'submitObservationReply'])
+        ->name('observationreport.reply');
 });
 
 // Teacher Schedule Routes (Extended functionality)
@@ -470,6 +478,7 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
                 ->name('forward');
         });
 
+    Route::get('/observationreport/pdf/{caseMeeting}', [App\Http\Controllers\PdfController::class, 'teacherObservationReportPdf']);
         // PDF route for case meeting attachment (moved outside case-meetings group)
         Route::get('/pdf/case-meeting/{caseMeetingId}', [PdfController::class, 'caseMeetingAttachmentPdf'])->name('pdf.case-meeting.attachment');
         

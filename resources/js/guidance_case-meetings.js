@@ -105,57 +105,81 @@ window.clearFilters = function() {
 };
 
 window.viewCaseMeeting = function(meetingId) {
-        // Fetch meeting data and populate view modal
-        fetch(`/guidance/case-meetings/${meetingId}`, {
-                headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json'
-                }
-        })
-        .then(response => response.json())
-                .then(data => {
-                        if (data.success) {
-                                const meeting = data.meeting;
-                                // Debug: log meeting object to check for student_id, violation_id, and possible narrative_report_url
-                                console.log('Meeting data:', meeting);
+    // Fetch meeting data and populate view modal
+    fetch(`/guidance/case-meetings/${meetingId}`, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const meeting = data.meeting;
+            // Debug: log meeting object to check for student_id, violation_id, and possible narrative_report_url
+            console.log('Meeting data:', meeting);
 
+            // Build the PDF URL for the narrative report - only show if student has replied
+            let narrativePdfUrl = '';
+            if (meeting.student_id && meeting.violation_id && 
+                (meeting.student_statement || meeting.incident_feelings || meeting.action_plan)) {
+                narrativePdfUrl = `/narrative-report/view/${meeting.student_id}/${meeting.violation_id}`;
+            } else if (meeting.narrative_report_url) {
+                narrativePdfUrl = meeting.narrative_report_url;
+            }
 
-                                // Build the PDF URL for the narrative report - only show if student has replied
-                                let narrativePdfUrl = '';
-                                if (meeting.student_id && meeting.violation_id && 
-                                    (meeting.student_statement || meeting.incident_feelings || meeting.action_plan)) {
-                                    narrativePdfUrl = `/narrative-report/view/${meeting.student_id}/${meeting.violation_id}`;
-                                } else if (meeting.narrative_report_url) {
-                                    narrativePdfUrl = meeting.narrative_report_url;
-                                }
+            // Build the PDF URL for the case meeting attachment - only show if student has replied
+            let caseMeetingAttachmentUrl = '';
+            if (meeting.id && (meeting.student_statement || meeting.incident_feelings || meeting.action_plan)) {
+                caseMeetingAttachmentUrl = `/guidance/pdf/case-meeting/${meeting.id}`;
+            }
 
-                                // Build the PDF URL for the case meeting attachment - only show if student has replied
-                                let caseMeetingAttachmentUrl = '';
-                                if (meeting.id && (meeting.student_statement || meeting.incident_feelings || meeting.action_plan)) {
-                                    caseMeetingAttachmentUrl = `/guidance/pdf/case-meeting/${meeting.id}`;
-                                }
+            // Build the PDF URL for the teacher observation report (guidance route)
+            let teacherObservationReportUrl = '';
+            if (meeting.id && (meeting.teacher_statement || meeting.action_plan)) {
+                teacherObservationReportUrl = `/guidance/observationreport/pdf/${meeting.id}`;
+            }
 
-                                // Compose modal HTML (two-column, similar to violation modal)
-                                document.getElementById('viewCaseMeetingModalBody').innerHTML = `
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <h6>Student Information</h6>
-                                            <table class="table table-sm">
-                                                <tbody>
-                                                    <tr><td><strong>Name:</strong></td><td>${meeting.student_name || 'N/A'}</td></tr>
-                                                    <tr><td><strong>Student ID:</strong></td><td>${meeting.student_id || 'N/A'}</td></tr>
-                                                    <tr><td><strong>Status:</strong></td><td>
-                                                        <span class="badge bg-${meeting.status_class ? meeting.status_class.replace('bg-', '') : 'secondary'}">
-                                                            ${meeting.status_text || 'N/A'}
-                                                        </span>
-                                                    </td></tr>
-                                                    <tr><td><strong>Date:</strong></td><td>${meeting.scheduled_date ? new Date(meeting.scheduled_date).toLocaleDateString() : 'N/A'}</td></tr>
-                                                    <tr><td><strong>Time:</strong></td><td>${meeting.scheduled_time ? meeting.scheduled_time.substring(0,5) : 'N/A'}</td></tr>
-                                                </tbody>
-                                            </table>                                            <!-- Case Meeting Attachment (if available) -->
-                                            ${caseMeetingAttachmentUrl ? `<div class="mt-3"><label class="form-label fw-bold">Case Meeting Attachment (PDF):</label><div><a href="${caseMeetingAttachmentUrl}" target="_blank" class="btn btn-outline-success btn-sm"><i class="ri-attachment-2"></i> Student Narrative Report</a></div></div>` : ''}
-                                        </div>
-                                <div class="col-md-6">
+            // Compose modal HTML (two-column, similar to violation modal)
+            document.getElementById('viewCaseMeetingModalBody').innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Student Information</h6>
+                        <table class="table table-sm">
+                            <tbody>
+                                <tr><td><strong>Name:</strong></td><td>${meeting.student_name || 'N/A'}</td></tr>
+                                <tr><td><strong>Student ID:</strong></td><td>${meeting.student_id || 'N/A'}</td></tr>
+                                <tr><td><strong>Status:</strong></td><td>
+                                    <span class="badge bg-${meeting.status_class ? meeting.status_class.replace('bg-', '') : 'secondary'}">
+                                        ${meeting.status_text || 'N/A'}
+                                    </span>
+                                </td></tr>
+                                <tr><td><strong>Date:</strong></td><td>${meeting.scheduled_date ? new Date(meeting.scheduled_date).toLocaleDateString() : 'N/A'}</td></tr>
+                                <tr><td><strong>Time:</strong></td><td>${meeting.scheduled_time ? meeting.scheduled_time.substring(0,5) : 'N/A'}</td></tr>
+                            </tbody>
+                        </table>
+                        <!-- Attachment Report Section -->
+                        <div class="mt-4">
+                            <div style="font-weight: bold; font-size: 16px; margin-bottom: 12px;">Attachment Report</div>
+                            ${caseMeetingAttachmentUrl ? `
+                                <div style="margin-bottom: 10px;">
+                                    <a href="${caseMeetingAttachmentUrl}" target="_blank" style="display: inline-flex; align-items: center; border: 2px solid #388e3c; color: #388e3c; border-radius: 6px; padding: 8px 18px; font-size: 16px; font-weight: 500; background: #fff; text-decoration: none; margin-bottom: 8px;">
+                                        <span style="margin-right: 8px; font-size: 18px;">&#128206;</span> <!-- Paperclip Unicode -->
+                                        Student Narrative Report
+                                    </a>
+                                </div>
+                            ` : ''}
+                            ${teacherObservationReportUrl ? `
+                                <div>
+                                    <a href="${teacherObservationReportUrl}" target="_blank" style="display: inline-flex; align-items: center; border: 2px solid #388e3c; color: #388e3c; border-radius: 6px; padding: 8px 18px; font-size: 16px; font-weight: 500; background: #fff; text-decoration: none;">
+                                        <span style="margin-right: 8px; font-size: 18px;">&#128196;</span> <!-- Page with curl Unicode (PDF icon alternative) -->
+                                        View Teacher Observation Report
+                                    </a>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                <div class="col-md-6">
                                     ${meeting.summary ? `
                                         <div class="mb-3">
                                             <label class="form-label fw-bold">Summary:</label>
