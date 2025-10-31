@@ -239,4 +239,15 @@ class TeacherController extends Controller
         return redirect()->route('teacher.dashboard')
             ->with('success', 'Student has been recommended for counseling. Guidance will review the recommendation.');
     }
+
+    /**
+     * Show the Observation Report page.
+     * Route: teacher.observationreport
+     */
+    public function showObservationReport()
+    {
+        // TODO: Replace with actual query for observation reports
+        $reports = collect(); // Use an empty collection for now
+        return view('teacher.observationreport', compact('reports'));
+    }
 }

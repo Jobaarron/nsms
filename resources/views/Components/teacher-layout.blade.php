@@ -29,7 +29,7 @@
   <div class="container-fluid">
     <div class="row">
       <!-- SIDEBAR -->
-      <nav class="col-12 col-md-2 sidebar d-none d-md-block py-4">
+  <nav class="col-12 col-md-2 sidebar py-4">
         <!-- School Logo -->
         <div class="text-center mb-3">
           <img src="{{ Vite::asset('resources/assets/images/nms logo.png') }}" alt="Nicolites Montessori School" class="sidebar-logo">
@@ -59,6 +59,12 @@
               <i class="ri-pencil-ruler-2-line me-2"></i>Submit Grades
             </a>
           </li>
+
+          <li class="nav-item mb-2">
+            <a class="nav-link {{ request()->routeIs('teacher.observationreport*') ? 'active' : '' }}" href="{{ route('teacher.observationreport') }}">
+              <i class="ri-file-list-3-line me-2"></i>Observationreport
+            </a>
+          </li>
           
           <!-- <li class="nav-item mb-2">
             <a class="nav-link {{ request()->routeIs('teacher.my-students') ? 'active' : '' }}" href="{{ route('teacher.my-students') }}">
@@ -84,7 +90,9 @@
         </ul>
       </nav>
 
-      {{ $slot }}
+      <main class="col-12 col-md-10 py-4">
+        {{ $slot }}
+      </main>
     </div>
   </div>
 </body>

@@ -234,6 +234,14 @@ Route::middleware(['auth', 'role:teacher'])->prefix('teacher')->name('teacher.')
         ->name('recommend-counseling.form');
     Route::post('/recommend-counseling', [TeacherController::class, 'recommendToCounseling'])
         ->name('recommend-counseling');
+
+    // Route for the Teacher Observation Report page
+    Route::get('/reports', [TeacherController::class, 'showObservationReport'])
+        ->name('reports');
+
+    // Alias route for compatibility with 'teacher.observationreport' references
+    Route::get('/observationreport', [TeacherController::class, 'showObservationReport'])
+        ->name('observationreport');
 });
 
 // Teacher Schedule Routes (Extended functionality)
