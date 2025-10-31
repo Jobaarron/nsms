@@ -120,17 +120,18 @@ window.viewCaseMeeting = function(meetingId) {
                                 console.log('Meeting data:', meeting);
 
 
-                                // Build the PDF URL for the narrative report
+                                // Build the PDF URL for the narrative report - only show if student has replied
                                 let narrativePdfUrl = '';
-                                if (meeting.student_id && meeting.violation_id) {
+                                if (meeting.student_id && meeting.violation_id && 
+                                    (meeting.student_statement || meeting.incident_feelings || meeting.action_plan)) {
                                     narrativePdfUrl = `/narrative-report/view/${meeting.student_id}/${meeting.violation_id}`;
                                 } else if (meeting.narrative_report_url) {
                                     narrativePdfUrl = meeting.narrative_report_url;
                                 }
 
-                                // Build the PDF URL for the case meeting attachment (new guidance route)
+                                // Build the PDF URL for the case meeting attachment - only show if student has replied
                                 let caseMeetingAttachmentUrl = '';
-                                if (meeting.id) {
+                                if (meeting.id && (meeting.student_statement || meeting.incident_feelings || meeting.action_plan)) {
                                     caseMeetingAttachmentUrl = `/guidance/pdf/case-meeting/${meeting.id}`;
                                 }
 

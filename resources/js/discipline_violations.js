@@ -1204,9 +1204,10 @@ window.viewViolation = function(violationId) {
     fetch(`/discipline/violations/${violationId}`, { credentials: 'include' })
       .then(response => response.json())
       .then(data => {
-        // Build the PDF URL for the narrative report
+        // Build the PDF URL for the narrative report - only show if student has replied
         let narrativePdfUrl = '';
-        if (data.student && data.id && data.severity === 'major') {
+        if (data.student && data.id && data.severity === 'major' && 
+            (data.student_statement || data.incident_feelings || data.action_plan)) {
           narrativePdfUrl = `/narrative-report/view/${data.student.id}/${data.id}`;
         }
 

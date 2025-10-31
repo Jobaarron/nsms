@@ -422,7 +422,7 @@ function generateSummaryHTML(meeting) {
                 <h6 class="mb-0">Reports</h6>
             </div>
             <div class="card-body">
-                ${meeting.student && meeting.violation_id
+                ${meeting.student && meeting.violation_id && (meeting.student_statement || meeting.incident_feelings || meeting.action_plan)
                     ? `<a href="/narrative-report/view/${meeting.student.id}/${meeting.violation_id}" target="_blank" class="btn btn-outline-primary btn-sm minimalist-attachment-btn"><i class="ri-attachment-2"></i> Student Narrative PDF</a>`
                     : '<span class="text-muted small">No Attachment</span>'}
             </div>

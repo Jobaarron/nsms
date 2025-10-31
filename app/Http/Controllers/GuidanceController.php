@@ -338,7 +338,7 @@ class GuidanceController extends Controller
      */
     public function showCaseMeeting(CaseMeeting $caseMeeting)
     {
-        $caseMeeting->load(['student', 'counselor', 'sanctions']);
+        $caseMeeting->load(['student', 'counselor', 'sanctions', 'violation']);
 
         if (request()->ajax()) {
             return response()->json([
@@ -347,6 +347,7 @@ class GuidanceController extends Controller
                     'id' => $caseMeeting->id,
                     'student_name' => $caseMeeting->student ? $caseMeeting->student->full_name : 'Unknown',
                     'student_id' => $caseMeeting->student ? $caseMeeting->student->student_id : 'Unknown',
+                    'violation_id' => $caseMeeting->violation_id,
                     'status' => $caseMeeting->status,
                     'status_text' => ucfirst($caseMeeting->status),
                     'status_class' => $this->getStatusClass($caseMeeting->status),
@@ -361,6 +362,10 @@ class GuidanceController extends Controller
                     'scheduled_time' => $caseMeeting->scheduled_time ? $caseMeeting->scheduled_time->format('h:i A') : null,
                     'scheduled_by_name' => $caseMeeting->counselor ? ($caseMeeting->counselor->first_name . ' ' . $caseMeeting->counselor->last_name) : null,
                     'created_at' => $caseMeeting->created_at ? $caseMeeting->created_at->format('Y-m-d H:i:s') : null,
+                    // Include violation student reply fields if violation exists
+                    'student_statement' => $caseMeeting->violation ? $caseMeeting->violation->student_statement : null,
+                    'incident_feelings' => $caseMeeting->violation ? $caseMeeting->violation->incident_feelings : null,
+                    'action_plan' => $caseMeeting->violation ? $caseMeeting->violation->action_plan : null,
                     'sanctions' => $caseMeeting->sanctions->map(function ($sanction) {
                         return [
                             'id' => $sanction->id,
