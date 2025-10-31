@@ -257,21 +257,25 @@ class DisciplineController extends Controller
             'violation_time' => 'nullable',
             'status' => 'nullable|in:pending,investigating,in_progress,resolved,dismissed',
             'urgency_level' => 'nullable|in:low,medium,high,urgent',
+            'force_duplicate' => 'nullable|boolean',
         ]);
 
-        // Prevent duplicate violation for same student, title, and date
-        $exists = Violation::where('student_id', $validatedData['student_id'])
-            ->where('title', $validatedData['title'])
-            ->whereDate('violation_date', $validatedData['violation_date'])
-            ->exists();
-        if ($exists) {
-            if ($request->wantsJson() || $request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'A violation with the same title already exists for this student on this date.'
-                ], 409);
+        // Check for duplicate violation unless force_duplicate is true
+        if (!$request->input('force_duplicate', false)) {
+            $exists = Violation::where('student_id', $validatedData['student_id'])
+                ->where('title', $validatedData['title'])
+                ->whereDate('violation_date', $validatedData['violation_date'])
+                ->exists();
+            if ($exists) {
+                if ($request->wantsJson() || $request->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'A violation with the same title already exists for this student on this date.',
+                        'is_duplicate' => true
+                    ], 409);
+                }
+                return back()->withErrors(['error' => 'A violation with the same title already exists for this student on this date.']);
             }
-            return back()->withErrors(['error' => 'A violation with the same title already exists for this student on this date.']);
         }
 
         // Map major_category numeric values to ENUM strings and handle 'null' string
@@ -320,6 +324,9 @@ class DisciplineController extends Controller
         }
 
         $validatedData['reported_by'] = $disciplineRecord->id;
+
+        // Remove force_duplicate from data before creating violation
+        unset($validatedData['force_duplicate']);
 
         try {
             \Log::info('Starting violation creation', [
