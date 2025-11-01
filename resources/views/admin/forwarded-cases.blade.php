@@ -415,16 +415,27 @@ function generateSummaryHTML(meeting) {
         </div>
     `;
 
-    // Reports Card (PDF Attachment)
+    // Reports Card (PDF Attachments)
+    let hasNarrative = meeting.student && meeting.violation_id && (meeting.student_statement || meeting.incident_feelings || meeting.action_plan);
+    let hasTeacherObservation = meeting.id && (meeting.teacher_statement || meeting.action_plan);
     html += `
         <div class="card mb-3">
             <div class="card-header">
                 <h6 class="mb-0">Reports</h6>
             </div>
             <div class="card-body">
-                ${meeting.student && meeting.violation_id && (meeting.student_statement || meeting.incident_feelings || meeting.action_plan)
-                    ? `<a href="/narrative-report/view/${meeting.student.id}/${meeting.violation_id}" target="_blank" class="btn btn-outline-primary btn-sm minimalist-attachment-btn"><i class="ri-attachment-2"></i> Student Narrative PDF</a>`
-                    : '<span class="text-muted small">No Attachment</span>'}
+                <div class="d-flex flex-column gap-2">
+                    <a href="/admin/case-meetings/{{ $meeting->id }}/disciplinary-conference-report/pdf" target="_blank" class="btn btn-outline-primary btn-sm minimalist-attachment-btn"><i class="ri-download-2-line"></i> Disciplinary Conference Reports PDF</a>
+                    ${hasNarrative
+                        ? `<a href="/narrative-report/view/${meeting.student.id}/${meeting.violation_id}" target="_blank" class="btn btn-outline-primary btn-sm minimalist-attachment-btn"><i class="ri-attachment-2"></i> Student Narrative PDF</a>`
+                        : ''}
+                    ${hasTeacherObservation
+                        ? `<a href="/guidance/observationreport/pdf/${meeting.id}" target="_blank" class="btn btn-outline-success btn-sm minimalist-attachment-btn"><i class="ri-file-pdf-line"></i> Teacher Observation Report PDF</a>`
+                        : ''}
+                    ${!hasNarrative && !hasTeacherObservation
+                        ? '<span class="text-muted small">No Attachment</span>'
+                        : ''}
+                </div>
             </div>
         </div>
     `;

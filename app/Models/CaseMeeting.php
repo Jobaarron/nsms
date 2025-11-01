@@ -230,6 +230,24 @@ class CaseMeeting extends Model
             // Don't throw the exception to prevent breaking the case meeting creation/update
         }
     }
+    /**
+     * Get the admin associated with this case meeting.
+     * Assumes there is an admin_id column referencing users table.
+     */
+    public function admin(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'admin_id');
+    }
+
+    /**
+     * Accessor: Get the teacher associated via the violation relationship.
+     * Usage: $caseMeeting->teacher
+     * For eager loading, use with(['violation.teacher'])
+     */
+    public function getTeacherAttribute()
+    {
+        return $this->violation ? $this->violation->teacher : null;
+    }
 
     /**
      * Boot the model.
@@ -249,4 +267,5 @@ class CaseMeeting extends Model
             }
         });
     }
+
 }

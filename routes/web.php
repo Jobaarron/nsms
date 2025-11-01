@@ -85,10 +85,11 @@ Route::prefix('admin')->group(function () {
 
         // View summary report for case meeting
         Route::get('/case-meetings/{caseMeeting}/summary', [AdminController::class, 'viewSummaryReport'])->name('case-meetings.summary');
+
+    // Route to download Disciplinary Conference Report PDF for a specific case meeting
+    Route::get('/case-meetings/{caseMeeting}/disciplinary-conference-report/pdf', [PdfController::class, 'DisciplinaryConReports'])->name('case-meetings.disciplinary-conference-report.pdf');
         
-       
-     
-        
+    
         // User Management - Use your custom permission middleware
         Route::middleware(['permission:Manage Users'])->group(function () {
             Route::get('/manage-users', [UserManagementController::class, 'index'])->name('manage.users');

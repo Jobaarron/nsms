@@ -715,39 +715,23 @@
                 <form id="editCaseMeetingForm" onsubmit="submitEditCaseMeeting(event)">
                     <div class="modal-body">
                         <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Student <span class="text-danger">*</span></label>
-                                <select class="form-select" name="student_id" id="edit_student_id" required>
-                                    <option value="">Select Student</option>
-                                    @foreach($students as $student)
-                                        <option value="{{ $student->id }}">{{ $student->full_name }} ({{ $student->student_id }})</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Meeting Type <span class="text-danger">*</span></label>
-                                <select class="form-select" name="meeting_type" id="edit_meeting_type" required>
-                                    <option value="case_meeting">Case Meeting</option>
-                                    <option value="house_visit">House Visit</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Date <span class="text-danger">*</span></label>
-                                <input type="date" class="form-control" name="scheduled_date" id="edit_scheduled_date" required min="{{ date('Y-m-d') }}">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Time <span class="text-danger">*</span></label>
-                                <input type="time" class="form-control" name="scheduled_time" id="edit_scheduled_time" required>
-                            </div>
+                             <div class="col-md-6">
+                                 <label class="form-label">Date <span class="text-danger">*</span></label>
+                                 <input type="date" class="form-control" name="scheduled_date" id="edit_scheduled_date" required min="{{ date('Y-m-d') }}">
+                             </div>
+                             <div class="col-md-6">
+                                 <label class="form-label">Time <span class="text-danger">*</span></label>
+                                 <input type="time" class="form-control" name="scheduled_time" id="edit_scheduled_time" required>
+                             </div>
 
-                            <div class="col-12">
-                                <label class="form-label">Reason <span class="text-danger">*</span></label>
-                                <textarea class="form-control" name="reason" id="edit_reason" rows="3" required placeholder="Describe the reason for this meeting..."></textarea>
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label">Notes</label>
-                                <textarea class="form-control" name="notes" id="edit_notes" rows="2" placeholder="Additional notes..."></textarea>
-                            </div>
+                             <div class="col-12">
+                                 <label class="form-label">Summary</label>
+                                 <textarea class="form-control" name="summary" id="edit_summary" rows="3" placeholder="Enter summary..."></textarea>
+                             </div>
+                             <div class="col-12">
+                                 <label class="form-label">Sanctions</label>
+                                 <input type="text" class="form-control" name="sanctions" id="edit_sanctions" placeholder="Edit sanctions (comma separated or as needed)">
+                             </div>
                         </div>
                     </div>
                     <div class="modal-footer">
