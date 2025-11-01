@@ -278,50 +278,6 @@
     </div>
     @endif
 
-    <!-- Create Case Summary Modal -->
-    <div class="modal fade" id="createCaseSummaryModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Create Case Summary</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <form id="createCaseSummaryForm" onsubmit="submitCaseSummary(event)">
-                    <div class="modal-body">
-                        <div class="row g-3">
-                            <div class="col-12">
-                                <label class="form-label">Case Summary <span class="text-danger">*</span></label>
-                                <textarea class="form-control" name="summary" rows="4" required placeholder="Provide a detailed summary of the case meeting..."></textarea>
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label">Recommendations</label>
-                                <textarea class="form-control" name="recommendations" rows="3" placeholder="Any recommendations or actions to be taken..."></textarea>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="follow_up_required" id="follow_up_required">
-                                    <label class="form-check-label" for="follow_up_required">
-                                        Follow-up Required
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Follow-up Date</label>
-                                <input type="date" class="form-control" name="follow_up_date" min="{{ date('Y-m-d') }}">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="ri-save-line me-2"></i>Save Summary
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
     @else
     <!-- Header -->
     <div class="row mb-4">

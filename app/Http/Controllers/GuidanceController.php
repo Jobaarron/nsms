@@ -1131,18 +1131,20 @@ class GuidanceController extends Controller
      */
     public function approveCounselingSession(Request $request)
     {
+
         $request->validate([
             'session_id' => 'required|exists:counseling_sessions,id',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
+            'frequency' => 'required|in:everyday,every_other_day,once_a_week,twice_a_week',
             'time_limit' => 'required|integer|min:1|max:240',
             'time' => 'required|date_format:H:i',
         ]);
 
-
         $session = CounselingSession::findOrFail($request->session_id);
         $session->start_date = $request->start_date;
         $session->end_date = $request->end_date;
+        $session->frequency = $request->frequency;
         $session->time_limit = $request->time_limit;
         $session->time = $request->time;
         $session->status = 'scheduled';

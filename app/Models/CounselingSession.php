@@ -13,6 +13,7 @@ class CounselingSession extends Model
         'recommended_by',
         'start_date',
         'end_date',
+        'frequency',
         'time_limit',
         'time',
         'session_no',
