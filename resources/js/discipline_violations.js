@@ -2363,8 +2363,8 @@ function showIncidentForm() {
               <small class="text-muted">Add multiple students involved in the incident</small>
             </div>
             <div class="mb-3">
-              <label class="form-label fw-bold">Reporter</label>
-              <input type="text" class="form-control" id="incidentReporter" required>
+              <label class="form-label fw-bold">Location</label>
+              <input type="text" class="form-control" id="incidentLocation" required>
             </div>
             <div class="row">
               <div class="col-md-6">
@@ -2492,11 +2492,11 @@ function showIncidentForm() {
             return;
         }
 
-        // Collect incident data
-        const reporter = document.getElementById('incidentReporter').value;
-        const date = document.getElementById('incidentDate').value;
-        const time = document.getElementById('incidentTime').value;
-        const details = document.getElementById('incidentDetails').value;
+  // Collect incident data
+  const location = document.getElementById('incidentLocation').value;
+  const date = document.getElementById('incidentDate').value;
+  const time = document.getElementById('incidentTime').value;
+  const details = document.getElementById('incidentDetails').value;
 
         const submitBtn = document.querySelector('#incidentFormModal button[type="submit"]');
         const originalText = submitBtn.textContent;
@@ -2524,7 +2524,7 @@ function showIncidentForm() {
                 formData.append('violation_date', date);
                 formData.append('violation_time', time);
                 formData.append('status', 'pending');
-                formData.append('incident_reporter', reporter);
+                formData.append('location', location);
                 formData.append('incident_date', date);
                 formData.append('incident_time', time);
 
@@ -2615,7 +2615,7 @@ function showIncidentForm() {
           const date = document.getElementById('incidentDate')?.value || '';
           const time = document.getElementById('incidentTime')?.value || '';
           const details = document.getElementById('incidentDetails')?.value || '';
-          const reporter = document.getElementById('incidentReporter')?.value || '';
+          const location = document.getElementById('incidentLocation')?.value || '';
           
           const incidentViolationData = {
             student_id: firstStudent.id,
@@ -2626,10 +2626,10 @@ function showIncidentForm() {
             major_category: window.titleToSeverityMap[violationTitle]?.category || null,
             status: 'pending',
             description: details.trim(),
-            location: '',
+            location: location,
             witnesses: '',
             evidence: '',
-            notes: `Incident reported by: ${reporter}`,
+            notes: `Incident location: ${location}`,
             _token: document.querySelector('meta[name="csrf-token"]').getAttribute('content')
           };
           
