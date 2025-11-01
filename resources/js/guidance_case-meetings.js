@@ -154,8 +154,8 @@ window.viewCaseMeeting = function(meetingId) {
                                         ${meeting.status_text || 'N/A'}
                                     </span>
                                 </td></tr>
-                                <tr><td><strong>Date:</strong></td><td>${meeting.scheduled_date ? new Date(meeting.scheduled_date).toLocaleDateString() : 'N/A'}</td></tr>
-                                <tr><td><strong>Time:</strong></td><td>${meeting.scheduled_time ? meeting.scheduled_time.substring(0,5) : 'N/A'}</td></tr>
+                                <tr><td><strong>Schedule Date:</strong></td><td>${meeting.scheduled_date ? new Date(meeting.scheduled_date).toLocaleDateString() : 'N/A'}</td></tr>
+                                <tr><td><strong>Schedule Time:</strong></td><td>${meeting.scheduled_time ? meeting.scheduled_time.substring(0,5) : 'N/A'}</td></tr>
                             </tbody>
                         </table>
                         <!-- Attachment Report Section -->
@@ -180,65 +180,65 @@ window.viewCaseMeeting = function(meetingId) {
                         </div>
                     </div>
                 <div class="col-md-6">
-                                    ${meeting.summary ? `
-                                        <div class="mb-3">
-                                            <label class="form-label fw-bold">Summary:</label>
-                                            <p>${meeting.summary}</p>
-                                        </div>
-                                    ` : ''}
-                                    ${meeting.recommendations ? `
-                                        <div class="mb-3">
-                                                                                    <tr><td><strong>Date:</strong></td><td>${meeting.scheduled_date ? meeting.scheduled_date : 'N/A'}</td></tr>
-                                                                                    <tr><td><strong>Time:</strong></td><td>${meeting.scheduled_time ? meeting.scheduled_time : 'N/A'}</td></tr>
-                                        </div>
-                                    ` : ''}
-                                    ${meeting.notes ? `
-                                        <div class="mb-3">
-                                            <label class="form-label fw-bold">Notes:</label>
-                                            <p>${meeting.notes}</p>
-                                        </div>
-                                    ` : ''}
-                                    <div class="mb-3">
-                                        <label class="form-label fw-bold">Scheduled By:</label>
-                                        <p>${meeting.scheduled_by_name || 'N/A'}</p>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label fw-bold">Scheduled On:</label>
-                                        <p>${meeting.created_at ? new Date(meeting.created_at).toLocaleDateString() + ' at ' + new Date(meeting.created_at).toLocaleTimeString() : 'N/A'}</p>
-                                    </div>
-                                    ${meeting.completed_at ? `
-                                        <div class="mb-3">
-                                            <label class="form-label fw-bold">Completed On:</label>
-                                            <p>${new Date(meeting.completed_at).toLocaleDateString()} at ${new Date(meeting.completed_at).toLocaleTimeString()}</p>
-                                        </div>
-                                    ` : ''}
-                                    ${meeting.follow_up_required ? `
-                                        <div class="mb-3">
-                                            <label class="form-label fw-bold">Follow Up:</label>
-                                            <p>${meeting.follow_up_date ? 'Scheduled for ' + new Date(meeting.follow_up_date).toLocaleDateString() : 'Required'}</p>
-                                        </div>
-                                    ` : ''}
-                                    <!-- Sanctions (if any) -->
-                                    ${(meeting.sanctions && meeting.sanctions.length > 0) ? `
-                                        <div class="mb-3">
-                                            <label class="form-label fw-bold">Sanctions:</label>
-                                            <ul class="list-group">
-                                                ${meeting.sanctions.map(sanction => `
-                                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                                        <span>
-                                                            <span class="fw-semibold">${sanction.type}</span>
-                                                            ${sanction.description ? `<small class='text-muted ms-2'>${sanction.description}</small>` : ''}
-                                                            <div class="small text-muted mt-1"><i class="ri-calendar-line me-1"></i>${new Date(sanction.created_at).toLocaleDateString()}</div>
-                                                        </span>
-                                                        <span class="badge bg-${getSanctionStatusColor(sanction.status || 'pending')}">${ucfirst(sanction.status || 'pending')}</span>
-                                                    </li>
-                                                `).join('')}
-                                            </ul>
-                                        </div>
-                                    ` : ''}
-                                </div>
-                            </div>
-                        `;
+                    ${meeting.violation ? `
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Violation Details:</label>
+                            <table class="table table-sm">
+                                <tbody>
+                                    <tr><td><strong>Violation Title:</strong></td><td>${meeting.violation.title || 'N/A'}</td></tr>
+                                    <tr><td><strong>Description:</strong></td><td>${meeting.violation.description || 'N/A'}</td></tr>
+                                    <tr><td><strong>Incident Date:</strong></td><td>${meeting.violation.violation_date ? new Date(meeting.violation.violation_date).toLocaleDateString() : 'N/A'}</td></tr>
+                                    <tr><td><strong>IncidentTime:</strong></td><td>${meeting.violation.violation_time ? (function() { const d = new Date('1970-01-01T' + meeting.violation.violation_time); return isNaN(d) ? meeting.violation.violation_time : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }); })() : 'N/A'}</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    ` : ''}
+                    ${meeting.summary ? `
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Summary:</label>
+                            <p>${meeting.summary}</p>
+                        </div>
+                    ` : ''}
+                    ${meeting.recommendations ? `
+                        <div class="mb-3">
+                            <tr><td><strong>Date:</strong></td><td>${meeting.scheduled_date ? meeting.scheduled_date : 'N/A'}</td></tr>
+                            <tr><td><strong>Time:</strong></td><td>${meeting.scheduled_time ? meeting.scheduled_time : 'N/A'}</td></tr>
+                        </div>
+                    ` : ''}
+                    
+                    ${meeting.completed_at ? `
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Completed On:</label>
+                            <p>${new Date(meeting.completed_at).toLocaleDateString()} at ${new Date(meeting.completed_at).toLocaleTimeString()}</p>
+                        </div>
+                    ` : ''}
+                    ${meeting.follow_up_required ? `
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Follow Up:</label>
+                            <p>${meeting.follow_up_date ? 'Scheduled for ' + new Date(meeting.follow_up_date).toLocaleDateString() : 'Required'}</p>
+                        </div>
+                    ` : ''}
+                    <!-- Sanctions (if any) -->
+                    ${(meeting.sanctions && meeting.sanctions.length > 0) ? `
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Sanctions:</label>
+                            <ul class="list-group">
+                                ${meeting.sanctions.map(sanction => `
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>
+                                            <span class="fw-semibold">${sanction.type}</span>
+                                            ${sanction.description ? `<small class='text-muted ms-2'>${sanction.description}</small>` : ''}
+                                            <div class="small text-muted mt-1"><i class="ri-calendar-line me-1"></i>${new Date(sanction.created_at).toLocaleDateString()}</div>
+                                        </span>
+                                        <span class="badge bg-${getSanctionStatusColor(sanction.status || 'pending')}">${ucfirst(sanction.status || 'pending')}</span>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
                         // Show modal
                         const modal = new bootstrap.Modal(document.getElementById('viewCaseMeetingModal'));
                         modal.show();

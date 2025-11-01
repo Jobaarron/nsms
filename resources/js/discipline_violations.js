@@ -1557,16 +1557,18 @@ window.viewViolation = function(violationId) {
                 </tbody>
               </table>
               
+
               <h6 class="mt-3">Violation Details</h6>
               <table class="table table-sm">
                 <tbody>
+                  <tr><td><strong>Title:</strong></td><td>${data.title || 'N/A'}</td></tr>
                   <tr><td><strong>Status:</strong></td><td>
                     <span class="badge bg-${data.status === 'pending' ? 'warning' : (data.status === 'resolved' ? 'success' : 'info')}">
                       ${data.status ? data.status.charAt(0).toUpperCase() + data.status.slice(1) : 'N/A'}
                     </span>
                   </td></tr>
                   <tr><td><strong>Date:</strong></td><td>${new Date(data.violation_date).toLocaleDateString()}</td></tr>
-                  <tr><td><strong>Time:</strong></td><td>${data.violation_time ? (data.violation_time.length > 5 ? data.violation_time.substring(0, 5) : data.violation_time) : 'N/A'}</td></tr>
+                  <tr><td><strong>Time:</strong></td><td>${data.violation_time ? (function() { const d = new Date('1970-01-01T' + data.violation_time); return isNaN(d) ? data.violation_time : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }); })() : 'N/A'}</td></tr>
                 </tbody>
               </table>
               <!-- Narrative PDF Attachment (if available) -->

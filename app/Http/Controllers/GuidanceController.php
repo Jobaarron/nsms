@@ -378,6 +378,16 @@ class GuidanceController extends Controller
                             'created_at' => $sanction->created_at->format('Y-m-d H:i:s'),
                         ];
                     }),
+                    // Add the full violation object for modal details
+                    'violation' => $caseMeeting->violation ? [
+                        'title' => $caseMeeting->violation->title,
+                        'description' => $caseMeeting->violation->description,
+                        'severity' => $caseMeeting->violation->severity,
+                        'major_category' => $caseMeeting->violation->major_category,
+                        'status' => $caseMeeting->violation->status,
+                        'violation_date' => $caseMeeting->violation->violation_date ? $caseMeeting->violation->violation_date->format('Y-m-d') : null,
+                        'violation_time' => $caseMeeting->violation->violation_time,
+                    ] : null,
                 ]
             ]);
         }

@@ -699,6 +699,22 @@
                 </div>
                 <div class="modal-body" id="viewCaseMeetingModalBody">
                     <!-- Dynamic content will be injected here by JS -->
+                    @if(isset($caseMeeting) && isset($caseMeeting->violation))
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Violation Details:</label>
+                            <table class="table table-sm">
+                                <tbody>
+                                    <tr><td><strong>Title:</strong></td><td>{{ $caseMeeting->violation->title ?? 'N/A' }}</td></tr>
+                                    <tr><td><strong>Description:</strong></td><td>{{ $caseMeeting->violation->description ?? 'N/A' }}</td></tr>
+                                    <tr><td><strong>Severity:</strong></td><td>{{ $caseMeeting->violation->severity ?? 'N/A' }}</td></tr>
+                                    <tr><td><strong>Category:</strong></td><td>{{ $caseMeeting->violation->major_category ?? 'N/A' }}</td></tr>
+                                    <tr><td><strong>Status:</strong></td><td>{{ $caseMeeting->violation->status ?? 'N/A' }}</td></tr>
+                                    <tr><td><strong>Date:</strong></td><td>{{ $caseMeeting->violation->violation_date ? \Carbon\Carbon::parse($caseMeeting->violation->violation_date)->format('M d, Y') : 'N/A' }}</td></tr>
+                                    <tr><td><strong>Time:</strong></td><td>{{ $caseMeeting->violation->violation_time ? date('h:i A', strtotime($caseMeeting->violation->violation_time)) : 'N/A' }}</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
