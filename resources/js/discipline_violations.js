@@ -878,7 +878,13 @@ window.editViolation = function(violationId) {
            
             <div class="mb-2">
                 <label class="form-label fw-bold small">Title</label>
-                <input type="text" class="form-control form-control-sm" id="edit_title" name="title" value="${violation.title || ''}" required>
+                <select class="form-select form-select-sm" id="edit_title" name="title" required>
+                  <option value="">-- Select Offense --</option>
+                  ${window.offenseOptions && window.offenseOptions.minor.map(title => `<option value="${title.replace(/"/g, '&quot;')}" ${violation.title === title ? 'selected' : ''}>${title}</option>`).join('')}
+                  ${window.offenseOptions && Object.keys(window.offenseOptions.major).map(cat => window.offenseOptions.major[cat].map(title => `<option value="${title.replace(/"/g, '&quot;')}" ${violation.title === title ? 'selected' : ''}>${title}</option>`).join('')).join('')}
+                  <option value="custom" ${violation.title && !(window.offenseOptions && (window.offenseOptions.minor.includes(violation.title) || Object.values(window.offenseOptions.major).flat().includes(violation.title))) ? 'selected' : ''}>-- Custom Offense --</option>
+                </select>
+                <input type="text" class="form-control form-control-sm mt-2" id="edit_title_custom" name="title_custom" placeholder="Enter custom offense..." style="display:none;" value="${violation.title && !(window.offenseOptions && (window.offenseOptions.minor.includes(violation.title) || Object.values(window.offenseOptions.major).flat().includes(violation.title))) ? violation.title : ''}">
             </div>
 
             <div class="col-12">
@@ -903,35 +909,25 @@ window.editViolation = function(violationId) {
             </div>
         </div>
 
+
         <!-- Right Column: Investigation & Resolution Details -->
         <div class="col-lg-6">
-            <div class="mb-3">
-                <label class="form-label fw-bold small">Student Statement</label>
-                <textarea class="form-control form-control-sm" id="edit_student_statement" name="student_statement" rows="3">${violation.student_statement || ''}</textarea>
-            </div>
-
             <h6 class="mt-3 mb-3">Resolution Details</h6>
             <div class="mb-2" id="edit_resolution_wrapper" style="display: ${(violation.status === 'resolved' || violation.status === 'dismissed') ? 'block' : 'none'};">
                 <label class="form-label fw-bold small">Resolution</label>
                 <textarea class="form-control form-control-sm" id="edit_resolution" name="resolution" rows="2">${violation.resolution || ''}</textarea>
             </div>
-            <div class="mb-2">
-                <label class="form-label fw-bold small">Disciplinary Action</label>
-                <textarea class="form-control form-control-sm" id="edit_disciplinary_action" name="disciplinary_action" rows="2">${violation.disciplinary_action || ''}</textarea>
-            </div>
-            <div class="mb-2">
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="edit_parent_notified" name="parent_notified" value="1" ${violation.parent_notified ? 'checked' : ''}>
-                    <label class="form-check-label fw-bold small" for="edit_parent_notified">
-                        Parent/Guardian Notified
-                    </label>
-                </div>
-            </div>
-            <div class="mb-3">
-                <label class="form-label fw-bold small">Additional Notes</label>
-                <textarea class="form-control form-control-sm" id="edit_notes" name="notes" rows="3">${violation.notes || ''}</textarea>
-            </div>
         </div>
+    </div>
+    <div class="row g-2">
+      <div class="mb-2 w-100">
+        <label class="form-label fw-bold small">Disciplinary Action</label>
+        <textarea class="form-control form-control-sm w-100" id="edit_disciplinary_action" name="disciplinary_action" rows="2" style="width:100%">${violation.disciplinary_action || ''}</textarea>
+      </div>
+      <div class="mb-3 w-100">
+        <label class="form-label fw-bold small">Additional Notes</label>
+        <textarea class="form-control form-control-sm w-100" id="edit_notes" name="notes" rows="3" style="width:100%">${violation.notes || ''}</textarea>
+      </div>
     </div>
 `;
 
@@ -951,42 +947,71 @@ window.editViolation = function(violationId) {
             }
 
             // Add form submission handler
-            const currentViolationId = violationId;
-            form.onsubmit = async function(e) {
-                e.preventDefault();
-                console.log('📤 Form submission started');
 
-                const formData = new FormData(form);
-            const submitBtn = document.querySelector('#editViolationModal button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
+      // --- Title dropdown custom input logic ---
+      const editTitleSelect = document.getElementById('edit_title');
+      const editTitleCustom = document.getElementById('edit_title_custom');
+      if (editTitleSelect && editTitleCustom) {
+        function toggleCustomInput() {
+          if (editTitleSelect.value === 'custom') {
+            editTitleCustom.style.display = '';
+            editTitleCustom.required = true;
+          } else {
+            editTitleCustom.style.display = 'none';
+            editTitleCustom.required = false;
+          }
+        }
+        editTitleSelect.addEventListener('change', toggleCustomInput);
+        toggleCustomInput();
+      }
 
-                // Add CSRF token and method spoofing
-                formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
-                formData.append('_method', 'PUT');
+      const currentViolationId = violationId;
+      form.onsubmit = async function(e) {
+        e.preventDefault();
+        console.log('📤 Form submission started');
 
-                // Ensure required fields are included (disabled fields may not be in FormData)
-                formData.append('severity', violation.severity || 'minor');
-                formData.append('status', violation.status || 'pending');
+        // If custom, set the value to the custom input
+        if (editTitleSelect && editTitleCustom && editTitleSelect.value === 'custom') {
+          // Remove the select's value and set the custom input's value as 'title'
+          // Remove the select's name so only the custom input is submitted as 'title'
+          editTitleSelect.name = '';
+          editTitleCustom.name = 'title';
+        } else if (editTitleSelect && editTitleCustom) {
+          editTitleSelect.name = 'title';
+          editTitleCustom.name = 'title_custom';
+        }
 
-                // Handle checkbox explicitly
-                const parentNotifiedCheckbox = form.querySelector('#edit_parent_notified');
-                if (parentNotifiedCheckbox) {
-                    formData.set('parent_notified', parentNotifiedCheckbox.checked ? '1' : '0');
-                }
+        const formData = new FormData(form);
+        const submitBtn = document.querySelector('#editViolationModal button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
 
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="ri-loader-line me-2 spinner-border spinner-border-sm"></i>Updating...';
+        // Add CSRF token and method spoofing
+        formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+        formData.append('_method', 'PUT');
 
-                try {
-                const response = await fetch(form.action, {
-                    method: 'POST',
-                    credentials: 'include',
-                    body: formData,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json'
-                    }
-                });
+        // Ensure required fields are included (disabled fields may not be in FormData)
+        formData.append('severity', violation.severity || 'minor');
+        formData.append('status', violation.status || 'pending');
+
+        // Handle checkbox explicitly
+        const parentNotifiedCheckbox = form.querySelector('#edit_parent_notified');
+        if (parentNotifiedCheckbox) {
+          formData.set('parent_notified', parentNotifiedCheckbox.checked ? '1' : '0');
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="ri-loader-line me-2 spinner-border spinner-border-sm"></i>Updating...';
+
+        try {
+        const response = await fetch(form.action, {
+          method: 'POST',
+          credentials: 'include',
+          body: formData,
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+          }
+        });
 
                     console.log('📡 Update response status:', response.status);
 
