@@ -340,26 +340,47 @@ window.submitCaseMeeting = function(event) {
 };
 
 window.editCaseMeeting = function(meetingId) {
-    // Fetch meeting data and populate edit modal
-    fetch(`/guidance/case-meetings/${meetingId}/edit`, {
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'Accept': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
+    // Fetch meeting data and sanction options, then populate edit modal
+    Promise.all([
+        fetch(`/guidance/case-meetings/${meetingId}/edit`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        }).then(response => response.json()),
+        fetch('/guidance/api/sanctions/list', {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        }).then(response => response.json())
+    ]).then(([data, sanctionsData]) => {
+        if (data.success && sanctionsData.success) {
             const meeting = data.meeting;
+            const sanctions = sanctionsData.sanctions || [];
 
             // Populate form
-            document.getElementById('edit_student_id').value = meeting.student_id;
-            document.getElementById('edit_meeting_type').value = meeting.meeting_type;
-            document.getElementById('edit_scheduled_date').value = meeting.scheduled_date || '';
-            document.getElementById('edit_scheduled_time').value = meeting.scheduled_time || '';
+            var studentIdEl = document.getElementById('edit_student_id');
+            if (studentIdEl) studentIdEl.value = meeting.student_id;
+            var meetingTypeEl = document.getElementById('edit_meeting_type');
+            if (meetingTypeEl) meetingTypeEl.value = meeting.meeting_type;
+            var scheduledDateEl = document.getElementById('edit_scheduled_date');
+            if (scheduledDateEl) scheduledDateEl.value = meeting.scheduled_date || '';
+            var scheduledTimeEl = document.getElementById('edit_scheduled_time');
+            if (scheduledTimeEl) scheduledTimeEl.value = meeting.scheduled_time || '';
 
-            document.getElementById('edit_reason').value = meeting.reason || '';
-            document.getElementById('edit_notes').value = meeting.notes || '';
+            var reasonEl = document.getElementById('edit_reason');
+            if (reasonEl) reasonEl.value = meeting.reason || '';
+            var notesEl = document.getElementById('edit_notes');
+            if (notesEl) notesEl.value = meeting.notes || '';
+
+            // Populate sanction dropdown
+            var sanctionSelect = document.getElementById('edit_sanction');
+            if (sanctionSelect) {
+                sanctionSelect.innerHTML = '<option value="">Select Sanction</option>' +
+                    sanctions.map(s => `<option value="${s}">${s}</option>`).join('');
+                if (meeting.sanction) sanctionSelect.value = meeting.sanction;
+            }
 
             // Set form action
             document.getElementById('editCaseMeetingForm').action = `/guidance/case-meetings/${meetingId}`;
@@ -368,10 +389,9 @@ window.editCaseMeeting = function(meetingId) {
             const modal = new bootstrap.Modal(document.getElementById('editCaseMeetingModal'));
             modal.show();
         } else {
-            showAlert('danger', 'Failed to load meeting details');
+            showAlert('danger', 'Failed to load meeting details or sanctions');
         }
-    })
-    .catch(error => {
+    }).catch(error => {
         console.error('Error:', error);
         showAlert('danger', 'Error loading meeting for editing');
     });

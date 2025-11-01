@@ -441,13 +441,13 @@ class GuidanceController extends Controller
     public function updateCaseMeeting(Request $request, CaseMeeting $caseMeeting)
     {
         $validatedData = $request->validate([
-            'student_id' => 'required|exists:students,id',
-            'meeting_type' => 'required|in:case_meeting,house_visit',
+            // 'student_id' => 'required|exists:students,id',
+            // 'meeting_type' => 'required|in:case_meeting,house_visit',
             'scheduled_date' => 'required|date|after:today',
             'scheduled_time' => 'required',
             'location' => 'nullable|string|max:255',
             'urgency_level' => 'nullable|in:low,medium,high,urgent',
-            'reason' => 'required|string',
+            // 'reason' => 'required|string',
             'notes' => 'nullable|string',
         ]);
 
@@ -1300,5 +1300,17 @@ class GuidanceController extends Controller
             // Fallback for non-AJAX requests
             return redirect()->back()->with('error', 'Error saving summary report.');
         }
+    }
+        /**
+     * API: Get all unique sanctions for dropdowns (AJAX)
+     */
+    public function sanctionList()
+    {
+        $sanctions = \App\Models\Sanction::query()
+            ->select('sanction')
+            ->distinct()
+            ->orderBy('sanction')
+            ->pluck('sanction');
+        return response()->json(['success' => true, 'sanctions' => $sanctions]);
     }
 }

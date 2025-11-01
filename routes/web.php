@@ -477,7 +477,11 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
 
             Route::post('/{caseMeeting}/forward', [App\Http\Controllers\GuidanceController::class, 'forwardToPresident'])
                 ->name('forward');
+
+                
         });
+        // API route to fetch all unique sanctions for dropdown (Guidance)
+      Route::get('/api/sanctions/list', [App\Http\Controllers\GuidanceController::class, 'sanctionList'])->name('api.sanctions.list');
         // Overall Disciplinary Conference Summary Report (all students)
         Route::get('/conference-summary-report/pdf', [PdfController::class, 'conferenceSummaryReportAllPdf'])->name('pdf.conference-summary-report.all');
 

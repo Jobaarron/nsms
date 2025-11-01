@@ -730,7 +730,10 @@
                              </div>
                              <div class="col-12">
                                  <label class="form-label">Sanctions</label>
-                                 <input type="text" class="form-control" name="sanctions" id="edit_sanctions" placeholder="Edit sanctions (comma separated or as needed)">
+                                 <select class="form-control" name="sanction" id="edit_sanction">
+                                     <option value="">Select Sanction</option>
+                                     <!-- Options will be populated by JS -->
+                                 </select>
                              </div>
                         </div>
                     </div>
