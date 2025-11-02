@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('sanctions', function (Blueprint $table) {
-            $table->id();
+            $table->bigIncrements('sanction_id');
             $table->foreignId('case_meeting_id')->nullable()->constrained('case_meetings')->onDelete('cascade');
             $table->foreignId('violation_id')->nullable()->constrained('student_violations')->onDelete('set null');
             $table->string('severity'); // minor, major

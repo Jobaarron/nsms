@@ -305,6 +305,11 @@
                             </div>
                         </div>
                         <div class="mb-3">
+                            <label class="form-label">Frequency <span class="text-muted" style="font-weight:normal;">(auto-determined based on date range)</span></label>
+                            <div id="frequencyDisplay" class="form-control-plaintext ps-2" style="min-height:38px;"></div>
+                            <input type="hidden" name="frequency" id="frequencyInput" required>
+                        </div>
+                        <div class="mb-3">
                             <!-- Duration field removed as requested -->
                         </div>
                         <div class="mb-3">

@@ -239,4 +239,53 @@ class TeacherController extends Controller
         return redirect()->route('teacher.dashboard')
             ->with('success', 'Student has been recommended for counseling. Guidance will review the recommendation.');
     }
+
+    /**
+     * Show the Observation Report page.
+     * Route: teacher.observationreport
+     */
+    public function showObservationReport()
+    {
+        // Fetch scheduled case meetings with student and violation info
+        $reports = \App\Models\CaseMeeting::with(['student', 'violation', 'counselor'])
+            ->where('status', 'scheduled')
+            ->orderByDesc('scheduled_date')
+            ->get();
+
+        // Optionally, eager load the user who reported (if available)
+        // If 'reported_by' is a user_id or staff_id, adjust as needed
+
+        return view('teacher.observationreport', compact('reports'));
+    }
+        /**
+     * Serve the Teacher Observation Report PDF
+     */
+    public function serveObservationReportPdf()
+    {
+        $path = storage_path('app/public/Teacher-Report/Teacher-Observation-Report.pdf');
+        if (!file_exists($path)) {
+            abort(404, 'PDF not found');
+        }
+        return response()->file($path, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="Teacher-Observation-Report.pdf"',
+        ]);
+    }
+        /**
+     * Handle teacher reply for observation report (update case meeting)
+     */
+    public function submitObservationReply(Request $request, $caseMeetingId)
+    {
+        $request->validate([
+            'teacher_statement' => 'required|string',
+            'action_plan' => 'required|string',
+        ]);
+
+        $caseMeeting = \App\Models\CaseMeeting::findOrFail($caseMeetingId);
+        $caseMeeting->teacher_statement = $request->teacher_statement;
+        $caseMeeting->action_plan = $request->action_plan;
+        $caseMeeting->save();
+
+        return redirect()->back()->with('success', 'Your reply has been submitted.');
+    }
 }

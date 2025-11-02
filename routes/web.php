@@ -85,10 +85,11 @@ Route::prefix('admin')->group(function () {
 
         // View summary report for case meeting
         Route::get('/case-meetings/{caseMeeting}/summary', [AdminController::class, 'viewSummaryReport'])->name('case-meetings.summary');
+
+    // Route to download Disciplinary Conference Report PDF for a specific case meeting
+    Route::get('/case-meetings/{caseMeeting}/disciplinary-conference-report/pdf', [PdfController::class, 'DisciplinaryConReports'])->name('case-meetings.disciplinary-conference-report.pdf');
         
-       
-     
-        
+    
         // User Management - Use your custom permission middleware
         Route::middleware(['permission:Manage Users'])->group(function () {
             Route::get('/manage-users', [UserManagementController::class, 'index'])->name('manage.users');
@@ -234,6 +235,22 @@ Route::middleware(['auth', 'role:teacher'])->prefix('teacher')->name('teacher.')
         ->name('recommend-counseling.form');
     Route::post('/recommend-counseling', [TeacherController::class, 'recommendToCounseling'])
         ->name('recommend-counseling');
+
+    // Route for the Teacher Observation Report page
+    Route::get('/reports', [TeacherController::class, 'showObservationReport'])
+        ->name('reports');
+
+    // Alias route for compatibility with 'teacher.observationreport' references
+    Route::get('/observationreport', [TeacherController::class, 'showObservationReport'])
+        ->name('observationreport');
+
+    // Route to serve the dynamic teacher observation report PDF
+    Route::get('/observationreport/pdf/{caseMeeting}', [App\Http\Controllers\PdfController::class, 'teacherObservationReportPdf'])
+        ->name('observationreport.pdf');
+
+    // Teacher Observation Report: Teacher Reply (update case meeting)
+    Route::post('/observationreport/reply/{caseMeeting}', [App\Http\Controllers\TeacherController::class, 'submitObservationReply'])
+        ->name('observationreport.reply');
 });
 
 // Teacher Schedule Routes (Extended functionality)
@@ -460,8 +477,15 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
 
             Route::post('/{caseMeeting}/forward', [App\Http\Controllers\GuidanceController::class, 'forwardToPresident'])
                 ->name('forward');
-        });
 
+                
+        });
+        // API route to fetch all unique sanctions for dropdown (Guidance)
+      Route::get('/api/sanctions/list', [App\Http\Controllers\GuidanceController::class, 'sanctionList'])->name('api.sanctions.list');
+        // Overall Disciplinary Conference Summary Report (all students)
+        Route::get('/conference-summary-report/pdf', [PdfController::class, 'conferenceSummaryReportAllPdf'])->name('pdf.conference-summary-report.all');
+
+    Route::get('/observationreport/pdf/{caseMeeting}', [App\Http\Controllers\PdfController::class, 'teacherObservationReportPdf']);
         // PDF route for case meeting attachment (moved outside case-meetings group)
         Route::get('/pdf/case-meeting/{caseMeetingId}', [PdfController::class, 'caseMeetingAttachmentPdf'])->name('pdf.case-meeting.attachment');
         

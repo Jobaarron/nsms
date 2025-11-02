@@ -14,7 +14,7 @@ class PdfController extends Controller
         $sessionId = $request->query('session_id');
         if (!$sessionId) {
             abort(404, 'Session ID is required.');
-        }
+    }
 
         $session = CounselingSession::with(['student', 'counselor'])->find($sessionId);
         if (!$session) {
@@ -82,6 +82,11 @@ class PdfController extends Controller
                 $pdf->Write(0, $check);
             }
         }
+        // Show 'Others (specify)' text for Academic
+        if (!empty($referralAcademicOther)) {
+            $pdf->SetXY(38, 90);
+            $pdf->Write(0,$referralAcademicOther);
+        }
         $socialPositions = [
             'Anger Management' => [22, 103],
             'Bullying' => [22, 107],
@@ -100,6 +105,11 @@ class PdfController extends Controller
                 $pdf->Write(0, $check);
             }
         }
+        // Show 'Others (specify)' text for Social
+        if (!empty($referralSocialOther)) {
+            $pdf->SetXY(38, 120);
+            $pdf->Write(0, $referralSocialOther);
+        }
         $pdf->SetXY(47,129);
         $pdf->MultiCell(150, 6, $session->incident_description ?? '');
 
@@ -109,7 +119,7 @@ class PdfController extends Controller
         $pdf->Write(0, $session->start_date ? $session->start_date->format('Y-m-d') : ($session->created_at ? $session->created_at->format('Y-m-d') : ''));
         $pdf->SetXY(128, 43 + $yOffset);
         $pdf->Write(0, $session->id ?? '');
-        $pdf->SetXY(46, 52 + $yOffset);
+        $pdf->SetXY(46, 53 + $yOffset);
         $pdf->Write(0, $session->student->full_name ?? '');
         $pdf->SetXY(129, 53 + $yOffset);
         $pdf->Write(0, $session->student->contact_number ?? '');
@@ -143,6 +153,11 @@ class PdfController extends Controller
                 $pdf->Write(0, $check);
             }
         }
+        // Show 'Others (specify)' text for Academic (lower form)
+        if (!empty($referralAcademicOther)) {
+            $pdf->SetXY(38, 97 + $yOffset);
+            $pdf->Write(0,$referralAcademicOther);
+        }
         $socialPositions = [
             'Anger Management' => [22, 109],
             'Bullying' => [22, 114],
@@ -160,6 +175,11 @@ class PdfController extends Controller
                 $pdf->SetXY($x, $y + $yOffset);
                 $pdf->Write(0, $check);
             }
+        }
+        // Show 'Others (specify)' text for Social (lower form)
+        if (!empty($referralSocialOther)) {
+            $pdf->SetXY(38, 127 + $yOffset);
+            $pdf->Write(0,$referralSocialOther);
         }
         $pdf->SetXY(47,135 + $yOffset);
         $pdf->MultiCell(150, 6, $session->incident_description ?? '');
@@ -273,5 +293,340 @@ class PdfController extends Controller
             return response($pdf->Output('Student-Narrative-Report.pdf', 'S'))->header('Content-Type', 'application/pdf');
         }
 
+    /**
+     * Generate Teacher Observation Report PDF using TCPDF.
+     *
+     * @param int $caseMeetingId
+     * @return \Illuminate\Http\Response
+     */
+    public function teacherObservationReportPdf($caseMeetingId)
+    {
+        $caseMeeting = \App\Models\CaseMeeting::with(['violation', 'student'])->findOrFail($caseMeetingId);
 
-}
+        // Attempt to get teacher name and user_id from the violation's teacher, fallback to null
+        $teacherName = null;
+        $teacherUserId = null;
+        if ($caseMeeting->violation && method_exists($caseMeeting->violation, 'teacher')) {
+            $teacher = $caseMeeting->violation->teacher;
+            if ($teacher) {
+                $teacherName = $teacher->full_name ?? $teacher->name ?? null;
+                // $teacherUserId = $teacher->user_id ?? null;
+            }
+        }
+
+        $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
+        $templatePath = storage_path('app/public/Teacher-Report/Teacher-Observation-Report.pdf');
+        if (!file_exists($templatePath)) {
+            abort(404, 'Teacher Observation Report PDF template not found.');
+        }
+        $pdf->setSourceFile($templatePath);
+        $tplId = $pdf->importPage(1);
+        $size = $pdf->getTemplateSize($tplId);
+        $pdf->SetMargins(0, 0, 0);
+        $orientation = ($size['width'] > $size['height']) ? 'L' : 'P';
+        $pdf->AddPage($orientation, [$size['width'], $size['height']]);
+        $pdf->SetFont('dejavusans', '', 10);
+        $pdf->useTemplate($tplId);
+
+        // Overlay the required data (adjust coordinates as needed for your template)
+        $pdf->SetXY(27, 62); // Teacher Name
+        $pdf->Write(0, $teacherName ?? '');
+        $pdf->SetXY(87, 292); // Teacher Name
+        $pdf->Write(0, $teacherName ?? '');
+        // Optionally, overlay the teacher user_id (for demonstration, place at 40, 50)
+        if ($teacherUserId) {
+            $pdf->SetXY(40, 50); // Teacher user_id
+            $pdf->Write(0, 'User ID: ' . $teacherUserId);
+        }
+        $pdf->SetXY(120, 45); // Scheduled Date
+        $pdf->Write(0, $caseMeeting->scheduled_date ? (is_string($caseMeeting->scheduled_date) ? $caseMeeting->scheduled_date : $caseMeeting->scheduled_date->format('Y-m-d')) : '');
+        $pdf->SetXY(174, 45); // Scheduled Time
+        $pdf->Write(0, $caseMeeting->scheduled_time ? (is_string($caseMeeting->scheduled_time) ? $caseMeeting->scheduled_time : $caseMeeting->scheduled_time->format('H:i')) : '');
+        $pdf->SetXY(18, 90); // Teacher Statement
+        $pdf->MultiCell(150, 8, $caseMeeting->teacher_statement ?? '');
+        $pdf->SetXY(18, 199); // Action Plan
+        $pdf->MultiCell(150, 8, $caseMeeting->action_plan ?? '');
+
+        return response($pdf->Output('Teacher-Observation-Report.pdf', 'S'))->header('Content-Type', 'application/pdf');
+    }
+
+    /**
+     * Generate Disciplinary Conference Summary Report PDF for all students using TCPDF.
+     * @return \Illuminate\Http\Response
+     */
+    public function conferenceSummaryReportAllPdf()
+    {
+        $students = \App\Models\Student::all();
+        $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
+        $templatePath = storage_path('app/public/Discplinary-Summary-Report/Summary Report.pdf');
+        if (!file_exists($templatePath)) {
+            abort(404, 'Disciplinary Conference Summary Report PDF template not found.');
+        }
+
+        // Prepare the first page
+        $pdf->setSourceFile($templatePath);
+        $tplId = $pdf->importPage(1);
+        $size = $pdf->getTemplateSize($tplId);
+        $orientation = ($size['width'] > $size['height']) ? 'L' : 'P';
+        $pdf->AddPage($orientation, [$size['width'], $size['height']]);
+        $pdf->SetFont('dejavusans', '', 10);
+        $pdf->useTemplate($tplId);
+
+        // Table starting coordinates (adjust as needed for your template)
+        $startY = 59; // Y coordinate of first row (after header)
+        $rowHeight = 6; // Height of each row
+        $maxRowsPerPage = 25; // Adjust based on your template
+        $currentRow = 0;
+
+        foreach ($students as $index => $student) {
+            // Fetch the latest CaseMeeting for this student (or adjust as needed)
+            $caseMeeting = \App\Models\CaseMeeting::where('student_id', $student->id)->orderByDesc('id')->first();
+            $caseMeetingId = $caseMeeting ? $caseMeeting->id : '';
+
+            // Calculate Y position for this row
+            $y = $startY + ($currentRow * $rowHeight);
+            if ($y > ($size['height'] - 20)) { // If out of space, add new page
+                $pdf->AddPage($orientation, [$size['width'], $size['height']]);
+                $pdf->useTemplate($tplId);
+                $y = $startY;
+                $currentRow = 0;
+            }
+
+            // Write each column (adjust X positions and widths as needed)
+            $pdf->SetFont('dejavusans', '', 8);
+            $pdf->SetXY(22, $y); // No.
+            $pdf->Write(0, $caseMeetingId);
+            $pdf->SetXY(30, $y); // Name
+            $pdf->Write(0, $student->full_name ?? '');
+            $pdf->SetXY(84, $y); // Grade/Section
+            $pdf->Write(0, ($student->grade_level ?? '') . ' - ' . ($student->section ?? ''));
+            $pdf->SetXY(122, $y); // DCR Case No. (repeat CaseMeeting id)
+            $pdf->Write(0, $caseMeetingId);
+            // Issues/Concerns and Remarks left blank, but no border/cell
+
+            $currentRow++;
+        }
+
+        return response($pdf->Output('Disciplinary-Conference-Summary-Report-All.pdf', 'S'))
+            ->header('Content-Type', 'application/pdf');
+    }
+        /**
+         * Generate Disciplinary Conference Reports PDF for all students' case meetings.
+         * Fields: student_name, section, case_meeting id, admin_name, adviser_name, violation_date, violation_time, location, student_statement, teacher_statement, summary, follow_up_meeting
+         * @return \Illuminate\Http\Response
+         */
+    public function DisciplinaryConReports($caseMeetingId)
+    {
+
+        // Always fetch $caseMeeting and $violation at the top
+        $caseMeeting = \App\Models\CaseMeeting::with(['student', 'admin', 'violation', 'violation.teacher'])->findOrFail($caseMeetingId);
+        $violation = isset($caseMeeting->violation) ? $caseMeeting->violation : null;
+
+        // Determine if Student Narrative Report and Teacher Observation Report are available
+        $hasStudentNarrative = false;
+        $hasTeacherObservation = false;
+        // Student Narrative: if student_statement, incident_feelings, or action_plan exists on violation
+        if ($violation && (
+            !empty($violation->student_statement) ||
+            !empty($violation->incident_feelings) ||
+            !empty($violation->action_plan)
+        )) {
+            $hasStudentNarrative = true;
+        }
+        // Teacher Observation: if teacher_statement or action_plan exists on caseMeeting
+        if (!empty($caseMeeting->teacher_statement) || !empty($caseMeeting->action_plan)) {
+            $hasTeacherObservation = true;
+        }
+
+        $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
+        $templatePath = 'C:/Users/anony/Documents/nsms/storage/app/public/Disciplinary-Con-Report/Disciplinary-Con-Report.pdf';
+        if (!file_exists($templatePath)) {
+            abort(404, 'Disciplinary Conference Summary Report PDF template not found.');
+        }
+
+        $pageCount = $pdf->setSourceFile($templatePath);
+        // Page 1: dynamic data
+        $tplId1 = $pdf->importPage(1);
+        $size1 = $pdf->getTemplateSize($tplId1);
+        $orientation1 = ($size1['width'] > $size1['height']) ? 'L' : 'P';
+        $pdf->AddPage($orientation1, [$size1['width'], $size1['height']]);
+        $pdf->SetFont('dejavusans', '', 10);
+        $pdf->useTemplate($tplId1);
+
+        $student = $caseMeeting->student;
+        $admin = $caseMeeting->admin ?? null;
+        $adviser = $caseMeeting->adviser ?? null;
+
+            // If adviser is not set, try to get from violation's teacher (like teacherObservationReportPdf)
+            if (!$adviser && $violation && method_exists($violation, 'teacher')) {
+                $teacher = $violation->teacher;
+                if ($teacher) {
+                    $adviser = $teacher;
+                }
+            }
+
+            // Use SetXY/Write for each field, with specific coordinates (adjust as needed)
+            $pdf->SetFont('dejavusans', '', 10.1);
+            $pdf->SetXY(24, 58); $pdf->Write(0, $student->full_name ?? '');
+            $pdf->SetXY(54, 126); $pdf->Write(0, $student->full_name ?? '');
+            $pdf->SetXY(141, 57); $pdf->Write(0, ($student->grade_level ?? '') . ' -');
+            $pdf->SetXY(162, 57); $pdf->Write(0, $student->section ?? '');
+            $pdf->SetXY(175, 41); $pdf->Write(0, $caseMeeting->id);
+            $pdf->SetXY(100, 56); $pdf->Write(0, $admin ? ($admin->full_name ?? $admin->name ?? '') : '');
+            $pdf->SetXY(54, 102); $pdf->Write(0, $adviser ? ($adviser->full_name ?? $adviser->name ?? '') : '');
+            // (Checklist moved to page 2 below)
+            $pdf->SetFont('dejavusans', '', 10.1);
+            $pdf->SetXY(100,160); $pdf->Write(0, $violation && $violation->violation_date ? (is_string($violation->violation_date) ? $violation->violation_date : $violation->violation_date->format('Y-m-d')) : '');
+            $pdf->SetXY(153,160);
+            if ($violation && $violation->violation_time) {
+                $time = $violation->violation_time;
+                if ($time instanceof \DateTimeInterface) {
+                    $formattedTime = $time->format('h:i A');
+                } else {
+                    // Try to parse string to time
+                    $formattedTime = date('h:i A', strtotime($time));
+                }
+                $pdf->Write(0, $formattedTime);
+            } else {
+                $pdf->Write(0, '');
+            }
+            $pdf->SetXY(33, 165); $pdf->Write(0, $caseMeeting->location ?? '');
+            // Format Student's Explanation: first sentence inline, rest below
+            $studentStatement = $violation->student_statement ?? '';
+            $firstLine = $studentStatement;
+            $remainingText = '';
+            // Split at first period followed by space or end of string
+            if (preg_match('/^(.+?\.[\s\n]|.+?$)(.*)/s', $studentStatement, $matches)) {
+                $firstLine = trim($matches[1]);
+                $remainingText = trim($matches[2]);
+            }
+            // Write label and first sentence inline
+            $pdf->SetFont('dejavusans', 'B', 9.1);
+            $pdf->SetXY(64, 227);
+            $pdf->Write(0, '');
+            $pdf->SetFont('dejavusans', '', 9.1);
+            $pdf->Write(0, $firstLine);
+            // Write the rest below, wrapped
+            if (!empty($remainingText)) {
+                $pdf->SetFont('dejavusans', '', 9);
+                // Place the remaining text as a MultiCell below the first line, matching the underline area
+                $pdf->SetXY(28, 232); // Adjust Y as needed to match template
+                $pdf->MultiCell(160, 8, $remainingText); // Adjust width/height as needed
+                $pdf->SetFont('dejavusans', '', 10.1);
+            }
+            // Format Teacher's Statement: first sentence inline, rest below
+            $teacherStatement = $caseMeeting->teacher_statement ?? '';
+            $teacherFirstLine = $teacherStatement;
+            $teacherRemainingText = '';
+            // Split at first period followed by space or end of string
+            if (preg_match('/^(.+?\.[\s\n]|.+?$)(.*)/s', $teacherStatement, $matches)) {
+                $teacherFirstLine = trim($matches[1]);
+                $teacherRemainingText = trim($matches[2]);
+            }
+            // Write label and first sentence inline (adjust X/Y as needed)
+            $pdf->SetFont('dejavusans', 'B', 9.1);
+            $pdf->SetXY(65, 262); // Adjust X to match your template's label position
+            $pdf->Write(0, '');
+            $pdf->SetFont('dejavusans', '', 9.1);
+            $pdf->Write(0, $teacherFirstLine);
+            // Write the rest below, wrapped
+            if (!empty($teacherRemainingText)) {
+                $pdf->SetFont('dejavusans', '', 9);
+                $pdf->SetXY(28, 266); // Adjust Y as needed to match template
+                $pdf->MultiCell(160, 8, $teacherRemainingText);
+                $pdf->SetFont('dejavusans', '', 10.1);
+            }
+            // Do not write summary and follow_up_meeting on page 1
+
+            // Page 2: template, then write summary, follow_up_meeting, and checklist, plus all agreed actions/interventions
+            if ($pageCount > 1) {
+                $tplId2 = $pdf->importPage(2);
+                $size2 = $pdf->getTemplateSize($tplId2);
+                $orientation2 = ($size2['width'] > $size2['height']) ? 'L' : 'P';
+                $pdf->AddPage($orientation2, [$size2['width'], $size2['height']]);
+                $pdf->useTemplate($tplId2);
+                // Write summary and follow_up_meeting on page 2
+                $pdf->SetFont('dejavusans', '', 10.1);
+                $pdf->SetXY(18, 30); $pdf->MultiCell(169, 8, $caseMeeting->summary ?? '');
+                $pdf->SetXY(100, 90); $pdf->MultiCell(60, 8, $caseMeeting->follow_up_meeting ?? '');
+
+                // Overlay check icons for report availability (now on page 2)
+                $check = '✓';
+                $pdf->SetFont('dejavusans', '', 12);
+                if ($hasStudentNarrative) {
+                    $pdf->SetXY(31, 210); $pdf->Write(0, $check);
+                }
+                if ($hasTeacherObservation) {
+                    $pdf->SetXY(31, 215); $pdf->Write(0, $check);
+                }
+                $hasDisciplinaryConReport = (isset($caseMeeting->status) && strtolower($caseMeeting->status) === 'active');
+                if ($hasDisciplinaryConReport) {
+                    $pdf->SetXY(31, 220); $pdf->Write(0, $check);
+                    $pdf->SetXY(38, 220); $pdf->Write(0, 'Disciplinary Conference Report');
+                }
+
+                // --- AGREED ACTIONS/INTERVENTIONS SECTION ---
+                $pdf->SetFont('dejavusans', 'B', 11);
+                $pdf->SetXY(18, 110); $pdf->Write(0, '');
+                $pdf->SetFont('dejavusans', '', 10);
+                // Written Reflection
+                $pdf->SetXY(31, 88); $pdf->Write(0, !empty($caseMeeting->written_reflection) ? $check : '');
+                if (!empty($caseMeeting->written_reflection_due)) {
+                    $pdf->SetXY(150, 92); $pdf->Write(0, ($caseMeeting->written_reflection_due instanceof \DateTimeInterface) ? $caseMeeting->written_reflection_due->format('Y-m-d') : $caseMeeting->written_reflection_due);
+                }
+                // Mentor Name
+                if (!empty($caseMeeting->mentor_name)) {
+                    $pdf->SetXY(134, 103); $pdf->Write(0, $caseMeeting->mentor_name);
+                }
+                // Mentorship Counseling
+                $pdf->SetXY(31, 99); $pdf->Write(0, !empty($caseMeeting->mentorship_counseling) ? $check : '');
+                // Parent Teacher Communication
+                $pdf->SetXY(31, 110); $pdf->Write(0, !empty($caseMeeting->parent_teacher_communication) ? $check : '');
+                if (!empty($caseMeeting->parent_teacher_date)) {
+                    $pdf->SetXY(126, 115); $pdf->Write(0, ($caseMeeting->parent_teacher_date instanceof \DateTimeInterface) ? $caseMeeting->parent_teacher_date->format('Y-m-d') : $caseMeeting->parent_teacher_date);
+                }
+                // Restorative Justice Activity
+                $pdf->SetXY(31,121); $pdf->Write(0, !empty($caseMeeting->restorative_justice_activity) ? $check : '');
+                if (!empty($caseMeeting->restorative_justice_date)) {
+                    $pdf->SetXY(120, 126); $pdf->Write(0, ($caseMeeting->restorative_justice_date instanceof \DateTimeInterface) ? $caseMeeting->restorative_justice_date->format('Y-m-d') : $caseMeeting->restorative_justice_date);
+                }
+                // Follow Up Meeting
+                $pdf->SetXY(31, 133); $pdf->Write(0, !empty($caseMeeting->follow_up_meeting) ? $check : '');
+                if (!empty($caseMeeting->follow_up_meeting_date)) {
+                    $pdf->SetXY(100, 137); $pdf->Write(0, ($caseMeeting->follow_up_meeting_date instanceof \DateTimeInterface) ? $caseMeeting->follow_up_meeting_date->format('Y-m-d') : $caseMeeting->follow_up_meeting_date);
+                }
+                // Community Service
+                $pdf->SetXY(31, 144); $pdf->Write(0, !empty($caseMeeting->community_service) ? $check : '');
+                if (!empty($caseMeeting->community_service_date)) {
+                    $pdf->SetXY(50, 153); $pdf->Write(0, ($caseMeeting->community_service_date instanceof \DateTimeInterface) ? $caseMeeting->community_service_date->format('Y-m-d') : $caseMeeting->community_service_date);
+                }
+                if (!empty($caseMeeting->community_service_area)) {
+                    $pdf->SetXY(110, 152); $pdf->Write(0, $caseMeeting->community_service_area);
+                }
+                // Suspension
+                $pdf->SetXY(31, 160); $pdf->Write(0, !empty($caseMeeting->suspension) ? $check : '');
+                $pdf->SetXY(93, 160); $pdf->Write(0, !empty($caseMeeting->suspension_3days) ? $check : '');
+                $pdf->SetXY(109, 160); $pdf->Write(0, !empty($caseMeeting->suspension_5days) ? $check : '');
+                if (!empty($caseMeeting->suspension_other_days)) {
+                    $pdf->SetXY(130, 159); $pdf->Write(0, $caseMeeting->suspension_other_days . '');
+                }
+                if (!empty($caseMeeting->suspension_start)) {
+                    $pdf->SetXY(110, 164); $pdf->Write(0, ($caseMeeting->suspension_start instanceof \DateTimeInterface) ? $caseMeeting->suspension_start->format('Y-m-d') : $caseMeeting->suspension_start);
+                }
+                if (!empty($caseMeeting->suspension_end)) {
+                    $pdf->SetXY(40, 168); $pdf->Write(0, ($caseMeeting->suspension_end instanceof \DateTimeInterface) ? $caseMeeting->suspension_end->format('Y-m-d') : $caseMeeting->suspension_end);
+                }
+                if (!empty($caseMeeting->suspension_return)) {
+                    $pdf->SetXY(89, 173); $pdf->Write(0, ($caseMeeting->suspension_return instanceof \DateTimeInterface) ? $caseMeeting->suspension_return->format('Y-m-d') : $caseMeeting->suspension_return);
+                }
+                // Expulsion
+                $pdf->SetXY(31, 180); $pdf->Write(0, !empty($caseMeeting->expulsion) ? $check : '');
+                if (!empty($caseMeeting->expulsion_date)) {
+                    $pdf->SetXY(160, 193); $pdf->Write(0, ($caseMeeting->expulsion_date instanceof \DateTimeInterface) ? $caseMeeting->expulsion_date->format('Y-m-d') : $caseMeeting->expulsion_date);
+                }
+            }
+
+            return response($pdf->Output('Disciplinary-Conference-Reports.pdf', 'S'))
+                ->header('Content-Type', 'application/pdf');
+        }
+    }

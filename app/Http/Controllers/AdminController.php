@@ -712,12 +712,18 @@ public function submittedCases()
             ], 403);
         }
 
-        $caseMeeting->load(['student', 'counselor', 'sanctions']);
+        $caseMeeting->load(['student', 'counselor', 'sanctions', 'violation']);
 
         // Convert to array and format scheduled_time for summary modal (h:i A)
         $meetingArr = $caseMeeting->toArray();
         $meetingArr['scheduled_time'] = $caseMeeting->scheduled_time ? $caseMeeting->scheduled_time->format('h:i A') : null;
         $meetingArr['scheduled_date'] = $caseMeeting->scheduled_date ? $caseMeeting->scheduled_date->format('Y-m-d') : null;
+        
+        // Include violation student reply fields if violation exists
+        $meetingArr['violation_id'] = $caseMeeting->violation_id;
+        $meetingArr['student_statement'] = $caseMeeting->violation ? $caseMeeting->violation->student_statement : null;
+        $meetingArr['incident_feelings'] = $caseMeeting->violation ? $caseMeeting->violation->incident_feelings : null;
+        $meetingArr['action_plan'] = $caseMeeting->violation ? $caseMeeting->violation->action_plan : null;
 
         return response()->json([
             'success' => true,

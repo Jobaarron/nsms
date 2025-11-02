@@ -128,6 +128,7 @@ function setApproveSessionId(id) {
 
 window.setApproveSessionId = setApproveSessionId;
 
+
 // Approve counseling session
 function submitApproveSession(event) {
     event.preventDefault();
@@ -136,6 +137,20 @@ function submitApproveSession(event) {
     const submitBtn = form.querySelector('button[type="submit"]');
     submitBtn.innerHTML = '<i class="ri-loader-4-line me-2 spinner-border spinner-border-sm"></i>Approving...';
     submitBtn.disabled = true;
+
+    // Set frequency value before submit (in case it's disabled)
+    const freqSelect = form.querySelector('select[name="frequency"]');
+    if (freqSelect && freqSelect.value) {
+        // If disabled, add hidden input for frequency
+        let freqHidden = form.querySelector('input[name="frequency"]');
+        if (!freqHidden) {
+            freqHidden = document.createElement('input');
+            freqHidden.type = 'hidden';
+            freqHidden.name = 'frequency';
+            form.appendChild(freqHidden);
+        }
+        freqHidden.value = freqSelect.value;
+    }
 
     // Debug: log form data
     for (let [key, value] of formData.entries()) {
@@ -184,6 +199,61 @@ function submitApproveSession(event) {
 }
 
 window.submitApproveSession = submitApproveSession;
+
+// --- Frequency auto-calc logic for Approve Counseling Session modal ---
+
+document.addEventListener('DOMContentLoaded', function() {
+    const approveModal = document.getElementById('approveSessionModal');
+    if (!approveModal) return;
+    const startInput = approveModal.querySelector('input[name="start_date"]');
+    const endInput = approveModal.querySelector('input[name="end_date"]');
+    const freqDisplay = approveModal.querySelector('#frequencyDisplay');
+    const freqInput = approveModal.querySelector('#frequencyInput');
+    if (!startInput || !endInput || !freqDisplay || !freqInput) return;
+
+    function updateFrequency() {
+        const start = startInput.value;
+        const end = endInput.value;
+        let label = '';
+        let freq = '';
+        if (start && end) {
+            const startDate = new Date(start);
+            const endDate = new Date(end);
+            if (!isNaN(startDate) && !isNaN(endDate) && endDate >= startDate) {
+                const days = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                if (days <= 1) {
+                    freq = 'everyday';
+                    label = 'Everyday';
+                } else if (days === 2) {
+                    freq = 'every_other_day';
+                    label = 'Every Other Day';
+                } else if (days <= 7) {
+                    freq = 'once_a_week';
+                    label = 'Once a Week';
+                } else if (days <= 14) {
+                    freq = 'twice_a_week';
+                    label = 'Twice a Week';
+                } else {
+                    freq = 'everyday';
+                    label = 'Everyday';
+                }
+            }
+        }
+        freqDisplay.textContent = label;
+        freqInput.value = freq;
+    }
+
+    startInput.addEventListener('input', updateFrequency);
+    endInput.addEventListener('input', updateFrequency);
+    startInput.addEventListener('change', updateFrequency);
+    endInput.addEventListener('change', updateFrequency);
+
+    approveModal.addEventListener('show.bs.modal', function() {
+        setTimeout(updateFrequency, 10);
+    });
+
+    updateFrequency();
+});
 
 // Guidance Counseling Sessions JavaScript
 document.addEventListener('DOMContentLoaded', function() {

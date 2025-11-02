@@ -272,6 +272,8 @@ function setupEnhancedViolationSubmission() {
       // Process each student
       const results = [];
       for (const student of window.selectedStudents) {
+        console.log(`Processing violation for student: ${student.name} (ID: ${student.id})`);
+        
         const formData = new FormData();
         formData.append('student_id', student.id);
         formData.append('title', title);
@@ -285,6 +287,15 @@ function setupEnhancedViolationSubmission() {
         const csrfToken = csrfTokenEl ? csrfTokenEl.getAttribute('content') : '';
         formData.append('_token', csrfToken);
 
+        console.log('Submitting violation data:', {
+          student_id: student.id,
+          title: title,
+          violation_date: document.getElementById('violationDate').value,
+          violation_time: document.getElementById('violationTime').value,
+          severity: severity,
+          major_category: category
+        });
+
         const response = await fetch('/discipline/violations', {
           method: 'POST',
           credentials: 'include',
@@ -295,6 +306,8 @@ function setupEnhancedViolationSubmission() {
           body: formData
         });
 
+        console.log(`Response status: ${response.status} ${response.statusText}`);
+
         if (response.status === 401) {
           // User is not authenticated, redirect to login
           alert('Your session has expired. Please log in again.');
@@ -302,9 +315,102 @@ function setupEnhancedViolationSubmission() {
           return;
         }
 
+        if (response.status === 422) {
+          // Validation error
+          let errorMessage = 'Validation failed.';
+          try {
+            const errorData = await response.json();
+            console.log('422 Validation error:', errorData);
+            errorMessage = errorData.message || 'Validation failed: ' + Object.values(errorData.errors || {}).flat().join(', ');
+          } catch (parseError) {
+            console.warn('Could not parse 422 response as JSON:', parseError);
+          }
+          throw new Error(errorMessage);
+        }
+
         if (response.status === 409) {
           // Duplicate violation detected
-          showDuplicateViolationModal();
+          let errorMessage = 'A similar violation already exists for this date.';
+          let responseText = '';
+          try {
+            responseText = await response.text();
+            console.log('409 response text:', responseText);
+            
+            // Try to parse as JSON
+            const errorData = JSON.parse(responseText);
+            console.log('409 response parsed:', errorData);
+            errorMessage = errorData.message || errorMessage;
+            
+            // Check if this is actually a duplicate or some other validation error
+            if (!errorData.is_duplicate) {
+              console.warn('409 error is not marked as duplicate:', errorData);
+              throw new Error(errorMessage);
+            }
+          } catch (parseError) {
+            console.warn('Could not parse 409 response as JSON:', parseError);
+            console.log('Raw response text:', responseText);
+            
+            // If it's not JSON, it might be a different kind of error
+            if (responseText && !responseText.includes('duplicate') && !responseText.includes('already exists')) {
+              throw new Error('Server validation error: ' + responseText);
+            }
+          }
+          
+          // Build violation data with error handling
+          let violationData = null;
+          try {
+            const violationDateElement = document.getElementById('violationDate');
+            const violationTimeElement = document.getElementById('violationTime');
+            
+            if (!violationDateElement) {
+              console.error('violationDate element not found');
+            }
+            if (!violationTimeElement) {
+              console.error('violationTime element not found');
+            }
+            
+            violationData = {
+              student_id: student.id,
+              title: title,
+              violation_date: violationDateElement ? violationDateElement.value : '',
+              violation_time: violationTimeElement ? violationTimeElement.value : '',
+              severity: severity,
+              major_category: category,
+              status: 'pending',
+              description: document.getElementById('violationDescription')?.value || '',
+              location: document.getElementById('violationLocation')?.value || '',
+              witnesses: document.getElementById('violationWitnesses')?.value || '',
+              evidence: document.getElementById('violationEvidence')?.value || '',
+              notes: document.getElementById('violationNotes')?.value || '',
+              _token: csrfToken
+            };
+            console.log('Violation data created successfully:', violationData);
+          } catch (error) {
+            console.error('Error creating violation data:', error);
+            violationData = {
+              student_id: student.id,
+              title: title,
+              violation_date: '',
+              violation_time: '',
+              severity: severity,
+              major_category: category,
+              status: 'pending',
+              description: '',
+              location: '',
+              witnesses: '',
+              evidence: '',
+              notes: '',
+              _token: csrfToken
+            };
+          }
+          console.log('=== CALLING showDuplicateViolationModal ===');
+          console.log('Error message:', errorMessage);
+          console.log('Violation data being passed:', violationData);
+          console.log('violationData type:', typeof violationData);
+          console.log('violationData is null:', violationData === null);
+          console.log('violationData is undefined:', violationData === undefined);
+          showDuplicateViolationModal(errorMessage, violationData);
+          console.log('window.pendingDuplicateViolation after modal call:', window.pendingDuplicateViolation);
           submitBtn.textContent = originalText;
           submitBtn.disabled = false;
           return;
@@ -334,7 +440,21 @@ function setupEnhancedViolationSubmission() {
 
     } catch (err) {
       console.error('Violation submission error:', err);
-      alert('Error submitting violation: ' + err.message);
+      
+      // Provide more specific error messages
+      let errorMessage = 'Error submitting violation: ';
+      if (err.name === 'TypeError' && err.message.includes('fetch')) {
+        errorMessage += 'Network error. Please check your connection and try again.';
+      } else if (err.message.includes('401')) {
+        errorMessage += 'Your session has expired. Please log in again.';
+        setTimeout(() => window.location.href = '/discipline/login', 2000);
+      } else if (err.message.includes('409')) {
+        errorMessage += 'Duplicate violation detected. Please use the duplicate modal to proceed.';
+      } else {
+        errorMessage += err.message || 'Unknown error occurred.';
+      }
+      
+      alert(errorMessage);
     } finally {
       submitBtn.textContent = originalText;
       submitBtn.disabled = false;
@@ -343,36 +463,224 @@ function setupEnhancedViolationSubmission() {
 }
 
 // Show modal for duplicate violation
-function showDuplicateViolationModal(message) {
-  let modal = document.getElementById('duplicateViolationModal');
-  if (!modal) {
-    modal = document.createElement('div');
-    modal.className = 'modal fade';
-    modal.id = 'duplicateViolationModal';
-    modal.tabIndex = -1;
-    modal.innerHTML = `
+function showDuplicateViolationModal(message, violationData = null) {
+  console.log('showDuplicateViolationModal called with:', { message, violationData });
+  
+  // Always store the violation data immediately
+  if (violationData && typeof violationData === 'object' && violationData.student_id) {
+    console.log('=== STORING VIOLATION DATA IMMEDIATELY ===');
+    console.log('Data to store:', violationData);
+    window.pendingDuplicateViolation = violationData;
+    console.log('Data stored in window.pendingDuplicateViolation:', window.pendingDuplicateViolation);
+  } else {
+    console.warn('No violation data provided to store or invalid data:', violationData);
+    console.warn('Data type:', typeof violationData);
+    console.warn('Has student_id:', violationData?.student_id);
+    alert('Unable to store violation data for duplicate handling. Please try submitting again.');
+    return; // Don't show modal if no data
+  }
+  
+  // Remove existing modal to ensure clean state
+  const existingModal = document.getElementById('duplicateViolationModal');
+  if (existingModal) {
+    existingModal.remove();
+  }
+
+  // Create fresh modal
+  const modal = document.createElement('div');
+  modal.className = 'modal fade';
+  modal.id = 'duplicateViolationModal';
+  modal.tabIndex = -1;
+  modal.innerHTML = `
     <div class="modal-dialog">
-      <div class="modal-content" style="background:#fff; border:2px solid #198754;">
-        <div class="modal-header" style="background:#198754; color:#fff;">
-          <h5 class="modal-title" style="color:#fff;">Duplicate Violation</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      <div class="modal-content" style="background:#fff; border:2px solid #dc3545;">
+        <div class="modal-header" style="background:#dc3545; color:#fff;">
+          <h5 class="modal-title" style="color:#fff;">Duplicate Violation Warning</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <p class="mb-0" style="color:#198754;">${message || 'No same violation within the same date is allowed.'}</p>
+          <div class="d-flex align-items-center mb-3">
+            <i class="ri-alert-line me-2" style="font-size: 1.5rem; color: #dc3545;"></i>
+            <p class="mb-0" style="color:#dc3545;"><strong>${message || 'A similar violation already exists for this date.'}</strong></p>
+          </div>
+          <p class="mb-0 text-muted">Do you want to proceed with recording this duplicate violation anyway?</p>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn" style="background:#198754;color:#fff;" data-bs-dismiss="modal">OK</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <i class="ri-close-line me-1"></i>Cancel
+          </button>
+          <button type="button" class="btn btn-danger" id="proceedWithDuplicateBtn">
+            <i class="ri-check-line me-1"></i>Proceed Anyway
+          </button>
         </div>
       </div>
     </div>`;
-    document.body.appendChild(modal);
+  document.body.appendChild(modal);
+
+  // Add event listener using addEventListener (more reliable)
+  const proceedBtn = modal.querySelector('#proceedWithDuplicateBtn');
+  if (proceedBtn) {
+    proceedBtn.addEventListener('click', function() {
+      console.log('=== PROCEED BUTTON CLICKED ===');
+      console.log('pendingDuplicateViolation exists:', !!window.pendingDuplicateViolation);
+      console.log('Current pendingDuplicateViolation:', window.pendingDuplicateViolation);
+      
+      // Close modal first
+      const bsModal = bootstrap.Modal.getInstance(modal);
+      if (bsModal) bsModal.hide();
+      
+      // Small delay to ensure modal is closed before proceeding
+      setTimeout(() => {
+        if (window.pendingDuplicateViolation) {
+          console.log('Calling proceedWithDuplicateViolation...');
+          proceedWithDuplicateViolation();
+        } else {
+          console.error('No pending violation data available');
+          alert('No pending violation data available. Please try submitting again.');
+        }
+      }, 100);
+    });
+    console.log('Event listener attached to proceed button using addEventListener');
   } else {
-    // Update message if modal already exists
-    const msgP = modal.querySelector('.modal-body p');
-    if (msgP) msgP.textContent = message || 'No same violation within the same date is allowed.';
+    console.error('Proceed button not found in modal');
   }
+
+  // Show modal
   const bsModal = new bootstrap.Modal(modal);
   bsModal.show();
+  
+  console.log('=== MODAL SHOWN, DATA SHOULD BE AVAILABLE FOR PROCEED ===');
+}
+
+// Function to proceed with duplicate violation submission
+async function proceedWithDuplicateViolation() {
+  console.log('=== proceedWithDuplicateViolation CALLED ===');
+  console.log('window.pendingDuplicateViolation status:', {
+    exists: !!window.pendingDuplicateViolation,
+    data: window.pendingDuplicateViolation
+  });
+  
+  if (!window.pendingDuplicateViolation) {
+    console.error('No pending violation data found');
+    alert('No pending violation data found. The page may need to be refreshed.');
+    return;
+  }
+
+  console.log('Proceeding with violation data:', window.pendingDuplicateViolation);
+  console.log('=== STARTING FORCE DUPLICATE SUBMISSION ===');
+
+  const violationData = window.pendingDuplicateViolation;
+  
+  // Try to find the submit button from either the violation modal or incident modal
+  let submitBtn = document.querySelector('#recordViolationModal button[type="submit"]');
+  if (!submitBtn) {
+    submitBtn = document.querySelector('#incidentFormModal button[type="submit"]');
+  }
+  if (!submitBtn) {
+    // Fallback to any submit button that might be visible
+    submitBtn = document.querySelector('button[type="submit"]:not([disabled])');
+  }
+  
+  let originalText = 'Submit';
+  if (submitBtn) {
+    originalText = submitBtn.textContent;
+  }
+
+  try {
+    if (submitBtn) {
+      submitBtn.textContent = 'Force Submitting...';
+      submitBtn.disabled = true;
+    }
+
+    // Create FormData like the original submission
+    const formData = new FormData();
+    formData.append('student_id', violationData.student_id);
+    formData.append('title', violationData.title);
+    formData.append('violation_date', violationData.violation_date);
+    formData.append('violation_time', violationData.violation_time);
+    formData.append('severity', violationData.severity);
+    formData.append('major_category', violationData.major_category);
+    formData.append('status', violationData.status);
+    formData.append('description', violationData.description || '');
+    formData.append('location', violationData.location || '');
+    formData.append('witnesses', violationData.witnesses || '');
+    formData.append('evidence', violationData.evidence || '');
+    formData.append('notes', violationData.notes || '');
+    formData.append('force_duplicate', 'true'); // Force duplicate flag
+    formData.append('_token', violationData._token);
+
+    // Log all FormData entries for debugging
+    console.log('=== FORMDATA CONTENTS FOR FORCE DUPLICATE ===');
+    for (let [key, value] of formData.entries()) {
+      console.log(`${key}: ${value}`);
+    }
+    console.log('=== END FORMDATA ===');
+    
+    console.log('=== SUBMITTING DUPLICATE WITH FORCE FLAG ===');
+    console.log('URL: /discipline/violations');
+    console.log('Method: POST');
+    console.log('Headers: Accept: application/json, X-CSRF-TOKEN:', violationData._token?.substring(0, 10) + '...');
+
+    const response = await fetch('/discipline/violations', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Accept': 'application/json',
+        'X-CSRF-TOKEN': violationData._token
+      },
+      body: formData
+    });
+
+    console.log(`Force submission response status: ${response.status} ${response.statusText}`);
+
+    if (!response.ok) {
+      let errorMessage = `Server error: ${response.status}`;
+      try {
+        const responseText = await response.text();
+        console.log('Error response text:', responseText);
+        
+        const errorData = JSON.parse(responseText);
+        console.log('Error response parsed:', errorData);
+        
+        if (response.status === 422) {
+          // Validation error
+          errorMessage = errorData.message || 'Validation failed: ' + Object.values(errorData.errors || {}).flat().join(', ');
+        } else if (response.status === 409) {
+          // Still getting duplicate error even with force_duplicate
+          errorMessage = 'Duplicate violation error persists: ' + (errorData.message || 'Unknown error');
+        } else {
+          errorMessage = errorData.message || errorMessage;
+        }
+      } catch (parseError) {
+        console.warn('Could not parse error response as JSON:', parseError);
+      }
+      throw new Error(errorMessage);
+    }
+
+    const result = await response.json();
+
+    if (result.success) {
+      alert('Violation recorded successfully (duplicate allowed)!');
+      
+      // Close modal and refresh
+      const modal = bootstrap.Modal.getInstance(document.getElementById('recordViolationModal'));
+      if (modal) modal.hide();
+      window.location.reload();
+    } else {
+      throw new Error(result.message || 'Failed to submit violation');
+    }
+
+  } catch (error) {
+    console.error('Error submitting duplicate violation:', error);
+    alert('Error submitting violation: ' + error.message);
+  } finally {
+    if (submitBtn) {
+      submitBtn.textContent = originalText;
+      submitBtn.disabled = false;
+    }
+    // Clear pending violation data
+    window.pendingDuplicateViolation = null;
+  }
 }
 
 
@@ -570,7 +878,13 @@ window.editViolation = function(violationId) {
            
             <div class="mb-2">
                 <label class="form-label fw-bold small">Title</label>
-                <input type="text" class="form-control form-control-sm" id="edit_title" name="title" value="${violation.title || ''}" required>
+                <select class="form-select form-select-sm" id="edit_title" name="title" required>
+                  <option value="">-- Select Offense --</option>
+                  ${window.offenseOptions && window.offenseOptions.minor.map(title => `<option value="${title.replace(/"/g, '&quot;')}" ${violation.title === title ? 'selected' : ''}>${title}</option>`).join('')}
+                  ${window.offenseOptions && Object.keys(window.offenseOptions.major).map(cat => window.offenseOptions.major[cat].map(title => `<option value="${title.replace(/"/g, '&quot;')}" ${violation.title === title ? 'selected' : ''}>${title}</option>`).join('')).join('')}
+                  <option value="custom" ${violation.title && !(window.offenseOptions && (window.offenseOptions.minor.includes(violation.title) || Object.values(window.offenseOptions.major).flat().includes(violation.title))) ? 'selected' : ''}>-- Custom Offense --</option>
+                </select>
+                <input type="text" class="form-control form-control-sm mt-2" id="edit_title_custom" name="title_custom" placeholder="Enter custom offense..." style="display:none;" value="${violation.title && !(window.offenseOptions && (window.offenseOptions.minor.includes(violation.title) || Object.values(window.offenseOptions.major).flat().includes(violation.title))) ? violation.title : ''}">
             </div>
 
             <div class="col-12">
@@ -595,35 +909,25 @@ window.editViolation = function(violationId) {
             </div>
         </div>
 
+
         <!-- Right Column: Investigation & Resolution Details -->
         <div class="col-lg-6">
-            <div class="mb-3">
-                <label class="form-label fw-bold small">Student Statement</label>
-                <textarea class="form-control form-control-sm" id="edit_student_statement" name="student_statement" rows="3">${violation.student_statement || ''}</textarea>
-            </div>
-
             <h6 class="mt-3 mb-3">Resolution Details</h6>
             <div class="mb-2" id="edit_resolution_wrapper" style="display: ${(violation.status === 'resolved' || violation.status === 'dismissed') ? 'block' : 'none'};">
                 <label class="form-label fw-bold small">Resolution</label>
                 <textarea class="form-control form-control-sm" id="edit_resolution" name="resolution" rows="2">${violation.resolution || ''}</textarea>
             </div>
-            <div class="mb-2">
-                <label class="form-label fw-bold small">Disciplinary Action</label>
-                <textarea class="form-control form-control-sm" id="edit_disciplinary_action" name="disciplinary_action" rows="2">${violation.disciplinary_action || ''}</textarea>
-            </div>
-            <div class="mb-2">
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="edit_parent_notified" name="parent_notified" value="1" ${violation.parent_notified ? 'checked' : ''}>
-                    <label class="form-check-label fw-bold small" for="edit_parent_notified">
-                        Parent/Guardian Notified
-                    </label>
-                </div>
-            </div>
-            <div class="mb-3">
-                <label class="form-label fw-bold small">Additional Notes</label>
-                <textarea class="form-control form-control-sm" id="edit_notes" name="notes" rows="3">${violation.notes || ''}</textarea>
-            </div>
         </div>
+    </div>
+    <div class="row g-2">
+      <div class="mb-2 w-100">
+        <label class="form-label fw-bold small">Disciplinary Action</label>
+        <textarea class="form-control form-control-sm w-100" id="edit_disciplinary_action" name="disciplinary_action" rows="2" style="width:100%">${violation.disciplinary_action || ''}</textarea>
+      </div>
+      <div class="mb-3 w-100">
+        <label class="form-label fw-bold small">Additional Notes</label>
+        <textarea class="form-control form-control-sm w-100" id="edit_notes" name="notes" rows="3" style="width:100%">${violation.notes || ''}</textarea>
+      </div>
     </div>
 `;
 
@@ -643,42 +947,71 @@ window.editViolation = function(violationId) {
             }
 
             // Add form submission handler
-            const currentViolationId = violationId;
-            form.onsubmit = async function(e) {
-                e.preventDefault();
-                console.log('📤 Form submission started');
 
-                const formData = new FormData(form);
-            const submitBtn = document.querySelector('#editViolationModal button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
+      // --- Title dropdown custom input logic ---
+      const editTitleSelect = document.getElementById('edit_title');
+      const editTitleCustom = document.getElementById('edit_title_custom');
+      if (editTitleSelect && editTitleCustom) {
+        function toggleCustomInput() {
+          if (editTitleSelect.value === 'custom') {
+            editTitleCustom.style.display = '';
+            editTitleCustom.required = true;
+          } else {
+            editTitleCustom.style.display = 'none';
+            editTitleCustom.required = false;
+          }
+        }
+        editTitleSelect.addEventListener('change', toggleCustomInput);
+        toggleCustomInput();
+      }
 
-                // Add CSRF token and method spoofing
-                formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
-                formData.append('_method', 'PUT');
+      const currentViolationId = violationId;
+      form.onsubmit = async function(e) {
+        e.preventDefault();
+        console.log('📤 Form submission started');
 
-                // Ensure required fields are included (disabled fields may not be in FormData)
-                formData.append('severity', violation.severity || 'minor');
-                formData.append('status', violation.status || 'pending');
+        // If custom, set the value to the custom input
+        if (editTitleSelect && editTitleCustom && editTitleSelect.value === 'custom') {
+          // Remove the select's value and set the custom input's value as 'title'
+          // Remove the select's name so only the custom input is submitted as 'title'
+          editTitleSelect.name = '';
+          editTitleCustom.name = 'title';
+        } else if (editTitleSelect && editTitleCustom) {
+          editTitleSelect.name = 'title';
+          editTitleCustom.name = 'title_custom';
+        }
 
-                // Handle checkbox explicitly
-                const parentNotifiedCheckbox = form.querySelector('#edit_parent_notified');
-                if (parentNotifiedCheckbox) {
-                    formData.set('parent_notified', parentNotifiedCheckbox.checked ? '1' : '0');
-                }
+        const formData = new FormData(form);
+        const submitBtn = document.querySelector('#editViolationModal button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
 
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="ri-loader-line me-2 spinner-border spinner-border-sm"></i>Updating...';
+        // Add CSRF token and method spoofing
+        formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+        formData.append('_method', 'PUT');
 
-                try {
-                const response = await fetch(form.action, {
-                    method: 'POST',
-                    credentials: 'include',
-                    body: formData,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json'
-                    }
-                });
+        // Ensure required fields are included (disabled fields may not be in FormData)
+        formData.append('severity', violation.severity || 'minor');
+        formData.append('status', violation.status || 'pending');
+
+        // Handle checkbox explicitly
+        const parentNotifiedCheckbox = form.querySelector('#edit_parent_notified');
+        if (parentNotifiedCheckbox) {
+          formData.set('parent_notified', parentNotifiedCheckbox.checked ? '1' : '0');
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="ri-loader-line me-2 spinner-border spinner-border-sm"></i>Updating...';
+
+        try {
+        const response = await fetch(form.action, {
+          method: 'POST',
+          credentials: 'include',
+          body: formData,
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+          }
+        });
 
                     console.log('📡 Update response status:', response.status);
 
@@ -1204,10 +1537,22 @@ window.viewViolation = function(violationId) {
     fetch(`/discipline/violations/${violationId}`, { credentials: 'include' })
       .then(response => response.json())
       .then(data => {
-        // Build the PDF URL for the narrative report
+        // Build the PDF URL for the narrative report - only show if student has replied
         let narrativePdfUrl = '';
-        if (data.student && data.id && data.severity === 'major') {
+        if (data.student && data.id && data.severity === 'major' && 
+            (data.student_statement || data.incident_feelings || data.action_plan)) {
           narrativePdfUrl = `/narrative-report/view/${data.student.id}/${data.id}`;
+        }
+
+        // Build the PDF URL for the teacher observation report (only show if teacher has replied)
+        let teacherObservationReportUrl = '';
+        if (
+          data.id && (
+            (typeof data.teacher_statement === 'string' && data.teacher_statement.trim() !== '') ||
+            (typeof data.action_plan === 'string' && data.action_plan.trim() !== '')
+          )
+        ) {
+          teacherObservationReportUrl = `/guidance/observationreport/pdf/${data.id}`;
         }
 
         document.getElementById('viewViolationModalBody').innerHTML = `
@@ -1222,21 +1567,9 @@ window.viewViolation = function(violationId) {
                   <tr><td><strong>Section:</strong></td><td>${data.student && data.student.section ? data.student.section : 'N/A'}</td></tr>
                 </tbody>
               </table>
-              
-              <h6 class="mt-3">Violation Details</h6>
-              <table class="table table-sm">
-                <tbody>
-                  <tr><td><strong>Status:</strong></td><td>
-                    <span class="badge bg-${data.status === 'pending' ? 'warning' : (data.status === 'resolved' ? 'success' : 'info')}">
-                      ${data.status ? data.status.charAt(0).toUpperCase() + data.status.slice(1) : 'N/A'}
-                    </span>
-                  </td></tr>
-                  <tr><td><strong>Date:</strong></td><td>${new Date(data.violation_date).toLocaleDateString()}</td></tr>
-                  <tr><td><strong>Time:</strong></td><td>${data.violation_time ? (data.violation_time.length > 5 ? data.violation_time.substring(0, 5) : data.violation_time) : 'N/A'}</td></tr>
-                </tbody>
-              </table>
               <!-- Narrative PDF Attachment (if available) -->
               ${narrativePdfUrl ? `<div class="mt-4"><label class="form-label fw-bold">Student Narrative Report (PDF):</label><div><a href="${narrativePdfUrl}" target="_blank" class="btn btn-outline-primary btn-sm"><i class="ri-attachment-2"></i> View Attachment</a></div></div>` : ''}
+              ${teacherObservationReportUrl ? `<div class=\"mt-2\"><label class=\"form-label fw-bold\">Teacher Observation Report (PDF):</label><div><a href=\"${teacherObservationReportUrl}\" target=\"_blank\" class=\"btn btn-outline-success btn-sm\"><i class=\"ri-attachment-2\"></i> View Teacher Report</a></div></div>` : ''}
             </div>
             <div class="col-md-6">
               ${data.resolution ? `
@@ -2054,8 +2387,8 @@ function showIncidentForm() {
               <small class="text-muted">Add multiple students involved in the incident</small>
             </div>
             <div class="mb-3">
-              <label class="form-label fw-bold">Reporter</label>
-              <input type="text" class="form-control" id="incidentReporter" required>
+              <label class="form-label fw-bold">Location</label>
+              <input type="text" class="form-control" id="incidentLocation" required>
             </div>
             <div class="row">
               <div class="col-md-6">
@@ -2073,7 +2406,7 @@ function showIncidentForm() {
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-              <button type="submit" form="incidentForm" class="btn btn-success">Submit Incident</button>
+              <button type="submit" class="btn btn-success">Submit Incident</button>
             </div>
           </form>
         </div>
@@ -2183,11 +2516,11 @@ function showIncidentForm() {
             return;
         }
 
-        // Collect incident data
-        const reporter = document.getElementById('incidentReporter').value;
-        const date = document.getElementById('incidentDate').value;
-        const time = document.getElementById('incidentTime').value;
-        const details = document.getElementById('incidentDetails').value;
+  // Collect incident data
+  const location = document.getElementById('incidentLocation').value;
+  const date = document.getElementById('incidentDate').value;
+  const time = document.getElementById('incidentTime').value;
+  const details = document.getElementById('incidentDetails').value;
 
         const submitBtn = document.querySelector('#incidentFormModal button[type="submit"]');
         const originalText = submitBtn.textContent;
@@ -2215,7 +2548,7 @@ function showIncidentForm() {
                 formData.append('violation_date', date);
                 formData.append('violation_time', time);
                 formData.append('status', 'pending');
-                formData.append('incident_reporter', reporter);
+                formData.append('location', location);
                 formData.append('incident_date', date);
                 formData.append('incident_time', time);
 
@@ -2240,7 +2573,26 @@ function showIncidentForm() {
                 });
 
         if (response.status === 409) {
-          showDuplicateViolationModal('A violation with the same title already exists for this student on this date.');
+          // Build violation data for incident form
+          const incidentViolationData = {
+            student_id: student.id,
+            title: violationTitle,
+            violation_date: date,
+            violation_time: time,
+            severity: severity,
+            major_category: category,
+            status: 'pending',
+            description: details.trim(),
+            location: '',
+            witnesses: '',
+            evidence: '',
+            notes: `Incident reported by: ${reporter}`,
+            _token: document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+          };
+          
+          console.log('=== INCIDENT FORM DUPLICATE DETECTED ===');
+          console.log('Incident violation data:', incidentViolationData);
+          showDuplicateViolationModal('A violation with the same title already exists for this student on this date.', incidentViolationData);
           submitBtn.textContent = originalText;
           submitBtn.disabled = false;
           return;
@@ -2280,7 +2632,35 @@ function showIncidentForm() {
 
         } catch (err) {
       if (err && err.message && err.message.includes('A violation with the same title already exists for this student on this date.')) {
-        showDuplicateViolationModal('A violation with the same title already exists for this student on this date.');
+        // For error case, we need to build violation data manually
+        if (window.incidentSelectedStudents && window.incidentSelectedStudents.length > 0) {
+          const firstStudent = window.incidentSelectedStudents[0];
+          const violationTitle = document.getElementById('incidentViolation')?.value || '';
+          const date = document.getElementById('incidentDate')?.value || '';
+          const time = document.getElementById('incidentTime')?.value || '';
+          const details = document.getElementById('incidentDetails')?.value || '';
+          const location = document.getElementById('incidentLocation')?.value || '';
+          
+          const incidentViolationData = {
+            student_id: firstStudent.id,
+            title: violationTitle,
+            violation_date: date,
+            violation_time: time,
+            severity: window.titleToSeverityMap[violationTitle]?.severity || 'major',
+            major_category: window.titleToSeverityMap[violationTitle]?.category || null,
+            status: 'pending',
+            description: details.trim(),
+            location: location,
+            witnesses: '',
+            evidence: '',
+            notes: `Incident location: ${location}`,
+            _token: document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+          };
+          
+          showDuplicateViolationModal('A violation with the same title already exists for this student on this date.', incidentViolationData);
+        } else {
+          alert('A violation with the same title already exists for this student on this date. Please check existing violations before proceeding.');
+        }
       } else {
         console.error('Incident submission error:', err);
         alert('Error submitting incident: ' + err.message);
@@ -2343,6 +2723,9 @@ window.generateIncidentForm = function() {
       <div class="section">
         <div class="section-title">VIOLATION INFORMATION</div>
         <div style="margin-top: 10px; padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9;">${violation.replace(/\n/g, '<br>')}</div>
+      </div>
+      <div class="signature-section">
+        <div style="margin-bottom: 20px;"><strong>Prepared by:</strong></div>
       </div>
       <div class="signature-section">
         <div style="margin-bottom: 20px;"><strong>Prepared by:</strong></div>
