@@ -36,7 +36,7 @@ class CaseMeeting extends Model
     // Removed automatic status syncing between CaseMeeting and related violations
     protected $fillable = [
         'student_id',
-        'violation_id', // <-- added
+        'violation_id',
         'counselor_id',
         'meeting_type',
         'scheduled_date',
@@ -57,6 +57,29 @@ class CaseMeeting extends Model
         'forwarded_to_president',
         'forwarded_at',
         'completed_at',
+        // Agreed Actions/Interventions fields
+        'written_reflection',
+        'written_reflection_due',
+        'mentor_name',
+        'mentorship_counseling',
+        'parent_teacher_communication',
+        'parent_teacher_date',
+        'restorative_justice_activity',
+        'restorative_justice_date',
+        'follow_up_meeting',
+        'follow_up_meeting_date',
+        'community_service',
+        'community_service_date',
+        'community_service_area',
+        'suspension',
+        'suspension_3days',
+        'suspension_5days',
+        'suspension_other_days',
+        'suspension_start',
+        'suspension_end',
+        'suspension_return',
+        'expulsion',
+        'expulsion_date',
     ];
     /**
      * Get the violation associated with this case meeting.
@@ -74,6 +97,29 @@ class CaseMeeting extends Model
         'forwarded_to_president' => 'boolean',
         'forwarded_at' => 'datetime',
         'completed_at' => 'datetime',
+        // Agreed Actions/Interventions casts
+        'written_reflection' => 'boolean',
+        'written_reflection_due' => 'date',
+        'mentorship_counseling' => 'boolean',
+        'mentor_name' => 'string',
+        'parent_teacher_communication' => 'boolean',
+        'parent_teacher_date' => 'date',
+        'restorative_justice_activity' => 'boolean',
+        'restorative_justice_date' => 'date',
+        'follow_up_meeting' => 'boolean',
+        'follow_up_meeting_date' => 'date',
+        'community_service' => 'boolean',
+        'community_service_date' => 'date',
+        'community_service_area' => 'string',
+        'suspension' => 'boolean',
+        'suspension_3days' => 'boolean',
+        'suspension_5days' => 'boolean',
+        'suspension_other_days' => 'integer',
+        'suspension_start' => 'date',
+        'suspension_end' => 'date',
+        'suspension_return' => 'date',
+        'expulsion' => 'boolean',
+        'expulsion_date' => 'date',
     ];
 
     /**

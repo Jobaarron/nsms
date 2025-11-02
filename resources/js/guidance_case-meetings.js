@@ -136,7 +136,12 @@ window.viewCaseMeeting = function(meetingId) {
 
             // Build the PDF URL for the teacher observation report (guidance route)
             let teacherObservationReportUrl = '';
-            if (meeting.id && (meeting.teacher_statement || meeting.action_plan)) {
+            if (
+                meeting.id && (
+                    (typeof meeting.teacher_statement === 'string' && meeting.teacher_statement.trim() !== '') ||
+                    (typeof meeting.action_plan === 'string' && meeting.action_plan.trim() !== '')
+                )
+            ) {
                 teacherObservationReportUrl = `/guidance/observationreport/pdf/${meeting.id}`;
             }
 

@@ -305,16 +305,64 @@ class GuidanceController extends Controller
             'recommendations' => 'nullable|string',
             'follow_up_required' => 'boolean',
             'follow_up_date' => 'nullable|date|after:today',
+            // Agreed Actions/Interventions fields
+            'written_reflection' => 'nullable|boolean',
+            'written_reflection_due' => 'nullable|date',
+            'mentorship_counseling' => 'nullable|boolean',
+            'mentor_name' => 'nullable|string|max:255',
+            'parent_teacher_communication' => 'nullable|boolean',
+            'parent_teacher_date' => 'nullable|date',
+            'restorative_justice_activity' => 'nullable|boolean',
+            'restorative_justice_date' => 'nullable|date',
+            'follow_up_meeting' => 'nullable|boolean',
+            'follow_up_meeting_date' => 'nullable|date',
+            'community_service' => 'nullable|boolean',
+            'community_service_date' => 'nullable|date',
+            'community_service_area' => 'nullable|string|max:255',
+            'suspension' => 'nullable|boolean',
+            'suspension_3days' => 'nullable|boolean',
+            'suspension_5days' => 'nullable|boolean',
+            'suspension_other_days' => 'nullable|integer',
+            'suspension_start' => 'nullable|date',
+            'suspension_end' => 'nullable|date',
+            'suspension_return' => 'nullable|date',
+            'expulsion' => 'nullable|boolean',
+            'expulsion_date' => 'nullable|date',
         ]);
 
-
-        $caseMeeting->update([
+        // Prepare update data
+        $updateData = [
             'summary' => $validatedData['summary'],
-            'recommendations' => $validatedData['recommendations'],
+            'recommendations' => $validatedData['recommendations'] ?? null,
             'follow_up_required' => $validatedData['follow_up_required'] ?? false,
-            'follow_up_date' => $validatedData['follow_up_date'],
+            'follow_up_date' => $validatedData['follow_up_date'] ?? null,
             'status' => 'pre_completed',
-        ]);
+            // Agreed Actions/Interventions
+            'written_reflection' => $request->boolean('written_reflection'),
+            'written_reflection_due' => $validatedData['written_reflection_due'] ?? null,
+            'mentorship_counseling' => $request->boolean('mentorship_counseling'),
+            'mentor_name' => $validatedData['mentor_name'] ?? null,
+            'parent_teacher_communication' => $request->boolean('parent_teacher_communication'),
+            'parent_teacher_date' => $validatedData['parent_teacher_date'] ?? null,
+            'restorative_justice_activity' => $request->boolean('restorative_justice_activity'),
+            'restorative_justice_date' => $validatedData['restorative_justice_date'] ?? null,
+            'follow_up_meeting' => $request->boolean('follow_up_meeting'),
+            'follow_up_meeting_date' => $validatedData['follow_up_meeting_date'] ?? null,
+            'community_service' => $request->boolean('community_service'),
+            'community_service_date' => $validatedData['community_service_date'] ?? null,
+            'community_service_area' => $validatedData['community_service_area'] ?? null,
+            'suspension' => $request->boolean('suspension'),
+            'suspension_3days' => $request->boolean('suspension_3days'),
+            'suspension_5days' => $request->boolean('suspension_5days'),
+            'suspension_other_days' => $validatedData['suspension_other_days'] ?? null,
+            'suspension_start' => $validatedData['suspension_start'] ?? null,
+            'suspension_end' => $validatedData['suspension_end'] ?? null,
+            'suspension_return' => $validatedData['suspension_return'] ?? null,
+            'expulsion' => $request->boolean('expulsion'),
+            'expulsion_date' => $validatedData['expulsion_date'] ?? null,
+        ];
+
+        $caseMeeting->update($updateData);
 
         // Automatically update all related violations' statuses
         foreach ($caseMeeting->violations as $violation) {

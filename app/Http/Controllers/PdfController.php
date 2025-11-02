@@ -538,35 +538,91 @@ class PdfController extends Controller
             }
             // Do not write summary and follow_up_meeting on page 1
 
-            // Page 2: template, then write summary, follow_up_meeting, and checklist
+            // Page 2: template, then write summary, follow_up_meeting, and checklist, plus all agreed actions/interventions
             if ($pageCount > 1) {
                 $tplId2 = $pdf->importPage(2);
                 $size2 = $pdf->getTemplateSize($tplId2);
                 $orientation2 = ($size2['width'] > $size2['height']) ? 'L' : 'P';
                 $pdf->AddPage($orientation2, [$size2['width'], $size2['height']]);
                 $pdf->useTemplate($tplId2);
-                // Now write summary and follow_up_meeting on page 2
+                // Write summary and follow_up_meeting on page 2
                 $pdf->SetFont('dejavusans', '', 10.1);
                 $pdf->SetXY(18, 30); $pdf->MultiCell(169, 8, $caseMeeting->summary ?? '');
                 $pdf->SetXY(100, 90); $pdf->MultiCell(60, 8, $caseMeeting->follow_up_meeting ?? '');
+
                 // Overlay check icons for report availability (now on page 2)
                 $check = '✓';
                 $pdf->SetFont('dejavusans', '', 12);
                 if ($hasStudentNarrative) {
-                    $pdf->SetXY(31, 210); // Adjust position as needed for Student Narrative check on page 2
-                    $pdf->Write(0, $check);
+                    $pdf->SetXY(31, 210); $pdf->Write(0, $check);
                 }
                 if ($hasTeacherObservation) {
-                    $pdf->SetXY(31, 215); // Adjust position as needed for Teacher Observation check on page 2
-                    $pdf->Write(0, $check);
+                    $pdf->SetXY(31, 215); $pdf->Write(0, $check);
                 }
-                // Disciplinary Conference Report checklist
                 $hasDisciplinaryConReport = (isset($caseMeeting->status) && strtolower($caseMeeting->status) === 'active');
                 if ($hasDisciplinaryConReport) {
-                    $pdf->SetXY(31, 220); // Adjust position as needed for Disciplinary Conference Report check on page 2
-                    $pdf->Write(0, $check);
-                    $pdf->SetXY(38, 220);
-                    $pdf->Write(0, 'Disciplinary Conference Report');
+                    $pdf->SetXY(31, 220); $pdf->Write(0, $check);
+                    $pdf->SetXY(38, 220); $pdf->Write(0, 'Disciplinary Conference Report');
+                }
+
+                // --- AGREED ACTIONS/INTERVENTIONS SECTION ---
+                $pdf->SetFont('dejavusans', 'B', 11);
+                $pdf->SetXY(18, 110); $pdf->Write(0, '');
+                $pdf->SetFont('dejavusans', '', 10);
+                // Written Reflection
+                $pdf->SetXY(31, 88); $pdf->Write(0, !empty($caseMeeting->written_reflection) ? $check : '');
+                if (!empty($caseMeeting->written_reflection_due)) {
+                    $pdf->SetXY(150, 92); $pdf->Write(0, ($caseMeeting->written_reflection_due instanceof \DateTimeInterface) ? $caseMeeting->written_reflection_due->format('Y-m-d') : $caseMeeting->written_reflection_due);
+                }
+                // Mentor Name
+                if (!empty($caseMeeting->mentor_name)) {
+                    $pdf->SetXY(134, 103); $pdf->Write(0, $caseMeeting->mentor_name);
+                }
+                // Mentorship Counseling
+                $pdf->SetXY(31, 99); $pdf->Write(0, !empty($caseMeeting->mentorship_counseling) ? $check : '');
+                // Parent Teacher Communication
+                $pdf->SetXY(31, 110); $pdf->Write(0, !empty($caseMeeting->parent_teacher_communication) ? $check : '');
+                if (!empty($caseMeeting->parent_teacher_date)) {
+                    $pdf->SetXY(126, 115); $pdf->Write(0, ($caseMeeting->parent_teacher_date instanceof \DateTimeInterface) ? $caseMeeting->parent_teacher_date->format('Y-m-d') : $caseMeeting->parent_teacher_date);
+                }
+                // Restorative Justice Activity
+                $pdf->SetXY(31,121); $pdf->Write(0, !empty($caseMeeting->restorative_justice_activity) ? $check : '');
+                if (!empty($caseMeeting->restorative_justice_date)) {
+                    $pdf->SetXY(120, 126); $pdf->Write(0, ($caseMeeting->restorative_justice_date instanceof \DateTimeInterface) ? $caseMeeting->restorative_justice_date->format('Y-m-d') : $caseMeeting->restorative_justice_date);
+                }
+                // Follow Up Meeting
+                $pdf->SetXY(31, 133); $pdf->Write(0, !empty($caseMeeting->follow_up_meeting) ? $check : '');
+                if (!empty($caseMeeting->follow_up_meeting_date)) {
+                    $pdf->SetXY(100, 137); $pdf->Write(0, ($caseMeeting->follow_up_meeting_date instanceof \DateTimeInterface) ? $caseMeeting->follow_up_meeting_date->format('Y-m-d') : $caseMeeting->follow_up_meeting_date);
+                }
+                // Community Service
+                $pdf->SetXY(31, 144); $pdf->Write(0, !empty($caseMeeting->community_service) ? $check : '');
+                if (!empty($caseMeeting->community_service_date)) {
+                    $pdf->SetXY(50, 153); $pdf->Write(0, ($caseMeeting->community_service_date instanceof \DateTimeInterface) ? $caseMeeting->community_service_date->format('Y-m-d') : $caseMeeting->community_service_date);
+                }
+                if (!empty($caseMeeting->community_service_area)) {
+                    $pdf->SetXY(110, 152); $pdf->Write(0, $caseMeeting->community_service_area);
+                }
+                // Suspension
+                $pdf->SetXY(31, 160); $pdf->Write(0, !empty($caseMeeting->suspension) ? $check : '');
+                $pdf->SetXY(93, 160); $pdf->Write(0, !empty($caseMeeting->suspension_3days) ? $check : '');
+                $pdf->SetXY(109, 160); $pdf->Write(0, !empty($caseMeeting->suspension_5days) ? $check : '');
+                if (!empty($caseMeeting->suspension_other_days)) {
+                    $pdf->SetXY(130, 159); $pdf->Write(0, $caseMeeting->suspension_other_days . '');
+                }
+                if (!empty($caseMeeting->suspension_start)) {
+                    $pdf->SetXY(110, 164); $pdf->Write(0, ($caseMeeting->suspension_start instanceof \DateTimeInterface) ? $caseMeeting->suspension_start->format('Y-m-d') : $caseMeeting->suspension_start);
+                }
+                if (!empty($caseMeeting->suspension_end)) {
+                    $pdf->SetXY(40, 168); $pdf->Write(0, ($caseMeeting->suspension_end instanceof \DateTimeInterface) ? $caseMeeting->suspension_end->format('Y-m-d') : $caseMeeting->suspension_end);
+                }
+                if (!empty($caseMeeting->suspension_return)) {
+                    $pdf->SetXY(89, 173); $pdf->Write(0, ($caseMeeting->suspension_return instanceof \DateTimeInterface) ? $caseMeeting->suspension_return->format('Y-m-d') : $caseMeeting->suspension_return);
+                }
+                // Expulsion
+                $pdf->SetXY(31, 180); $pdf->Write(0, !empty($caseMeeting->expulsion) ? $check : '');
+                if (!empty($caseMeeting->expulsion_date)) {
+                    $pdf->SetXY(160, 193); $pdf->Write(0, ($caseMeeting->expulsion_date instanceof \DateTimeInterface) ? $caseMeeting->expulsion_date->format('Y-m-d') : $caseMeeting->expulsion_date);
                 }
             }
 

@@ -1544,6 +1544,17 @@ window.viewViolation = function(violationId) {
           narrativePdfUrl = `/narrative-report/view/${data.student.id}/${data.id}`;
         }
 
+        // Build the PDF URL for the teacher observation report (only show if teacher has replied)
+        let teacherObservationReportUrl = '';
+        if (
+          data.id && (
+            (typeof data.teacher_statement === 'string' && data.teacher_statement.trim() !== '') ||
+            (typeof data.action_plan === 'string' && data.action_plan.trim() !== '')
+          )
+        ) {
+          teacherObservationReportUrl = `/guidance/observationreport/pdf/${data.id}`;
+        }
+
         document.getElementById('viewViolationModalBody').innerHTML = `
           <div class="row">
             <div class="col-md-6">
@@ -1556,23 +1567,9 @@ window.viewViolation = function(violationId) {
                   <tr><td><strong>Section:</strong></td><td>${data.student && data.student.section ? data.student.section : 'N/A'}</td></tr>
                 </tbody>
               </table>
-              
-
-              <h6 class="mt-3">Violation Details</h6>
-              <table class="table table-sm">
-                <tbody>
-                  <tr><td><strong>Title:</strong></td><td>${data.title || 'N/A'}</td></tr>
-                  <tr><td><strong>Status:</strong></td><td>
-                    <span class="badge bg-${data.status === 'pending' ? 'warning' : (data.status === 'resolved' ? 'success' : 'info')}">
-                      ${data.status ? data.status.charAt(0).toUpperCase() + data.status.slice(1) : 'N/A'}
-                    </span>
-                  </td></tr>
-                  <tr><td><strong>Date:</strong></td><td>${new Date(data.violation_date).toLocaleDateString()}</td></tr>
-                  <tr><td><strong>Time:</strong></td><td>${data.violation_time ? (function() { const d = new Date('1970-01-01T' + data.violation_time); return isNaN(d) ? data.violation_time : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }); })() : 'N/A'}</td></tr>
-                </tbody>
-              </table>
               <!-- Narrative PDF Attachment (if available) -->
               ${narrativePdfUrl ? `<div class="mt-4"><label class="form-label fw-bold">Student Narrative Report (PDF):</label><div><a href="${narrativePdfUrl}" target="_blank" class="btn btn-outline-primary btn-sm"><i class="ri-attachment-2"></i> View Attachment</a></div></div>` : ''}
+              ${teacherObservationReportUrl ? `<div class=\"mt-2\"><label class=\"form-label fw-bold\">Teacher Observation Report (PDF):</label><div><a href=\"${teacherObservationReportUrl}\" target=\"_blank\" class=\"btn btn-outline-success btn-sm\"><i class=\"ri-attachment-2\"></i> View Teacher Report</a></div></div>` : ''}
             </div>
             <div class="col-md-6">
               ${data.resolution ? `
@@ -2409,7 +2406,7 @@ function showIncidentForm() {
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-              <button type="submit" form="incidentForm" class="btn btn-success">Submit Incident</button>
+              <button type="submit" class="btn btn-success">Submit Incident</button>
             </div>
           </form>
         </div>
@@ -2726,6 +2723,9 @@ window.generateIncidentForm = function() {
       <div class="section">
         <div class="section-title">VIOLATION INFORMATION</div>
         <div style="margin-top: 10px; padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9;">${violation.replace(/\n/g, '<br>')}</div>
+      </div>
+      <div class="signature-section">
+        <div style="margin-bottom: 20px;"><strong>Prepared by:</strong></div>
       </div>
       <div class="signature-section">
         <div style="margin-bottom: 20px;"><strong>Prepared by:</strong></div>

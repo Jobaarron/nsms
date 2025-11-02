@@ -616,21 +616,80 @@
                                 <label class="form-label">Case Summary <span class="text-danger">*</span></label>
                                 <textarea class="form-control" name="summary" rows="4" required placeholder="Provide a detailed summary of the case meeting..."></textarea>
                             </div>
-                            <div class="col-12">
-                                <label class="form-label">Recommendations</label>
-                                <textarea class="form-control" name="recommendations" rows="3" placeholder="Any recommendations or actions to be taken..."></textarea>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="follow_up_required" id="follow_up_required">
-                                    <label class="form-check-label" for="follow_up_required">
-                                        Follow-up Required
-                                    </label>
+                            <div class="col-12 mt-4">
+                                <label class="form-label fw-bold">AGREED ACTIONS AND INTERVENTION:</label>
+                                <div class="border rounded p-3 bg-light">
+                                    <p class="mb-2">To address the pupil’s/student's behavior and support his/her/their improvement, the following actions and interventions have been agreed upon:</p>
+                                    <div class="form-check mb-2">
+                                        <input type="hidden" name="written_reflection" value="0">
+                                        <input class="form-check-input" type="checkbox" name="written_reflection" value="1" id="action_written_reflection">
+                                        <label class="form-check-label" for="action_written_reflection">
+                                            <strong>Written Reflection as Warning</strong> – The student will write a one-page reflection on the importance of respect, responsibility, and self-control. To be submitted on or before: <input type="date" name="written_reflection_due" class="form-control d-inline-block w-auto ms-2" autocomplete="off">
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input type="hidden" name="mentorship_counseling" value="0">
+                                        <input class="form-check-input" type="checkbox" name="mentorship_counseling" value="1" id="action_mentorship">
+                                        <label class="form-check-label" for="action_mentorship">
+                                            <strong>Mentorship/Counseling</strong> – The student will meet with the school counselor or a mentor weekly to discuss behavior management and coping strategies. Name of Mentor: <input type="text" name="mentor_name" class="form-control d-inline-block w-auto ms-2" placeholder="Name" autocomplete="off">
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input type="hidden" name="parent_teacher_communication" value="0">
+                                        <input class="form-check-input" type="checkbox" name="parent_teacher_communication" value="1" id="action_parent_teacher">
+                                        <label class="form-check-label" for="action_parent_teacher">
+                                            <strong>Parent-Teacher Communication</strong> – Weekly progress updates will be shared with the parents to monitor the student's behavior and academic performance. Date: <input type="date" name="parent_teacher_date" class="form-control d-inline-block w-auto ms-2" autocomplete="off">
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input type="hidden" name="restorative_justice_activity" value="0">
+                                        <input class="form-check-input" type="checkbox" name="restorative_justice_activity" value="1" id="action_restorative_justice">
+                                        <label class="form-check-label" for="action_restorative_justice">
+                                            <strong>Restorative Justice Activity</strong> – The student will participate in a peer mediation or conflict resolution session if their behavior impacted others. Date: <input type="date" name="restorative_justice_date" class="form-control d-inline-block w-auto ms-2" autocomplete="off">
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input type="hidden" name="follow_up_meeting" value="0">
+                                        <input class="form-check-input" type="checkbox" name="follow_up_meeting" value="1" id="action_follow_up_meeting">
+                                        <label class="form-check-label" for="action_follow_up_meeting">
+                                            <strong>Follow-up Meeting</strong> – A follow-up conference will be held in one month to assess progress and determine if further interventions are needed. Date: <input type="date" name="follow_up_meeting_date" class="form-control d-inline-block w-auto ms-2" autocomplete="off">
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input type="hidden" name="community_service" value="0">
+                                        <input class="form-check-input" type="checkbox" name="community_service" value="1" id="action_community_service">
+                                        <label class="form-check-label" for="action_community_service">
+                                            <strong>Conduct Community/ School Service</strong> – The student will be given the task to participate community or school service activity to promote cleanliness and orderliness of the surroundings. <br>Date: <input type="date" name="community_service_date" class="form-control d-inline-block w-auto ms-2" autocomplete="off"> Assigned Area: <input type="text" name="community_service_area" class="form-control d-inline-block w-auto ms-2" placeholder="Area" autocomplete="off">.
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2 align-items-center d-flex flex-wrap">
+                                        <input type="hidden" name="suspension" value="0">
+                                        <input class="form-check-input me-2" type="checkbox" name="suspension" value="1" id="action_suspension">
+                                        <label class="form-check-label me-2" for="action_suspension"><strong>Suspension</strong></label>
+                                        <span>– The student will serve</span>
+                                        <input type="hidden" name="suspension_3days" value="0">
+                                        <input type="checkbox" class="form-check-input ms-2 me-1" name="suspension_3days" value="1" id="suspension_3days">
+                                        <label for="suspension_3days" class="form-check-label me-2">3 days,</label>
+                                        <input type="hidden" name="suspension_5days" value="0">
+                                        <input type="checkbox" class="form-check-input ms-2 me-1" name="suspension_5days" value="1" id="suspension_5days">
+                                        <label for="suspension_5days" class="form-check-label me-2">5 days</label>
+                                        <span class="ms-2">or</span>
+                                        <input type="number" name="suspension_other_days" class="form-control d-inline-block w-auto ms-2" min="1" placeholder="Other" maxlength="3" autocomplete="off">
+                                        <span class="ms-2">more days suspension as a consequence for his/her/their actions, starting</span>
+                                        <input type="date" name="suspension_start" class="form-control d-inline-block w-auto ms-2" placeholder="" autocomplete="off">
+                                        <span class="ms-2">until</span>
+                                        <input type="date" name="suspension_end" class="form-control d-inline-block w-auto ms-2" placeholder="" autocomplete="off">
+                                        <span class="ms-2">and must accomplish the activity sheets missed during classes when he/she/they return to school on</span>
+                                        <input type="date" name="suspension_return" class="form-control d-inline-block w-auto ms-2" placeholder="" autocomplete="off">.
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input type="hidden" name="expulsion" value="0">
+                                        <input class="form-check-input" type="checkbox" name="expulsion" value="1" id="action_expulsion">
+                                        <label class="form-check-label" for="action_expulsion">
+                                            <strong>Expulsion</strong> – A student may not be issued his certificate of eligibility to transfer at the end of the school year when he is undergoing a penalty of suspension or expulsion for failure to settle satisfactorily his financial or property obligations to the school. However, it shall be released as soon as he will finish serving the suspension or expulsion shall have been lifted. (RMPS Sec. 146) Date: <input type="date" name="expulsion_date" class="form-control d-inline-block w-auto ms-2" autocomplete="off">.
+                                        </label>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Follow-up Date</label>
-                                <input type="date" class="form-control" name="follow_up_date" min="{{ date('Y-m-d') }}">
                             </div>
                         </div>
                     </div>
