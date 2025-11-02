@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Models\Student;
 use App\Models\CaseMeeting;
 use App\Models\CounselingSession;
+use App\Models\Violation;
 
 class GuidanceController extends Controller
 {
@@ -70,7 +71,8 @@ class GuidanceController extends Controller
         $completedCounselingSessions = CounselingSession::where('status', 'completed')->count();
         $pendingCases = CaseMeeting::where('status', 'pending')->count();
         $scheduledCounseling = CounselingSession::where('status', 'scheduled')->count();
-        $houseVisitsScheduled = CaseMeeting::where('meeting_type', 'house_visit')->where('status', 'scheduled')->count();
+        // Count unique students with at least one violation
+        $studentsWithDisciplinaryRecord = Violation::distinct('student_id')->count('student_id');
 
         $stats = [
             'total_students' => $totalStudents,
@@ -78,7 +80,7 @@ class GuidanceController extends Controller
             'completed_counseling_sessions' => $completedCounselingSessions,
             'pending_cases' => $pendingCases,
             'scheduled_counseling' => $scheduledCounseling,
-            'house_visits_scheduled' => $houseVisitsScheduled,
+            'students_with_disciplinary_record' => $studentsWithDisciplinaryRecord,
         ];
 
         return view('guidance.index', compact('stats'));
@@ -1373,4 +1375,119 @@ class GuidanceController extends Controller
             ->pluck('sanction');
         return response()->json(['success' => true, 'sanctions' => $sanctions]);
     }
-}
+       /**
+     * API: Get case status counts for dashboard pie chart
+     */
+    public function getCaseStatusStats()
+    {
+        $onGoing = \App\Models\CaseMeeting::where('status', 'in_progress')->count();
+        $scheduled = \App\Models\CaseMeeting::where('status', 'scheduled')->count();
+        $preCompleted = \App\Models\CaseMeeting::where('status', 'pre_completed')->count();
+        return response()->json([
+            'success' => true,
+            'on_going_cases' => $onGoing,
+            'scheduled_meeting' => $scheduled,
+            'pre_completed' => $preCompleted,
+        ]);
+    }
+        /**
+     * API: Get closed cases per month for bar chart
+     */
+    public function getClosedCasesStats()
+    {
+        $months = [];
+        $data = [];
+        $now = now();
+        for ($i = 5; $i >= 0; $i--) {
+            $month = $now->copy()->subMonths($i);
+            $label = $month->format('M Y');
+            $count = \App\Models\CaseMeeting::where('status', 'completed')
+                ->whereYear('completed_at', $month->year)
+                ->whereMonth('completed_at', $month->month)
+                ->count();
+            $months[] = $label;
+            $data[] = $count;
+        }
+        return response()->json([
+            'success' => true,
+            'labels' => $months,
+            'data' => $data,
+        ]);
+    }
+        /**
+     * API: Get counseling sessions per month for bar chart
+     */
+    public function getCounselingSessionsStats()
+    {
+        $months = [];
+        $data = [];
+        $now = now();
+        for ($i = 5; $i >= 0; $i--) {
+            $month = $now->copy()->subMonths($i);
+            $label = $month->format('M Y');
+            $count = \App\Models\CounselingSession::whereYear('start_date', $month->year)
+                ->whereMonth('start_date', $month->month)
+                ->count();
+            $months[] = $label;
+            $data[] = $count;
+        }
+        return response()->json([
+            'success' => true,
+            'labels' => $months,
+            'data' => $data,
+        ]);
+    }
+    
+public function getDisciplineVsTotalStats()
+{
+    $currentYear = now()->year;
+    $years = [];
+    $withDiscipline = [];
+    $totalStudents = [];
+    for ($i = $currentYear - 5; $i <= $currentYear; $i++) {
+        $years[] = (string)$i;
+        // Only count violations with a valid violation_date in this year
+        $disciplineCount = \App\Models\Violation::whereNotNull('violation_date')
+            ->whereYear('violation_date', $i)
+            ->distinct('student_id')
+            ->count('student_id');
+        // Count all students created up to and including this year
+        $studentCount = \App\Models\Student::whereYear('created_at', '<=', $i)
+            ->count();
+        $withDiscipline[] = $disciplineCount;
+        $totalStudents[] = $studentCount;
+    }
+    return response()->json([
+        'success' => true,
+        'labels' => $years,
+        'data' => [
+            'with_discipline' => $withDiscipline,
+            'total_students' => $totalStudents,
+        ],
+    ]);
+}    // Weekly violation list for dashboard
+        // Weekly violation list for dashboard
+    public function getWeeklyViolations()
+    {
+        // Get violations from the last 7 days, newest first
+        $violations = \App\Models\Violation::with('student')
+            ->where('violation_date', '>=', now()->subDays(7))
+            ->orderBy('violation_date', 'desc')
+            ->get();
+
+        // Format for frontend: add student name, formatted date, and violation type
+        $formatted = $violations->map(function($v) {
+            return [
+                'id' => $v->id,
+                'student_name' => $v->student ? ($v->student->first_name . ' ' . $v->student->last_name) : 'Unknown Student',
+                'violation_type' => $v->violation_type ?? ($v->title ?? 'Violation'),
+                'violation_date' => $v->violation_date ? \Carbon\Carbon::parse($v->violation_date)->format('Y-m-d') : '',
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'violations' => $formatted
+        ]);
+    }
+    }

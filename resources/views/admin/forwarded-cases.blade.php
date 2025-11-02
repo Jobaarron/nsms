@@ -9,7 +9,7 @@
     <div class="card-body p-0" style="padding-bottom:0;">
             @if($caseMeetings->count() > 0)
             <div class="table-responsive">
-                <table class="table mb-0" style="border-collapse:separate;border-spacing:0 0.5rem;">
+                <table class="table table-sm align-middle mb-0" style="border-collapse:separate;border-spacing:0 0.2rem; font-size:0.89rem;">
                     <thead class="table-light">
                         <tr style="border-bottom:2px solid #43b36a;">
                             <th>Student</th>
@@ -24,28 +24,27 @@
                         @foreach($caseMeetings as $meeting)
                         <tr style="background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(67,179,106,0.07);">
                             <!-- Student cell: Name (bold), ID (muted, small, below) -->
-                            <td style="min-width:180px;">
-                                <div class="fw-bold">{{ $meeting->student ? $meeting->student->full_name : 'Unknown' }}</div>
+                            <td style="min-width:120px; padding-top:0.5rem; padding-bottom:0.5rem;">
+                                <div>{{ $meeting->student ? $meeting->student->full_name : 'Unknown' }}</div>
                                 <div class="text-muted small">{{ $meeting->student ? $meeting->student->student_id : '' }}</div>
                             </td>
                             <!-- Offense cell: Title (bold), desc (muted, small, below) -->
-                            <td style="min-width:220px;">
+                            <td style="min-width:150px; padding-top:0.5rem; padding-bottom:0.5rem;">
                                 @if($meeting->sanctions->count() > 0 && $meeting->sanctions->first()->violation)
-                                    <div class="fw-bold">{{ $meeting->sanctions->first()->violation->title }}</div>
-                                    <div class="text-muted small">{{ $meeting->sanctions->first()->violation->description }}</div>
+                                    <div>{{ $meeting->sanctions->first()->violation->title }}</div>
                                 @else
                                     <span class="text-muted">-</span>
                                 @endif
                             </td>
                             <!-- Date cell: Date (bold), time (muted, small, below) -->
-                            <td style="min-width:120px;">
-                                <div class="fw-bold">{{ $meeting->scheduled_date->format('M d, Y') }}</div>
+                            <td style="min-width:100px; padding-top:0.5rem; padding-bottom:0.5rem;">
+                                <div>{{ $meeting->scheduled_date->format('M d, Y') }}</div>
                                 <div class="text-muted small">{{ $meeting->scheduled_time ? $meeting->scheduled_time->format('h:i A') : '' }}</div>
                             </td>
                             <!-- Sanction cell: Main sanction (bold), others (muted, small, below) -->
-                            <td style="min-width:220px;">
+                            <td style="min-width:150px; padding-top:0.5rem; padding-bottom:0.5rem;">
                                 @if($meeting->sanctions->count() > 0)
-                                    <div class="fw-bold">{{ $meeting->sanctions->first()->sanction }}</div>
+                                    <di>{{ $meeting->sanctions->first()->sanction }}</div>
                                     @if($meeting->sanctions->count() > 1)
                                         <div class="text-muted small">
                                             @foreach($meeting->sanctions->slice(1) as $sanction)
@@ -58,11 +57,11 @@
                                 @endif
                             </td>
                             <!-- Status cell -->
-                            <td style="min-width:120px;">
+                            <td style="min-width:90px; padding-top:0.5rem; padding-bottom:0.5rem;">
                                 <span class="badge bg-warning text-white" style="font-weight:600;">{{ $meeting->status === 'forwarded' ? 'Submitted' : ucfirst($meeting->status) }}</span>
                             </td>
                             <!-- Actions cell: icon buttons, horizontally aligned -->
-                            <td style="min-width:160px;">
+                            <td style="min-width:110px; padding-top:0.5rem; padding-bottom:0.5rem;">
                                 <div class="d-flex gap-2 align-items-center">
                                     <button class="btn btn-outline-info btn-sm view-summary-btn" data-meeting-id="{{ $meeting->id }}" title="View Summary Report" data-bs-toggle="modal" data-bs-target="#viewSummaryModal">
                                         <i class="ri-file-text-line"></i>

@@ -1,3 +1,7 @@
+/* Tighter spacing for action buttons in forwarded cases table */
+.d-flex.gap-2.align-items-center {
+  gap: 0.1rem !important;
+}
 /* Black font for User Distribution title */
 .user-distribution-black {
   color: #000 !important;
@@ -290,9 +294,13 @@ body {
 }
 
 /* Action Buttons in Table */
+
+/* Smaller action buttons for forwarded cases */
 .btn-sm {
-  border-radius: 6px;
-  padding: 0.4rem 0.6rem;
+  border-radius: 5px;
+  padding: 0.08rem 0.22rem;
+  font-size: 0.72rem;
+  line-height: 1;
   transition: all 0.3s ease;
 }
 

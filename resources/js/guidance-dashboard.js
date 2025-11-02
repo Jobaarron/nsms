@@ -3,225 +3,20 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Guidance Dashboard loaded');
     
     // Initialize dashboard
-    initializeDashboard();
-    
+    // initializeDashboard();
     // Load initial data
-    loadRecentActivities();
-    loadTodaysSchedule();
+    loadCaseStatusPieChart();
+    loadClosedCasesBarChart();
+    loadDisciplineVsTotalHistogram();
 });
 
-// Initialize dashboard functionality
-function initializeDashboard() {
-    // Set up auto-refresh every 5 minutes
-    setInterval(function() {
-        loadRecentActivities();
-        loadTodaysSchedule();
-    }, 300000); // 5 minutes
-}
-
-// Load recent activities
-function loadRecentActivities() {
-    const activitiesContainer = document.getElementById('activities-list');
-    
-    fetch('/guidance/activities', {
-        method: 'GET',
-        headers: {
-            'Accept': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            populateActivitiesList(data.activities);
-        } else {
-            showNoActivities();
-        }
-    })
-    .catch(error => {
-        console.error('Error loading activities:', error);
-        showActivitiesError();
-    });
-}
-
-// Populate activities list
-function populateActivitiesList(activities) {
-    const container = document.getElementById('activities-list');
-    
-    if (!activities || activities.length === 0) {
-        showNoActivities();
-        return;
-    }
-    
-    let html = '';
-    activities.forEach(activity => {
-        html += `
-            <div class="activity-item d-flex align-items-start mb-3 p-3 border rounded">
-                <div class="activity-icon me-3">
-                    <div class="rounded-circle bg-${activity.type_color} bg-opacity-10 p-2">
-                        <i class="${activity.icon} text-${activity.type_color}"></i>
-                    </div>
-                </div>
-                <div class="flex-grow-1">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <h6 class="mb-1">${activity.title}</h6>
-                            <p class="text-muted mb-1">${activity.description}</p>
-                            <small class="text-muted">
-                                <i class="ri-time-line me-1"></i>${activity.time_ago}
-                            </small>
-                        </div>
-                        <span class="badge bg-${activity.status_color}">${activity.status}</span>
-                    </div>
-                </div>
-            </div>
-        `;
-    });
-    
-    container.innerHTML = html;
-}
-
-// Show no activities message
-function showNoActivities() {
-    const container = document.getElementById('activities-list');
-    container.innerHTML = `
-        <div class="text-center py-4">
-            <i class="ri-calendar-line fs-1 text-muted mb-3"></i>
-            <p class="text-muted">No recent activities</p>
-            <button class="btn btn-primary btn-sm" onclick="scheduleNewCaseMeeting()">
-                Schedule First Activity
-            </button>
-        </div>
-    `;
-}
-
-// Show activities error
-function showActivitiesError() {
-    const container = document.getElementById('activities-list');
-    container.innerHTML = `
-        <div class="text-center py-4">
-            <i class="ri-error-warning-line fs-1 text-danger mb-3"></i>
-            <p class="text-muted">Failed to load activities</p>
-            <button class="btn btn-outline-primary btn-sm" onclick="loadRecentActivities()">
-                Try Again
-            </button>
-        </div>
-    `;
-}
-
-// Load today's schedule
-function loadTodaysSchedule() {
-    const scheduleContainer = document.getElementById('todays-schedule');
-    
-    fetch('/guidance/todays-schedule', {
-        method: 'GET',
-        headers: {
-            'Accept': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            populateTodaysSchedule(data.schedule);
-        } else {
-            showNoSchedule();
-        }
-    })
-    .catch(error => {
-        console.error('Error loading schedule:', error);
-        showScheduleError();
-    });
-}
-
-// Populate today's schedule
-function populateTodaysSchedule(schedule) {
-    const container = document.getElementById('todays-schedule');
-    
-    if (!schedule || schedule.length === 0) {
-        showNoSchedule();
-        return;
-    }
-    
-    let html = '';
-    schedule.forEach(item => {
-        html += `
-            <div class="schedule-item d-flex align-items-center mb-3 p-2 border-start border-3 border-${item.type_color}">
-                <div class="me-3">
-                    <div class="text-${item.type_color} fw-bold">${item.time}</div>
-                    <small class="text-muted">${item.duration}</small>
-                </div>
-                <div class="flex-grow-1">
-                    <div class="fw-semibold">${item.title}</div>
-                    <small class="text-muted">${item.student_name}</small>
-                </div>
-                <div>
-                    <span class="badge bg-${item.status_color} bg-opacity-10 text-${item.status_color}">
-                        ${item.status}
-                    </span>
-                </div>
-            </div>
-        `;
-    });
-    
-    container.innerHTML = html;
-}
-
-// Show no schedule message
-function showNoSchedule() {
-    const container = document.getElementById('todays-schedule');
-    container.innerHTML = `
-        <div class="text-center py-3">
-            <i class="ri-calendar-check-line fs-3 text-muted mb-2"></i>
-            <p class="text-muted small">No appointments today</p>
-        </div>
-    `;
-}
-
-// Show schedule error
-function showScheduleError() {
-    const container = document.getElementById('todays-schedule');
-    container.innerHTML = `
-        <div class="text-center py-3">
-            <i class="ri-error-warning-line fs-3 text-danger mb-2"></i>
-            <p class="text-muted small">Failed to load schedule</p>
-            <button class="btn btn-outline-primary btn-sm" onclick="loadTodaysSchedule()">
-                Retry
-            </button>
-        </div>
-    `;
-}
-
-// Filter activities
-function filterActivities(type) {
-    console.log('Filtering activities by type:', type);
-    
-    fetch(`/guidance/activities?type=${type}`, {
-        method: 'GET',
-        headers: {
-            'Accept': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            populateActivitiesList(data.activities);
-        }
-    })
-    .catch(error => {
-        console.error('Error filtering activities:', error);
-    });
-}
-
-// Refresh dashboard
+// ...existing code...
+// Refresh dashboard (now only refreshes charts)
 function refreshDashboard() {
     console.log('Refreshing dashboard...');
-    loadRecentActivities();
-    loadTodaysSchedule();
+    loadCaseStatusPieChart();
+    loadClosedCasesBarChart();
+    loadDisciplineVsTotalHistogram();
     showAlert('Dashboard refreshed', 'success');
 }
 
@@ -288,6 +83,279 @@ function showAlert(message, type = 'info') {
     }, 5000);
 }
 
+// Pie Chart for Case Statuses
+function renderCaseStatusPieChart(onGoing, scheduled, preCompleted) {
+    const ctx = document.getElementById('caseStatusPieChart');
+    if (!ctx || typeof Chart === 'undefined') return;
+    new Chart(ctx.getContext('2d'), {
+        type: 'pie',
+        data: {
+            labels: ['On Going Cases', 'Scheduled Meeting', 'Pre-Completed'],
+            datasets: [{
+                data: [onGoing, scheduled, preCompleted],
+                backgroundColor: [
+                    '#81c784', // green 1
+                    '#4caf50', // green 2
+                    '#2e7d32'  // green 3
+                ],
+                borderColor: [
+                    '#81c784',
+                    '#4caf50',
+                    '#2e7d32'
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed;
+                            return label + ': ' + value;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Pie Chart for Case Statuses (Dynamic)
+function loadCaseStatusPieChart() {
+    fetch('/guidance/case-status-stats', {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            renderCaseStatusPieChart(
+                data.on_going_cases || 0,
+                data.scheduled_meeting || 0,
+                data.pre_completed || 0
+            );
+        }
+    })
+    .catch(error => {
+        console.error('Error loading case status stats:', error);
+    });
+}
+
+// Bar Chart for Closed Cases Per Month (Dynamic)
+function loadClosedCasesBarChart() {
+    fetch('/guidance/closed-cases-stats', {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            renderClosedCasesBarChart(data.labels, data.data);
+        }
+    })
+    .catch(error => {
+        console.error('Error loading closed cases stats:', error);
+    });
+}
+
+function renderClosedCasesBarChart(labels, data) {
+    const ctx = document.getElementById('closedCasesBarChart');
+    if (!ctx || typeof Chart === 'undefined') return;
+    new Chart(ctx.getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Closed Cases',
+                data: data,
+                backgroundColor: '#4caf50',
+                borderColor: '#2e7d32',
+                borderWidth: 2,
+                borderRadius: 6,
+                borderSkipped: false
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return 'Closed: ' + context.parsed.y;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Bar Chart for Counseling Sessions Per Month (Dynamic)
+function loadCounselingSessionsBarChart() {
+    fetch('/guidance/counseling-sessions-stats', {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+        }
+    })
+    .then(response => response.json())
+    .then((data) => {
+        if (data.success) {
+            renderCounselingSessionsBarChart(data.labels, data.data);
+        }
+    })
+    .catch(error => {
+        console.error('Error loading counseling sessions stats:', error);
+    });
+}
+
+function renderCounselingSessionsBarChart(labels, data) {
+    const ctx = document.getElementById('counselingSessionsBarChart');
+    if (!ctx || typeof Chart === 'undefined') return;
+    new Chart(ctx.getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Counseling Sessions',
+                data: data,
+                backgroundColor: '#81c784',
+                borderColor: '#388e3c',
+                borderWidth: 2,
+                borderRadius: 6,
+                borderSkipped: false
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return 'Sessions: ' + context.parsed.y;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Histogram for Annual Students with Disciplinary Record vs Total Students
+function loadDisciplineVsTotalHistogram() {
+    fetch('/guidance/discipline-vs-total-stats', {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            renderDisciplineVsTotalHistogram(data.labels, data.data);
+        }
+    })
+    .catch(error => {
+        console.error('Error loading discipline vs total stats:', error);
+    });
+}
+
+function renderDisciplineVsTotalHistogram(labels, data) {
+    const ctx = document.getElementById('disciplineVsTotalHistogram');
+    if (!ctx || typeof Chart === 'undefined') return;
+
+    new Chart(ctx.getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'With Disciplinary Record',
+                    data: data.with_discipline,
+                    backgroundColor: '#1b5e20',  // Dark forest green
+                    borderColor: '#2e7d32',      // Medium green border
+                    borderWidth: 2,
+                    borderRadius: 6,
+                    borderSkipped: false
+                },
+                {
+                    label: 'Total Students',
+                    data: data.total_students,
+                    backgroundColor: '#66bb6a',  // Fresh leafy green
+                    borderColor: '#81c784',      // Light green border
+                    borderWidth: 2,
+                    borderRadius: 6,
+                    borderSkipped: false
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom' },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': ' + context.parsed.y;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    }
+                }
+            }
+        }
+    });
+}
+
 // Expose functions to global scope for onclick handlers
 window.refreshDashboard = refreshDashboard;
 window.openQuickActionModal = openQuickActionModal;
@@ -295,5 +363,9 @@ window.scheduleNewCaseMeeting = scheduleNewCaseMeeting;
 window.scheduleNewCounseling = scheduleNewCounseling;
 window.scheduleHouseVisit = scheduleHouseVisit;
 window.createCaseSummary = createCaseSummary;
-window.filterActivities = filterActivities;
+// ...existing code...
 window.closeModal = closeModal;
+window.renderCaseStatusPieChart = renderCaseStatusPieChart;
+window.renderClosedCasesBarChart = renderClosedCasesBarChart;
+window.renderCounselingSessionsBarChart = renderCounselingSessionsBarChart;
+window.renderDisciplineVsTotalHistogram = renderDisciplineVsTotalHistogram;
