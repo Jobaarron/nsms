@@ -28,6 +28,7 @@
   @vite('resources/sass/app.scss')
   @vite(['resources/css/index_registrar.css'])
   @vite(['resources/js/app.js'])
+  @vite(['resources/js/registrar-class-lists.js'])
 
 </head>
 <body>
@@ -56,6 +57,11 @@
           <li class="nav-item mb-2">
             <a class="nav-link {{ request()->routeIs('registrar.applications') ? 'active' : '' }}" href="{{ route('registrar.applications') }}">
               <i class="ri-file-list-line me-2"></i>Applications
+            </a>
+          </li>
+          <li class="nav-item mb-2">
+            <a class="nav-link {{ request()->routeIs('registrar.class-lists') ? 'active' : '' }}" href="{{ route('registrar.class-lists') }}">
+              <i class="ri-group-line me-2"></i>Class Lists
             </a>
           </li>
           {{-- <li class="nav-item mb-2">

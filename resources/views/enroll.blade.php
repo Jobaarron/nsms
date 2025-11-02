@@ -323,6 +323,21 @@
                             <i class="ri-file-list-3-line me-2"></i>Documents (PDF, JPG, PNG)
                         </label>
                         
+                        <!-- Document Requirements Reminder -->
+                        <div class="alert alert-info mb-3" style="border-left: 4px solid var(--primary-color);">
+                            <div class="d-flex align-items-start">
+                                <i class="ri-information-line me-2 mt-1" style="color: var(--primary-color);"></i>
+                                <div>
+                                    <strong>Required Documents:</strong>
+                                    <ul class="mb-0 mt-1">
+                                        <li><span class="fw-medium">Report Card/Form 137</span> - Previous academic records</li>
+                                        <li><span class="fw-medium">Birth Certificate (PSA)</span> - Official birth certificate from PSA</li>
+                                        <li><span class="fw-medium">Good Moral Certificate</span> - From previous school</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <!-- AJAX Upload Area -->
                         <div class="file-upload-area" id="documents_upload_area">
                             <div class="upload-zone" id="documents_zone">

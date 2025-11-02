@@ -164,6 +164,7 @@ Route::prefix('admin')->group(function () {
             Route::post('/contact-messages/{message}/status', [ContactController::class, 'updateStatus'])->name('admin.contact.status');
             Route::delete('/contact-messages/{message}', [ContactController::class, 'destroy'])->name('admin.contact.destroy');
             Route::post('/contact-messages/bulk-action', [ContactController::class, 'bulkAction'])->name('admin.contact.bulk');
+            
         });
     });
 });
@@ -291,10 +292,12 @@ Route::middleware(['auth', 'role:teacher|faculty_head'])->prefix('teacher')->nam
         ->name('grades.submit.store');
     Route::get('/grades/{submission}/data', [App\Http\Controllers\TeacherGradeController::class, 'getSubmissionData'])
         ->name('grades.data');
+    Route::get('/grades/stats', [App\Http\Controllers\TeacherGradeController::class, 'getSubmissionStats'])
+        ->name('grades.stats');
 });
 
-// Student Schedule Routes
-Route::middleware('auth:student')->prefix('student')->name('student.')->group(function () {
+// Student Schedule Routes (requires payment)
+Route::middleware(['auth:student', 'student.payment'])->prefix('student')->name('student.')->group(function () {
     Route::get('/schedule', [App\Http\Controllers\StudentScheduleController::class, 'index'])
         ->name('schedule.index');
     Route::get('/schedule/calendar', [App\Http\Controllers\StudentScheduleController::class, 'weeklyCalendar'])
@@ -303,14 +306,14 @@ Route::middleware('auth:student')->prefix('student')->name('student.')->group(fu
         ->name('schedule.data');
 });
 
-// Student Grade Routes
-Route::middleware('auth:student')->prefix('student')->name('student.')->group(function () {
+// Student Grade Routes (requires payment)
+Route::middleware(['auth:student', 'student.payment'])->prefix('student')->name('student.')->group(function () {
     Route::get('/grades', [App\Http\Controllers\StudentGradeController::class, 'index'])
         ->name('grades.index');
     Route::get('/grades/{quarter}', [App\Http\Controllers\StudentGradeController::class, 'quarter'])
         ->name('grades.quarter');
-    Route::get('/grades/data/ajax', [App\Http\Controllers\StudentGradeController::class, 'getGradesData'])
-        ->name('grades.data');
+    Route::get('/grades/{quarter}/details', [App\Http\Controllers\StudentGradeController::class, 'details'])
+        ->name('grades.details');
     Route::get('/grades/report/{quarter?}', [App\Http\Controllers\StudentGradeController::class, 'report'])
         ->name('grades.report');
 });
@@ -328,6 +331,10 @@ Route::middleware(['auth', 'role:faculty_head'])->prefix('faculty-head')->name('
     Route::get('/', [App\Http\Controllers\FacultyHeadController::class, 'index'])
         ->name('dashboard');
     
+    // Unified Faculty Assignments
+    Route::get('/assign-faculty', [App\Http\Controllers\FacultyHeadController::class, 'assignFaculty'])
+        ->name('assign-faculty');
+    
     // Assign adviser per class
     Route::get('/assign-adviser', [App\Http\Controllers\FacultyHeadController::class, 'assignAdviser'])
         ->name('assign-adviser');
@@ -343,6 +350,18 @@ Route::middleware(['auth', 'role:faculty_head'])->prefix('faculty-head')->name('
     // Remove assignment (both teacher and adviser)
     Route::delete('/remove-assignment/{assignment}', [App\Http\Controllers\FacultyHeadController::class, 'removeAssignment'])
         ->name('remove-assignment');
+    
+    // Get subjects for AJAX filtering
+    Route::get('/get-subjects', [App\Http\Controllers\FacultyHeadController::class, 'getSubjects'])
+        ->name('get-subjects');
+    
+    // Get sections for AJAX filtering
+    Route::get('/get-sections', [App\Http\Controllers\FacultyHeadController::class, 'getSections'])
+        ->name('get-sections');
+    
+    // Get section details (students and adviser)
+    Route::get('/get-section-details', [App\Http\Controllers\FacultyHeadController::class, 'getSectionDetails'])
+        ->name('get-section-details');
     
     
     // View submitted grades from teachers
@@ -574,31 +593,38 @@ Route::prefix('student')->name('student.')->group(function () {
     // Protected student routes
     Route::middleware('auth:student')->group(function () {
         Route::get('/dashboard', [StudentController::class, 'index'])->name('dashboard');
-    Route::match(['get', 'post'], '/violations', [StudentController::class, 'violations'])->name('violations');
-    Route::post('/violations/reply/{violation}', [StudentController::class, 'submitViolationReply'])->name('violations.reply');
-
-        // Student Narrative Report - Reply Form
-        Route::get('/narrative-report/reply', function() {
-            return view('student.narrative_report');
-        })->name('narrative.reply');
-
-        // Enrollment routes
+        
+        // Enrollment routes (always accessible for completing enrollment)
         Route::get('/enrollment', [StudentController::class, 'enrollment'])->name('enrollment');
         Route::post('/enrollment', [StudentController::class, 'submitEnrollment'])->name('enrollment.submit');
         
-        // Subjects routes
-        Route::get('/subjects', [StudentController::class, 'subjects'])->name('subjects');
-        
-        // Payments routes
-        Route::get('/payments', [StudentController::class, 'payments'])->name('payments');
-        Route::post('/payment/mode/update', [StudentController::class, 'updatePaymentMode'])->name('payment.mode.update');
-        
-        // Face registration routes
-        Route::get('/face-registration', [StudentController::class, 'faceRegistration'])->name('face-registration');
-        Route::post('/face-registration/save', [StudentController::class, 'saveFaceRegistration'])->name('face-registration.save');
-        Route::delete('/face-registration/delete', [StudentController::class, 'deleteFaceRegistration'])->name('face-registration.delete');
-        
         Route::post('/logout', [StudentController::class, 'logout'])->name('logout');
+        
+        // Payments routes (requires payment settlement - same as other features)
+        Route::middleware('student.payment')->group(function () {
+            Route::get('/payments', [StudentController::class, 'payments'])->name('payments');
+            Route::post('/payment/mode/update', [StudentController::class, 'updatePaymentMode'])->name('payment.mode.update');
+        });
+        
+        // Routes that require payment settlement and enrollment completion
+        Route::middleware('student.payment')->group(function () {
+            // Subjects routes (requires payment)
+            Route::get('/subjects', [StudentController::class, 'subjects'])->name('subjects');
+            
+            // Violations routes (requires payment)
+            Route::match(['get', 'post'], '/violations', [StudentController::class, 'violations'])->name('violations');
+            Route::post('/violations/reply/{violation}', [StudentController::class, 'submitViolationReply'])->name('violations.reply');
+
+            // Student Narrative Report - Reply Form (requires payment)
+            Route::get('/narrative-report/reply', function() {
+                return view('student.narrative_report');
+            })->name('narrative.reply');
+            
+            // Face registration routes (requires payment)
+            Route::get('/face-registration', [StudentController::class, 'faceRegistration'])->name('face-registration');
+            Route::post('/face-registration/save', [StudentController::class, 'saveFaceRegistration'])->name('face-registration.save');
+            Route::delete('/face-registration/delete', [StudentController::class, 'deleteFaceRegistration'])->name('face-registration.delete');
+        });
     });
 });
 
@@ -753,6 +779,12 @@ Route::prefix('registrar')->name('registrar.')->group(function () {
         // Reports
         Route::get('/reports', [RegistrarController::class, 'reports'])->name('reports');
         
+        // Class Lists Management
+        Route::get('/class-lists', [RegistrarController::class, 'classLists'])->name('class-lists');
+        Route::get('/class-lists/get-strands', [RegistrarController::class, 'getClassListStrands'])->name('class-lists.get-strands');
+        Route::get('/class-lists/get-tracks', [RegistrarController::class, 'getClassListTracks'])->name('class-lists.get-tracks');
+        Route::get('/class-lists/get-sections', [RegistrarController::class, 'getClassListSections'])->name('class-lists.get-sections');
+        
         // Data Change Requests
         Route::get('/data-change-requests', [DataChangeRequestController::class, 'getDataChangeRequests'])->name('data-change-requests.index');
         Route::get('/data-change-requests/{id}', [DataChangeRequestController::class, 'getDataChangeRequest'])->name('data-change-requests.show');
@@ -807,8 +839,8 @@ Route::prefix('registrar')->name('registrar.')->group(function () {
 // ===== PAYMENT SCHEDULING ROUTES ===== 
 
 
-// Student Payment Scheduling Routes
-Route::middleware(['auth:student'])->prefix('student')->name('student.')->group(function () {
+// Student Payment Scheduling Routes (requires payment settlement - same as other features)
+Route::middleware(['auth:student', 'student.payment'])->prefix('student')->name('student.')->group(function () {
     Route::post('/payment-schedule', [PaymentScheduleController::class, 'createPaymentSchedule'])->name('payment-schedule.create');
     Route::get('/payment-schedule/{studentId}', [PaymentScheduleController::class, 'getPaymentSchedule'])->name('payment-schedule.get');
 });
@@ -819,11 +851,11 @@ Route::middleware(['auth:cashier'])->prefix('cashier/api')->name('cashier.api.')
     Route::get('/payment-schedules/{paymentId}', [PaymentScheduleController::class, 'getPaymentDetails'])->name('payment-schedules.details');
     Route::get('/payment-schedules/student/{studentId}/{paymentMethod}', [PaymentScheduleController::class, 'getStudentPaymentSchedule'])->name('payment-schedules.student');
     Route::post('/payment-schedules/student/{studentId}/{paymentMethod}/process', [PaymentScheduleController::class, 'processStudentPaymentSchedule'])->name('payment-schedules.student.process');
-    Route::get('/payment-schedules/pending', [PaymentScheduleController::class, 'getPendingPaymentSchedules'])->name('payment-schedules.pending');
-    Route::get('/payment-schedules/due', [PaymentScheduleController::class, 'getDuePaymentSchedules'])->name('payment-schedules.due');
-    Route::post('/payment-schedules/{paymentId}/process', [PaymentScheduleController::class, 'processPayment'])->name('payment-schedules.process');
+    Route::post('/payment-schedules/individual/{paymentId}/process', [PaymentScheduleController::class, 'processIndividualPayment'])->name('payment-schedules.individual.process');
     Route::get('/payment-statistics', [PaymentScheduleController::class, 'getPaymentStatistics'])->name('payment-statistics');
     Route::get('/payment-history', [PaymentScheduleController::class, 'getPaymentHistory'])->name('payment-history');
+    Route::get('/pending-payment-schedules', [PaymentScheduleController::class, 'getPendingPaymentSchedules'])->name('pending-payment-schedules');
+    Route::get('/due-payment-schedules', [PaymentScheduleController::class, 'getDuePaymentSchedules'])->name('due-payment-schedules');
 });
 
 // ===== CASHIER ROUTES =====

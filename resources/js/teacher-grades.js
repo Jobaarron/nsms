@@ -363,6 +363,271 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
+// Show feedback modal function
+window.showFeedback = function(notes) {
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.tabIndex = -1;
+    
+    modal.innerHTML = `
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="ri-message-line me-2"></i>Faculty Head Feedback
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="ri-information-line me-2"></i>
+                        <strong>Review Notes:</strong>
+                    </div>
+                    <p class="mb-0">${notes}</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    const bootstrapModal = new bootstrap.Modal(modal);
+    bootstrapModal.show();
+    
+    // Clean up modal when hidden
+    modal.addEventListener('hidden.bs.modal', function() {
+        document.body.removeChild(modal);
+    });
+};
+
+// Handle subject selection to populate hidden fields
+window.handleSubjectSelection = function() {
+    const subjectSelect = document.getElementById('subjectSelect');
+    const gradeLevelInput = document.getElementById('gradeLevel');
+    const sectionInput = document.getElementById('section');
+    
+    console.log('Subject selection handler setup:');
+    console.log('Subject select found:', !!subjectSelect);
+    console.log('Grade level input found:', !!gradeLevelInput);
+    console.log('Section input found:', !!sectionInput);
+    
+    if (subjectSelect && gradeLevelInput && sectionInput) {
+        console.log('All elements found, attaching change listener');
+        
+        subjectSelect.addEventListener('change', function() {
+            console.log('Subject selection changed');
+            const selectedOption = this.options[this.selectedIndex];
+            console.log('Selected option:', selectedOption);
+            console.log('Selected value:', selectedOption.value);
+            
+            if (selectedOption.value) {
+                // Get data attributes from selected option
+                const gradeLevel = selectedOption.getAttribute('data-grade');
+                const section = selectedOption.getAttribute('data-section');
+                
+                console.log('Data attributes:');
+                console.log('data-grade:', gradeLevel);
+                console.log('data-section:', section);
+                
+                // Populate hidden fields
+                gradeLevelInput.value = gradeLevel || '';
+                sectionInput.value = section || '';
+                
+                console.log('Hidden fields populated:');
+                console.log('Grade Level input value:', gradeLevelInput.value);
+                console.log('Section input value:', sectionInput.value);
+                
+                console.log('Selected subject:', selectedOption.value);
+                console.log('Grade Level:', gradeLevel);
+                console.log('Section:', section);
+            } else {
+                // Clear hidden fields if no subject selected
+                gradeLevelInput.value = '';
+                sectionInput.value = '';
+                console.log('Cleared hidden fields');
+            }
+        });
+    } else {
+        console.log('Missing elements for subject selection handler');
+    }
+};
+
+// Handle grade submission (modified for faculty head controlled quarters)
+window.handleGradeSubmission = function() {
+    const assignmentSelect = document.getElementById('assignmentSelect');
+    
+    if (!assignmentSelect || !assignmentSelect.value) {
+        alert('Please select a subject first.');
+        return;
+    }
+    
+    const assignmentId = assignmentSelect.value;
+    console.log('Submit grades for assignment:', assignmentId);
+    
+    // Check if grade submission is active and get active quarters
+    fetch('/teacher/check-submission-status')
+        .then(response => response.json())
+        .then(data => {
+            if (data.active) {
+                // Check if there are active quarters
+                const activeQuarters = data.active_quarters || [];
+                
+                if (activeQuarters.length === 0) {
+                    alert('No quarters are currently active for grade submission. Please contact the faculty head.');
+                    return;
+                }
+                
+                if (activeQuarters.length === 1) {
+                    // Only one quarter active, redirect directly
+                    const quarter = activeQuarters[0];
+                    window.location.href = `/teacher/grades/submit/${assignmentId}?quarter=${quarter}`;
+                } else {
+                    // Multiple quarters active, show selection modal
+                    showActiveQuarterSelectionModal(assignmentId, activeQuarters);
+                }
+            } else {
+                alert('Grade submission is currently disabled by the faculty head.');
+            }
+        })
+        .catch(error => {
+            console.error('Error checking submission status:', error);
+            alert('Unable to check grade submission status. Please try again.');
+        });
+};
+
+function showActiveQuarterSelectionModal(assignmentId, activeQuarters) {
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.tabIndex = -1;
+    
+    // Generate buttons only for active quarters
+    let quarterButtons = '';
+    const quarterNames = {
+        '1st': '1st Quarter',
+        '2nd': '2nd Quarter', 
+        '3rd': '3rd Quarter',
+        '4th': '4th Quarter'
+    };
+    
+    activeQuarters.forEach(quarter => {
+        quarterButtons += `
+            <div class="col-6">
+                <button class="btn btn-outline-primary w-100" onclick="redirectToGradeEntry(${assignmentId}, '${quarter}')">
+                    <i class="ri-calendar-line me-2"></i>${quarterNames[quarter]}
+                </button>
+            </div>
+        `;
+    });
+    
+    modal.innerHTML = `
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Select Active Quarter</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Select from the currently active quarters for grade submission:</p>
+                    <div class="row g-2">
+                        ${quarterButtons}
+                    </div>
+                    <div class="alert alert-info mt-3">
+                        <i class="ri-information-line me-2"></i>
+                        <small>Only quarters activated by the faculty head are shown.</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    const bootstrapModal = new bootstrap.Modal(modal);
+    bootstrapModal.show();
+    
+    // Clean up modal when hidden
+    modal.addEventListener('hidden.bs.modal', function() {
+        document.body.removeChild(modal);
+    });
+}
+
+window.redirectToGradeEntry = function(assignmentId, quarter) {
+    window.location.href = `/teacher/grades/submit/${assignmentId}?quarter=${quarter}`;
+};
+
+// Handle create submission form (old approach - keeping for reference)
+window.handleCreateSubmissionForm = function() {
+    const form = document.getElementById('createSubmissionForm');
+    
+    if (form) {
+        console.log('Create submission form found and handler attached');
+        
+        form.addEventListener('submit', function(e) {
+            console.log('Form submission triggered');
+            
+            // Get form data for debugging
+            const formData = new FormData(this);
+            console.log('Form data:');
+            for (let [key, value] of formData.entries()) {
+                console.log(`${key}: ${value}`);
+            }
+            
+            // Check if required fields are filled
+            const subjectId = formData.get('subject_id');
+            const quarter = formData.get('quarter');
+            const gradeLevel = formData.get('grade_level');
+            const section = formData.get('section');
+            
+            console.log('Validation check:');
+            console.log('Subject ID:', subjectId);
+            console.log('Quarter:', quarter);
+            console.log('Grade Level:', gradeLevel);
+            console.log('Section:', section);
+            
+            if (!subjectId) {
+                e.preventDefault();
+                alert('Please select a subject');
+                console.log('Form blocked: No subject selected');
+                return false;
+            }
+            
+            if (!quarter) {
+                e.preventDefault();
+                alert('Please select a quarter');
+                console.log('Form blocked: No quarter selected');
+                return false;
+            }
+            
+            if (!gradeLevel || !section) {
+                e.preventDefault();
+                alert('Grade level and section are required. Please select a subject first.');
+                console.log('Form blocked: Missing grade level or section');
+                return false;
+            }
+            
+            console.log('Form validation passed, submitting...');
+            console.log('Form action:', this.action);
+            console.log('Form method:', this.method);
+            // Let the form submit normally
+        });
+        
+        // Also add click handler to button for additional debugging
+        const submitButton = form.querySelector('button[type="submit"]');
+        if (submitButton) {
+            submitButton.addEventListener('click', function(e) {
+                console.log('Submit button clicked');
+                console.log('Button type:', this.type);
+                console.log('Form valid:', form.checkValidity());
+            });
+        }
+    } else {
+        console.log('Create submission form NOT found');
+    }
+};
+
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
     try {
@@ -374,6 +639,16 @@ document.addEventListener('DOMContentLoaded', function() {
         // Set up event handlers
         if (typeof window.setupGradeEventHandlers === 'function') {
             window.setupGradeEventHandlers();
+        }
+        
+        // Handle subject selection for create submission form
+        if (typeof window.handleSubjectSelection === 'function') {
+            window.handleSubjectSelection();
+        }
+        
+        // Handle create submission form
+        if (typeof window.handleCreateSubmissionForm === 'function') {
+            window.handleCreateSubmissionForm();
         }
     } catch (error) {
         console.log('Teacher Grades initialization error:', error);

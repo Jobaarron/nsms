@@ -79,6 +79,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
             'guidance.discipline' => \App\Http\Middleware\GuidanceDisciplineMiddleware::class,
+            'student.payment' => \App\Http\Middleware\CheckStudentPaymentStatus::class,
+            'student.enrollment' => \App\Http\Middleware\CheckStudentEnrollmentStatus::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

@@ -51,14 +51,28 @@ class TeacherGradeController extends Controller
             
             // Group submissions by status
             $submissionsByStatus = $submissions->groupBy('status');
+            
+            // Calculate real-time statistics
+            $stats = [
+                'pending' => $submissions->where('status', 'draft')->count(),
+                'submitted' => $submissions->where('status', 'submitted')->count(), 
+                'approved' => $submissions->where('status', 'approved')->count(),
+                'revised' => $submissions->where('status', 'rejected')->count(),
+            ];
         } catch (\Exception $e) {
             // Handle case where tables don't exist yet
             $assignments = collect();
             $submissions = collect();
             $submissionsByStatus = collect();
+            $stats = [
+                'pending' => 0,
+                'submitted' => 0,
+                'approved' => 0,
+                'revised' => 0,
+            ];
         }
         
-        return view('teacher.grades', compact('assignments', 'submissions', 'submissionsByStatus', 'currentAcademicYear'));
+        return view('teacher.grades', compact('assignments', 'submissions', 'submissionsByStatus', 'stats', 'currentAcademicYear'));
     }
 
     /**
@@ -78,6 +92,15 @@ class TeacherGradeController extends Controller
         $isActive = \App\Models\Setting::get('grade_submission_active', false);
         if (!$isActive) {
             return redirect()->route('teacher.grades')->with('error', 'Grade submission is currently disabled by the faculty head.');
+        }
+
+        // Validate that the requested quarter is active
+        $requestedQuarter = request('quarter', '1st');
+        $quarterKey = strtolower(str_replace(['st', 'nd', 'rd', 'th'], '', $requestedQuarter));
+        $isQuarterActive = \App\Models\Setting::get("grade_submission_q{$quarterKey}_active", false);
+        
+        if (!$isQuarterActive) {
+            return redirect()->route('teacher.grades')->with('error', "The {$requestedQuarter} quarter is not currently active for grade submission. Please contact the faculty head.");
         }
 
         // Get students automatically enrolled in this class
@@ -156,6 +179,15 @@ class TeacherGradeController extends Controller
             'grades.*.remarks' => 'nullable|string|max:255',
             'action' => 'required|in:save_draft,submit_for_review'
         ]);
+
+        // Validate that the submitted quarter is active (prevent form tampering)
+        $submittedQuarter = $request->quarter;
+        $quarterKey = strtolower(str_replace(['st', 'nd', 'rd', 'th'], '', $submittedQuarter));
+        $isQuarterActive = \App\Models\Setting::get("grade_submission_q{$quarterKey}_active", false);
+        
+        if (!$isQuarterActive) {
+            return redirect()->route('teacher.grades')->with('error', "The {$submittedQuarter} quarter is not currently active for grade submission. Unauthorized attempt detected.");
+        }
 
         // Get or update grade submission
         $submission = GradeSubmission::updateOrCreate(
@@ -399,9 +431,45 @@ class TeacherGradeController extends Controller
         return response()->json([
             'submission' => $submission->load(['subject', 'reviewer']),
             'grades_data' => $submission->grades_data,
-            'students' => $submission->students(),
-            'can_edit' => $submission->canEdit(),
-            'can_submit' => $submission->canSubmit()
+            'total_students' => $submission->total_students
         ]);
+    }
+
+    /**
+     * Get submission statistics for AJAX real-time updates
+     */
+    public function getSubmissionStats()
+    {
+        $teacher = Auth::user();
+        $teacherRecord = \App\Models\Teacher::where('user_id', $teacher->id)->first();
+        $currentAcademicYear = date('Y') . '-' . (date('Y') + 1);
+
+        if (!$teacherRecord) {
+            return response()->json(['error' => 'Teacher record not found'], 404);
+        }
+
+        try {
+            // Get all submissions for this teacher
+            $submissions = GradeSubmission::where('teacher_id', $teacherRecord->id)
+                ->where('academic_year', $currentAcademicYear)
+                ->get();
+
+            // Group submissions by status and count them
+            $stats = [
+                'pending' => $submissions->where('status', 'draft')->count(),
+                'submitted' => $submissions->where('status', 'submitted')->count(),
+                'approved' => $submissions->where('status', 'approved')->count(),
+                'revised' => $submissions->where('status', 'rejected')->count(),
+            ];
+
+            return response()->json($stats);
+        } catch (\Exception $e) {
+            return response()->json([
+                'pending' => 0,
+                'submitted' => 0,
+                'approved' => 0,
+                'revised' => 0,
+            ]);
+        }
     }
 }

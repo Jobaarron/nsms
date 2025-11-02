@@ -123,13 +123,27 @@ document.head.appendChild(style);
 window.submitGrades = function(assignmentId) {
     console.log('Submit grades for assignment:', assignmentId);
     
-    // Check if grade submission is active
+    // Check if grade submission is active and get active quarters
     fetch('/teacher/check-submission-status')
         .then(response => response.json())
         .then(data => {
             if (data.active) {
-                // Show quarter selection modal first
-                showQuarterSelectionModal(assignmentId);
+                // Check if there are active quarters
+                const activeQuarters = data.active_quarters || [];
+                
+                if (activeQuarters.length === 0) {
+                    alert('No quarters are currently active for grade submission. Please contact the faculty head.');
+                    return;
+                }
+                
+                if (activeQuarters.length === 1) {
+                    // Only one quarter active, redirect directly
+                    const quarter = activeQuarters[0];
+                    window.location.href = `/teacher/grades/submit/${assignmentId}?quarter=${quarter}`;
+                } else {
+                    // Multiple quarters active, show selection modal with only active quarters
+                    showActiveQuarterSelectionModal(assignmentId, activeQuarters);
+                }
             } else {
                 alert('Grade submission is currently disabled by the faculty head.');
             }
@@ -140,41 +154,45 @@ window.submitGrades = function(assignmentId) {
         });
 };
 
-function showQuarterSelectionModal(assignmentId) {
+function showActiveQuarterSelectionModal(assignmentId, activeQuarters) {
     const modal = document.createElement('div');
     modal.className = 'modal fade';
     modal.tabIndex = -1;
+    
+    // Generate buttons only for active quarters
+    let quarterButtons = '';
+    const quarterNames = {
+        '1st': '1st Quarter',
+        '2nd': '2nd Quarter', 
+        '3rd': '3rd Quarter',
+        '4th': '4th Quarter'
+    };
+    
+    activeQuarters.forEach(quarter => {
+        quarterButtons += `
+            <div class="col-6">
+                <button class="btn btn-outline-primary w-100" onclick="redirectToGradeEntry(${assignmentId}, '${quarter}')">
+                    <i class="ri-calendar-line me-2"></i>${quarterNames[quarter]}
+                </button>
+            </div>
+        `;
+    });
     
     modal.innerHTML = `
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Select Quarter</h5>
+                    <h5 class="modal-title">Select Active Quarter</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <p>Select the quarter for grade submission:</p>
+                    <p>Select from the currently active quarters for grade submission:</p>
                     <div class="row g-2">
-                        <div class="col-6">
-                            <button class="btn btn-outline-primary w-100" onclick="redirectToGradeEntry(${assignmentId}, '1st')">
-                                <i class="ri-calendar-line me-2"></i>1st Quarter
-                            </button>
-                        </div>
-                        <div class="col-6">
-                            <button class="btn btn-outline-primary w-100" onclick="redirectToGradeEntry(${assignmentId}, '2nd')">
-                                <i class="ri-calendar-line me-2"></i>2nd Quarter
-                            </button>
-                        </div>
-                        <div class="col-6">
-                            <button class="btn btn-outline-primary w-100" onclick="redirectToGradeEntry(${assignmentId}, '3rd')">
-                                <i class="ri-calendar-line me-2"></i>3rd Quarter
-                            </button>
-                        </div>
-                        <div class="col-6">
-                            <button class="btn btn-outline-primary w-100" onclick="redirectToGradeEntry(${assignmentId}, '4th')">
-                                <i class="ri-calendar-line me-2"></i>4th Quarter
-                            </button>
-                        </div>
+                        ${quarterButtons}
+                    </div>
+                    <div class="alert alert-info mt-3">
+                        <i class="ri-information-line me-2"></i>
+                        <small>Only quarters activated by the faculty head are shown.</small>
                     </div>
                 </div>
             </div>
@@ -194,6 +212,21 @@ function showQuarterSelectionModal(assignmentId) {
 
 window.redirectToGradeEntry = function(assignmentId, quarter) {
     window.location.href = `/teacher/grades/submit/${assignmentId}?quarter=${quarter}`;
+};
+
+// Add handleGradeSubmission function for grades page compatibility
+window.handleGradeSubmission = function() {
+    const assignmentSelect = document.getElementById('assignmentSelect');
+    
+    if (!assignmentSelect || !assignmentSelect.value) {
+        alert('Please select a subject first.');
+        return;
+    }
+    
+    const assignmentId = assignmentSelect.value;
+    
+    // Use the same logic as submitGrades
+    window.submitGrades(assignmentId);
 };
 
 window.viewClassDetails = function(assignmentId) {

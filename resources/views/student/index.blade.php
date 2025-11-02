@@ -1,6 +1,23 @@
 <x-student-layout>
     @push('styles')
         @vite('resources/css/index_student.css')
+        <style>
+            .btn.disabled {
+                cursor: not-allowed !important;
+                opacity: 0.6;
+                pointer-events: none;
+            }
+            
+            .btn.disabled:hover {
+                transform: none !important;
+                box-shadow: none !important;
+            }
+            
+            .position-relative .ri-lock-line {
+                font-size: 1rem;
+                color: #6c757d;
+            }
+        </style>
     @endpush
 
     <!-- Page Header -->
@@ -201,23 +218,67 @@
                                     </div>
                                 @endif
                             @endif
+                            
+                            @php
+                                $hasNoEnrollment = !in_array($student->enrollment_status, ['enrolled', 'pre_registered']);
+                                
+                                // Check if student has at least one confirmed payment (1st quarter)
+                                $hasConfirmedPayment = \App\Models\Payment::where('payable_type', 'App\\Models\\Student')
+                                    ->where('payable_id', $student->id)
+                                    ->where('confirmation_status', 'confirmed')
+                                    ->exists();
+                                
+                                $hasNoPayment = $student->enrollment_status !== 'enrolled' || !$hasConfirmedPayment;
+                                $isEnrollmentComplete = in_array($student->enrollment_status, ['enrolled', 'pre_registered']);
+                                $isPaymentSettled = $student->enrollment_status === 'enrolled' && $hasConfirmedPayment;
+                            @endphp
+                            
+                            <!-- View Subjects - Disabled only if payment not settled -->
                             <div class="col-md-4">
-                                <a href="{{ route('student.subjects') }}" class="btn btn-outline-primary w-100 py-3">
-                                    <i class="ri-book-open-line fs-4 d-block mb-2"></i>
-                                    View Subjects
-                                </a>
+                                @if($hasNoPayment)
+                                    <div class="btn btn-outline-secondary w-100 py-3 disabled position-relative" title="Complete enrollment and settle payment to access this feature">
+                                        <i class="ri-book-open-line fs-4 d-block mb-2"></i>
+                                        View Subjects
+                                        <i class="ri-lock-line position-absolute top-0 end-0 m-2"></i>
+                                    </div>
+                                @else
+                                    <a href="{{ route('student.subjects') }}" class="btn btn-outline-primary w-100 py-3">
+                                        <i class="ri-book-open-line fs-4 d-block mb-2"></i>
+                                        View Subjects
+                                    </a>
+                                @endif
                             </div>
+                            
+                            <!-- Payment History - Disabled until payment settled (same as other features) -->
                             <div class="col-md-4">
-                                <a href="{{ route('student.payments') }}" class="btn btn-outline-primary w-100 py-3">
-                                    <i class="ri-bill-line fs-4 d-block mb-2"></i>
-                                    Payment History
-                                </a>
+                                @if($hasNoPayment)
+                                    <div class="btn btn-outline-secondary w-100 py-3 disabled position-relative" title="Complete enrollment and settle payment to access this feature">
+                                        <i class="ri-bill-line fs-4 d-block mb-2"></i>
+                                        Payment History
+                                        <i class="ri-lock-line position-absolute top-0 end-0 m-2"></i>
+                                    </div>
+                                @else
+                                    <a href="{{ route('student.payments') }}" class="btn btn-outline-primary w-100 py-3">
+                                        <i class="ri-bill-line fs-4 d-block mb-2"></i>
+                                        Payment History
+                                    </a>
+                                @endif
                             </div>
+                            
+                            <!-- Face Registration - Disabled only if payment not settled -->
                             <div class="col-md-4">
-                                <a href="{{ route('student.face-registration') }}" class="btn btn-outline-primary w-100 py-3">
-                                    <i class="ri-camera-line fs-4 d-block mb-2"></i>
-                                    Face Registration
-                                </a>
+                                @if($hasNoPayment)
+                                    <div class="btn btn-outline-secondary w-100 py-3 disabled position-relative" title="Complete enrollment and settle payment to access this feature">
+                                        <i class="ri-camera-line fs-4 d-block mb-2"></i>
+                                        Face Registration
+                                        <i class="ri-lock-line position-absolute top-0 end-0 m-2"></i>
+                                    </div>
+                                @else
+                                    <a href="{{ route('student.face-registration') }}" class="btn btn-outline-primary w-100 py-3">
+                                        <i class="ri-camera-line fs-4 d-block mb-2"></i>
+                                        Face Registration
+                                    </a>
+                                @endif
                             </div>
                         </div>
                     </div>

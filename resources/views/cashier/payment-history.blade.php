@@ -1,4 +1,7 @@
 <x-cashier-layout>
+    @push('styles')
+        @vite('resources/css/index_student.css')
+    @endpush
     @vite(['resources/js/cashier-payment-schedules.js'])
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
@@ -8,29 +11,30 @@
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <h2 class="section-title mb-1">Payment History</h2>
-                    <p class="text-muted mb-0">Complete history of all payment transactions</p>
+                    <p class="text-muted mb-0">Complete history of all confirmed payment transactions</p>
                 </div>
                 <div class="text-end">
-                    <span class="badge bg-info fs-6" id="records-count">Loading...</span>
+                    <span class="badge bg-success fs-6" id="confirmed-count">0 Confirmed</span>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Payment History Schedules -->
+    <!-- Student Payment History -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white border-0 pb-0">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="card-title mb-0">
-                            <i class="ri-history-line me-2"></i>Payment History Records
+                            <i class="ri-history-line me-2"></i>Confirmed Payment Records
                         </h5>
                         <div class="d-flex gap-2">
-                            <select class="form-select form-select-sm payment-filter" name="status">
-                                <option value="">All Status</option>
-                                <option value="pending">Not yet paid</option>
-                                <option value="confirmed">Paid</option>
+                            <select class="form-select form-select-sm payment-filter" name="payment_method">
+                                <option value="">All Payment Methods</option>
+                                <option value="full">Full Payment</option>
+                                <option value="quarterly">Quarterly</option>
+                                <option value="monthly">Monthly</option>
                             </select>
                             <input type="text" class="form-control form-control-sm" id="payment-search" placeholder="Search by Student ID, Name...">
                         </div>
@@ -41,12 +45,12 @@
                         <table class="table table-hover" id="payment-history-table">
                             <thead>
                                 <tr>
+                                    <th>Priority</th>
                                     <th>Transaction ID</th>
                                     <th>Student ID</th>
                                     <th>Amount</th>
+                                    <th>Confirmed Date</th>
                                     <th>Status</th>
-                                    <th>Cashier</th>
-                                    <th>Date</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -62,7 +66,7 @@
                             </tbody>
                         </table>
                     </div>
-                    <div id="pagination-container-history"></div>
+                    <div id="pagination-container"></div>
                 </div>
             </div>
         </div>
@@ -92,18 +96,26 @@
 
     @push('scripts')
         <script>
-            // Payment History JavaScript
+            // Payment History JavaScript - Updated to match current structure
             document.addEventListener('DOMContentLoaded', function() {
                 initializePaymentHistory();
-                setupHistoryFiltersAndSearch();
+                setupRealTimeUpdates();
+                setupFiltersAndSearch();
             });
 
             function initializePaymentHistory() {
                 console.log('Payment History initialized');
+                
+                // Load initial data
                 loadPaymentHistory();
+                
+                // Setup action handlers
+                setupActionHandlers();
             }
 
             function loadPaymentHistory(filters = {}) {
+                // Always filter for confirmed payments only in payment history
+                filters.status = 'confirmed';
                 const params = new URLSearchParams(filters);
                 
                 fetch(`/cashier/api/payment-history?${params}`, {
@@ -117,35 +129,43 @@
                 })
                 .then(response => response.json())
                 .then(data => {
+                    console.log('Payment history API response:', data);
                     if (data.success) {
-                        updatePaymentHistoryTable(data.payments);
+                        // Handle the nested data structure from the API
+                        const payments = data.payments && data.payments.data ? data.payments.data : [];
+                        console.log('Extracted payments:', payments);
+                        updatePaymentHistoryTable(payments);
+                        updateStatisticsDisplay(data.statistics);
                     }
                 })
                 .catch(error => {
                     console.error('Error loading payment history:', error);
+                    showAlert('Error loading payment history', 'danger');
                 });
+            }
+
+            function setupRealTimeUpdates() {
+                // Real-time updates every 30 seconds
+                setInterval(() => {
+                    loadPaymentHistory();
+                }, 30000);
+                
+                console.log('Real-time updates enabled for payment history');
             }
 
             function updatePaymentHistoryTable(payments) {
                 const tableBody = document.querySelector('#payment-history-table tbody');
                 if (!tableBody) return;
                 
-                // Update records count
-                const recordsCount = document.getElementById('records-count');
-                if (recordsCount) {
-                    recordsCount.textContent = `${payments.total || 0} Records`;
-                }
-                
-                if (payments.data && payments.data.length > 0) {
-                    tableBody.innerHTML = payments.data.map(payment => createPaymentHistoryRow(payment)).join('');
-                    updateHistoryPagination(payments);
+                if (payments && payments.length > 0) {
+                    tableBody.innerHTML = payments.map((payment, index) => createPaymentHistoryRow(payment, index)).join('');
                 } else {
                     tableBody.innerHTML = `
                         <tr>
                             <td colspan="7" class="text-center py-4">
                                 <div class="text-muted">
                                     <i class="ri-inbox-line fs-1 mb-2"></i>
-                                    <p>No payment history found</p>
+                                    <p>No confirmed payments found</p>
                                 </div>
                             </td>
                         </tr>
@@ -153,57 +173,61 @@
                 }
             }
 
-            function createPaymentHistoryRow(payment) {
-                const student = payment.payable;
-                const statusBadge = getStatusBadge(payment.confirmation_status);
-                
-                // Format payment method display
-                const paymentMethodDisplay = getPaymentMethodDisplay(payment.payment_method, payment.installment_count);
+            function createPaymentHistoryRow(payment, index) {
+                const student = payment.payable || payment.student;
+                const priorityBadge = getPriorityBadge(index + 1);
                 
                 return `
                     <tr>
+                        <td>${priorityBadge}</td>
                         <td>
-                            <span class="fw-bold">${payment.transaction_id}</span><br>
-                            <small class="text-muted">${paymentMethodDisplay}</small>
+                            <div class="fw-semibold">${payment.transaction_id}</div>
+                            <small class="text-muted">${getPaymentMethodDisplay(payment.payment_method)} - ${payment.period_name || 'Payment'}</small>
                         </td>
                         <td>
-                            <div class="fw-semibold">${student.student_id}</div>
-                            <small class="text-muted">${student.first_name} ${student.last_name}</small>
+                            <div class="fw-semibold">${student ? student.student_id : 'N/A'}</div>
+                            <small class="text-muted">${student ? (student.first_name + ' ' + student.last_name) : 'Unknown Student'}</small>
                         </td>
                         <td>
-                            <span class="fw-bold text-success">₱${formatNumber(payment.total_amount_paid || payment.amount)}</span>
-                            ${payment.payment_count > 1 ? `<br><small class="text-muted">${payment.payment_count} installments</small>` : ''}
-                        </td>
-                        <td>${statusBadge}</td>
-                        <td>
-                            ${payment.cashier && (payment.cashier.full_name || payment.cashier.first_name) ? `
-                                <div class="fw-semibold">${payment.cashier.full_name || (payment.cashier.first_name + ' ' + (payment.cashier.last_name || ''))}</div>
-                                <small class="text-muted">${payment.cashier.employee_id || payment.cashier.id || 'CASH001'}</small>
-                            ` : `
-                                <div class="fw-semibold">Maria Santos Dela Cruz</div>
-                                <small class="text-muted">CASH001</small>
-                            `}
+                            <span class="fw-bold text-success">₱${formatNumber(payment.amount)}</span>
                         </td>
                         <td>
-                            <div>
-                                <small><strong>Submitted:</strong> ${formatDate(payment.created_at) !== 'N/A' ? formatDate(payment.created_at) : formatDate(new Date().toISOString())}</small>
-                                ${payment.confirmed_at ? `<br><small><strong>Confirmed:</strong> ${formatDate(payment.confirmed_at)}</small>` : ''}
-                            </div>
+                            <div class="fw-semibold">${formatDate(payment.confirmed_at)}</div>
+                            <small class="text-muted">${formatTime(payment.confirmed_at)}</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-success">Confirmed</span>
                         </td>
                         <td>
                             <div class="btn-group btn-group-sm">
-                                <button class="btn btn-outline-primary" onclick="viewPaymentHistoryDetails(${payment.id})" title="View Details">
+                                <button class="btn btn-outline-primary" onclick="viewPaymentScheduleDetails('${student ? student.student_id : payment.payable_id}', '${payment.payment_method}')" title="View Schedule">
                                     <i class="ri-eye-line"></i>
                                 </button>
-                                ${payment.confirmation_status === 'confirmed' ? `
-                                    <button class="btn btn-outline-success" onclick="printReceipt(${payment.id})" title="Print Receipt">
-                                        <i class="ri-printer-line"></i>
-                                    </button>
-                                ` : ''}
+                                <button class="btn btn-outline-success" onclick="printReceipt(${payment.id})" title="Print Receipt">
+                                    <i class="ri-printer-line"></i>
+                                </button>
                             </div>
                         </td>
                     </tr>
                 `;
+            }
+
+            function updateStatisticsDisplay(statistics) {
+                // Update confirmed count
+                const confirmedCount = document.getElementById('confirmed-count');
+                if (confirmedCount && statistics) {
+                    confirmedCount.textContent = `${statistics.confirmed_payments || 0} Confirmed`;
+                }
+            }
+
+            function getPriorityBadge(priority) {
+                if (priority <= 3) {
+                    return `<span class="badge bg-danger">${priority}</span>`;
+                } else if (priority <= 10) {
+                    return `<span class="badge bg-warning">${priority}</span>`;
+                } else {
+                    return `<span class="badge bg-secondary">${priority}</span>`;
+                }
             }
 
             function setupHistoryFiltersAndSearch() {
@@ -252,27 +276,18 @@
                 }
             }
 
-            // Utility functions (reuse from cashier-payment-schedules.js)
-            function getPaymentMethodDisplay(method, count) {
+            // Utility functions - Updated to match current structure
+            function getPaymentMethodDisplay(method) {
                 switch(method) {
                     case 'full':
                         return 'Full Payment';
                     case 'quarterly':
-                        return `Quarterly (${count} payments)`;
+                        return 'Quarterly';
                     case 'monthly':
-                        return `Monthly (${count} payments)`;
+                        return 'Monthly';
                     default:
                         return 'Full Payment';
                 }
-            }
-
-            function getStatusBadge(status) {
-                const badges = {
-                    'pending': '<span class="badge bg-warning">Not yet paid</span>',
-                    'confirmed': '<span class="badge bg-success">Paid</span>',
-                    'rejected': '<span class="badge bg-warning">Not yet paid</span>'
-                };
-                return badges[status] || '<span class="badge bg-warning">Not yet paid</span>';
             }
 
             function formatNumber(number) {
@@ -281,27 +296,13 @@
 
             function formatDate(dateString) {
                 if (!dateString || dateString === 'null' || dateString === 'undefined') {
-                    // If no date provided, use today's date
-                    dateString = new Date().toISOString();
+                    return 'N/A';
                 }
                 
                 try {
-                    // Handle different date formats
-                    let date;
-                    if (typeof dateString === 'string' && dateString.includes('T')) {
-                        // ISO format: 2025-10-09T07:32:03.000000Z
-                        date = new Date(dateString);
-                    } else if (typeof dateString === 'string') {
-                        // Simple date format: 2025-10-09
-                        date = new Date(dateString + 'T00:00:00');
-                    } else {
-                        // Already a Date object or timestamp
-                        date = new Date(dateString);
-                    }
-                    
+                    const date = new Date(dateString);
                     if (isNaN(date.getTime())) {
-                        // If still invalid, use today's date
-                        date = new Date();
+                        return 'N/A';
                     }
                     
                     return date.toLocaleDateString('en-US', {
@@ -310,14 +311,86 @@
                         day: 'numeric'
                     });
                 } catch (error) {
-                    console.error('Date formatting error:', error, 'for date:', dateString);
-                    // Fallback to today's date
-                    return new Date().toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric'
+                    console.error('Date formatting error:', error);
+                    return 'N/A';
+                }
+            }
+
+            function formatTime(dateString) {
+                if (!dateString || dateString === 'null' || dateString === 'undefined') {
+                    return '';
+                }
+                
+                try {
+                    const date = new Date(dateString);
+                    if (isNaN(date.getTime())) {
+                        return '';
+                    }
+                    
+                    return date.toLocaleTimeString('en-US', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                } catch (error) {
+                    console.error('Time formatting error:', error);
+                    return '';
+                }
+            }
+
+            function setupFiltersAndSearch() {
+                // Setup filter dropdowns
+                const filterElements = document.querySelectorAll('.payment-filter');
+                filterElements.forEach(element => {
+                    element.addEventListener('change', applyHistoryFilters);
+                });
+                
+                // Setup search input
+                const searchInput = document.getElementById('payment-search');
+                if (searchInput) {
+                    let searchTimeout;
+                    searchInput.addEventListener('input', function() {
+                        clearTimeout(searchTimeout);
+                        searchTimeout = setTimeout(applyHistoryFilters, 500);
                     });
                 }
+            }
+
+            function setupActionHandlers() {
+                // Action handlers are set up via onclick attributes in the HTML
+                console.log('Action handlers ready');
+            }
+
+            function showAlert(message, type = 'info') {
+                // Simple alert implementation
+                const alertClass = type === 'danger' ? 'alert-danger' : 
+                                 type === 'success' ? 'alert-success' : 
+                                 type === 'warning' ? 'alert-warning' : 'alert-info';
+                
+                const alertHtml = `
+                    <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                        ${message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                `;
+                
+                // Try to find a container for alerts, or create one
+                let alertContainer = document.querySelector('.alert-container');
+                if (!alertContainer) {
+                    alertContainer = document.createElement('div');
+                    alertContainer.className = 'alert-container position-fixed top-0 end-0 p-3';
+                    alertContainer.style.zIndex = '9999';
+                    document.body.appendChild(alertContainer);
+                }
+                
+                alertContainer.insertAdjacentHTML('beforeend', alertHtml);
+                
+                // Auto-remove after 5 seconds
+                setTimeout(() => {
+                    const alerts = alertContainer.querySelectorAll('.alert');
+                    if (alerts.length > 0) {
+                        alerts[0].remove();
+                    }
+                }, 5000);
             }
 
             let currentPaymentId = null;

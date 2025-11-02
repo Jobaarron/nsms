@@ -1,4 +1,9 @@
 <x-teacher-layout>
+  @push('scripts')
+  @vite('resources/js/grade-submission-checker.js')
+  @vite('resources/js/teacher-grades.js')
+  @endpush
+
   <!-- MAIN CONTENT -->
   <main class="col-12 col-md-10 px-4 py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -28,14 +33,15 @@
       </div>
     @endif
 
+
     <!-- SUBMISSION STATISTICS -->
     <div class="row g-3 mb-4">
       <div class="col-6 col-lg-3">
         <div class="card card-summary card-application h-100">
           <div class="card-body text-center">
-            <i class="ri-draft-line display-6 mb-2"></i>
-            <div>Draft</div>
-            <h3>{{ $submissionsByStatus->get('draft', collect())->count() }}</h3>
+            <i class="ri-time-line display-6 mb-2 text-warning"></i>
+            <div>Pending Review</div>
+            <h3>{{ $stats['pending'] ?? 0 }}</h3>
           </div>
         </div>
       </div>
@@ -44,7 +50,7 @@
           <div class="card-body text-center">
             <i class="ri-send-plane-line display-6 mb-2"></i>
             <div>Submitted</div>
-            <h3>{{ $submissionsByStatus->get('submitted', collect())->count() }}</h3>
+            <h3>{{ $stats['submitted'] ?? 0 }}</h3>
           </div>
         </div>
       </div>
@@ -53,16 +59,16 @@
           <div class="card-body text-center">
             <i class="ri-checkbox-circle-line display-6 mb-2"></i>
             <div>Approved</div>
-            <h3>{{ $submissionsByStatus->get('approved', collect())->count() }}</h3>
+            <h3>{{ $stats['approved'] ?? 0 }}</h3>
           </div>
         </div>
       </div>
       <div class="col-6 col-lg-3">
         <div class="card card-summary card-schedule h-100">
           <div class="card-body text-center">
-            <i class="ri-close-circle-line display-6 mb-2"></i>
-            <div>Rejected</div>
-            <h3>{{ $submissionsByStatus->get('rejected', collect())->count() }}</h3>
+            <i class="ri-edit-circle-line display-6 mb-2 text-warning"></i>
+            <div>Revised</div>
+            <h3>{{ $stats['revised'] ?? 0 }}</h3>
           </div>
         </div>
       </div>
@@ -76,16 +82,14 @@
         </h5>
       </div>
       <div class="card-body">
-        <form action="{{ route('teacher.grades.create') }}" method="GET" class="row g-3">
+        <div class="row g-3">
           <div class="col-md-3">
             <label class="form-label">Subject</label>
-            <select name="subject_id" class="form-select" required>
+            <select class="form-select" required id="assignmentSelect">
               <option value="">Select Subject</option>
               @foreach($assignments as $assignment)
                 @if($assignment->subject_id && $assignment->subject)
-                <option value="{{ $assignment->subject_id }}" 
-                        data-grade="{{ $assignment->grade_level }}" 
-                        data-section="{{ $assignment->section }}">
+                <option value="{{ $assignment->id }}">
                   {{ $assignment->subject->subject_name }} ({{ $assignment->grade_level }} - {{ $assignment->section }})
                 </option>
                 @endif
@@ -93,22 +97,12 @@
             </select>
           </div>
           <div class="col-md-2">
-            <label class="form-label">Quarter</label>
-            <select name="quarter" class="form-select" required>
-              <option value="">Select Quarter</option>
-              <option value="1st">1st Quarter</option>
-              <option value="2nd">2nd Quarter</option>
-              <option value="3rd">3rd Quarter</option>
-              <option value="4th">4th Quarter</option>
-            </select>
-          </div>
-          <div class="col-md-2">
             <label class="form-label">&nbsp;</label>
-            <button type="submit" class="btn btn-primary d-block">
-              <i class="ri-add-line me-2"></i>Create Submission
+            <button type="button" class="btn btn-primary d-block" onclick="handleGradeSubmission()">
+              <i class="ri-add-line me-2"></i>Submit Grades
             </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
 
@@ -182,7 +176,7 @@
                 <td>
                   @switch($submission->status)
                     @case('draft')
-                      <span class="badge bg-secondary">Draft</span>
+                      <span class="badge bg-warning">Pending Review</span>
                       @break
                     @case('submitted')
                       <span class="badge bg-warning">Under Review</span>
@@ -191,7 +185,7 @@
                       <span class="badge bg-success">Approved</span>
                       @break
                     @case('rejected')
-                      <span class="badge bg-danger">Rejected</span>
+                      <span class="badge bg-warning">Revised</span>
                       @break
                     @case('revision_requested')
                       <span class="badge bg-info">Revision Requested</span>
@@ -249,48 +243,4 @@
   </main>
 </x-teacher-layout>
 
-<script>
-function showFeedback(notes) {
-    const modal = document.createElement('div');
-    modal.className = 'modal fade';
-    modal.tabIndex = -1;
-    
-    modal.innerHTML = `
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="ri-message-line me-2"></i>Faculty Head Feedback
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="alert alert-info">
-                        <i class="ri-information-line me-2"></i>
-                        <strong>Review Notes:</strong>
-                    </div>
-                    <p class="mb-0">${notes}</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-    
-    const bootstrapModal = new bootstrap.Modal(modal);
-    bootstrapModal.show();
-    
-    // Clean up modal when hidden
-    modal.addEventListener('hidden.bs.modal', function() {
-        document.body.removeChild(modal);
-    });
-}
-</script>
 
-@push('scripts')
-@vite('resources/js/grade-submission-checker.js')
-<script src="{{ asset('js/teacher-grades.js') }}"></script>
-@endpush

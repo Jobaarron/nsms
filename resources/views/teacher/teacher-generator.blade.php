@@ -150,7 +150,6 @@
                                             <option value="TLE" {{ old('department') == 'TLE' ? 'selected' : '' }}>TLE</option>
                                             <option value="ICT" {{ old('department') == 'ICT' ? 'selected' : '' }}>ICT</option>
                                             <option value="TVL" {{ old('department') == 'TVL' ? 'selected' : '' }}>TVL</option>
-                                            <option value="GAS" {{ old('department') == 'GAS' ? 'selected' : '' }}>GAS</option>
                                             <option value="HUMSS" {{ old('department') == 'HUMSS' ? 'selected' : '' }}>HUMSS</option>
                                             <option value="STEM" {{ old('department') == 'STEM' ? 'selected' : '' }}>STEM</option>
                                             <option value="ABM" {{ old('department') == 'ABM' ? 'selected' : '' }}>ABM</option>

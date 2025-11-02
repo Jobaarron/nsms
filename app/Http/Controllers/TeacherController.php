@@ -99,9 +99,17 @@ class TeacherController extends Controller
             'q4_active' => \App\Models\Setting::get('grade_submission_q4_active', false),
         ];
 
+        // Get list of active quarters for JavaScript
+        $activeQuarters = [];
+        if ($quarterSettings['q1_active']) $activeQuarters[] = '1st';
+        if ($quarterSettings['q2_active']) $activeQuarters[] = '2nd';
+        if ($quarterSettings['q3_active']) $activeQuarters[] = '3rd';
+        if ($quarterSettings['q4_active']) $activeQuarters[] = '4th';
+
         return response()->json([
             'active' => $isActive,
-            'quarters' => $quarterSettings
+            'quarters' => $quarterSettings,
+            'active_quarters' => $activeQuarters
         ]);
     }
 

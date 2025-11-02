@@ -21,7 +21,9 @@
   @vite(['resources/css/index_teacher.css'])
   
   <!-- Teacher JavaScript - Load in HEAD for onclick handlers -->
+  {{-- Temporarily disabled teacher-dashboard.js as it interferes with statistics on other pages
   @vite('resources/js/teacher-dashboard.js')
+  --}}
 
   
 </head>
@@ -62,7 +64,7 @@
 
           <li class="nav-item mb-2">
             <a class="nav-link {{ request()->routeIs('teacher.observationreport*') ? 'active' : '' }}" href="{{ route('teacher.observationreport') }}">
-              <i class="ri-file-list-3-line me-2"></i>Observationreport
+              <i class="ri-file-list-3-line me-2"></i>Observation Report
             </a>
           </li>
           

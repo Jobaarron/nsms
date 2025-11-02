@@ -127,6 +127,11 @@
                     <div class="progress-step {{ in_array($enrollee->enrollment_status, ['approved', 'enrolled']) ? 'completed' : (in_array($enrollee->enrollment_status, ['rejected', 'declined']) ? 'rejected' : '') }}">
                         <i class="ri-check-double-line"></i>
                     </div>
+                    
+                    <!-- Step 4: Pre-Register -->
+                    <div class="progress-step {{ $enrollee->student_id ? 'completed' : ($enrollee->enrollment_status === 'approved' ? 'active' : '') }}">
+                        <i class="ri-user-add-line"></i>
+                    </div>
                 </div>
                 <div class="d-flex justify-content-between mt-3">
                     <small class="text-muted">Submitted</small>
@@ -138,6 +143,7 @@
                             Approved
                         @endif
                     </small>
+                    <small class="text-muted">Pre-Register</small>
                 </div>
             </div>
         </div>

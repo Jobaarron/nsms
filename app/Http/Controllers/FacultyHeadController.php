@@ -10,6 +10,7 @@ use App\Models\ClassSchedule;
 use App\Models\User;
 use App\Models\Subject;
 use App\Models\Student;
+use App\Models\Section;
 use Illuminate\Support\Facades\DB;
 
 class FacultyHeadController extends Controller
@@ -131,6 +132,47 @@ class FacultyHeadController extends Controller
     }
 
     /**
+     * Unified Faculty Assignments (Teachers & Advisers)
+     */
+    public function assignFaculty()
+    {
+        $currentAcademicYear = date('Y') . '-' . (date('Y') + 1);
+        
+        // Get all teachers
+        $teachers = User::role('teacher')->with('teacher')->get();
+        
+        // Get all subjects
+        $subjects = Subject::where('academic_year', $currentAcademicYear)
+                          ->where('is_active', true)
+                          ->orderBy('grade_level')
+                          ->orderBy('subject_name')
+                          ->get();
+        
+        // Get all sections
+        $sections = Section::where('academic_year', $currentAcademicYear)
+                          ->where('is_active', true)
+                          ->orderBy('grade_level')
+                          ->orderBy('section_name')
+                          ->get();
+        
+        // Get current subject teacher assignments
+        $assignments = FacultyAssignment::where('academic_year', $currentAcademicYear)
+                                       ->where('assignment_type', 'subject_teacher')
+                                       ->where('status', 'active')
+                                       ->with(['teacher.user', 'subject'])
+                                       ->get();
+        
+        // Get current class advisers
+        $advisers = FacultyAssignment::where('academic_year', $currentAcademicYear)
+                                   ->where('assignment_type', 'class_adviser')
+                                   ->where('status', 'active')
+                                   ->with(['teacher.user', 'subject'])
+                                   ->get();
+
+        return view('faculty-head.assign-faculty', compact('teachers', 'subjects', 'sections', 'assignments', 'advisers', 'currentAcademicYear'));
+    }
+
+    /**
      * Assign adviser per class
      */
     public function assignAdviser()
@@ -141,11 +183,11 @@ class FacultyHeadController extends Controller
         $teachers = User::role('teacher')->with('teacher')->get();
         
         // Get all sections
-        $sections = \App\Models\Section::where('academic_year', $currentAcademicYear)
-                                     ->where('is_active', true)
-                                     ->orderBy('grade_level')
-                                     ->orderBy('section_name')
-                                     ->get();
+        $sections = Section::where('academic_year', $currentAcademicYear)
+                          ->where('is_active', true)
+                          ->orderBy('grade_level')
+                          ->orderBy('section_name')
+                          ->get();
         
         // Get current class advisers
         $advisers = FacultyAssignment::where('academic_year', $currentAcademicYear)
@@ -154,7 +196,7 @@ class FacultyHeadController extends Controller
                                    ->with(['teacher.user', 'subject'])
                                    ->get();
 
-        return view('faculty-head.assign-adviser', compact('teachers', 'sections', 'advisers', 'currentAcademicYear'));
+        return redirect()->route('faculty-head.assign-faculty');
     }
 
     /**
@@ -171,11 +213,11 @@ class FacultyHeadController extends Controller
         $subjects = Subject::where('academic_year', $currentAcademicYear)->where('is_active', true)->get();
         
         // Get all sections
-        $sections = \App\Models\Section::where('academic_year', $currentAcademicYear)
-                                     ->where('is_active', true)
-                                     ->orderBy('grade_level')
-                                     ->orderBy('section_name')
-                                     ->get();
+        $sections = Section::where('academic_year', $currentAcademicYear)
+                          ->where('is_active', true)
+                          ->orderBy('grade_level')
+                          ->orderBy('section_name')
+                          ->get();
         
         // Get all assignments
         $assignments = FacultyAssignment::where('academic_year', $currentAcademicYear)
@@ -189,7 +231,7 @@ class FacultyHeadController extends Controller
             return $assignment->grade_level . ' - ' . $assignment->section;
         });
 
-        return view('faculty-head.assign-teacher', compact('teachers', 'subjects', 'sections', 'assignments', 'assignmentsByClass', 'currentAcademicYear'));
+        return redirect()->route('faculty-head.assign-faculty');
     }
 
 
@@ -445,6 +487,8 @@ class FacultyHeadController extends Controller
             'teacher_id' => 'required|exists:users,id',
             'grade_level' => 'required|string',
             'section' => 'required|string',
+            'strand' => 'nullable|string|in:STEM,ABM,HUMSS,TVL',
+            'track' => 'nullable|string|in:ICT,H.E.',
             'effective_date' => 'required|date',
             'notes' => 'nullable|string|max:500'
         ]);
@@ -458,6 +502,8 @@ class FacultyHeadController extends Controller
             'assigned_by' => $currentUser->id,
             'grade_level' => $request->grade_level,
             'section' => $request->section,
+            'strand' => $request->strand,
+            'track' => $request->track,
             'academic_year' => $currentAcademicYear,
             'assignment_type' => 'class_adviser',
             'status' => 'active',
@@ -466,7 +512,7 @@ class FacultyHeadController extends Controller
             'notes' => $request->notes
         ]);
 
-        return redirect()->route('faculty-head.assign-adviser')->with('success', 'Class adviser assigned successfully.');
+        return redirect()->route('faculty-head.assign-faculty')->with('success', 'Class adviser assigned successfully.');
     }
 
     /**
@@ -481,7 +527,7 @@ class FacultyHeadController extends Controller
             'subject_id' => 'required|exists:subjects,id',
             'grade_level' => 'required|string',
             'section' => 'required|string',
-            'strand' => 'nullable|string|in:STEM,ABM,HUMSS,GAS,TVL',
+            'strand' => 'nullable|string|in:STEM,ABM,HUMSS,TVL',
             'track' => 'nullable|string|in:ICT,H.E.',
             'effective_date' => 'required|date',
             'notes' => 'nullable|string|max:500'
@@ -524,7 +570,7 @@ class FacultyHeadController extends Controller
             
             $successMessage = "Successfully assigned {$assignment->teacher->user->name} to teach {$assignment->subject->subject_name} for {$assignment->grade_level} - {$assignment->section}.";
             
-            return redirect()->route('faculty-head.assign-teacher')->with('success', $successMessage);
+            return redirect()->route('faculty-head.assign-faculty')->with('success', $successMessage);
             
         } catch (\Exception $e) {
             // Handle model validation errors (including schedule conflicts)
@@ -539,20 +585,18 @@ class FacultyHeadController extends Controller
     {
         $currentAcademicYear = date('Y') . '-' . (date('Y') + 1);
         
-        // Get all grade submissions pending review
-        $pendingSubmissions = GradeSubmission::where('status', 'submitted')
-            ->where('academic_year', $currentAcademicYear)
-            ->with(['teacher.user', 'subject'])
-            ->orderBy('submitted_at', 'desc')
-            ->get();
-
-        // Get recently reviewed submissions
-        $recentlyReviewed = GradeSubmission::whereIn('status', ['approved', 'rejected'])
+        // Get all grade submissions for filtering
+        $allSubmissions = GradeSubmission::whereIn('status', ['submitted', 'approved', 'rejected'])
             ->where('academic_year', $currentAcademicYear)
             ->with(['teacher.user', 'subject', 'reviewer'])
-            ->orderBy('reviewed_at', 'desc')
-            ->limit(10)
+            ->orderBy('created_at', 'desc')
             ->get();
+
+        // Get all grade submissions pending review (for backward compatibility)
+        $pendingSubmissions = $allSubmissions->where('status', 'submitted');
+
+        // Get recently reviewed submissions (for backward compatibility)
+        $recentlyReviewed = $allSubmissions->whereIn('status', ['approved', 'rejected'])->take(10);
 
         // Get submission statistics
         $stats = [
@@ -563,6 +607,7 @@ class FacultyHeadController extends Controller
         ];
 
         return view('faculty-head.view-grades', compact(
+            'allSubmissions',
             'pendingSubmissions', 
             'recentlyReviewed', 
             'stats', 
@@ -800,6 +845,187 @@ class FacultyHeadController extends Controller
                 ], 500);
             }
             return redirect()->back()->with('error', 'Failed to remove assignment. Please try again.');
+        }
+    }
+
+    /**
+     * Get subjects for AJAX filtering
+     */
+    public function getSubjects()
+    {
+        try {
+            $currentAcademicYear = date('Y') . '-' . (date('Y') + 1);
+            
+            $subjects = Subject::where('academic_year', $currentAcademicYear)
+                              ->where('is_active', true)
+                              ->select('id', 'subject_name', 'grade_level', 'strand', 'track')
+                              ->orderBy('grade_level')
+                              ->orderBy('subject_name')
+                              ->get();
+
+            return response()->json([
+                'success' => true,
+                'subjects' => $subjects
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error loading subjects: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get sections for AJAX filtering
+     */
+    public function getSections()
+    {
+        try {
+            $currentAcademicYear = date('Y') . '-' . (date('Y') + 1);
+            
+            $sections = Section::where('academic_year', $currentAcademicYear)
+                              ->where('is_active', true)
+                              ->select('section_name', 'grade_level')
+                              ->orderBy('grade_level')
+                              ->orderBy('section_name')
+                              ->get();
+
+            return response()->json([
+                'success' => true,
+                'sections' => $sections
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error loading sections: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get section details including students, adviser, and subject teachers
+     */
+    public function getSectionDetails(Request $request)
+    {
+        try {
+            $gradeLevel = $request->get('grade_level');
+            $sectionName = $request->get('section');
+            $strand = $request->get('strand');
+            $track = $request->get('track');
+            $currentAcademicYear = date('Y') . '-' . (date('Y') + 1);
+            
+            if (!$gradeLevel || !$sectionName) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Grade level and section are required'
+                ], 400);
+            }
+            
+            // Build student query - only enrolled students with settled payments
+            $studentQuery = Student::where('grade_level', $gradeLevel)
+                                  ->where('section', $sectionName)
+                                  ->where('academic_year', $currentAcademicYear)
+                                  ->where('is_active', true)
+                                  ->where('enrollment_status', 'enrolled')
+                                  ->where('is_paid', true);
+            
+            // Add strand filter if provided
+            if ($strand) {
+                $studentQuery->where('strand', $strand);
+            }
+            
+            // Add track filter if provided
+            if ($track) {
+                $studentQuery->where('track', $track);
+            }
+            
+            // Get students with full details
+            $students = $studentQuery->select(
+                'student_id', 'first_name', 'middle_name', 'last_name', 'suffix',
+                'grade_level', 'section', 'strand', 'track', 'contact_number', 'is_active'
+            )->get()->map(function($student) {
+                return [
+                    'student_id' => $student->student_id,
+                    'first_name' => $student->first_name,
+                    'middle_name' => $student->middle_name,
+                    'last_name' => $student->last_name,
+                    'suffix' => $student->suffix,
+                    'grade_level' => $student->grade_level,
+                    'section' => $student->section,
+                    'strand' => $student->strand,
+                    'track' => $student->track,
+                    'contact_number' => $student->contact_number,
+                    'is_active' => $student->is_active
+                ];
+            });
+            
+            // Build adviser query
+            $adviserQuery = FacultyAssignment::where('academic_year', $currentAcademicYear)
+                                           ->where('assignment_type', 'class_adviser')
+                                           ->where('grade_level', $gradeLevel)
+                                           ->where('section', $sectionName)
+                                           ->where('status', 'active');
+            
+            // Add strand and track filters for adviser
+            if ($strand) {
+                $adviserQuery->where('strand', $strand);
+            }
+            if ($track) {
+                $adviserQuery->where('track', $track);
+            }
+            
+            $adviser = $adviserQuery->with(['teacher.user'])->first();
+            
+            $adviserData = null;
+            if ($adviser) {
+                $adviserData = [
+                    'name' => $adviser->teacher->user->name ?? 'Unknown',
+                    'assigned_date' => $adviser->assigned_date->format('M d, Y')
+                ];
+            }
+            
+            // Get subject teachers for this class
+            $subjectTeachersQuery = FacultyAssignment::where('academic_year', $currentAcademicYear)
+                                                   ->where('assignment_type', 'subject_teacher')
+                                                   ->where('grade_level', $gradeLevel)
+                                                   ->where('section', $sectionName)
+                                                   ->where('status', 'active');
+            
+            // Add strand and track filters for subject teachers
+            if ($strand) {
+                $subjectTeachersQuery->where('strand', $strand);
+            }
+            if ($track) {
+                $subjectTeachersQuery->where('track', $track);
+            }
+            
+            $subjectTeachers = $subjectTeachersQuery->with(['teacher.user', 'subject'])
+                                                  ->get()
+                                                  ->map(function($assignment) {
+                                                      return [
+                                                          'teacher_name' => $assignment->teacher->user->name ?? 'Unknown',
+                                                          'subject_name' => $assignment->subject->subject_name ?? 'Unknown Subject',
+                                                          'subject_code' => $assignment->subject->subject_code ?? null
+                                                      ];
+                                                  });
+            
+            return response()->json([
+                'success' => true,
+                'details' => [
+                    'students' => $students,
+                    'adviser' => $adviserData,
+                    'subject_teachers' => $subjectTeachers,
+                    'grade_level' => $gradeLevel,
+                    'section' => $sectionName,
+                    'strand' => $strand,
+                    'track' => $track
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error loading section details: ' . $e->getMessage()
+            ], 500);
         }
     }
 

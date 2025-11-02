@@ -19,6 +19,22 @@ function initializeCashierPayments() {
     
     // Setup action handlers
     setupActionHandlers();
+    
+    // Setup real-time updates
+    setupRealTimeUpdates();
+}
+
+function setupRealTimeUpdates() {
+    // Real-time updates every 30 seconds for pending payments
+    setInterval(() => {
+        loadPaymentStatistics();
+        // Only reload table if no modals are open to avoid disrupting user interaction
+        if (!document.querySelector('.modal.show')) {
+            loadPaymentSchedules();
+        }
+    }, 30000);
+    
+    console.log('Real-time updates enabled for pending payments');
 }
 
 function loadPaymentStatistics() {
@@ -254,6 +270,78 @@ function processPayment(paymentId, action) {
     });
 }
 
+// Process individual payment installment (for partial payments)
+function processIndividualPayment(paymentId, action) {
+    const actionText = action === 'approve' ? 'approve' : 'reject';
+    
+    if (!confirm(`Are you sure you want to ${actionText} this individual payment?`)) {
+        return;
+    }
+    
+    let reason = '';
+    if (action === 'reject') {
+        reason = prompt('Please enter reason for rejection:');
+        if (!reason) {
+            showAlert('Reason is required for rejection.', 'warning');
+            return;
+        }
+    }
+    
+    const requestData = {
+        action: action,
+        reason: reason
+    };
+    
+    fetch(`/cashier/api/payment-schedules/individual/${paymentId}/process`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify(requestData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert(data.message, 'success');
+            
+            // Update the specific payment row in the modal
+            updatePaymentRowStatus(paymentId, data.payment.status);
+            
+            // Reload payment schedules and statistics
+            loadPaymentSchedules();
+            loadPaymentStatistics();
+        } else {
+            showAlert(data.message || `Failed to ${actionText} payment.`, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error processing individual payment:', error);
+        showAlert(`Error processing payment: ${error.message}`, 'danger');
+    });
+}
+
+function updatePaymentRowStatus(paymentId, status) {
+    // Find and update the payment row in the modal
+    const paymentRow = document.querySelector(`[data-payment-id="${paymentId}"]`);
+    if (paymentRow) {
+        const statusCell = paymentRow.querySelector('.payment-status');
+        const actionCell = paymentRow.querySelector('.payment-actions');
+        
+        if (statusCell) {
+            if (status === 'confirmed') {
+                statusCell.innerHTML = '<span class="badge bg-success">Paid</span>';
+            } else if (status === 'rejected') {
+                statusCell.innerHTML = '<span class="badge bg-danger">Rejected</span>';
+            }
+        }
+        
+        if (actionCell && status !== 'pending') {
+            actionCell.innerHTML = '<span class="text-muted">Processed</span>';
+        }
+    }
+}
+
 function viewPaymentDetails(paymentId) {
     // Fetch payment details and show in modal
     fetch(`/cashier/api/payment-schedules/${paymentId}`, {
@@ -420,16 +508,6 @@ function applyFilters() {
     loadPaymentSchedules(filters);
 }
 
-function setupRealTimeUpdates() {
-    // Refresh data every 30 seconds
-    setInterval(() => {
-        loadPaymentStatistics();
-        // Only reload table if no modals are open
-        if (!document.querySelector('.modal.show')) {
-            loadPaymentSchedules();
-        }
-    }, 30000);
-}
 
 function setupActionHandlers() {
     // Setup bulk actions if needed
@@ -528,15 +606,43 @@ window.displayPaymentScheduleModal = function(schedule) {
                                             <th>Amount</th>
                                             <th>Due Date</th>
                                             <th>Status</th>
+                                            <th>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        ${schedule.payments.map(payment => `
-                                            <tr>
+                                        ${schedule.payments.map((payment, index) => `
+                                            <tr data-payment-id="${payment.id}">
                                                 <td>${payment.period_name}</td>
                                                 <td>₱${formatNumber(payment.amount)}</td>
                                                 <td>${formatDate(payment.scheduled_date)}</td>
-                                                <td><span class="badge bg-${payment.status === 'confirmed' ? 'success' : 'warning'}">${payment.status === 'confirmed' ? 'Paid' : 'Not yet paid'}</span></td>
+                                                <td class="payment-status">
+                                                    ${payment.confirmation_status === 'confirmed' ? 
+                                                        '<span class="badge bg-success">Paid</span>' : 
+                                                        payment.confirmation_status === 'rejected' ? 
+                                                        '<span class="badge bg-danger">Rejected</span>' : 
+                                                        '<span class="badge bg-warning">Not yet paid</span>'
+                                                    }
+                                                </td>
+                                                <td class="payment-actions">
+                                                    ${(payment.confirmation_status === 'pending' || !payment.confirmation_status) ? `
+                                                        ${index === 0 || (schedule.payments[index - 1] && schedule.payments[index - 1].confirmation_status === 'confirmed') ? `
+                                                            <button type="button" class="btn btn-success btn-sm me-1" 
+                                                                onclick="processIndividualPayment(${payment.id}, 'approve')" 
+                                                                title="Approve this payment">
+                                                                <i class="ri-check-line"></i>
+                                                            </button>
+                                                            <button type="button" class="btn btn-danger btn-sm" 
+                                                                onclick="processIndividualPayment(${payment.id}, 'reject')" 
+                                                                title="Reject this payment">
+                                                                <i class="ri-close-line"></i>
+                                                            </button>
+                                                        ` : `
+                                                            <span class="text-muted small">Pay previous first</span>
+                                                        `}
+                                                    ` : `
+                                                        <span class="text-muted">Processed</span>
+                                                    `}
+                                                </td>
                                             </tr>
                                         `).join('')}
                                     </tbody>
@@ -546,10 +652,10 @@ window.displayPaymentScheduleModal = function(schedule) {
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                        ${schedule.status === 'pending' ? `
-                            <button type="button" class="btn btn-success" onclick="approvePaymentSchedule(${schedule.student.id}, '${schedule.payment_method}')">Approve Schedule</button>
-                            <button type="button" class="btn btn-danger" onclick="rejectPaymentSchedule(${schedule.student.id}, '${schedule.payment_method}')">Reject Schedule</button>
-                        ` : ''}
+                        <div class="text-muted small">
+                            <i class="ri-information-line me-1"></i>
+                            Approve payments individually. First quarter must be approved before others.
+                        </div>
                     </div>
                 </div>
             </div>
@@ -874,3 +980,4 @@ window.confirmFromModal = confirmFromModal;
 window.rejectFromModal = rejectFromModal;
 window.processConfirmation = processConfirmation;
 window.processRejection = processRejection;
+window.processIndividualPayment = processIndividualPayment;

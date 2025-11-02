@@ -264,7 +264,7 @@
                 <td>
                   @switch($submission->status)
                     @case('draft')
-                      <span class="badge bg-secondary">Draft</span>
+                      <span class="badge bg-warning">Pending Review</span>
                       @break
                     @case('submitted')
                       <span class="badge bg-warning">Under Review</span>
@@ -273,7 +273,7 @@
                       <span class="badge bg-success">Approved</span>
                       @break
                     @case('rejected')
-                      <span class="badge bg-danger">Rejected</span>
+                      <span class="badge bg-warning">Revised</span>
                       @break
                   @endswitch
                 </td>
@@ -301,5 +301,5 @@
 </x-teacher-layout>
 
 @push('scripts')
-<script src="{{ asset('js/teacher-dashboard.js') }}"></script>
+@vite('resources/js/teacher-dashboard.js')
 @endpush

@@ -68,13 +68,15 @@
         <div class="card-body">
           <div class="row">
             <div class="col-md-4">
-              <label class="form-label">Select Quarter</label>
-              <select name="quarter" class="form-select" required onchange="loadGradesForQuarter(this.value)">
-                <option value="1st" {{ request('quarter', '1st') === '1st' ? 'selected' : '' }}>1st Quarter</option>
-                <option value="2nd" {{ request('quarter') === '2nd' ? 'selected' : '' }}>2nd Quarter</option>
-                <option value="3rd" {{ request('quarter') === '3rd' ? 'selected' : '' }}>3rd Quarter</option>
-                <option value="4th" {{ request('quarter') === '4th' ? 'selected' : '' }}>4th Quarter</option>
-              </select>
+              <label class="form-label">Quarter</label>
+              <div class="form-control-plaintext">
+                <span class="badge bg-primary fs-6">{{ request('quarter', '1st') }} Quarter</span>
+                <div class="small text-muted mt-1">
+                  <i class="ri-lock-line me-1"></i>Set by Faculty Head
+                </div>
+              </div>
+              <!-- Hidden field to maintain the quarter value -->
+              <input type="hidden" name="quarter" value="{{ request('quarter', '1st') }}">
             </div>
             <div class="col-md-8">
               <label class="form-label">Submission Notes (Optional)</label>
@@ -144,8 +146,8 @@
             <div class="row mt-4">
               <div class="col-12">
                 <div class="d-flex gap-2">
-                  <button type="submit" name="action" value="save_draft" class="btn btn-outline-primary">
-                    <i class="ri-save-line me-2"></i>Save as Draft
+                  <button type="submit" name="action" value="save_draft" class="btn btn-outline-warning">
+                    <i class="ri-time-line me-2"></i>Save as Pending Review
                   </button>
                   <button type="submit" name="action" value="submit_for_review" class="btn btn-success" onclick="return confirmSubmission()">
                     <i class="ri-send-plane-line me-2"></i>Submit for Review
@@ -205,11 +207,7 @@ function confirmSubmission() {
     return confirm('Are you sure you want to submit these grades for faculty head review? You won\'t be able to edit them once submitted.');
 }
 
-function loadGradesForQuarter(quarter) {
-    const currentUrl = new URL(window.location.href);
-    currentUrl.searchParams.set('quarter', quarter);
-    window.location.href = currentUrl.toString();
-}
+// Quarter loading function removed - quarter is now controlled by faculty head
 
 // Auto-save functionality (optional)
 let autoSaveTimer;

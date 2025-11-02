@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('faculty_assignments', function (Blueprint $table) {
             // Add strand and track fields for Senior High School assignments
-            $table->string('strand')->nullable()->after('section')->comment('For SHS: STEM, ABM, HUMSS, GAS, TVL');
+            $table->string('strand')->nullable()->after('section')->comment('For SHS: STEM, ABM, HUMSS, TVL');
             $table->string('track')->nullable()->after('strand')->comment('For TVL strand: ICT, H.E., etc.');
         });
     }

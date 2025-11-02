@@ -25,6 +25,7 @@
   <!-- Faculty Head JavaScript - Load in HEAD for onclick handlers -->
   @vite('resources/js/faculty-head-assign-teacher.js')
   @vite('resources/js/faculty-head-activate-submission.js')
+  @vite('resources/js/faculty-head-view-grades.js')
 
 </head>
 <body>
@@ -51,14 +52,8 @@
           </li>
           
           <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('faculty-head.assign-adviser.*') ? 'active' : '' }}" href="{{ route('faculty-head.assign-adviser') }}">
-              <i class="ri-user-star-line me-2"></i>Assign Adviser per Class
-            </a>
-          </li>
-          
-          <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('faculty-head.assign-teacher.*') ? 'active' : '' }}" href="{{ route('faculty-head.assign-teacher') }}">
-              <i class="ri-user-settings-line me-2"></i>Assign Teacher per Subject/Section
+            <a class="nav-link {{ request()->routeIs('faculty-head.assign-faculty') || request()->routeIs('faculty-head.assign-teacher.*') || request()->routeIs('faculty-head.assign-adviser.*') ? 'active' : '' }}" href="{{ route('faculty-head.assign-faculty') }}">
+              <i class="ri-team-line me-2"></i>Faculty Assignments
             </a>
           </li>
           

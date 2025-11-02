@@ -39,18 +39,9 @@
       <div class="col-6 col-lg-3">
         <div class="card card-summary card-schedule h-100">
           <div class="card-body text-center">
-            <i class="ri-close-circle-line display-6 mb-2 text-danger"></i>
-            <div>Rejected</div>
+            <i class="ri-edit-circle-line display-6 mb-2 text-warning"></i>
+            <div>Revised</div>
             <h3>{{ $stats['rejected'] }}</h3>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-lg-3">
-        <div class="card card-summary card-application h-100">
-          <div class="card-body text-center">
-            <i class="ri-file-edit-line display-6 mb-2 text-secondary"></i>
-            <div>Drafts</div>
-            <h3>{{ $stats['draft'] }}</h3>
           </div>
         </div>
       </div>
@@ -218,36 +209,26 @@
     @else
     <!-- SUBMISSIONS LIST -->
 
-    <!-- FILTER TABS -->
+    <!-- SUBMISSIONS LIST WITH FILTER -->
     <div class="card mb-4">
       <div class="card-header">
-        <ul class="nav nav-tabs card-header-tabs" id="submissionTabs" role="tablist">
-          <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab">
-              All Submissions
-            </button>
-          </li>
-          <li class="nav-item" role="presentation">
-            <button class="nav-link" id="submitted-tab" data-bs-toggle="tab" data-bs-target="#submitted" type="button" role="tab">
-              Submitted
-            </button>
-          </li>
-          <li class="nav-item" role="presentation">
-            <button class="nav-link" id="approved-tab" data-bs-toggle="tab" data-bs-target="#approved" type="button" role="tab">
-              Approved
-            </button>
-          </li>
-          <li class="nav-item" role="presentation">
-            <button class="nav-link" id="rejected-tab" data-bs-toggle="tab" data-bs-target="#rejected" type="button" role="tab">
-              Rejected
-            </button>
-          </li>
-        </ul>
+        <div class="d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">
+            <i class="ri-list-check me-2"></i>Grade Submissions
+          </h5>
+          <div class="d-flex align-items-center gap-3">
+            <label class="form-label mb-0 me-2">Filter by Status:</label>
+            <select class="form-select" id="statusFilter" style="width: auto;">
+              <option value="all">All Submissions</option>
+              <option value="submitted">Submitted</option>
+              <option value="approved">Approved</option>
+              <option value="revised">Revised</option>
+            </select>
+          </div>
+        </div>
       </div>
       <div class="card-body">
-        <div class="tab-content" id="submissionTabsContent">
-          <!-- ALL SUBMISSIONS -->
-          <div class="tab-pane fade show active" id="all" role="tabpanel">
+        <div id="submissionsTable">
             <div class="table-responsive">
               <table class="table table-hover">
                 <thead>
@@ -263,7 +244,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  @forelse($pendingSubmissions as $submission)
+                  @forelse($allSubmissions as $submission)
                   <tr>
                     <td>{{ $submission->teacher->user->name }}</td>
                     <td>{{ $submission->subject->subject_name }}</td>
@@ -297,7 +278,7 @@
                           <span class="badge bg-success">Approved</span>
                           @break
                         @case('rejected')
-                          <span class="badge bg-danger">Rejected</span>
+                          <span class="badge bg-warning">Revised</span>
                           @break
                       @endswitch
                     </td>
@@ -324,7 +305,7 @@
             </div>
           </div>
           
-          <!-- Other tab contents would be similar with filtered data -->
+          <!-- Other tabs are handled by JavaScript filtering -->
         </div>
       </div>
     </div>
@@ -332,6 +313,4 @@
   </main>
 </x-faculty-head-layout>
 
-@push('scripts')
-@vite('resources/js/faculty-head-view-grades.js')
-@endpush
+
