@@ -91,8 +91,10 @@ class DisciplineController extends Controller
         $totalViolations = Violation::count();
         $pendingViolations = Violation::where('status', 'pending')->count();
         $violationsToday = Violation::whereDate('violation_date', now()->toDateString())->count();
-        $majorViolations = Violation::where('severity', 'major')->count();
-        $severeViolations = Violation::where('severity', 'severe')->count();
+
+    $majorViolations = Violation::where('severity', 'major')->count();
+    $minorViolations = Violation::where('severity', 'minor')->count();
+    $severeViolations = Violation::where('severity', 'severe')->count();
 
         // Get weekly violations (last 7 days)
         $weeklyViolations = Violation::with(['student', 'reportedBy'])
@@ -109,6 +111,7 @@ class DisciplineController extends Controller
             'pending_violations' => $pendingViolations,
             'violations_today' => $violationsToday,
             'major_violations' => $majorViolations,
+            'minor_violations' => $minorViolations,
             'severe_violations' => $severeViolations,
             'weekly_violations' => $weeklyViolations->count(),
         ];
@@ -856,4 +859,62 @@ class DisciplineController extends Controller
 
         return null;
     }
-}
+
+        /**
+     * Return minor and major violation counts as JSON for dashboard pie chart
+     */
+    public function getMinorMajorViolationStats()
+    {
+        $minor = \App\Models\Violation::where('severity', 'minor')->count();
+        $major = \App\Models\Violation::where('severity', 'major')->count();
+        return response()->json([
+            'minor' => $minor,
+            'major' => $major,
+        ]);
+    }
+
+
+
+        /**
+     * Return monthly minor and major violation counts for bar chart
+     */
+    public function getViolationBarStats()
+    {
+        $months = [];
+        $minorCounts = [];
+        $majorCounts = [];
+        // Get the last 12 months
+        for ($i = 11; $i >= 0; $i--) {
+            $date = now()->subMonths($i);
+            $label = $date->format('M Y');
+            $months[] = $label;
+            $minorCounts[] = \App\Models\Violation::where('severity', 'minor')
+                ->whereYear('violation_date', $date->year)
+                ->whereMonth('violation_date', $date->month)
+                ->count();
+            $majorCounts[] = \App\Models\Violation::where('severity', 'major')
+                ->whereYear('violation_date', $date->year)
+                ->whereMonth('violation_date', $date->month)
+                ->count();
+        }
+        return response()->json([
+            'labels' => $months,
+            'minor' => $minorCounts,
+            'major' => $majorCounts,
+        ]);
+    }
+            /**
+         * Return pending, ongoing, and completed case counts for dashboard pie chart
+         */
+        public function getCaseStatusStats()
+        {
+            $completed = \App\Models\CaseMeeting::where('status', 'completed')->count();
+            $inProgress = \App\Models\CaseMeeting::where('status', 'in_progress')->count();
+            $preCompleted = \App\Models\CaseMeeting::where('status', 'pre_completed')->count();
+            return response()->json([
+                'completed' => $completed,
+                'in_progress' => $inProgress,
+                'pre_completed' => $preCompleted,
+            ]);
+        }
+    }

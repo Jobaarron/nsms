@@ -399,7 +399,15 @@ Route::prefix('discipline')->name('discipline.')->group(function () {
     // Public routes
     Route::get('/login', [App\Http\Controllers\DisciplineController::class, 'showLogin'])->name('login');
     Route::post('/login', [App\Http\Controllers\DisciplineController::class, 'login'])->name('login.submit');
-    
+
+
+    // AJAX: Minor/Major violation stats for pie chart
+    Route::get('/minor-major-violation-stats', [App\Http\Controllers\DisciplineController::class, 'getMinorMajorViolationStats'])->name('minor-major-violation-stats');
+    // AJAX: Monthly bar chart stats
+    Route::get('/violation-bar-stats', [App\Http\Controllers\DisciplineController::class, 'getViolationBarStats'])->name('violation-bar-stats');
+    // AJAX: Case status pie chart (pending, ongoing, completed)
+    Route::get('/case-status-stats', [App\Http\Controllers\DisciplineController::class, 'getCaseStatusStats'])->name('case-status-stats');
+
     // Protected routes
     Route::middleware(['web'])->group(function () {
         // Dashboard
@@ -458,13 +466,24 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
     // Public routes
     Route::get('/login', [App\Http\Controllers\GuidanceController::class, 'showLogin'])->name('login');
     Route::post('/login', [App\Http\Controllers\GuidanceController::class, 'login'])->name('login.submit');
+    // API: Minor/Major violation stats for pie chart
+    Route::get('/minor-major-violation-stats', [App\Http\Controllers\GuidanceController::class, 'getMinorMajorViolationStats'])->name('minor-major-violation-stats');
     
     // Protected routes
     
     Route::middleware(['web'])->group(function () {
         // Dashboard
         Route::get('/', [App\Http\Controllers\GuidanceController::class, 'dashboard'])->name('dashboard');
-        
+            // API: Case status stats for dashboard pie chart
+            Route::get('/case-status-stats', [App\Http\Controllers\GuidanceController::class, 'getCaseStatusStats'])->name('case-status-stats');
+            // API: Closed cases per month for bar chart
+            Route::get('/closed-cases-stats', [App\Http\Controllers\GuidanceController::class, 'getClosedCasesStats'])->name('closed-cases-stats');
+            // API: Counseling sessions per month for bar chart
+            Route::get('/counseling-sessions-stats', [App\Http\Controllers\GuidanceController::class, 'getCounselingSessionsStats'])->name('counseling-sessions-stats');
+            // API: Discipline vs total students for histogram
+            Route::get('/discipline-vs-total-stats', [App\Http\Controllers\GuidanceController::class, 'getDisciplineVsTotalStats'])->name('discipline-vs-total-stats');
+            // API: Weekly violation list for dashboard
+            Route::get('/weekly-violations', [App\Http\Controllers\GuidanceController::class, 'getWeeklyViolations'])->name('weekly-violations');
         // Logout
         Route::post('/logout', [App\Http\Controllers\GuidanceController::class, 'logout'])->name('logout');
         
