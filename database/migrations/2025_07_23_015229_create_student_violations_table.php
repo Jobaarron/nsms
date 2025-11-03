@@ -28,7 +28,18 @@ return new class extends Migration
             $table->json('witnesses')->nullable(); // Array of witness names
             $table->text('evidence')->nullable(); // Description of evidence
             $table->json('attachments')->nullable(); // File paths for photos/documents
-            $table->enum('status', ['pending', 'investigating', 'in_progress', 'resolved', 'dismissed', 'forwarded'])->default('pending');
+            $table->enum('status', [
+                'pending',
+                'investigating',
+                'in_progress',
+                'resolved',
+                'dismissed',
+                'forwarded',
+                'scheduled',
+                'pre_completed',
+                'completed',
+                'submitted'
+            ])->default('pending');
             $table->text('sanction')->nullable();
             $table->text('resolution')->nullable();
             $table->foreignId('resolved_by')->nullable()->constrained('disciplines')->onDelete('set null');
