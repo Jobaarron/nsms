@@ -37,7 +37,7 @@ return new class extends Migration
                 'forwarded',
                 'scheduled',
                 'pre_completed',
-                'completed',
+                'case_closed',
                 'submitted'
             ])->default('pending');
             $table->text('sanction')->nullable();

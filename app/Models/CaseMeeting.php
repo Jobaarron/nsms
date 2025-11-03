@@ -244,7 +244,7 @@ class CaseMeeting extends Model
             'scheduled' => 'scheduled',
             'in_progress' => 'in_progress',
             'pre_completed' => 'pre_completed',
-            'completed' => 'completed',
+            'completed' => 'case_closed',
             'submitted' => 'submitted',
             'cancelled' => 'pending', // Return to pending if cancelled
             default => null
@@ -267,7 +267,7 @@ class CaseMeeting extends Model
                 $violation = $sanction->violation;
                 if ($violation) {
                     $violation->status = $newStatus;
-                    if ($newStatus === 'completed') {
+                    if ($newStatus === 'case_closed') {
                         $violation->resolved_at = now();
                         // Note: resolved_by might need to be set if there's a current user, but in model events, auth might not be available
                     }
