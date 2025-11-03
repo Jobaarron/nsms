@@ -380,7 +380,15 @@ Route::prefix('discipline')->name('discipline.')->group(function () {
     // Public routes
     Route::get('/login', [App\Http\Controllers\DisciplineController::class, 'showLogin'])->name('login');
     Route::post('/login', [App\Http\Controllers\DisciplineController::class, 'login'])->name('login.submit');
-    
+
+
+    // AJAX: Minor/Major violation stats for pie chart
+    Route::get('/minor-major-violation-stats', [App\Http\Controllers\DisciplineController::class, 'getMinorMajorViolationStats'])->name('minor-major-violation-stats');
+    // AJAX: Monthly bar chart stats
+    Route::get('/violation-bar-stats', [App\Http\Controllers\DisciplineController::class, 'getViolationBarStats'])->name('violation-bar-stats');
+    // AJAX: Case status pie chart (pending, ongoing, completed)
+    Route::get('/case-status-stats', [App\Http\Controllers\DisciplineController::class, 'getCaseStatusStats'])->name('case-status-stats');
+
     // Protected routes
     Route::middleware(['web'])->group(function () {
         // Dashboard

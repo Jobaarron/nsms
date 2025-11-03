@@ -24,7 +24,7 @@
         <!-- Statistics Cards -->
         <div class="row mb-4">
             <div class="col-xl-3 col-md-6 mb-3">
-                <div class="card border-0 shadow-sm h-100">
+                <div class="card border border-success h-100">
                     <div class="card-body d-flex align-items-center">
                         <div class="flex-shrink-0 me-3">
                             <div class="rounded-circle bg-primary bg-opacity-10 p-3">
@@ -40,7 +40,7 @@
             </div>
             
             <div class="col-xl-3 col-md-6 mb-3">
-                <div class="card border-0 shadow-sm h-100">
+                <div class="card border border-success h-100">
                     <div class="card-body d-flex align-items-center">
                         <div class="flex-shrink-0 me-3">
                             <div class="rounded-circle bg-warning bg-opacity-10 p-3">
@@ -56,7 +56,7 @@
             </div>
             
             <div class="col-xl-3 col-md-6 mb-3">
-                <div class="card border-0 shadow-sm h-100">
+                <div class="card border border-success h-100">
                     <div class="card-body d-flex align-items-center">
                         <div class="flex-shrink-0 me-3">
                             <div class="rounded-circle bg-success bg-opacity-10 p-3">
@@ -72,7 +72,7 @@
             </div>
             
             <div class="col-xl-3 col-md-6 mb-3">
-                <div class="card border-0 shadow-sm h-100">
+                <div class="card border border-success h-100">
                     <div class="card-body d-flex align-items-center">
                         <div class="flex-shrink-0 me-3">
                             <div class="rounded-circle bg-danger bg-opacity-10 p-3">
@@ -92,7 +92,7 @@
             <!-- Pie Chart for Case Statuses and Bar Chart for Closed Cases -->
             <div class="row mb-4 d-flex align-items-stretch">
                 <div class="col-lg-6 col-md-6 d-flex align-items-stretch">
-                    <div class="card border-0 shadow-sm h-100 w-100 d-flex flex-column">
+                    <div class="card border border-success h-100 w-100 d-flex flex-column">
                         <div class="card-header bg-white border-0 pb-0">
                             <h5 class="card-title mb-0">Case Status Overview</h5>
                         </div>
@@ -102,7 +102,7 @@
                     </div>
                 </div>
                 <div class="col-lg-6 col-md-6 d-flex align-items-stretch">
-                    <div class="card border-0 shadow-sm h-100 w-100 d-flex flex-column">
+                    <div class="card border border-success h-100 w-100 d-flex flex-column">
                         <div class="card-header bg-white border-0 pb-0">
                             <h5 class="card-title mb-0">Closed Cases Per Month</h5>
                         </div>
@@ -115,7 +115,7 @@
 
             <div class="row mb-4 d-flex align-items-stretch">
                 <div class="col-lg-6 col-md-8 d-flex align-items-stretch">
-                    <div class="card border-0 shadow-sm h-100 w-100 d-flex flex-column">
+                    <div class="card border border-success h-100 w-100 d-flex flex-column">
                         <div class="card-header bg-white border-0 pb-0">
                             <h5 class="card-title mb-0">Counseling Sessions Per Month</h5>
                         </div>
@@ -125,7 +125,7 @@
                     </div>
                 </div>
                 <div class="col-lg-6 col-md-8 d-flex align-items-stretch">
-                    <div class="card border-0 shadow-sm h-100 w-100 d-flex flex-column">
+                    <div class="card border border-success h-100 w-100 d-flex flex-column">
                         <div class="card-header bg-white border-0 pb-0">
                             <h5 class="card-title mb-0">Annual Students with Disciplinary Record vs Total Students</h5>
                         </div>
@@ -137,50 +137,12 @@
             </div>
 
             <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-            <script>
-                document.addEventListener('DOMContentLoaded', function() {
-                    loadCaseStatusPieChart();
-                    loadClosedCasesBarChart();
-                    loadCounselingSessionsBarChart();
-                    loadDisciplineVsTotalHistogram();
-                    // Load weekly violation list table
-                    fetch('/guidance/weekly-violations', {
-                        method: 'GET',
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest',
-                        }
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        const container = document.getElementById('weekly-violation-list-table');
-                        if (data.success && data.violations.length > 0) {
-                            let html = '<div class="table-responsive"><table class="table table-bordered table-striped table-sm mb-0">';
-                            html += '<thead><tr><th>#</th><th>Student Name</th><th>Violation</th><th>Date</th></tr></thead><tbody>';
-                            data.violations.forEach((v, i) => {
-                                html += `<tr>` +
-                                    `<td>${i + 1}</td>` +
-                                    `<td>${v.student_name || 'Unknown Student'}</td>` +
-                                    `<td>${v.violation_type || 'Violation'}</td>` +
-                                    `<td>${v.violation_date}</td>` +
-                                `</tr>`;
-                            });
-                            html += '</tbody></table></div>';
-                            container.innerHTML = html;
-                        } else {
-                            container.innerHTML = '<div class="text-muted">No violations in the last 7 days.</div>';
-                        }
-                    })
-                    .catch(() => {
-                        document.getElementById('weekly-violation-list-table').innerHTML = '<div class="text-danger">Failed to load weekly violations.</div>';
-                    });
-                });
-            </script>
+            <!-- Weekly Violation List table is now loaded by guidance-dashboard.js -->
 
         <!-- Weekly Violation List Table below charts -->
         <div class="row mb-4">
             <div class="col-12">
-                <div class="card border-0 shadow-sm">
+                <div class="card border border-success">
                     <div class="card-header bg-white border-0 pb-0">
                         <h5 class="card-title mb-0">Weekly Violation List</h5>
                     </div>

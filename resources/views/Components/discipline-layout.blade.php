@@ -89,6 +89,7 @@
       
       <!-- MAIN CONTENT -->
       {{ $slot }}
+        @stack('scripts')
     </div>
   </div>
 </body>
