@@ -15,11 +15,19 @@ class CaseMeeting extends Model
             // Only sync if status was changed
             if ($caseMeeting->isDirty('status')) {
                 $newStatus = $caseMeeting->status;
-                // Map case meeting status to violation status
                 $violationStatus = self::mapStatusToViolationStatus($newStatus);
                 if ($violationStatus) {
+                    // Update direct violations
                     foreach ($caseMeeting->violations as $violation) {
                         $violation->update(['status' => $violationStatus]);
+                    }
+                    // Update violations via sanctions (if not already updated)
+                    $caseMeeting->load('sanctions.violation');
+                    foreach ($caseMeeting->sanctions as $sanction) {
+                        $violation = $sanction->violation;
+                        if ($violation && $violation->status !== $violationStatus) {
+                            $violation->update(['status' => $violationStatus]);
+                        }
                     }
                 }
             }
@@ -236,7 +244,7 @@ class CaseMeeting extends Model
             'scheduled' => 'scheduled',
             'in_progress' => 'in_progress',
             'pre_completed' => 'pre_completed',
-            'completed' => 'completed',
+            'completed' => 'case_closed',
             'submitted' => 'submitted',
             'cancelled' => 'pending', // Return to pending if cancelled
             default => null
@@ -259,7 +267,7 @@ class CaseMeeting extends Model
                 $violation = $sanction->violation;
                 if ($violation) {
                     $violation->status = $newStatus;
-                    if ($newStatus === 'completed') {
+                    if ($newStatus === 'case_closed') {
                         $violation->resolved_at = now();
                         // Note: resolved_by might need to be set if there's a current user, but in model events, auth might not be available
                     }

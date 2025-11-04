@@ -66,19 +66,6 @@
                                     <button class="btn btn-outline-info btn-sm view-summary-btn" data-meeting-id="{{ $meeting->id }}" title="View Summary Report" data-bs-toggle="modal" data-bs-target="#viewSummaryModal">
                                         <i class="ri-file-text-line"></i>
                                     </button>
-                                    @foreach($meeting->sanctions as $sanction)
-                                        @if(!$sanction->is_approved)
-                                            <button class="btn btn-outline-success btn-sm approve-sanction-btn" data-sanction-id="{{ $sanction->id }}" title="Approve Sanction">
-                                                <i class="ri-check-line"></i>
-                                            </button>
-                                            <button class="btn btn-outline-danger btn-sm reject-sanction-btn" data-sanction-id="{{ $sanction->id }}" title="Reject Sanction">
-                                                <i class="ri-close-line"></i>
-                                            </button>
-                                            <button class="btn btn-outline-warning btn-sm revise-sanction-btn" data-sanction-id="{{ $sanction->id }}" title="Revise Sanction" data-bs-toggle="modal" data-bs-target="#reviseSanctionModal" data-sanction="{{ $sanction->sanction }}" data-notes="{{ $sanction->notes }}">
-                                                <i class="ri-edit-line"></i>
-                                            </button>
-                                        @endif
-                                    @endforeach
                                 </div>
                             </td>
                         </tr>

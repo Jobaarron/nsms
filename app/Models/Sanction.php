@@ -23,7 +23,12 @@ class Sanction extends Model
         'approved_by',
         'approved_at',
     ];
-
+    /**
+     * The primary key associated with the table.
+     *
+     * @var string
+     */
+    protected $primaryKey = 'sanction_id';
     protected $casts = [
         'is_automatic' => 'boolean',
         'is_approved' => 'boolean',
