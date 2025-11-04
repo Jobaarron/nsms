@@ -786,7 +786,83 @@
 
                         <div class="mb-3">
                             <label for="new_value" class="form-label">New Value <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="new_value" name="new_value" required>
+                            
+                            <!-- Text Input (default) -->
+                            <input type="text" class="form-control form-control-lg" id="new_value" name="new_value" required style="display: none;">
+                            
+                            <!-- Text Input with Uppercase (for names, addresses, etc.) -->
+                            <input type="text" class="form-control form-control-lg text-uppercase" id="new_value_uppercase" name="new_value_uppercase" oninput="this.value = this.value.toUpperCase()" style="display: none;">
+                            
+                            <!-- Email Input -->
+                            <input type="email" class="form-control form-control-lg" id="new_value_email" name="new_value_email" placeholder="example@email.com" style="display: none;">
+                            
+                            <!-- Tel Input -->
+                            <input type="tel" class="form-control form-control-lg" id="new_value_tel" name="new_value_tel" placeholder="09171234567" style="display: none;">
+                            
+                            <!-- Date Input -->
+                            <input type="date" class="form-control form-control-lg" id="new_value_date" name="new_value_date" style="display: none;">
+                            
+                            <!-- Textarea for longer text -->
+                            <textarea class="form-control form-control-lg text-uppercase" id="new_value_textarea" name="new_value_textarea" rows="2" oninput="this.value = this.value.toUpperCase()" style="display: none;"></textarea>
+                            
+                            <!-- Gender Dropdown -->
+                            <select class="form-select form-select-lg" id="new_value_gender" name="new_value_gender" style="display: none;">
+                                <option value="">-- Select Gender --</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                            </select>
+                            
+                            <!-- Student Type Dropdown -->
+                            <select class="form-select form-select-lg" id="new_value_student_type" name="new_value_student_type" style="display: none;">
+                                <option value="">-- Select Type --</option>
+                                <option value="new">New</option>
+                                <option value="transferee">Transferee</option>
+                                <option value="old">Old</option>
+                            </select>
+                            
+                            <!-- Grade Level Dropdown -->
+                            <select class="form-select form-select-lg" id="new_value_grade_level" name="new_value_grade_level" style="display: none;">
+                                <option value="">-- Select Grade --</option>
+                                <option value="Nursery">Nursery</option>
+                                <option value="Junior Casa">Junior Casa</option>
+                                <option value="Senior Casa">Senior Casa</option>
+                                <option value="Grade 1">Grade 1</option>
+                                <option value="Grade 2">Grade 2</option>
+                                <option value="Grade 3">Grade 3</option>
+                                <option value="Grade 4">Grade 4</option>
+                                <option value="Grade 5">Grade 5</option>
+                                <option value="Grade 6">Grade 6</option>
+                                <option value="Grade 7">Grade 7</option>
+                                <option value="Grade 8">Grade 8</option>
+                                <option value="Grade 9">Grade 9</option>
+                                <option value="Grade 10">Grade 10</option>
+                                <option value="Grade 11">Grade 11</option>
+                                <option value="Grade 12">Grade 12</option>
+                            </select>
+                            
+                            <!-- Strand Dropdown -->
+                            <select class="form-select form-select-lg" id="new_value_strand" name="new_value_strand" style="display: none;">
+                                <option value="">-- Select Strand --</option>
+                                <option value="STEM">STEM</option>
+                                <option value="ABM">ABM</option>
+                                <option value="HUMSS">HUMSS</option>
+                                <option value="TVL">TVL</option>
+                            </select>
+                            
+                            <!-- Track Dropdown -->
+                            <select class="form-select form-select-lg" id="new_value_track" name="new_value_track" style="display: none;">
+                                <option value="">-- Select Track --</option>
+                                <option value="ICT">ICT (Information and Communications Technology)</option>
+                                <option value="HE">HE (Home Economics)</option>
+                            </select>
+                            
+                            <!-- Last School Type Dropdown -->
+                            <select class="form-select form-select-lg" id="new_value_last_school_type" name="new_value_last_school_type" style="display: none;">
+                                <option value="">-- Select Type --</option>
+                                <option value="public">Public</option>
+                                <option value="private">Private</option>
+                            </select>
+                            
                             <div class="invalid-feedback"></div>
                         </div>
 

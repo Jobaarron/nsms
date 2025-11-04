@@ -41,8 +41,6 @@ export default defineConfig({
                 'resources/js/role-modals.js',
 
                 'resources/js/user-management.js',
-                'resources/js/admin-enrollment-management.js',
-                'resources/css/admin-enrollment-management.css',
                 'resources/js/enrollee-index.js',
                 'resources/js/registrar-applications.js',
                 'resources/js/registrar-approved.js',
