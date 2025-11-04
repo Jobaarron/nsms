@@ -524,14 +524,9 @@
         <script>
             // Global variables
             const totalAmount = {{ $totalAmount ?? 0 }};
-            const preferredScheduleDate = @if($student->enrollee && $student->enrollee->preferred_schedule) 
-                '{{ $student->enrollee->preferred_schedule->format('Y-m-d') }}'
-            @else 
-                '{{ now()->addDays(7)->format('Y-m-d') }}'
-            @endif;
+            const preferredScheduleDate = '{{ now()->addDays(7)->format('Y-m-d') }}';
             
-            console.log('Preferred schedule date loaded:', preferredScheduleDate);
-            console.log('Student enrollee data:', @json($student->enrollee ? ['id' => $student->enrollee->id, 'preferred_schedule' => $student->enrollee->preferred_schedule] : null));
+            console.log('Default schedule date loaded:', preferredScheduleDate);
             
             // Define functions globally FIRST so they can be accessed by onclick handlers
             window.populatePaymentDates = function() {

@@ -64,11 +64,6 @@
               <i class="ri-folder-line me-2"></i>Documents
             </a>
           </li>
-         <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('enrollee.schedule') ? 'active' : '' }}" href="{{ route('enrollee.schedule') }}">
-              <i class="ri-calendar-line me-2"></i>Schedule
-            </a>
-          </li>
           <li class="nav-item mb-2">
             <a class="nav-link {{ request()->routeIs('enrollee.notices') ? 'active' : '' }}" href="{{ route('enrollee.notices') }}">
               <i class="ri-notification-line me-2"></i>Notices
@@ -94,13 +89,6 @@
             <i class="ri-graduation-cap-line me-2"></i>
             Applicant Portal
           </h1>
-          {{-- <div class="btn-toolbar mb-2 mb-md-0">
-            <div class="btn-group me-2">
-              <span class="badge badge-status status-{{ strtolower(auth('enrollee')->user()->enrollment_status ?? 'pending') }}">
-                {{ ucfirst(auth('enrollee')->user()->enrollment_status ?? 'Pending') }}
-              </span>
-            </div>
-          </div> --}}
         </div>
 
         {{ $slot }}

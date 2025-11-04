@@ -70,67 +70,13 @@ function setupEventListeners() {
 
 // Setup tab event listeners
 function setupTabEventListeners() {
-    const appointmentsTab = document.getElementById('appointments-tab');
     const noticesTab = document.getElementById('notices-tab');
-    
-    if (appointmentsTab) {
-        appointmentsTab.addEventListener('click', function() {
-            loadAppointmentsData();
-        });
-    }
     
     if (noticesTab) {
         noticesTab.addEventListener('click', function() {
             loadNoticesData();
         });
     }
-}
-
-// Load appointments data
-function loadAppointmentsData() {
-    console.log('Loading appointments data...');
-    const loadingDiv = document.getElementById('appointments-loading');
-    const contentDiv = document.getElementById('appointments-content');
-    const emptyDiv = document.getElementById('appointments-empty');
-    const tableBody = document.getElementById('appointments-table-body');
-    
-    // Show loading state
-    if (loadingDiv) loadingDiv.style.display = 'block';
-    if (contentDiv) contentDiv.style.display = 'none';
-    if (emptyDiv) emptyDiv.style.display = 'none';
-    
-    fetch('/registrar/appointments', {
-        method: 'GET',
-        headers: {
-            'Accept': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': window.csrfToken || ''
-        }
-    })
-    .then(response => {
-        console.log('Appointments response status:', response.status);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-    })
-    .then(data => {
-        console.log('Appointments data received:', data);
-        if (loadingDiv) loadingDiv.style.display = 'none';
-        
-        if (data && data.appointments && data.appointments.length > 0) {
-            if (contentDiv) contentDiv.style.display = 'block';
-            // Handle appointments data here
-        } else {
-            console.log('No appointments found or empty response');
-            if (emptyDiv) emptyDiv.style.display = 'block';
-        }
-    })
-    .catch(error => {
-        console.error('Error loading appointments:', error);
-        if (loadingDiv) loadingDiv.style.display = 'none';
-        if (emptyDiv) emptyDiv.style.display = 'block';
-    });
 }
 
 // Load notices data

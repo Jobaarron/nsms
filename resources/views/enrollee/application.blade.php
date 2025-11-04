@@ -475,10 +475,6 @@
                                 <i class="ri-folder-line me-1"></i>
                                 My Documents
                             </a>
-                            <a href="{{ route('enrollee.schedule') }}" class="btn btn-outline-primary btn-sm">
-                                <i class="ri-calendar-line me-1"></i>
-                                Schedule
-                            </a>
                             @if($enrollee->enrollment_status === 'pending')
                             <button class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#dataChangeRequestModal">
                                 <i class="ri-file-edit-line me-1"></i>

@@ -69,7 +69,6 @@ class RegistrarController extends Controller
         $totalApplications = Enrollee::count();
         $pendingApplications = Enrollee::where('enrollment_status', 'pending')->count();
         $approvedApplications = Enrollee::where('enrollment_status', 'approved')->count();
-        $scheduledAppointments = Enrollee::whereNotNull('preferred_schedule')->count();
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -88,7 +87,6 @@ class RegistrarController extends Controller
             'totalApplications', 
             'pendingApplications', 
             'approvedApplications', 
-            'scheduledAppointments'
         ));
     }
 
@@ -270,46 +268,6 @@ class RegistrarController extends Controller
         }
     }
 
-    /**
-     * Get appointments data
-     */
-    public function getAppointments(): JsonResponse
-    {
-        try {
-            $appointments = Enrollee::whereNotNull('preferred_schedule')
-                ->select([
-                    'id', 'application_id', 'first_name', 'last_name', 'email',
-                    'preferred_schedule', 'grade_level_applied', 'enrollment_status',
-                    'created_at'
-                ])
-                ->orderBy('preferred_schedule', 'asc')
-                ->get()
-                ->map(function ($enrollee) {
-                    return [
-                        'id' => $enrollee->id,
-                        'application_id' => $enrollee->application_id,
-                        'full_name' => trim($enrollee->first_name . ' ' . $enrollee->last_name),
-                        'email' => $enrollee->email,
-                        'grade_level' => $enrollee->grade_level_applied,
-                        'preferred_schedule' => $enrollee->preferred_schedule,
-                        'status' => $enrollee->enrollment_status,
-                        'appointment_status' => $this->getAppointmentStatus($enrollee->preferred_schedule, $enrollee->enrollment_status),
-                        'created_at' => $enrollee->created_at->format('M d, Y')
-                    ];
-                });
-
-            return response()->json([
-                'success' => true,
-                'appointments' => $appointments
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error fetching appointments: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to fetch appointments'
-            ], 500);
-        }
-    }
 
     /**
      * Get notices data
@@ -424,26 +382,6 @@ class RegistrarController extends Controller
         }
     }
 
-    /**
-     * Get appointment status based on schedule and enrollment status
-     */
-    private function getAppointmentStatus($preferredSchedule, $enrollmentStatus)
-    {
-        if (!$preferredSchedule) return 'No Schedule';
-        
-        $scheduleDate = \Carbon\Carbon::parse($preferredSchedule);
-        $now = \Carbon\Carbon::now();
-        
-        if ($enrollmentStatus === 'approved') {
-            return 'Completed';
-        } elseif ($scheduleDate->isPast()) {
-            return 'Overdue';
-        } elseif ($scheduleDate->isToday()) {
-            return 'Today';
-        } else {
-            return 'Scheduled';
-        }
-    }
 
     /**
      * Show approved applications
@@ -640,63 +578,6 @@ class RegistrarController extends Controller
         }
     }
 
-    /**
-     * Schedule appointment
-     */
-    public function scheduleAppointment(Request $request, $id): JsonResponse
-    {
-        $request->validate([
-            'appointment_date' => 'required|date|after:today',
-            'appointment_time' => 'required|string',
-            'purpose' => 'required|string|max:255'
-        ]);
-
-        try {
-            // Try database ID first, then application_id
-            $application = Enrollee::where('id', $id)->first();
-            if (!$application) {
-                $application = Enrollee::where('application_id', $id)->firstOrFail();
-            }
-
-            // Combine date and time
-            $appointmentDateTime = $request->appointment_date . ' ' . $request->appointment_time;
-
-            $application->update([
-                'preferred_schedule' => $appointmentDateTime,
-                'appointment_purpose' => $request->purpose,
-                'appointment_scheduled_by' => Auth::id(),
-                'appointment_scheduled_at' => now()
-            ]);
-
-            // Create appointment notice
-            Notice::create([
-                'enrollee_id' => $application->id,
-                'title' => 'Appointment Scheduled',
-                'message' => "Your enrollment appointment has been scheduled for {$appointmentDateTime}. Purpose: {$request->purpose}. Please arrive 15 minutes early.",
-                'type' => 'info',
-                'priority' => 'high',
-                'is_global' => false,
-                'created_by' => Auth::id(),
-            ]);
-
-            Log::info('Appointment scheduled', [
-                'application_id' => $application->application_id,
-                'appointment_date' => $appointmentDateTime,
-                'scheduled_by' => Auth::id()
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Appointment scheduled successfully!'
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error scheduling appointment: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to schedule appointment'
-            ], 500);
-        }
-    }
 
     /**
      * Send notice to applicant
@@ -879,155 +760,8 @@ class RegistrarController extends Controller
         }
     }
 
-    /**
-     * Approve appointment
-     */
-    public function approveAppointment(Request $request, $id): JsonResponse
-    {
-        try {
-            // Try database ID first, then application_id
-            $application = Enrollee::where('id', $id)->first();
-            if (!$application) {
-                $application = Enrollee::where('application_id', $id)->firstOrFail();
-            }
 
-            $application->update([
-                'appointment_status' => 'approved',
-                'appointment_notes' => $request->notes ?? 'Appointment approved by registrar'
-            ]);
 
-            // Create notice
-            Notice::create([
-                'enrollee_id' => $application->id,
-                'title' => 'Appointment Approved',
-                'message' => 'Your appointment request has been approved. Please arrive on time for your scheduled appointment.',
-                'type' => 'success',
-                'priority' => 'normal',
-                'is_global' => false,
-                'created_by' => Auth::id(),
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Appointment approved successfully'
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error approving appointment: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to approve appointment'
-            ], 500);
-        }
-    }
-
-    /**
-     * Reject appointment
-     */
-    public function rejectAppointment(Request $request, $id): JsonResponse
-    {
-        $request->validate([
-            'notes' => 'required|string|max:500'
-        ]);
-
-        try {
-            // Try database ID first, then application_id
-            $application = Enrollee::where('id', $id)->first();
-            if (!$application) {
-                $application = Enrollee::where('application_id', $id)->firstOrFail();
-            }
-
-            $application->update([
-                'appointment_status' => 'rejected',
-                'appointment_notes' => $request->notes
-            ]);
-
-            // Create notice
-            Notice::create([
-                'enrollee_id' => $application->id,
-                'title' => 'Appointment Rejected',
-                'message' => 'Your appointment request has been rejected. Reason: ' . $request->notes,
-                'type' => 'error',
-                'priority' => 'normal',
-                'is_global' => false,
-                'created_by' => Auth::id(),
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Appointment rejected successfully'
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error rejecting appointment: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to reject appointment'
-            ], 500);
-        }
-    }
-
-    /**
-     * Update appointment schedule
-     */
-    public function updateAppointmentSchedule(Request $request, $id): JsonResponse
-    {
-        $request->validate([
-            'status' => 'required|in:pending,approved,rejected,completed',
-            'new_date' => 'nullable|date',
-            'new_time' => 'nullable|date_format:H:i',
-            'notes' => 'nullable|string|max:500'
-        ]);
-
-        try {
-            // Try database ID first, then application_id
-            $application = Enrollee::where('id', $id)->first();
-            if (!$application) {
-                $application = Enrollee::where('application_id', $id)->firstOrFail();
-            }
-
-            $updateData = [
-                'appointment_status' => $request->status,
-                'appointment_notes' => $request->notes ?? ''
-            ];
-
-            // Update schedule if provided
-            if ($request->new_date && $request->new_time) {
-                $newSchedule = $request->new_date . ' ' . $request->new_time;
-                $updateData['preferred_schedule'] = $newSchedule;
-            }
-
-            $application->update($updateData);
-
-            // Create notice
-            $noticeMessage = 'Your appointment has been updated. Status: ' . ucfirst($request->status);
-            if ($request->new_date && $request->new_time) {
-                $noticeMessage .= ' New schedule: ' . \Carbon\Carbon::parse($newSchedule)->format('M d, Y g:i A');
-            }
-            if ($request->notes) {
-                $noticeMessage .= ' Notes: ' . $request->notes;
-            }
-
-            Notice::create([
-                'enrollee_id' => $application->id,
-                'title' => 'Appointment Updated',
-                'message' => $noticeMessage,
-                'type' => $request->status === 'approved' ? 'success' : ($request->status === 'rejected' ? 'error' : 'info'),
-                'priority' => 'normal',
-                'is_global' => false,
-                'created_by' => Auth::id(),
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Appointment updated successfully'
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error updating appointment: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to update appointment'
-            ], 500);
-        }
-    }
 
     /**
      * Create notice

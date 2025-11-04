@@ -95,9 +95,6 @@ return new class extends Migration
             $table->timestamp('payment_completed_at')->nullable(); // When all required fees were paid
             
             // ENROLLMENT SCHEDULING
-            $table->date('preferred_schedule')->nullable();
-            $table->enum('appointment_status', ['pending', 'approved', 'rejected', 'completed'])->default('pending');
-            $table->text('appointment_notes')->nullable();
             $table->timestamp('enrollment_date')->nullable();
             $table->timestamp('application_date')->default(now());
             

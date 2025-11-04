@@ -166,44 +166,7 @@ class EnrolleeController extends Controller
     }
 
 
-    /**
-     * Show the enrollee schedule
-     */
-    public function schedule()
-    {
-        $enrollee = Auth::guard('enrollee')->user();
-        return view('enrollee.schedule', compact('enrollee'));
-    }
 
-    /**
-     * Update preferred schedule
-     */
-    public function updateSchedule(Request $request)
-    {
-        $enrollee = Auth::guard('enrollee')->user();
-        
-        // Only allow schedule changes for pending applications
-        if ($enrollee->enrollment_status !== 'pending') {
-            return redirect()->back()->with('error', 'Schedule can only be changed while your application is pending.');
-        }
-
-        $request->validate([
-            'preferred_schedule' => 'required|date|after:today',
-            'reason' => 'required|string|max:500'
-        ]);
-
-        try {
-            $enrollee->update([
-                'preferred_schedule' => $request->preferred_schedule,
-                'admin_notes' => ($enrollee->admin_notes ?? '') . "\n\nSchedule change requested on " . now()->format('Y-m-d H:i:s') . ": " . $request->reason
-            ]);
-            
-            return redirect()->back()->with('success', 'Schedule change request submitted successfully!');
-            
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Failed to update schedule. Please try again.');
-        }
-    }
 
     /**
      * Show the enrollee profile
@@ -464,45 +427,6 @@ class EnrolleeController extends Controller
         return view('enrollee.notices', compact('enrollee', 'unreadCount'));
     }
 
-    /**
-     * Request an appointment
-     */
-    public function requestAppointment(Request $request)
-    {
-        $enrollee = Auth::guard('enrollee')->user();
-        
-        $request->validate([
-            'appointment_type' => 'required|string',
-            'preferred_date' => 'required|date|after:today|before:' . date('Y-m-d', strtotime('+31 days')),
-            'preferred_time' => 'required|string',
-            'contact_method' => 'required|string|in:phone,email,in_person',
-            'appointment_notes' => 'nullable|string|max:500',
-        ]);
-
-        try {
-            // For now, we'll just log the appointment request
-            // In the future, this would save to an appointments database table
-            \Log::info('Appointment request from enrollee: ' . $enrollee->application_id, [
-                'enrollee_id' => $enrollee->id,
-                'appointment_type' => $request->appointment_type,
-                'preferred_date' => $request->preferred_date,
-                'preferred_time' => $request->preferred_time,
-                'contact_method' => $request->contact_method,
-                'notes' => $request->appointment_notes,
-            ]);
-
-            // Here you would typically:
-            // 1. Save to appointments table
-            // 2. Send email notification to admin
-            // 3. Send confirmation email to enrollee
-            
-            return redirect()->back()->with('success', 'Your appointment request has been submitted successfully! We will contact you within 24-48 hours to confirm your appointment.');
-            
-        } catch (\Exception $e) {
-            \Log::error('Appointment request error: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'Failed to submit appointment request. Please try again.');
-        }
-    }
 
     /**
      * Get single notice details

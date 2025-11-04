@@ -94,7 +94,6 @@ class EnrolleeSeeder extends Seeder
                 'total_fees_due' => 15000.00,
                 'total_paid' => 0.00,
                 'payment_completed_at' => null,
-                'preferred_schedule' => Carbon::parse('2025-01-15'),
                 'application_date' => Carbon::now()->subDays(5),
                 'is_active' => true,
                 'admin_notes' => 'New student application - pending document verification'
@@ -146,7 +145,6 @@ class EnrolleeSeeder extends Seeder
                 'total_fees_due' => 25000.00,
                 'total_paid' => 25000.00,
                 'payment_completed_at' => Carbon::now()->subDays(1),
-                'preferred_schedule' => Carbon::parse('2025-01-20'),
                 'application_date' => Carbon::now()->subDays(10),
                 'is_active' => true,
                 'admin_notes' => 'Excellent academic record - approved for STEM program'
@@ -197,7 +195,6 @@ class EnrolleeSeeder extends Seeder
                 'total_fees_due' => 12000.00,
                 'total_paid' => 0.00,
                 'payment_completed_at' => null,
-                'preferred_schedule' => Carbon::parse('2025-02-01'),
                 'application_date' => Carbon::now()->subDays(3),
                 'is_active' => true,
                 'admin_notes' => 'Scholarship applicant - requires document resubmission'
@@ -250,7 +247,6 @@ class EnrolleeSeeder extends Seeder
                 'total_fees_due' => 22000.00,
                 'total_paid' => 22000.00,
                 'payment_completed_at' => Carbon::now()->subDays(3),
-                'preferred_schedule' => Carbon::parse('2025-01-10'),
                 'application_date' => Carbon::now()->subDays(15),
                 'is_active' => true,
                 'admin_notes' => 'Continuing student - excellent academic performance'
@@ -303,7 +299,6 @@ class EnrolleeSeeder extends Seeder
                 'total_fees_due' => 15000.00,
                 'total_paid' => 0.00,
                 'payment_completed_at' => null,
-                'preferred_schedule' => Carbon::parse('2025-01-25'),
                 'application_date' => Carbon::now()->subDays(8),
                 'is_active' => false,
                 'admin_notes' => 'Application rejected due to incomplete requirements'

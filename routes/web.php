@@ -624,12 +624,7 @@ Route::prefix('enrollee')->name('enrollee.')->group(function () {
         Route::get('/documents/view/{index}', [EnrolleeController::class, 'viewDocument'])->name('documents.view');
         Route::get('/documents/download/{index}', [EnrolleeController::class, 'downloadDocument'])->name('documents.download');
         
-        // Schedule management
-        Route::get('/schedule', [EnrolleeController::class, 'schedule'])->name('schedule');
-        Route::put('/schedule', [EnrolleeController::class, 'updateSchedule'])->name('schedule.update');
         
-        // Appointment management
-        Route::post('/appointment/request', [EnrolleeController::class, 'requestAppointment'])->name('appointment.request');
         
         // Notices management
         Route::get('/notices', [EnrolleeController::class, 'notices'])->name('notices');
@@ -712,9 +707,6 @@ Route::prefix('registrar')->name('registrar.')->group(function () {
         Route::post('/applications/{id}/documents/status', [RegistrarController::class, 'updateDocumentStatus'])->name('applications.documents.status');
         Route::get('/documents/view/{path}', [RegistrarController::class, 'serveDocument'])->name('documents.serve')->where('path', '.*');
         
-        // Appointment management
-        Route::post('/applications/{id}/appointment', [RegistrarController::class, 'scheduleAppointment'])->name('applications.appointment');
-        Route::post('/applications/{id}/schedule', [RegistrarController::class, 'scheduleAppointment'])->name('applications.schedule');
         
         // Notice management
         Route::post('/applications/{id}/notice', [RegistrarController::class, 'sendNotice'])->name('applications.notice');
@@ -727,15 +719,10 @@ Route::prefix('registrar')->name('registrar.')->group(function () {
         Route::get('/approved', [RegistrarController::class, 'approved'])->name('approved');
         Route::post('/applications/{id}/generate-credentials', [RegistrarController::class, 'generateStudentCredentials'])->name('applications.generate-credentials');
         
-        // Appointments, Notices, and Documents data
-        Route::get('/appointments', [RegistrarController::class, 'getAppointments'])->name('appointments.get');
+        // Notices and Documents data
         Route::get('/notices', [RegistrarController::class, 'getNotices'])->name('notices.get');
         Route::get('/documents', [RegistrarController::class, 'getAllDocuments'])->name('documents.get');
         
-        // Appointment management
-        Route::post('/appointments/{id}/approve', [RegistrarController::class, 'approveAppointment'])->name('appointments.approve');
-        Route::post('/appointments/{id}/reject', [RegistrarController::class, 'rejectAppointment'])->name('appointments.reject');
-        Route::post('/appointments/{id}/schedule', [RegistrarController::class, 'updateAppointmentSchedule'])->name('appointments.schedule');
         
         // Notice management
         Route::post('/notices/create', [RegistrarController::class, 'createNotice'])->name('notices.create');

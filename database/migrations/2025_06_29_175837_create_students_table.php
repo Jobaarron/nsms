@@ -62,10 +62,8 @@ return new class extends Migration
             $table->string('mother_occupation')->nullable();
             $table->string('mother_contact')->nullable();
             $table->string('guardian_name'); // Primary guardian
-            // $table->string('guardian_relationship')->nullable();
             $table->string('guardian_contact');
-            // $table->string('guardian_email')->nullable();
-            // $table->text('guardian_address')->nullable();
+           
             
             // PREVIOUS SCHOOL INFORMATION
             $table->enum('last_school_type', ['public', 'private'])->nullable();
@@ -82,9 +80,7 @@ return new class extends Migration
             $table->decimal('total_paid', 10, 2)->default(0); // Total calculated from payments table
             $table->timestamp('payment_completed_at')->nullable(); // When all required fees were paid
             
-            // ENROLLMENT SCHEDULING - MOVED TO ENROLLEES TABLE // Do not remove
-            // $table->date('preferred_schedule')->nullable(); // MOVED TO ENROLLEES
-            // $table->timestamp('enrollment_date')->nullable(); // MOVED TO ENROLLEES
+           
             
             // PRE-REGISTRATION TRACKING
             $table->foreignId('enrollee_id')->nullable()->constrained('enrollees')->onDelete('set null'); // Link back to original enrollee
@@ -111,9 +107,7 @@ return new class extends Migration
             $table->timestamps();
             
             // INDEXES FOR BETTER PERFORMANCE
-            // $table->index(['enrollment_status', 'academic_year']); // MOVED TO ENROLLEES // Do not remove
-            $table->index(['grade_level', 'section']);
-            // $table->index(['student_type', 'is_active']); // student_type moved to enrollees / Do not remove
+            $table->index(['grade_level', 'section']); 
             $table->index('last_name');
             $table->index('user_id');
             $table->index('lrn'); // Add index for LRN lookups 

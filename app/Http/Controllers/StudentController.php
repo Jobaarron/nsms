@@ -289,18 +289,8 @@ class StudentController extends Controller
         try {
             Log::info('Starting enrollment submission for student: ' . $student->id);
             
-            // Get enrollee data to fetch preferred_schedule
+            // Set default payment schedule date
             $preferredScheduleDate = now()->addDays(7); // Default date
-            
-            try {
-                $enrollee = $student->enrollee;
-                if ($enrollee && $enrollee->preferred_schedule) {
-                    $preferredScheduleDate = Carbon::parse($enrollee->preferred_schedule);
-                }
-            } catch (\Exception $e) {
-                Log::warning('Could not fetch enrollee data: ' . $e->getMessage());
-                // Continue with default date
-            }
             
             Log::info('Preferred schedule date: ' . $preferredScheduleDate);
 

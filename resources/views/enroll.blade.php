@@ -618,40 +618,6 @@
                         @error('medical_history') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
 
-                    <!-- Payment & Schedule -->
-                    <div class="row mb-4">
-                        {{-- PAYMENT MODE SECTION - COMMENTED OUT FOR FUTURE STUDENT PORTAL IMPLEMENTATION
-                        <div class="col-md-6">
-                            <label for="payment_mode" class="form-label fw-semibold" style="color: var(--primary-color);">
-                                Mode of Payment
-                            </label>
-                            <select
-                                id="payment_mode"
-                                name="payment_mode"
-                                class="form-select form-select-lg @error('payment_mode') is-invalid @enderror"
-                            >
-                                <option value="">-- Select Mode --</option>
-                                <option value="cash" {{ old('payment_mode')=='cash'?'selected':'' }}>Cash</option>
-                                <option value="online payment" {{ old('payment_mode')=='Online Payment'?'selected':'' }}>Online Payment</option>
-                                <option value="installment" {{ old('payment_mode')=='installment'?'selected':'' }}>Installment</option>
-                                {{-- <option value="scholarship" {{ old('payment_mode')=='scholarship'?'selected':'' }}>Scholarship</option> --}}
-                            {{-- </select>
-                            @error('payment_mode') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                        </div> --}}
-                        {{-- <div class="col-md-6">
-                            <label for="preferred_schedule" class="form-label fw-semibold" style="color: var(--primary-color);">
-                                Preferred Schedule
-                            </label>
-                            <input
-                                type="date"
-                                id="preferred_schedule"
-                                name="preferred_schedule"
-                                class="form-control form-control-lg @error('preferred_schedule') is-invalid @enderror"
-                                value="{{ old('preferred_schedule') }}"
-                            >
-                            @error('preferred_schedule') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                        </div> --}}
-                    </div>
 
                     <button type="submit" class="btn btn-custom btn-lg w-100 mb-3">
                         <i class="ri-send-plane-line me-2"></i>Apply now

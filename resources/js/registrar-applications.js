@@ -65,9 +65,6 @@ function initializeSystem() {
                 case '#documents':
                     loadDocumentsData();
                     break;
-                case '#appointments':
-                    loadAppointmentsData();
-                    break;
                 case '#notices':
                     loadNoticesData();
                     break;
@@ -105,11 +102,6 @@ function initializeSystem() {
 
 // Initialize Bootstrap modals
 function initializeModals() {
-    // Initialize appointment modal
-    const appointmentModal = document.getElementById('appointmentReviewModal');
-    if (appointmentModal) {
-        new bootstrap.Modal(appointmentModal);
-    }
     
     // Initialize notice modals
     const createNoticeModal = document.getElementById('createNoticeModal');
@@ -1014,83 +1006,13 @@ function updatePagination(pagination) {
 
 // Setup tab event listeners
 function setupTabEventListeners() {
-    const appointmentsTab = document.getElementById('appointments-tab');
     const noticesTab = document.getElementById('notices-tab');
-    
-    if (appointmentsTab) {
-        appointmentsTab.addEventListener('click', function() {
-            loadAppointmentsData();
-        });
-    }
     
     if (noticesTab) {
         noticesTab.addEventListener('click', function() {
             loadNoticesData();
         });
     }
-}
-
-// Load appointments data
-function loadAppointmentsData() {
-    console.log('Loading appointments data...');
-    const loadingDiv = document.getElementById('appointments-loading');
-    const contentDiv = document.getElementById('appointments-content');
-    const emptyDiv = document.getElementById('appointments-empty');
-    const tableBody = document.getElementById('appointments-table-body');
-    
-    // Show loading state
-    if (loadingDiv) loadingDiv.style.display = 'block';
-    if (contentDiv) contentDiv.style.display = 'none';
-    if (emptyDiv) emptyDiv.style.display = 'none';
-    
-    fetch('/registrar/appointments', {
-        method: 'GET',
-        headers: {
-            'Accept': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': window.csrfToken || ''
-        }
-    })
-        .then(response => {
-            console.log('Appointments response status:', response.status);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log('Appointments data received:', data);
-            if (loadingDiv) loadingDiv.style.display = 'none';
-            
-            if (data.success && data.appointments && data.appointments.length > 0) {
-                // Populate appointments table
-                if (tableBody) {
-                    tableBody.innerHTML = '';
-                    data.appointments.forEach(appointment => {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td>${appointment.application_id || 'N/A'}</td>
-                            <td>${appointment.full_name || 'N/A'}</td>
-                            <td>${appointment.grade_level || 'N/A'}</td>
-                            <td>${formatDateTime(appointment.preferred_schedule)}</td>
-                            <td><span class="badge bg-${getAppointmentStatusColor(appointment.appointment_status)}">${appointment.appointment_status || 'Pending'}</span></td>
-                            <td><span class="badge bg-${getStatusColor(appointment.status)}">${appointment.status || 'Pending'}</span></td>
-                        `;
-                        tableBody.appendChild(row);
-                    });
-                }
-                if (contentDiv) contentDiv.style.display = 'block';
-            } else {
-                console.log('No appointments found or empty response');
-                if (emptyDiv) emptyDiv.style.display = 'block';
-            }
-        })
-        .catch(error => {
-            console.error('Error loading appointments:', error);
-            if (loadingDiv) loadingDiv.style.display = 'none';
-            if (emptyDiv) emptyDiv.style.display = 'block';
-            showAlert('Failed to load appointments: ' + error.message, 'error');
-        });
 }
 
 // Load notices data
@@ -1190,17 +1112,6 @@ function getStatusColor(status) {
         default: return 'secondary';
     }
 }
-
-function getAppointmentStatusColor(status) {
-    switch(status) {
-        case 'Completed': return 'success';
-        case 'Today': return 'warning';
-        case 'Scheduled': return 'info';
-        case 'Overdue': return 'danger';
-        default: return 'secondary';
-    }
-}
-
 
 function getPriorityColor(priority) {
     switch(priority) {
@@ -1976,8 +1887,6 @@ function submitNotice() {
     });
 }
 
-
-
 // Bulk approve applications
 function bulkApprove() {
     if (selectedApplications.length === 0) {
@@ -2437,9 +2346,6 @@ function refreshData() {
         case '#documents':
             loadDocumentsData();
             break;
-        case '#appointments':
-            loadAppointmentsData();
-            break;
         case '#notices':
             loadNoticesData();
             break;
@@ -2480,9 +2386,6 @@ function exportData() {
             break;
         case '#documents':
             params.append('type', 'documents');
-            break;
-        case '#appointments':
-            params.append('type', 'appointments');
             break;
         case '#notices':
             params.append('type', 'notices');
@@ -2710,201 +2613,7 @@ function sendBulkNotice() {
     bootstrap.Modal.getInstance(document.getElementById('bulkNoticeModal')).hide();
 }
 
-
-
-window.submitDecline = submitDecline;
-window.refreshApplications = refreshApplications;
-window.exportApplications = exportApplications;
-window.loadAppointmentsData = loadAppointmentsData;
-window.loadNoticesData = loadNoticesData;
-window.populateDocumentsModal = populateDocumentsModal;
-window.getDocumentStatusBadge = getDocumentStatusBadge;
-window.getFileIcon = getFileIcon;
-window.formatDateTime = formatDateTime;
-window.getStatusColor = getStatusColor;
-window.getAppointmentStatusColor = getAppointmentStatusColor;
-window.getPriorityColor = getPriorityColor;
-window.loadDocumentsData = loadDocumentsData;
-window.viewDocumentInTab = viewDocumentInTab;
-window.approveDocumentInTab = approveDocumentInTab;
-window.rejectDocumentInTab = rejectDocumentInTab;
-window.formatDate = formatDate;
-window.updateDocumentStatusInTab = updateDocumentStatusInTab;
-window.setupDocumentFilters = setupDocumentFilters;
-window.rejectDocument = rejectDocument;
-window.handleTabSwitching = handleTabSwitching;
-window.approveAppointment = approveAppointment;
-window.rejectAppointment = rejectAppointment;
-window.viewNotice = viewNotice;
-
-// Handle tab switching based on URL parameters
-function handleTabSwitching() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const activeTab = urlParams.get('tab');
-    
-    if (activeTab) {
-        // Deactivate all tabs
-        document.querySelectorAll('.nav-link').forEach(tab => {
-            tab.classList.remove('active');
-        });
-        document.querySelectorAll('.tab-pane').forEach(pane => {
-            pane.classList.remove('show', 'active');
-        });
-        
-        // Activate the specified tab
-        const tabButton = document.getElementById(`${activeTab}-tab`);
-        const tabPane = document.getElementById(activeTab);
-        
-        if (tabButton && tabPane) {
-            tabButton.classList.add('active');
-            tabPane.classList.add('show', 'active');
-            
-            // Load data for the active tab
-            switch(activeTab) {
-                case 'documents':
-                    // Documents are loaded server-side, no need to fetch
-                    break;
-                case 'appointments':
-                    loadAppointmentsData();
-                    break;
-                case 'notices':
-                    loadNoticesData();
-                    break;
-            }
-        }
-    }
-}
-
-
-// Appointment Management Functions
-function approveAppointment(applicationId) {
-    if (!confirm('Are you sure you want to approve this appointment?')) {
-        return;
-    }
-    
-    fetch(`/registrar/appointments/${applicationId}/approve`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-CSRF-TOKEN': window.csrfToken || ''
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showAlert(data.message, 'success');
-            // Reload page to show updated data
-            window.location.reload();
-        } else {
-            showAlert(data.message || 'Failed to approve appointment', 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Error approving appointment:', error);
-        showAlert('Failed to approve appointment', 'error');
-    });
-}
-
-function rejectAppointment(applicationId) {
-    const notes = prompt('Please provide a reason for rejecting this appointment:');
-    if (notes === null || notes.trim() === '') {
-        return;
-    }
-    
-    fetch(`/registrar/appointments/${applicationId}/reject`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-CSRF-TOKEN': window.csrfToken || ''
-        },
-        body: JSON.stringify({
-            notes: notes
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showAlert(data.message, 'success');
-            // Reload page to show updated data
-            window.location.reload();
-        } else {
-            showAlert(data.message || 'Failed to reject appointment', 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Error rejecting appointment:', error);
-        showAlert('Failed to reject appointment', 'error');
-    });
-}
-
-function scheduleAppointment(applicationId) {
-    // Populate modal with appointment data
-    document.getElementById('appt-app-id').textContent = applicationId;
-    
-    // Show the modal
-    const modal = new bootstrap.Modal(document.getElementById('appointmentReviewModal'));
-    modal.show();
-    
-    // Store current application ID for saving
-    window.currentAppointmentId = applicationId;
-}
-
-function saveAppointment() {
-    const applicationId = window.currentAppointmentId;
-    if (!applicationId) {
-        showAlert('No appointment selected', 'error');
-        return;
-    }
-    
-    const status = document.getElementById('appt-status-select').value;
-    const newDate = document.getElementById('appt-new-date').value;
-    const newTime = document.getElementById('appt-new-time').value;
-    const notes = document.getElementById('appt-notes').value;
-    
-    if (!status) {
-        showAlert('Please select a status', 'error');
-        return;
-    }
-    
-    fetch(`/registrar/appointments/${applicationId}/schedule`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-CSRF-TOKEN': window.csrfToken || ''
-        },
-        body: JSON.stringify({
-            status: status,
-            new_date: newDate,
-            new_time: newTime,
-            notes: notes
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showAlert(data.message, 'success');
-            // Close modal
-            const modal = bootstrap.Modal.getInstance(document.getElementById('appointmentReviewModal'));
-            modal.hide();
-            // Reload page to show updated data
-            window.location.reload();
-        } else {
-            showAlert(data.message || 'Failed to update appointment', 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Error updating appointment:', error);
-        showAlert('Failed to update appointment', 'error');
-    });
-}
-
-
-
-
-
+// View notice
 function viewNotice(noticeId) {
     fetch(`/registrar/notices/${noticeId}`, {
         method: 'GET',
@@ -2952,7 +2661,6 @@ window.declineApplication = declineApplication;
 window.sendNoticeToApplicant = sendNoticeToApplicant;
 window.approveAppointment = approveAppointment;
 window.rejectAppointment = rejectAppointment;
-window.scheduleAppointment = scheduleAppointment;
 window.viewNotice = viewNotice;
 window.openBulkNoticeModal = openBulkNoticeModal;
 window.openCreateNoticeModal = openCreateNoticeModal;
@@ -2964,7 +2672,6 @@ window.approveDocument = approveDocument;
 window.rejectDocument = rejectDocument;
 window.updateDocumentStatus = updateDocumentStatus;
 window.viewDocumentFile = viewDocumentFile;
-window.saveAppointment = saveAppointment;
 window.bulkApprove = bulkApprove;
 window.bulkDecline = bulkDecline;
 window.bulkSendNotice = bulkSendNotice;
