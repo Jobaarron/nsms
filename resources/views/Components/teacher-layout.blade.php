@@ -21,9 +21,7 @@
   @vite(['resources/css/index_teacher.css'])
   
   <!-- Teacher JavaScript - Load in HEAD for onclick handlers -->
-  {{-- Temporarily disabled teacher-dashboard.js as it interferes with statistics on other pages
   @vite('resources/js/teacher-dashboard.js')
-  --}}
 
   
 </head>
