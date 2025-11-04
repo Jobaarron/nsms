@@ -34,6 +34,22 @@
                             <i class="ri-image-add-line me-2"></i>ID Photo (JPG, PNG)
                         </label>
                         
+                        <!-- ID Photo Requirements Reminder -->
+                        <div class="alert alert-warning mb-3" style="border-left: 4px solid #ffc107;">
+                            <div class="d-flex align-items-start">
+                                <i class="ri-camera-line me-2 mt-1" style="color: #ffc107;"></i>
+                                <div>
+                                    <strong>ID Photo Requirements:</strong>
+                                    <ul class="mb-0 mt-1">
+                                        <li><span class="fw-medium">Plain white background</span> - No patterns or colors</li>
+                                        <li><span class="fw-medium">No accessories</span> - Remove hats, sunglasses, or jewelry</li>
+                                        <li><span class="fw-medium">Decent appearance</span> - Proper grooming and attire</li>
+                                        <li><span class="fw-medium">Not edited in any editing tools</span> - Digital/softcopy from photo studio establishment</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <!-- AJAX Upload Area -->
                         <div class="file-upload-area" id="id_photo_upload_area">
                             <div class="upload-zone" id="id_photo_zone">
@@ -328,12 +344,15 @@
                             <div class="d-flex align-items-start">
                                 <i class="ri-information-line me-2 mt-1" style="color: var(--primary-color);"></i>
                                 <div>
-                                    <strong>Required Documents:</strong>
+                                    <strong>Required Documents (Minimum 3 files):</strong>
                                     <ul class="mb-0 mt-1">
                                         <li><span class="fw-medium">Report Card/Form 137</span> - Previous academic records</li>
                                         <li><span class="fw-medium">Birth Certificate (PSA)</span> - Official birth certificate from PSA</li>
                                         <li><span class="fw-medium">Good Moral Certificate</span> - From previous school</li>
                                     </ul>
+                                    <div class="mt-2">
+                                        <small class="text-muted"><i class="ri-alert-line me-1"></i>You must upload at least 3 documents to proceed with enrollment.</small>
+                                    </div>
                                 </div>
                             </div>
                         </div>

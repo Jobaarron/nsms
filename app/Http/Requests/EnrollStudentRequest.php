@@ -104,8 +104,24 @@ class EnrollStudentRequest extends FormRequest
                 $validator->errors()->add('id_photo', 'ID Photo is required.');
             }
             
-            if (!$hasDocuments && (!$this->hasFile('documents') || empty($this->file('documents')))) {
-                $validator->errors()->add('documents', 'At least one document is required.');
+            // Count total documents from both AJAX and direct upload
+            $documentCount = 0;
+            
+            // Count AJAX uploaded documents
+            foreach ($tempFiles as $fileData) {
+                if ($fileData['type'] === 'documents') {
+                    $documentCount++;
+                }
+            }
+            
+            // Count directly uploaded documents
+            if ($this->hasFile('documents')) {
+                $documentCount += count($this->file('documents'));
+            }
+            
+            // Require at least 3 documents
+            if ($documentCount < 3) {
+                $validator->errors()->add('documents', 'You must upload at least 3 documents to proceed with enrollment.');
             }
         });
     }

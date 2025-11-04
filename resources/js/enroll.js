@@ -14,6 +14,7 @@ class FileUploadManager {
         this.setupGradeStrandLogic();
         this.setupGuardianAutoPopulation();
         this.setupFileUploads();
+        this.setupFormValidation();
     }
 
     setupDateValidation() {
@@ -348,9 +349,38 @@ class FileUploadManager {
                 </div>
             `).join('');
             preview.style.display = 'block';
+            
+            // Update document count indicator
+            this.updateDocumentCountIndicator();
         } else {
             uploadZone.style.display = 'block';
             preview.style.display = 'none';
+            this.updateDocumentCountIndicator();
+        }
+    }
+
+    updateDocumentCountIndicator() {
+        const uploadZone = document.getElementById('documents_zone');
+        const count = this.uploadedFiles.documents.length;
+        const required = 3;
+        
+        // Update upload zone text to show progress
+        const uploadText = uploadZone.querySelector('.upload-text');
+        const uploadSubtext = uploadZone.querySelector('.upload-subtext');
+        
+        if (count > 0) {
+            uploadText.innerHTML = `${count} of ${required} minimum documents uploaded`;
+            if (count < required) {
+                uploadSubtext.innerHTML = `<span style="color: #dc3545;">Upload ${required - count} more document(s)</span>`;
+                uploadZone.style.borderColor = '#dc3545';
+            } else {
+                uploadSubtext.innerHTML = `<span style="color: #198754;">✓ Minimum requirement met. You can upload more if needed.</span>`;
+                uploadZone.style.borderColor = '#198754';
+            }
+        } else {
+            uploadText.textContent = 'Click to upload or drag and drop';
+            uploadSubtext.textContent = 'PDF, JPG, PNG up to 8MB each';
+            uploadZone.style.borderColor = '';
         }
     }
 
@@ -377,6 +407,43 @@ class FileUploadManager {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
 
+    setupFormValidation() {
+        const form = document.querySelector('form');
+        if (!form) return;
+
+        form.addEventListener('submit', (e) => {
+            if (!this.validateFormSubmission()) {
+                e.preventDefault();
+                return false;
+            }
+        });
+    }
+
+    validateFormSubmission() {
+        const errors = [];
+
+        // Check ID photo requirement
+        if (!this.uploadedFiles.id_photo) {
+            errors.push('ID Photo is required.');
+        }
+
+        // Check minimum documents requirement
+        if (this.uploadedFiles.documents.length < 3) {
+            errors.push(`You must upload at least 3 documents. Currently uploaded: ${this.uploadedFiles.documents.length}`);
+        }
+
+        if (errors.length > 0) {
+            this.showError(errors.join(' '));
+            
+            // Scroll to top to show error
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            return false;
+        }
+
+        return true;
+    }
+
     showError(message) {
         // Create or update error alert
         let alert = document.querySelector('.file-upload-error');
@@ -385,14 +452,14 @@ class FileUploadManager {
             alert.className = 'alert alert-danger file-upload-error mt-2';
             document.querySelector('form').insertBefore(alert, document.querySelector('form').firstChild);
         }
-        alert.textContent = message;
+        alert.innerHTML = message;
         
-        // Auto-hide after 5 seconds
+        // Auto-hide after 8 seconds (longer for validation errors)
         setTimeout(() => {
             if (alert.parentNode) {
                 alert.parentNode.removeChild(alert);
             }
-        }, 5000);
+        }, 8000);
     }
 }
 
