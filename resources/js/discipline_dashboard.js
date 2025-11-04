@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var caseStatusPieChart = new Chart(ctx, {
       type: 'pie',
       data: {
-        labels: ['Completed', 'In Progress', 'Pre-Completed'],
+        labels: ['Case Closed', 'In Progress', 'Pre-Completed'],
         datasets: [{
           data: [0, 0, 0],
           backgroundColor: ['#28a745', '#17a2b8', '#ffc107'], // green, blue, yellow
@@ -39,13 +39,13 @@ document.addEventListener('DOMContentLoaded', function () {
       })
       .then(data => {
         console.log('Case status API data:', data);
-        if (!Object.prototype.hasOwnProperty.call(data, 'completed') ||
+        if (!Object.prototype.hasOwnProperty.call(data, 'case_closed') ||
             !Object.prototype.hasOwnProperty.call(data, 'in_progress') ||
             !Object.prototype.hasOwnProperty.call(data, 'pre_completed')) {
           throw new Error('Invalid data (missing key): ' + JSON.stringify(data));
         }
         caseStatusPieChart.data.datasets[0].data = [
-          Number(data.completed) || 0,
+          Number(data.case_closed) || 0,
           Number(data.in_progress) || 0,
           Number(data.pre_completed) || 0
         ];
