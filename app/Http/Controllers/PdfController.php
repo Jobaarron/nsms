@@ -48,22 +48,22 @@ class PdfController extends Controller
         // --- Upper form ---
         $pdf->SetXY(35, 38);
         $pdf->Write(0, $session->start_date ? $session->start_date->format('Y-m-d') : ($session->created_at ? $session->created_at->format('Y-m-d') : ''));
-        $pdf->SetXY(128, 37 );
-        $pdf->Write(0, $session->id ?? '');
-        $pdf->SetXY(45, 47);
-        $pdf->Write(0, $session->student->full_name ?? '');
-        $pdf->SetXY(129, 46);
-        $pdf->Write(0, $session->student->contact_number ?? '');
-        $pdf->SetXY(52, 51);
-        $pdf->Write(0, $session->student->grade_level ?? '');
-        $pdf->SetXY(47, 56);
-        $pdf->Write(0, $session->student->guardian_name ?? '');
-        $pdf->SetXY(136, 55);
-        $pdf->Write(0, $session->student->email ?? '');
-        $pdf->SetXY(34, 60);
-        $pdf->Write(0, $session->student->address ?? '');
-        $pdf->SetXY(140, 59);
-        $pdf->Write(0, $session->recommender->name ?? '');
+    $pdf->SetXY(128, 37 );
+    $pdf->Write(0, $session->id ?? '');
+    $pdf->SetXY(45, 47);
+    $pdf->Write(0, $session->student->full_name ?? '');
+    $pdf->SetXY(129, 46);
+    $pdf->Write(0, $session->student->contact_number ?? '');
+    $pdf->SetXY(52, 51);
+    $pdf->Write(0, $session->student->grade_level ?? '');
+    $pdf->SetXY(47, 56);
+    $pdf->Write(0, $session->student->guardian_name ?? '');
+    $pdf->SetXY(136, 55);
+    $pdf->Write(0, $session->student->email ?? '');
+    $pdf->SetXY(34, 60);
+    $pdf->Write(0, $session->student->address ?? '');
+    $pdf->SetXY(140, 59);
+    $pdf->Write(0, $session->recommender->name ?? '');
         $referralAcademic = is_array($session->referral_academic) ? $session->referral_academic : json_decode($session->referral_academic, true);
         $referralAcademicOther = $session->referral_academic_other ?? '';
         $referralSocial = is_array($session->referral_social) ? $session->referral_social : json_decode($session->referral_social, true);
@@ -214,7 +214,18 @@ class PdfController extends Controller
 
             // Overlay specific violation date and time
             $pdf->SetXY(120, 40); $pdf->Write(0, $violation->violation_date ? $violation->violation_date->format('Y-m-d') : '');
-            $pdf->SetXY(176, 40); $pdf->Write(0, $violation->violation_time ?? '');
+            $pdf->SetXY(176, 40);
+            if ($violation->violation_time) {
+                $time = $violation->violation_time;
+                if ($time instanceof \DateTimeInterface) {
+                    $formattedTime = $time->format('h:i A');
+                } else {
+                    $formattedTime = date('h:i A', strtotime($time));
+                }
+                $pdf->Write(0, $formattedTime);
+            } else {
+                $pdf->Write(0, '');
+            }
              
             // Overlay student printed name
             $pdf->SetXY(76, 292); $pdf->Write(0, $student->full_name ?? '');
@@ -269,7 +280,18 @@ class PdfController extends Controller
         }
         if ($violation) {
             $pdf->SetXY(120, 40); $pdf->Write(0, $violation->violation_date ? $violation->violation_date->format('Y-m-d') : '');
-            $pdf->SetXY(176, 40); $pdf->Write(0, $violation->violation_time ?? '');
+            $pdf->SetXY(176, 40);
+            if ($violation->violation_time) {
+                $time = $violation->violation_time;
+                if ($time instanceof \DateTimeInterface) {
+                    $formattedTime = $time->format('h:i A');
+                } else {
+                    $formattedTime = date('h:i A', strtotime($time));
+                }
+                $pdf->Write(0, $formattedTime);
+            } else {
+                $pdf->Write(0, '');
+            }
         }
         $pdf->SetXY(76, 292); $pdf->Write(0, $student->full_name ?? '');
 
@@ -341,7 +363,17 @@ class PdfController extends Controller
         $pdf->SetXY(120, 45); // Scheduled Date
         $pdf->Write(0, $caseMeeting->scheduled_date ? (is_string($caseMeeting->scheduled_date) ? $caseMeeting->scheduled_date : $caseMeeting->scheduled_date->format('Y-m-d')) : '');
         $pdf->SetXY(174, 45); // Scheduled Time
-        $pdf->Write(0, $caseMeeting->scheduled_time ? (is_string($caseMeeting->scheduled_time) ? $caseMeeting->scheduled_time : $caseMeeting->scheduled_time->format('H:i')) : '');
+        if ($caseMeeting->scheduled_time) {
+            $time = $caseMeeting->scheduled_time;
+            if ($time instanceof \DateTimeInterface) {
+                $formattedTime = $time->format('h:i A');
+            } else {
+                $formattedTime = date('h:i A', strtotime($time));
+            }
+            $pdf->Write(0, $formattedTime);
+        } else {
+            $pdf->Write(0, '');
+        }
         $pdf->SetXY(18, 90); // Teacher Statement
         $pdf->MultiCell(150, 8, $caseMeeting->teacher_statement ?? '');
         $pdf->SetXY(18, 199); // Action Plan
