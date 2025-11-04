@@ -411,7 +411,7 @@ function generateSummaryHTML(meeting) {
             </div>
             <div class="card-body">
                 <div class="d-flex flex-column gap-2">
-                    <a href="/admin/case-meetings/{{ $meeting->id }}/disciplinary-conference-report/pdf" target="_blank" class="btn btn-outline-primary btn-sm minimalist-attachment-btn"><i class="ri-download-2-line"></i> Disciplinary Conference Reports PDF</a>
+                    <a href="/admin/case-meetings/${meeting.id}/disciplinary-conference-report/pdf" target="_blank" class="btn btn-outline-primary btn-sm minimalist-attachment-btn"><i class="ri-download-2-line"></i> Disciplinary Conference Reports PDF</a>
                     ${hasNarrative
                         ? `<a href="/narrative-report/view/${meeting.student.id}/${meeting.violation_id}" target="_blank" class="btn btn-outline-primary btn-sm minimalist-attachment-btn"><i class="ri-attachment-2"></i> Student Narrative PDF</a>`
                         : ''}

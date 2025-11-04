@@ -8,10 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="base-url" content="{{ url('/') }}">
-    @vite(['resources/css/roles_access.css'])
-    @vite(['resources/js/role-modals.js'])
-    @vite(['resources/js/admin-role-access.js'])
-    @vite(['resources/js/user-management.js'])
+
     <!-- Modals -->
     @include('admin.role-modals')
     @include('admin.user-management-modals')
@@ -45,7 +42,7 @@
                     <i class="ri-key-line me-2"></i>Manage Permissions
                 </button>
             </li>
-            {{-- <li class="nav-item" role="presentation">
+            <li class="nav-item" role="presentation">
                 <button class="nav-link" id="manage-admins-tab" data-bs-toggle="tab" data-bs-target="#manage-admins" type="button" role="tab">
                     <i class="ri-admin-line me-2"></i>Admins
                 </button>
@@ -59,7 +56,7 @@
                 <button class="nav-link" id="manage-guidance-discipline-tab" data-bs-toggle="tab" data-bs-target="#manage-guidance-discipline" type="button" role="tab">
                     <i class="ri-heart-pulse-line me-2"></i>Guidance & Discipline
                 </button>
-            </li> --}}
+            </li> 
         </ul>
 
         <!-- Tab Content -->

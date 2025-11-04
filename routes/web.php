@@ -158,12 +158,12 @@ Route::prefix('admin')->group(function () {
                 Route::get('/export', [AdminEnrollmentController::class, 'export'])->name('export');
             });
             
-            // Contact Messages Management
-            Route::get('/contact-messages', [ContactController::class, 'adminIndex'])->name('admin.contact.messages');
-            Route::get('/contact-messages/{message}', [ContactController::class, 'show'])->name('admin.contact.show');
-            Route::post('/contact-messages/{message}/status', [ContactController::class, 'updateStatus'])->name('admin.contact.status');
-            Route::delete('/contact-messages/{message}', [ContactController::class, 'destroy'])->name('admin.contact.destroy');
-            Route::post('/contact-messages/bulk-action', [ContactController::class, 'bulkAction'])->name('admin.contact.bulk');
+        // Contact Messages Management
+        Route::get('/contact-messages', [ContactController::class, 'adminIndex'])->name('contact.messages');
+        Route::get('/contact-messages/{message}', [ContactController::class, 'show'])->name('contact.show');
+        Route::post('/contact-messages/{message}/status', [ContactController::class, 'updateStatus'])->name('contact.status');
+        Route::delete('/contact-messages/{message}', [ContactController::class, 'destroy'])->name('contact.destroy');
+        Route::post('/contact-messages/bulk-action', [ContactController::class, 'bulkAction'])->name('contact.bulk');
             
         });
     });
