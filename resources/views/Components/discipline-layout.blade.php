@@ -62,19 +62,6 @@
             </a>
           </li>
           
-          {{-- <li class="nav-item mb-2">
-            <span class="nav-link disabled d-flex justify-content-between align-items-center">
-              <span><i class="ri-bar-chart-line me-2"></i>Analytics</span>
-              <small class="badge bg-light text-dark">Soon</small>
-            </span>
-          </li>
-          
-          <li class="nav-item mb-2">
-            <span class="nav-link disabled d-flex justify-content-between align-items-center">
-              <span><i class="ri-settings-3-line me-2"></i>Settings</span>
-              <small class="badge bg-light text-dark">Soon</small>
-            </span>
-          </li> --}}
           
           <li class="nav-item mt-3">
             <form method="POST" action="{{ route('discipline.logout') }}">

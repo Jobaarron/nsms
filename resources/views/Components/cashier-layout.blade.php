@@ -22,10 +22,12 @@
     rel="stylesheet"
     />
 
-  <!-- App CSS (includes Bootstrap 5 via Vite) -->
+  
   @vite('resources/sass/app.scss')
+  @vite(['resources/js/app.js'])
   @vite(['resources/css/index_cashier.css'])
-
+  @vite(['resources/js/cashier-dashboard.js'])
+  @stack('scripts')
   @stack('styles')
 
   <style>
@@ -110,11 +112,11 @@
               <i class="ri-money-dollar-circle-line me-2"></i>Fee Management
             </a>
           </li>
-          {{-- <li class="nav-item mb-2">
+          <li class="nav-item mb-2">
             <a class="nav-link {{ request()->routeIs('cashier.reports') ? 'active' : '' }}" href="{{ route('cashier.reports') }}">
               <i class="ri-bar-chart-line me-2"></i>Reports
             </a>
-          </li> --}}
+          </li>
          
         </ul>
         
@@ -137,14 +139,5 @@
       </main>
     </div>
   </div>
-
-  <!-- Bootstrap JS -->
-  @vite(['resources/js/app.js'])
-  
-  <!-- Cashier Dashboard Scripts -->
-  @vite(['resources/js/cashier-dashboard.js'])
-  
-  <!-- Additional Scripts -->
-  @stack('scripts')
 </body>
 </html>

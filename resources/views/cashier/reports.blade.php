@@ -216,11 +216,18 @@
 
     @push('scripts')
         <script>
-            // Daily Payments Chart
-            const dailyCtx = document.getElementById('dailyPaymentsChart').getContext('2d');
-            const dailyPaymentsData = @json($dailyPayments);
-            
-            new Chart(dailyCtx, {
+            document.addEventListener('DOMContentLoaded', function() {
+                // Daily Payments Chart
+                const dailyCanvas = document.getElementById('dailyPaymentsChart');
+                if (!dailyCanvas) {
+                    console.error('Daily payments chart canvas not found');
+                    return;
+                }
+                
+                const dailyCtx = dailyCanvas.getContext('2d');
+                const dailyPaymentsData = @json($dailyPayments);
+                
+                new Chart(dailyCtx, {
                 type: 'line',
                 data: {
                     labels: dailyPaymentsData.map(item => new Date(item.date).toLocaleDateString()),
@@ -258,11 +265,17 @@
                 }
             });
 
-            // Payment Methods Chart
-            const methodsCtx = document.getElementById('paymentMethodsChart').getContext('2d');
-            const paymentMethodsData = @json($paymentMethods);
-            
-            new Chart(methodsCtx, {
+                // Payment Methods Chart
+                const methodsCanvas = document.getElementById('paymentMethodsChart');
+                if (!methodsCanvas) {
+                    console.error('Payment methods chart canvas not found');
+                    return;
+                }
+                
+                const methodsCtx = methodsCanvas.getContext('2d');
+                const paymentMethodsData = @json($paymentMethods);
+                
+                new Chart(methodsCtx, {
                 type: 'doughnut',
                 data: {
                     labels: paymentMethodsData.map(item => item.payment_method.replace('_', ' ').toUpperCase()),
@@ -290,6 +303,7 @@
                     }
                 }
             });
+            }); // End DOMContentLoaded
 
             // Date range functions
             function setDateRange(range) {
