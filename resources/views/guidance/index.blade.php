@@ -139,15 +139,15 @@
             <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
             <!-- Weekly Violation List table is now loaded by guidance-dashboard.js -->
 
-        <!-- Weekly Violation List Table below charts -->
+        <!-- Top 5 Cases Table below charts -->
         <div class="row mb-4">
             <div class="col-12">
                 <div class="card border border-success">
                     <div class="card-header bg-white border-0 pb-0">
-                        <h5 class="card-title mb-0">Weekly Violation List</h5>
+                        <h5 class="card-title mb-0">Top 5 Cases</h5>
                     </div>
                     <div class="card-body">
-                        <div id="weekly-violation-list-table">
+                        <div id="top-cases-table">
                             <div class="text-muted">Loading...</div>
                         </div>
                     </div>

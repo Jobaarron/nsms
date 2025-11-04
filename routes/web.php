@@ -484,7 +484,8 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
             Route::get('/discipline-vs-total-stats', [App\Http\Controllers\GuidanceController::class, 'getDisciplineVsTotalStats'])->name('discipline-vs-total-stats');
             // API: Weekly violation list for dashboard
             Route::get('/weekly-violations', [App\Http\Controllers\GuidanceController::class, 'getWeeklyViolations'])->name('weekly-violations');
-        // Logout
+
+            Route::get('/top-cases', [App\Http\Controllers\GuidanceController::class, 'getTopCases']);        // Logout
         Route::post('/logout', [App\Http\Controllers\GuidanceController::class, 'logout'])->name('logout');
         
         // Case Meeting Routes
