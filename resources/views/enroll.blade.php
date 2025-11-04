@@ -351,7 +351,7 @@
                                         <li><span class="fw-medium">Good Moral Certificate</span> - From previous school</li>
                                     </ul>
                                     <div class="mt-2">
-                                        <small class="text-muted"><i class="ri-alert-line me-1"></i>You must upload at least 3 documents to proceed with enrollment.</small>
+                                        <small class="text-muted"><i class="ri-alert-line me-1"></i>You must upload at least 3 documents to proceed with admission.</small>
                                     </div>
                                 </div>
                             </div>
