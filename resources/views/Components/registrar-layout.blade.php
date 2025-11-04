@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -64,16 +64,16 @@
               <i class="ri-group-line me-2"></i>Class Lists
             </a>
           </li>
-          {{-- <li class="nav-item mb-2">
+           <li class="nav-item mb-2">
             <a class="nav-link {{ request()->routeIs('registrar.approved') ? 'active' : '' }}" href="{{ route('registrar.approved') }}">
               <i class="ri-check-line me-2"></i>Approved
             </a>
-          </li> --}}
-          {{-- <li class="nav-item mb-2">
+          </li> 
+          <li class="nav-item mb-2">
             <a class="nav-link {{ request()->routeIs('registrar.reports') ? 'active' : '' }}" href="{{ route('registrar.reports') }}">
               <i class="ri-bar-chart-line me-2"></i>Reports
             </a>
-          </li> --}}
+          </li>
         </ul>
         
         <!-- LOGOUT SECTION -->

@@ -1,16 +1,56 @@
 // Teacher Dashboard JavaScript
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize dashboard functionality
-    initializeDashboard();
+    console.log('Teacher dashboard JS loaded');
     
-    // Load real-time statistics
-    loadDashboardStats();
+    // Check if we're on the teacher dashboard by looking for the exact title
+    const titleElement = document.querySelector('h1.section-title');
+    const titleText = titleElement?.textContent?.trim() || '';
     
-    // Set up auto-refresh for statistics
-    setInterval(loadDashboardStats, 300000); // Refresh every 5 minutes
+    console.log('Page title:', titleText);
+    
+    // Only run dashboard functionality if we're on the actual dashboard
+    if (titleText === 'Teacher Dashboard') {
+        console.log('On teacher dashboard - initializing functionality');
+        initializeDashboard();
+    } else {
+        console.log('Not on teacher dashboard - skipping dashboard functionality');
+        // Still initialize basic functionality for other teacher pages
+        initializeBasicFunctionality();
+    }
 });
 
+function initializeBasicFunctionality() {
+    // Initialize functionality needed on all teacher pages (except statistics)
+    // Add click handlers for action buttons (without statistics interference)
+    const actionCards = document.querySelectorAll('.card-body .btn:not(.disabled):not([disabled])');
+    actionCards.forEach(button => {
+        button.addEventListener('click', function(e) {
+            // Only add loading animation for buttons with valid hrefs
+            if (this.href && this.href !== '#' && !this.classList.contains('disabled') && !this.disabled) {
+                // Add loading animation
+                const originalText = this.innerHTML;
+                this.innerHTML = '<i class="ri-loader-2-line me-2 spinner"></i>Loading...';
+                this.disabled = true;
+                
+                // Re-enable after a short delay (in case of navigation issues)
+                setTimeout(() => {
+                    this.innerHTML = originalText;
+                    this.disabled = false;
+                }, 3000);
+            }
+        });
+    });
+}
+
 function initializeDashboard() {
+    console.log('Initializing teacher dashboard functionality');
+    
+    // Load statistics immediately
+    loadDashboardStats();
+    
+    // Set up auto-refresh for statistics every 5 minutes
+    setInterval(loadDashboardStats, 300000);
+    
     // Add click handlers for quick action cards
     const actionCards = document.querySelectorAll('.card-body .btn:not(.disabled):not([disabled])');
     actionCards.forEach(button => {
@@ -30,21 +70,11 @@ function initializeDashboard() {
             }
         });
     });
-    
-    // Add hover effects to statistics cards
-    const statCards = document.querySelectorAll('.card-summary');
-    statCards.forEach(card => {
-        card.addEventListener('mouseenter', function() {
-            this.style.transform = 'translateY(-3px) scale(1.02)';
-        });
-        
-        card.addEventListener('mouseleave', function() {
-            this.style.transform = 'translateY(0) scale(1)';
-        });
-    });
 }
 
 function loadDashboardStats() {
+    console.log('Loading dashboard stats from API...');
+    
     fetch('/teacher/dashboard/stats')
         .then(response => {
             if (!response.ok) {
@@ -53,6 +83,7 @@ function loadDashboardStats() {
             return response.json();
         })
         .then(data => {
+            console.log('Dashboard stats received:', data);
             updateStatistics(data);
         })
         .catch(error => {
@@ -62,7 +93,9 @@ function loadDashboardStats() {
 }
 
 function updateStatistics(stats) {
-    // Update statistics cards with animation
+    console.log('updateStatistics called with:', stats);
+    
+    // Update statistics cards - look for the specific teacher dashboard structure
     const statElements = {
         'total_classes': document.querySelector('.card-application h3'),
         'total_students': document.querySelector('.card-status h3'),
@@ -70,10 +103,16 @@ function updateStatistics(stats) {
         'weekly_hours': document.querySelector('.card-schedule h3')
     };
     
+    console.log('Found stat elements:', statElements);
+    
     Object.keys(statElements).forEach(key => {
         const element = statElements[key];
         if (element && stats[key] !== undefined) {
-            animateNumber(element, parseInt(element.textContent) || 0, stats[key]);
+            console.log(`Updating ${key} from ${element.textContent} to ${stats[key]}`);
+            // Directly set the value without animation for now to debug
+            element.textContent = stats[key];
+        } else {
+            console.log(`Skipping ${key}: element=${!!element}, value=${stats[key]}`);
         }
     });
 }

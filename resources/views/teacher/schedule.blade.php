@@ -108,8 +108,8 @@
               @forelse($assignments as $assignment)
               <tr>
                 <td>
-                  <strong>{{ $assignment->subject->subject_name }}</strong>
-                  <br><small class="text-muted">{{ $assignment->subject->subject_code }}</small>
+                  <strong>{{ $assignment->subject ? $assignment->subject->subject_name : 'No Subject Assigned' }}</strong>
+                  <br><small class="text-muted">{{ $assignment->subject ? $assignment->subject->subject_code : 'N/A' }}</small>
                 </td>
                 <td>{{ $assignment->grade_level }} - {{ $assignment->section }}</td>
                 <td>

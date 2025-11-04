@@ -2,12 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf-token" content="{{ csrf_token() }}">
 
   <title>Applicant Portal | Nicolites Portal</title>
@@ -66,11 +64,11 @@
               <i class="ri-folder-line me-2"></i>Documents
             </a>
           </li>
-          {{-- <li class="nav-item mb-2">
+         <li class="nav-item mb-2">
             <a class="nav-link {{ request()->routeIs('enrollee.schedule') ? 'active' : '' }}" href="{{ route('enrollee.schedule') }}">
               <i class="ri-calendar-line me-2"></i>Schedule
             </a>
-          </li> --}}
+          </li>
           <li class="nav-item mb-2">
             <a class="nav-link {{ request()->routeIs('enrollee.notices') ? 'active' : '' }}" href="{{ route('enrollee.notices') }}">
               <i class="ri-notification-line me-2"></i>Notices

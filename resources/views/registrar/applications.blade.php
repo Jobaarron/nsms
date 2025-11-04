@@ -125,11 +125,11 @@
                     <i class="ri-folder-line me-2"></i>Documents
                 </button>
             </li>
-            {{-- <li class="nav-item" role="presentation">
+            <li class="nav-item" role="presentation">
                 <button class="nav-link" id="appointments-tab" data-bs-toggle="tab" data-bs-target="#appointments" type="button" role="tab">
                     <i class="ri-calendar-line me-2"></i>Appointments
                 </button>
-            </li> --}}
+            </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="notices-tab" data-bs-toggle="tab" data-bs-target="#notices" type="button" role="tab">
                     <i class="ri-notification-line me-2"></i>Notices

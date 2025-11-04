@@ -56,7 +56,7 @@
 
     <!-- DASHBOARD STATISTICS -->
     <div class="row g-3 mb-4">
-      <!-- <div class="col-6 col-lg-3">
+      <div class="col-6 col-lg-3">
         <div class="card card-summary card-application h-100">
           <div class="card-body text-center">
             <i class="ri-book-2-line display-6 mb-2"></i>
@@ -64,8 +64,8 @@
             <h3>{{ $stats['total_classes'] ?? 0 }}</h3>
           </div>
         </div>
-      </div> -->
-      <!-- <div class="col-6 col-lg-3">
+      </div>
+      <div class="col-6 col-lg-3">
         <div class="card card-summary card-status h-100">
           <div class="card-body text-center">
             <i class="ri-group-line display-6 mb-2"></i>
@@ -73,7 +73,7 @@
             <h3>{{ $stats['total_students'] ?? 0 }}</h3>
           </div>
         </div>
-      </div> -->
+      </div>
       <div class="col-6 col-lg-3">
         <div class="card card-summary card-payment h-100">
           <div class="card-body text-center">
@@ -83,7 +83,7 @@
           </div>
         </div>
       </div>
-      <!-- <div class="col-6 col-lg-3">
+      <div class="col-6 col-lg-3">
         <div class="card card-summary card-schedule h-100">
           <div class="card-body text-center">
             <i class="ri-time-line display-6 mb-2"></i>
@@ -91,7 +91,7 @@
             <h3>{{ $stats['weekly_hours'] ?? 0 }}</h3>
           </div>
         </div>
-      </div> -->
+      </div>
     </div>
 
     <!-- MY CLASS ASSIGNMENTS -->
@@ -299,7 +299,3 @@
     @endif
   </main>
 </x-teacher-layout>
-
-@push('scripts')
-@vite('resources/js/teacher-dashboard.js')
-@endpush

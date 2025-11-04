@@ -115,7 +115,7 @@ class TeacherScheduleController extends Controller
                 'assignment' => $assignment,
                 'students' => $students,
                 'class_name' => $assignment->grade_level . ' - ' . $assignment->section,
-                'subject' => $assignment->subject->subject_name
+                'subject' => $assignment->subject ? $assignment->subject->subject_name : 'No Subject Assigned'
             ]);
         }
 
