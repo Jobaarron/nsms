@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadClosedCasesBarChart();
     loadCounselingSessionsBarChart();
     loadDisciplineVsTotalHistogram();
-    loadWeeklyViolationListTable();
+    loadTopCasesTable();
 });
 
 // Refresh dashboard (now only refreshes charts)
@@ -354,9 +354,9 @@ function renderDisciplineVsTotalHistogram(labels, data) {
     });
 }
 
-// Load and render the Weekly Violation List table
-function loadWeeklyViolationListTable() {
-    fetch('/guidance/weekly-violations', {
+// Load and render the Top 5 Cases table
+function loadTopCasesTable() {
+    fetch('/guidance/top-cases', {
         method: 'GET',
         headers: {
             'Accept': 'application/json',
@@ -365,29 +365,29 @@ function loadWeeklyViolationListTable() {
     })
     .then(response => response.json())
     .then(data => {
-        const container = document.getElementById('weekly-violation-list-table');
+        const container = document.getElementById('top-cases-table');
         if (!container) return;
-        if (data.success && data.violations.length > 0) {
+        if (data.success && data.cases.length > 0) {
             let html = '<div class="table-responsive"><table class="table table-bordered table-striped table-sm mb-0">';
-            html += '<thead><tr><th>#</th><th>Student Name</th><th>Violation</th><th>Date</th></tr></thead><tbody>';
-            data.violations.forEach((v, i) => {
+            html += '<thead><tr><th>#</th><th>Student Name</th><th>Case Title</th><th>Count</th></tr></thead><tbody>';
+            data.cases.forEach((c, i) => {
                 html += `<tr>` +
                     `<td>${i + 1}</td>` +
-                    `<td>${v.student_name || 'Unknown Student'}</td>` +
-                    `<td>${v.violation_type || 'Violation'}</td>` +
-                    `<td>${v.violation_date}</td>` +
+                    `<td>${c.student_name || 'Unknown Student'}</td>` +
+                    `<td>${c.case_title || 'Case'}</td>` +
+                    `<td>${c.count || 0}</td>` +
                 `</tr>`;
             });
             html += '</tbody></table></div>';
             container.innerHTML = html;
         } else {
-            container.innerHTML = '<div class="text-muted">No violations in the last 7 days.</div>';
+            container.innerHTML = '<div class="text-muted">No top cases found.</div>';
         }
     })
     .catch(() => {
-        const container = document.getElementById('weekly-violation-list-table');
+        const container = document.getElementById('top-cases-table');
         if (container) {
-            container.innerHTML = '<div class="text-danger">Failed to load weekly violations.</div>';
+            container.innerHTML = '<div class="text-danger">Failed to load top cases.</div>';
         }
     });
 }

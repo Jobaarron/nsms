@@ -908,11 +908,11 @@ class DisciplineController extends Controller
          */
         public function getCaseStatusStats()
         {
-            $completed = \App\Models\CaseMeeting::where('status', 'completed')->count();
+            $caseClosed = \App\Models\CaseMeeting::where('status', 'case_closed')->count();
             $inProgress = \App\Models\CaseMeeting::where('status', 'in_progress')->count();
             $preCompleted = \App\Models\CaseMeeting::where('status', 'pre_completed')->count();
             return response()->json([
-                'completed' => $completed,
+                'case_closed' => $caseClosed,
                 'in_progress' => $inProgress,
                 'pre_completed' => $preCompleted,
             ]);

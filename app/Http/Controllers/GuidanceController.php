@@ -1401,7 +1401,7 @@ class GuidanceController extends Controller
         for ($i = 5; $i >= 0; $i--) {
             $month = $now->copy()->subMonths($i);
             $label = $month->format('M Y');
-            $count = \App\Models\CaseMeeting::where('status', 'completed')
+            $count = \App\Models\CaseMeeting::where('status', 'case_closed')
                 ->whereYear('completed_at', $month->year)
                 ->whereMonth('completed_at', $month->month)
                 ->count();
@@ -1467,27 +1467,29 @@ public function getDisciplineVsTotalStats()
     ]);
 }    // Weekly violation list for dashboard
         // Weekly violation list for dashboard
-    public function getWeeklyViolations()
+    // API: Get Top 5 Cases for dashboard
+    public function getTopCases()
     {
-        // Get violations from the last 7 days, newest first
-        $violations = \App\Models\Violation::with('student')
-            ->where('violation_date', '>=', now()->subDays(7))
-            ->orderBy('violation_date', 'desc')
+        // Group by student and case title, count occurrences, order by count desc, limit 5
+        $topCases = \App\Models\Violation::with('student')
+            ->selectRaw('student_id, title as case_title, COUNT(*) as count')
+            ->groupBy('student_id', 'case_title')
+            ->orderByDesc('count')
+            ->limit(5)
             ->get();
 
-        // Format for frontend: add student name, formatted date, and violation type
-        $formatted = $violations->map(function($v) {
+        $formatted = $topCases->map(function($c) {
+            $student = $c->student;
             return [
-                'id' => $v->id,
-                'student_name' => $v->student ? ($v->student->first_name . ' ' . $v->student->last_name) : 'Unknown Student',
-                'violation_type' => $v->violation_type ?? ($v->title ?? 'Violation'),
-                'violation_date' => $v->violation_date ? \Carbon\Carbon::parse($v->violation_date)->format('Y-m-d') : '',
+                'student_name' => $student ? ($student->first_name . ' ' . $student->last_name) : 'Unknown Student',
+                'case_title' => $c->case_title,
+                'count' => $c->count,
             ];
         });
 
         return response()->json([
             'success' => true,
-            'violations' => $formatted
+            'cases' => $formatted
         ]);
     }
     }
