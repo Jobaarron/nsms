@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('location')->nullable();
             $table->text('reason');
             $table->text('notes')->nullable();
-            $table->enum('status', ['scheduled', 'in_progress', 'pre_completed', 'submitted', 'completed', 'cancelled', 'forwarded'])->default('scheduled');
+            $table->enum('status', ['scheduled', 'in_progress', 'pre_completed', 'submitted', 'case_closed', 'cancelled', 'forwarded'])->default('scheduled');
             $table->text('summary')->nullable();
             $table->text('recommendations')->nullable();
             $table->boolean('follow_up_required')->default(false);

@@ -1401,7 +1401,7 @@ class GuidanceController extends Controller
         for ($i = 5; $i >= 0; $i--) {
             $month = $now->copy()->subMonths($i);
             $label = $month->format('M Y');
-            $count = \App\Models\CaseMeeting::where('status', 'completed')
+            $count = \App\Models\CaseMeeting::where('status', 'case_closed')
                 ->whereYear('completed_at', $month->year)
                 ->whereMonth('completed_at', $month->month)
                 ->count();

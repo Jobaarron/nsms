@@ -22,6 +22,7 @@
                     </thead>
                     <tbody>
                         @foreach($caseMeetings as $meeting)
+                        @if($meeting->status !== 'case_closed')
                         <tr style="background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(67,179,106,0.07);">
                             <!-- Student cell: Name (bold), ID (muted, small, below) -->
                             <td style="min-width:120px; padding-top:0.5rem; padding-bottom:0.5rem;">
@@ -66,9 +67,23 @@
                                     <button class="btn btn-outline-info btn-sm view-summary-btn" data-meeting-id="{{ $meeting->id }}" title="View Summary Report" data-bs-toggle="modal" data-bs-target="#viewSummaryModal">
                                         <i class="ri-file-text-line"></i>
                                     </button>
+                                    @foreach($meeting->sanctions as $sanction)
+                                        @if(!$sanction->is_approved)
+                                            <button class="btn btn-outline-success btn-sm approve-sanction-btn" data-sanction-id="{{ $sanction->sanction_id }}" title="Approve Sanction">
+                                                <i class="ri-check-line"></i>
+                                            </button>
+                                            <button class="btn btn-outline-danger btn-sm reject-sanction-btn" data-sanction-id="{{ $sanction->sanction_id }}" title="Reject Sanction">
+                                                <i class="ri-close-line"></i>
+                                            </button>
+                                            <button class="btn btn-outline-warning btn-sm revise-sanction-btn" data-sanction-id="{{ $sanction->sanction_id }}" title="Revise Sanction" data-bs-toggle="modal" data-bs-target="#reviseSanctionModal" data-sanction="{{ $sanction->sanction }}" data-notes="{{ $sanction->notes }}">
+                                                <i class="ri-edit-line"></i>
+                                            </button>
+                                        @endif
+                                    @endforeach
                                 </div>
                             </td>
                         </tr>
+                        @endif
                         @endforeach
                     </tbody>
                 </table>
@@ -235,7 +250,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 .then(data => {
                     alert(data.message);
                     if (data.success) {
-                        location.reload();
+                        // Remove the row from the table
+                        const row = button.closest('tr');
+                        if (row) row.remove();
                     }
                 })
                 .catch(error => {

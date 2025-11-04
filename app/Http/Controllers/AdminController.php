@@ -586,11 +586,11 @@ public function submittedCases()
             ]);
 
 
-            // Mark the related case meeting as completed
+            // Mark the related case meeting as case_closed
             $caseMeeting = $sanction->caseMeeting;
             if ($caseMeeting) {
                 $caseMeeting->update([
-                    'status' => 'completed',
+                    'status' => 'case_closed',
                     'completed_at' => now(),
                 ]);
                 // Set all related violations' statuses to 'submitted' (discipline side)
