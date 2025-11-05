@@ -84,14 +84,8 @@
           </li>
           
           <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('cashier.pending-payments') ? 'active' : '' }}" href="{{ route('cashier.pending-payments') }}">
-              <i class="ri-time-line me-2"></i>Pending Payments
-            </a>
-          </li>
-          
-          <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('cashier.due-payments') ? 'active' : '' }}" href="{{ route('cashier.due-payments') }}">
-              <i class="ri-alarm-warning-line me-2"></i>Due Payments
+            <a class="nav-link {{ request()->routeIs('cashier.payments') ? 'active' : '' }}" href="{{ route('cashier.payments') }}">
+              <i class="ri-time-line me-2"></i>Payments
             </a>
           </li>
           

@@ -206,8 +206,8 @@ Route::middleware(['auth', 'role:teacher'])->prefix('teacher')->name('teacher.')
 Route::middleware(['auth', 'role:teacher|faculty_head'])->prefix('teacher')->name('teacher.')->group(function () {
     Route::get('/schedule/calendar', [App\Http\Controllers\TeacherScheduleController::class, 'calendar'])
         ->name('schedule.calendar');
-    Route::get('/my-students', [App\Http\Controllers\TeacherScheduleController::class, 'allStudents'])
-        ->name('my-students');
+    Route::get('/advisory', [App\Http\Controllers\TeacherScheduleController::class, 'advisory'])
+        ->name('advisory');
     Route::get('/schedule/students', [App\Http\Controllers\TeacherScheduleController::class, 'students'])
         ->name('schedule.students');
     Route::get('/schedule/data', [App\Http\Controllers\TeacherScheduleController::class, 'getScheduleData'])
@@ -829,8 +829,7 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::get('/dashboard', [CashierController::class, 'index'])->name('dashboard');
         
         // Payment Management
-        Route::get('/pending-payments', [CashierController::class, 'pendingPayments'])->name('pending-payments');
-        Route::get('/due-payments', [CashierController::class, 'duePayments'])->name('due-payments');
+        Route::get('/payments', [CashierController::class, 'payments'])->name('payments');
         Route::get('/completed-payments', [CashierController::class, 'completedPayments'])->name('completed-payments');
         Route::get('/payment-history', [CashierController::class, 'paymentHistory'])->name('payment-history');
         Route::get('/api/payment-history', [CashierController::class, 'getPaymentHistoryData'])->name('api.payment-history');

@@ -1,6 +1,7 @@
 <x-layout>
     @vite('resources/css/enroll.css')
     @vite('resources/js/enroll.js')
+    
     <div class="row justify-content-center">
         <div class="col-lg-8 col-md-10">
             <div class="content-card p-5">

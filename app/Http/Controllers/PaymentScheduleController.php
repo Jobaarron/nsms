@@ -163,6 +163,16 @@ class PaymentScheduleController extends Controller
             $query->where('payment_method', $request->payment_method);
         }
 
+        // Due status filter
+        if ($request->filled('due_status')) {
+            $today = now()->toDateString();
+            if ($request->due_status === 'due') {
+                $query->havingRaw('MIN(scheduled_date) <= ?', [$today]);
+            } elseif ($request->due_status === 'not_due') {
+                $query->havingRaw('MIN(scheduled_date) > ?', [$today]);
+            }
+        }
+
         if ($request->filled('search')) {
             $search = $request->search;
             $query->whereHasMorph('payable', ['App\\Models\\Student'], function($q) use ($search) {
@@ -172,7 +182,10 @@ class PaymentScheduleController extends Controller
             });
         }
 
-        $paymentSchedules = $query->orderBy('first_due_date')->get();
+        // Order by due status (due payments first) then by date
+        $paymentSchedules = $query->orderByRaw('CASE WHEN MIN(scheduled_date) <= ? THEN 0 ELSE 1 END', [now()->toDateString()])
+                                  ->orderBy('first_due_date')
+                                  ->get();
 
         // Transform the grouped data to include student information
         $transformedSchedules = $paymentSchedules->map(function($schedule) {

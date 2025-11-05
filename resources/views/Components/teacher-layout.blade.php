@@ -66,7 +66,7 @@
           </li>
           
           <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('teacher.my-students') ? 'active' : '' }}" href="{{ route('teacher.my-students') }}">
+            <a class="nav-link {{ request()->routeIs('teacher.advisory') ? 'active' : '' }}" href="{{ route('teacher.advisory') }}">
               <i class="ri-user-star-line me-2"></i>Advisory
             </a>
           </li>

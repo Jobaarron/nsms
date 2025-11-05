@@ -121,6 +121,8 @@ function createPaymentRow(payment) {
     const student = payment.payable;
     const statusBadge = getStatusBadge(payment.confirmation_status);
     const priorityBadge = getPriorityBadge(payment.scheduled_date);
+    const isDue = isDuePayment(payment.scheduled_date);
+    const rowClass = isDue ? 'table-danger' : '';
     
     // Debug: Log payment data to see structure (removed for cleaner console)
     
@@ -134,7 +136,7 @@ function createPaymentRow(payment) {
     const studentId = student?.student_id || student?.id || payment.payable_id;
     
     return `
-        <tr>
+        <tr class="${rowClass}">
             <td>${priorityBadge}</td>
             <td>
                 <span class="fw-bold">${payment.transaction_id}</span><br>
@@ -217,12 +219,90 @@ function getPriorityBadge(scheduledDate) {
     const diffDays = Math.ceil((scheduled - today) / (1000 * 60 * 60 * 24));
     
     if (diffDays < 0) {
-        return '<span class="badge bg-danger">Overdue</span>';
-    } else if (diffDays <= 3) {
-        return '<span class="badge bg-warning">Due Soon</span>';
+        const overdueDays = Math.abs(diffDays);
+        if (overdueDays > 7) {
+            return '<span class="badge bg-danger">Critical</span>';
+        } else if (overdueDays > 3) {
+            return '<span class="badge bg-warning">High</span>';
+        } else {
+            return '<span class="badge bg-info">Medium</span>';
+        }
+    } else if (diffDays === 0) {
+        return '<span class="badge bg-warning">Due Today</span>';
     } else {
-        return '<span class="badge bg-info">Scheduled</span>';
+        return '<span class="badge bg-secondary">Scheduled</span>';
     }
+}
+
+function isDuePayment(scheduledDate) {
+    const today = new Date();
+    const scheduled = new Date(scheduledDate);
+    return scheduled <= today;
+}
+
+function setupFiltersAndSearch() {
+    // Setup due status filter
+    const dueStatusFilter = document.querySelector('select[name="due_status"]');
+    if (dueStatusFilter) {
+        dueStatusFilter.addEventListener('change', function() {
+            applyFilters();
+        });
+    }
+    
+    // Setup other filters
+    const statusFilter = document.querySelector('select[name="status"]');
+    if (statusFilter) {
+        statusFilter.addEventListener('change', function() {
+            applyFilters();
+        });
+    }
+    
+    // Setup search
+    const searchInput = document.getElementById('payment-search');
+    if (searchInput) {
+        searchInput.addEventListener('input', debounce(function() {
+            applyFilters();
+        }, 300));
+    }
+}
+
+function applyFilters() {
+    const filters = {
+        status: document.querySelector('select[name="status"]')?.value || '',
+        due_status: document.querySelector('select[name="due_status"]')?.value || '',
+        search: document.getElementById('payment-search')?.value || ''
+    };
+    
+    loadPaymentSchedules(filters);
+    updateBadgeCounts(filters);
+}
+
+function updateBadgeCounts(filters) {
+    const pendingBadge = document.getElementById('pending-count');
+    const dueBadge = document.getElementById('due-count');
+    
+    if (filters.due_status === 'due') {
+        pendingBadge.style.display = 'none';
+        dueBadge.style.display = 'inline-block';
+    } else if (filters.due_status === 'not_due') {
+        pendingBadge.style.display = 'inline-block';
+        dueBadge.style.display = 'none';
+    } else {
+        pendingBadge.style.display = 'inline-block';
+        dueBadge.style.display = 'none';
+    }
+}
+
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
 }
 
 function processPayment(paymentId, action) {
@@ -467,45 +547,6 @@ function calculateDaysOverdue(scheduledDate) {
     const diffTime = today - scheduled;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
-}
-
-function setupFiltersAndSearch() {
-    // Setup filter dropdowns
-    const filterElements = document.querySelectorAll('.payment-filter');
-    filterElements.forEach(element => {
-        element.addEventListener('change', applyFilters);
-    });
-    
-    // Setup search input
-    const searchInput = document.getElementById('payment-search');
-    if (searchInput) {
-        let searchTimeout;
-        searchInput.addEventListener('input', function() {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(applyFilters, 500);
-        });
-    }
-}
-
-function applyFilters() {
-    const filters = {};
-    
-    // Collect filter values
-    const filterElements = document.querySelectorAll('.payment-filter');
-    filterElements.forEach(element => {
-        if (element.value) {
-            filters[element.name] = element.value;
-        }
-    });
-    
-    // Add search term
-    const searchInput = document.getElementById('payment-search');
-    if (searchInput && searchInput.value) {
-        filters.search = searchInput.value;
-    }
-    
-    // Reload with filters
-    loadPaymentSchedules(filters);
 }
 
 
@@ -981,3 +1022,10 @@ window.rejectFromModal = rejectFromModal;
 window.processConfirmation = processConfirmation;
 window.processRejection = processRejection;
 window.processIndividualPayment = processIndividualPayment;
+
+// Additional exports for payments page modal functions
+window.confirmPaymentModal = confirmPayment;
+window.rejectPaymentModal = rejectPayment;
+window.viewPaymentDetailsModal = viewPaymentDetails;
+window.processConfirmationModal = processConfirmation;
+window.processRejectionModal = processRejection;

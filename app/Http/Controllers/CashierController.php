@@ -150,9 +150,9 @@ class CashierController extends Controller
     }
 
     /**
-     * Display pending payments.
+     * Display payments with filtering for due/not due.
      */
-    public function pendingPayments()
+    public function payments()
     {
         // Get grouped payment schedules for pending payments only
         $groupedPayments = Payment::with(['payable'])
@@ -217,7 +217,7 @@ class CashierController extends Controller
             }
         };
 
-        return view('cashier.pending-payments', compact('payments'));
+        return view('cashier.payments', compact('payments'));
     }
 
     /**

@@ -22,17 +22,17 @@
       </div>
     @endif
 
-    <!-- STUDENTS BY CLASS -->
-    @forelse($studentsByClass as $classData)
-    <div class="card mb-4">
+    <!-- ADVISORY CLASS -->
+    @if($advisoryAssignment)
+    <div class="card">
       <div class="card-header">
         <h5 class="mb-0">
-          <i class="ri-book-2-line me-2"></i>{{ $classData['subject'] }} - {{ $classData['class_name'] }}
-          <span class="badge bg-primary ms-2">{{ $classData['students']->count() }} Students</span>
+          <i class="ri-user-star-line me-2"></i>Advisory Class - {{ $className }}
+          <span class="badge bg-primary ms-2">{{ $students->count() }} Students</span>
         </h5>
       </div>
       <div class="card-body">
-        @if($classData['students']->count() > 0)
+        @if($students->count() > 0)
           <div class="table-responsive">
             <table class="table table-hover">
               <thead>
@@ -46,7 +46,7 @@
                 </tr>
               </thead>
               <tbody>
-                @foreach($classData['students'] as $student)
+                @foreach($students as $student)
                 <tr>
                   <td><strong>{{ $student->student_id }}</strong></td>
                   <td>
@@ -69,14 +69,6 @@
                   </td>
                   <td>
                     <div class="btn-group" role="group">
-                      <a href="{{ route('teacher.grades.create', [
-                        'subject_id' => $classData['assignment']->subject_id,
-                        'grade_level' => $classData['assignment']->grade_level,
-                        'section' => $classData['assignment']->section,
-                        'quarter' => '1st'
-                      ]) }}" class="btn btn-sm btn-outline-primary" title="Submit Grades">
-                        <i class="ri-pencil-line"></i>
-                      </a>
                       <a href="{{ route('teacher.recommend-counseling.form', ['student_id' => $student->id]) }}" 
                          class="btn btn-sm btn-outline-warning" title="Recommend Counseling">
                         <i class="ri-heart-pulse-line"></i>
@@ -91,40 +83,39 @@
         @else
           <div class="text-center text-muted py-4">
             <i class="ri-group-line display-4 mb-3"></i>
-            <p>No students found for this class.</p>
+            <p>No students found in your advisory class.</p>
           </div>
         @endif
       </div>
     </div>
-    @empty
-    <div class="card">
-      <div class="card-body text-center py-5">
-        <i class="ri-group-line display-1 text-muted mb-3"></i>
-        <h4 class="text-muted">No Class Assignments</h4>
-        <p class="text-muted">You don't have any class assignments for the current academic year.</p>
-        <p class="text-muted">Please contact the Faculty Head to get assigned to classes.</p>
-      </div>
-    </div>
-    @endforelse
 
     <!-- SUMMARY CARD -->
-    @if($studentsByClass->count() > 0)
     <div class="card mt-4">
       <div class="card-body">
         <div class="row text-center">
           <div class="col-md-4">
-            <h4 class="text-primary">{{ $studentsByClass->count() }}</h4>
-            <p class="text-muted mb-0">Total Classes</p>
+            <h4 class="text-primary">{{ $students->count() }}</h4>
+            <p class="text-muted mb-0">Advisory Students</p>
           </div>
           <div class="col-md-4">
-            <h4 class="text-success">{{ $studentsByClass->sum(function($class) { return $class['students']->count(); }) }}</h4>
-            <p class="text-muted mb-0">Total Students</p>
+            <h4 class="text-success">{{ $className }}</h4>
+            <p class="text-muted mb-0">Advisory Class</p>
           </div>
           <div class="col-md-4">
             <h4 class="text-info">{{ $currentAcademicYear }}</h4>
             <p class="text-muted mb-0">Academic Year</p>
           </div>
         </div>
+      </div>
+    </div>
+    @else
+    <!-- NO ADVISORY ASSIGNMENT -->
+    <div class="card">
+      <div class="card-body text-center py-5">
+        <i class="ri-user-star-line display-1 text-muted mb-3"></i>
+        <h4 class="text-muted">No Advisory Assignment</h4>
+        <p class="text-muted">You are not assigned as a class adviser for the current academic year.</p>
+        <p class="text-muted">Please contact the Faculty Head if you believe this is an error.</p>
       </div>
     </div>
     @endif

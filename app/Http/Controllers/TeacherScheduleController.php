@@ -81,9 +81,9 @@ class TeacherScheduleController extends Controller
     }
 
     /**
-     * Display all students across teacher's classes
+     * Display students in teacher's advisory class only
      */
-    public function allStudents()
+    public function advisory()
     {
         $teacher = Auth::user();
         $currentAcademicYear = date('Y') . '-' . (date('Y') + 1);
@@ -93,56 +93,56 @@ class TeacherScheduleController extends Controller
             return redirect()->route('teacher.schedule')->with('error', 'Teacher profile not found. Please contact administration.');
         }
 
-        // Get all teacher's assignments
-        $assignments = FacultyAssignment::where('teacher_id', $teacher->teacher->id)
-                                       ->where('academic_year', $currentAcademicYear)
-                                       ->where('status', 'active')
-                                       ->with(['subject'])
-                                       ->get();
+        // Get only the class adviser assignment (not subject teacher assignments)
+        $advisoryAssignment = FacultyAssignment::where('teacher_id', $teacher->teacher->id)
+                                              ->where('academic_year', $currentAcademicYear)
+                                              ->where('assignment_type', 'class_adviser')
+                                              ->where('status', 'active')
+                                              ->first();
 
-        // Group students by class
-        $studentsByClass = collect();
-        foreach ($assignments as $assignment) {
-            // Build student query with proper filtering - only enrolled and paid students
-            $studentsQuery = Student::where('grade_level', $assignment->grade_level)
-                                   ->where('section', $assignment->section)
-                                   ->where('academic_year', $currentAcademicYear)
-                                   ->where('is_active', true)
-                                   ->where('enrollment_status', 'enrolled')
-                                   ->where('is_paid', true);
-            
-            // Add strand filter if assignment has strand
-            if ($assignment->strand) {
-                $studentsQuery->where('strand', $assignment->strand);
-            }
-            
-            // Add track filter if assignment has track
-            if ($assignment->track) {
-                $studentsQuery->where('track', $assignment->track);
-            }
-            
-            $students = $studentsQuery->orderBy('last_name')
-                                    ->orderBy('first_name')
-                                    ->get();
-
-            // Build proper class name with strand and track
-            $className = $assignment->grade_level . ' - ' . $assignment->section;
-            if ($assignment->strand) {
-                $className = $assignment->grade_level . ' - ' . $assignment->section . ' - ' . $assignment->strand;
-                if ($assignment->track) {
-                    $className = $assignment->grade_level . ' - ' . $assignment->section . ' - ' . $assignment->strand . ' - ' . $assignment->track;
-                }
-            }
-
-            $studentsByClass->push([
-                'assignment' => $assignment,
-                'students' => $students,
-                'class_name' => $className,
-                'subject' => $assignment->subject ? $assignment->subject->subject_name : 'Advisory Class'
+        // If no advisory assignment found, show message
+        if (!$advisoryAssignment) {
+            return view('teacher.advisory', [
+                'teacher' => $teacher,
+                'advisoryAssignment' => null,
+                'students' => collect(),
+                'className' => null,
+                'currentAcademicYear' => $currentAcademicYear
             ]);
         }
 
-        return view('teacher.students', compact('teacher', 'studentsByClass', 'currentAcademicYear'));
+        // Get students in the advisory class only
+        $studentsQuery = Student::where('grade_level', $advisoryAssignment->grade_level)
+                               ->where('section', $advisoryAssignment->section)
+                               ->where('academic_year', $currentAcademicYear)
+                               ->where('is_active', true)
+                               ->where('enrollment_status', 'enrolled')
+                               ->where('is_paid', true);
+        
+        // Add strand filter if assignment has strand
+        if ($advisoryAssignment->strand) {
+            $studentsQuery->where('strand', $advisoryAssignment->strand);
+        }
+        
+        // Add track filter if assignment has track
+        if ($advisoryAssignment->track) {
+            $studentsQuery->where('track', $advisoryAssignment->track);
+        }
+        
+        $students = $studentsQuery->orderBy('last_name')
+                                ->orderBy('first_name')
+                                ->get();
+
+        // Build proper class name with strand and track
+        $className = $advisoryAssignment->grade_level . ' - ' . $advisoryAssignment->section;
+        if ($advisoryAssignment->strand) {
+            $className = $advisoryAssignment->grade_level . ' - ' . $advisoryAssignment->section . ' - ' . $advisoryAssignment->strand;
+            if ($advisoryAssignment->track) {
+                $className = $advisoryAssignment->grade_level . ' - ' . $advisoryAssignment->section . ' - ' . $advisoryAssignment->strand . ' - ' . $advisoryAssignment->track;
+            }
+        }
+
+        return view('teacher.advisory', compact('teacher', 'advisoryAssignment', 'students', 'className', 'currentAcademicYear'));
     }
 
     /**

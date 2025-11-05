@@ -10,11 +10,12 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h2 class="section-title mb-1">Pending Payments</h2>
+                    <h2 class="section-title mb-1">Payments</h2>
                     <p class="text-muted mb-0">Review and confirm pending payment submissions</p>
                 </div>
                 <div class="text-end">
-                    <span class="badge bg-warning fs-6">{{ $payments->total() }} Pending</span>
+                    <span class="badge bg-warning fs-6" id="pending-count">{{ $payments->total() }} Pending</span>
+                    <span class="badge bg-danger fs-6 ms-2" id="due-count" style="display: none;">0 Due</span>
                 </div>
             </div>
         </div>
@@ -35,6 +36,11 @@
                                 <option value="pending">Not yet paid</option>
                                 <option value="confirmed">Paid</option>
                             </select>
+                            <select class="form-select form-select-sm payment-filter" name="due_status">
+                                <option value="">All Payments</option>
+                                <option value="due">Due Payments</option>
+                                <option value="not_due">Not Due</option>
+                            </select>
                             <!-- Payment mode filter removed - now handled by payment_method -->
                             <!-- <select class="form-select form-select-sm payment-filter" name="payment_method">
                                 <option value="">All Schedules</option>
@@ -42,7 +48,7 @@
                                 <option value="quarterly">Quarterly</option>
                                 <option value="monthly">Monthly</option>
                             </select> -->
-                            <input type="text" class="form-control form-control-sm" id="payment-search" placeholder="Search by Student ID, Name...">
+                            <input type="text" class="form-control form-control-sm" id="payment-search" placeholder="Student ID">
                         </div>
                     </div>
                 </div>
@@ -146,15 +152,15 @@
                                             <td>
                                                 <div class="btn-group" role="group">
                                                     <button class="btn btn-sm btn-outline-primary" 
-                                                            onclick="viewPaymentDetails({{ $payment->id }})">
+                                                            onclick="viewPaymentDetailsModal({{ $payment->id }})">
                                                         <i class="ri-eye-line"></i>
                                                     </button>
                                                     <button class="btn btn-sm btn-success" 
-                                                            onclick="confirmPayment({{ $payment->id }})">
+                                                            onclick="confirmPaymentModal({{ $payment->id }})">
                                                         <i class="ri-check-line"></i>
                                                     </button>
                                                     <button class="btn btn-sm btn-danger" 
-                                                            onclick="rejectPayment({{ $payment->id }})">
+                                                            onclick="rejectPaymentModal({{ $payment->id }})">
                                                         <i class="ri-close-line"></i>
                                                     </button>
                                                 </div>
@@ -224,7 +230,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-success" onclick="processConfirmation()">
+                    <button type="button" class="btn btn-success" onclick="processConfirmationModal()">
                         <i class="ri-check-line me-2"></i>Confirm Payment
                     </button>
                 </div>
@@ -250,7 +256,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-danger" onclick="processRejection()">
+                    <button type="button" class="btn btn-danger" onclick="processRejectionModal()">
                         <i class="ri-close-line me-2"></i>Reject Payment
                     </button>
                 </div>
@@ -258,158 +264,4 @@
         </div>
     </div>
 
-    @push('scripts')
-        <script>
-            let currentPaymentId = null;
-
-            function confirmPayment(paymentId) {
-                currentPaymentId = paymentId;
-                const modal = new bootstrap.Modal(document.getElementById('confirmPaymentModal'));
-                modal.show();
-            }
-
-            function rejectPayment(paymentId) {
-                currentPaymentId = paymentId;
-                const modal = new bootstrap.Modal(document.getElementById('rejectPaymentModal'));
-                modal.show();
-            }
-
-            function confirmFromModal() {
-                if (currentPaymentId) {
-                    confirmPayment(currentPaymentId);
-                }
-            }
-
-            function rejectFromModal() {
-                if (currentPaymentId) {
-                    rejectPayment(currentPaymentId);
-                }
-            }
-
-            function viewPaymentDetails(paymentId) {
-                fetch(`/cashier/payments/${paymentId}/details`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            displayPaymentDetails(data.payment);
-                            currentPaymentId = paymentId;
-                            new bootstrap.Modal(document.getElementById('paymentDetailsModal')).show();
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('Failed to load payment details');
-                    });
-            }
-
-            function displayPaymentDetails(payment) {
-                const content = document.getElementById('paymentDetailsContent');
-                content.innerHTML = `
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6>Payment Information</h6>
-                            <p><strong>Transaction ID:</strong> ${payment.transaction_id}</p>
-                            <p><strong>Amount:</strong> ₱${parseFloat(payment.amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</p>
-                            <p><strong>Payment Method:</strong> ${payment.payment_method}</p>
-                            <p><strong>Reference Number:</strong> ${payment.reference_number || 'N/A'}</p>
-                            <p><strong>Date Submitted:</strong> ${new Date(payment.created_at).toLocaleDateString()}</p>
-                        </div>
-                        <div class="col-md-6">
-                            <h6>Student/Enrollee Information</h6>
-                            <p><strong>Name:</strong> ${payment.payable ? payment.payable.first_name + ' ' + payment.payable.last_name : 'N/A'}</p>
-                            <p><strong>ID:</strong> ${payment.payable ? (payment.payable.student_id || payment.payable.application_id) : 'N/A'}</p>
-                            <p><strong>Fee Type:</strong> ${payment.fee ? payment.fee.name : 'N/A'}</p>
-                            <p><strong>Status:</strong> <span class="badge bg-warning">Not yet paid</span></p>
-                        </div>
-                    </div>
-                    ${payment.notes ? `<div class="mt-3"><h6>Notes</h6><p>${payment.notes}</p></div>` : ''}
-                `;
-            }
-
-            function confirmPayment(paymentId) {
-                currentPaymentId = paymentId;
-                new bootstrap.Modal(document.getElementById('confirmPaymentModal')).show();
-            }
-
-            function rejectPayment(paymentId) {
-                currentPaymentId = paymentId;
-                new bootstrap.Modal(document.getElementById('rejectPaymentModal')).show();
-            }
-
-            function confirmFromModal() {
-                if (currentPaymentId) {
-                    confirmPayment(currentPaymentId);
-                    bootstrap.Modal.getInstance(document.getElementById('paymentDetailsModal')).hide();
-                }
-            }
-
-            function rejectFromModal() {
-                if (currentPaymentId) {
-                    rejectPayment(currentPaymentId);
-                    bootstrap.Modal.getInstance(document.getElementById('paymentDetailsModal')).hide();
-                }
-            }
-
-            function processConfirmation() {
-                const notes = document.getElementById('confirmNotes').value;
-                
-                fetch(`/cashier/payments/${currentPaymentId}/confirm`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    body: JSON.stringify({
-                        cashier_notes: notes
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        bootstrap.Modal.getInstance(document.getElementById('confirmPaymentModal')).hide();
-                        location.reload();
-                    } else {
-                        alert('Failed to confirm payment');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Failed to confirm payment');
-                });
-            }
-
-            function processRejection() {
-                const notes = document.getElementById('rejectNotes').value;
-                
-                if (!notes.trim()) {
-                    alert('Please provide a reason for rejection');
-                    return;
-                }
-                
-                fetch(`/cashier/payments/${currentPaymentId}/reject`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    body: JSON.stringify({
-                        cashier_notes: notes
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        bootstrap.Modal.getInstance(document.getElementById('rejectPaymentModal')).hide();
-                        location.reload();
-                    } else {
-                        alert('Failed to reject payment');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Failed to reject payment');
-                });
-            }
-        </script>
-    @endpush
 </x-cashier-layout>

@@ -564,10 +564,47 @@ class RegistrarController extends Controller
                 'created_by' => Auth::guard('registrar')->id(),
             ]);
 
+            // Check if all documents are approved and auto-approve application
+            if ($request->status === 'approved') {
+                $allDocumentsApproved = true;
+                foreach ($documents as $doc) {
+                    if (($doc['status'] ?? 'pending') !== 'approved') {
+                        $allDocumentsApproved = false;
+                        break;
+                    }
+                }
+
+                // Auto-approve application if all documents are approved
+                if ($allDocumentsApproved && $application->enrollment_status === 'pending') {
+                    $application->update([
+                        'enrollment_status' => 'approved',
+                        'approved_at' => now(),
+                        'approved_by' => Auth::guard('registrar')->id()
+                    ]);
+
+                    // Create approval notice
+                    Notice::create([
+                        'enrollee_id' => $application->id,
+                        'title' => 'Application Approved',
+                        'message' => 'Congratulations! Your enrollment application has been approved. All your documents have been verified and accepted. You may now proceed with the next steps.',
+                        'type' => 'success',
+                        'priority' => 'high',
+                        'is_global' => false,
+                        'created_by' => Auth::guard('registrar')->id(),
+                    ]);
+
+                    $responseMessage = "Document approved successfully. Application automatically approved since all documents are now approved.";
+                } else {
+                    $responseMessage = "Document {$request->status} successfully";
+                }
+            } else {
+                $responseMessage = "Document {$request->status} successfully";
+            }
+
             // Always return JSON response since method signature requires JsonResponse
             return response()->json([
                 'success' => true,
-                'message' => "Document {$request->status} successfully"
+                'message' => $responseMessage
             ]);
         } catch (\Exception $e) {
             Log::error('Error updating document status: ' . $e->getMessage());
