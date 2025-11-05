@@ -143,12 +143,15 @@ class ClassListTestSummary extends Command
         
         $exampleData = [];
         foreach ($examples as $example) {
-            $classFormat = $example->grade_level . ' - ' . $example->section;
+            // Build class format using consistent format with strand/track first
             if ($example->strand) {
-                $classFormat .= ' - ' . $example->strand;
                 if ($example->track) {
-                    $classFormat .= ' - ' . $example->track;
+                    $classFormat = $example->grade_level . ' ' . $example->strand . '-' . $example->track . ' Section ' . $example->section;
+                } else {
+                    $classFormat = $example->grade_level . ' ' . $example->strand . ' Section ' . $example->section;
                 }
+            } else {
+                $classFormat = $example->grade_level . ' Section ' . $example->section;
             }
             $exampleData[] = [$classFormat];
         }

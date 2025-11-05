@@ -1215,13 +1215,18 @@ class RegistrarController extends Controller
                                     ->orderBy('first_name')
                                     ->get();
             
-            // Build class info string using consistent format
-            $classInfo = $selectedGrade . ' - ' . $selectedSection;
+            // Build class info string using consistent format with strand/track first
             if ($selectedStrand) {
-                $classInfo = $selectedGrade . ' - ' . $selectedSection . ' - ' . $selectedStrand;
                 if ($selectedTrack) {
-                    $classInfo = $selectedGrade . ' - ' . $selectedSection . ' - ' . $selectedStrand . ' - ' . $selectedTrack;
+                    // For TVL with track: "Grade 11 TVL-ICT Section A"
+                    $classInfo = $selectedGrade . ' ' . $selectedStrand . '-' . $selectedTrack . ' Section ' . $selectedSection;
+                } else {
+                    // For non-TVL strands: "Grade 11 STEM Section A"
+                    $classInfo = $selectedGrade . ' ' . $selectedStrand . ' Section ' . $selectedSection;
                 }
+            } else {
+                // For Elementary/JHS: "Grade 7 Section A"
+                $classInfo = $selectedGrade . ' Section ' . $selectedSection;
             }
             
             // Get class adviser

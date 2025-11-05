@@ -909,6 +909,8 @@ class FacultyHeadController extends Controller
             $track = $request->get('track');
             $currentAcademicYear = date('Y') . '-' . (date('Y') + 1);
             
+            
+            
             if (!$gradeLevel || !$sectionName) {
                 return response()->json([
                     'success' => false,
@@ -938,7 +940,11 @@ class FacultyHeadController extends Controller
             $students = $studentQuery->select(
                 'student_id', 'first_name', 'middle_name', 'last_name', 'suffix',
                 'grade_level', 'section', 'strand', 'track', 'contact_number', 'is_active'
-            )->get()->map(function($student) {
+            )->get();
+            
+            
+            
+            $students = $students->map(function($student) {
                 return [
                     'student_id' => $student->student_id,
                     'first_name' => $student->first_name,
