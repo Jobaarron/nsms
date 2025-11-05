@@ -53,7 +53,7 @@ class FacultyHeadController extends Controller
 
         // Get recent grade submissions for review
         $recentSubmissions = GradeSubmission::where('status', 'submitted')
-                                          ->with(['teacher', 'subject'])
+                                          ->with(['teacher.user', 'subject'])
                                           ->orderBy('submitted_at', 'desc')
                                           ->limit(10)
                                           ->get();
@@ -470,7 +470,7 @@ class FacultyHeadController extends Controller
             'draft' => GradeSubmission::draft()->count(),
             'submitted' => GradeSubmission::submitted()->count(),
             'approved' => GradeSubmission::approved()->count(),
-            'rejected' => GradeSubmission::rejected()->count()
+            'rejected' => GradeSubmission::whereIn('status', ['rejected', 'revision_requested'])->count()
         ];
 
         return response()->json(['stats' => $stats]);
@@ -586,7 +586,7 @@ class FacultyHeadController extends Controller
         $currentAcademicYear = date('Y') . '-' . (date('Y') + 1);
         
         // Get all grade submissions for filtering
-        $allSubmissions = GradeSubmission::whereIn('status', ['submitted', 'approved', 'rejected'])
+        $allSubmissions = GradeSubmission::whereIn('status', ['submitted', 'approved', 'rejected', 'revision_requested'])
             ->where('academic_year', $currentAcademicYear)
             ->with(['teacher.user', 'subject', 'reviewer'])
             ->orderBy('created_at', 'desc')
@@ -596,13 +596,13 @@ class FacultyHeadController extends Controller
         $pendingSubmissions = $allSubmissions->where('status', 'submitted');
 
         // Get recently reviewed submissions (for backward compatibility)
-        $recentlyReviewed = $allSubmissions->whereIn('status', ['approved', 'rejected'])->take(10);
+        $recentlyReviewed = $allSubmissions->whereIn('status', ['approved', 'rejected', 'revision_requested'])->take(10);
 
         // Get submission statistics
         $stats = [
             'pending' => GradeSubmission::where('status', 'submitted')->where('academic_year', $currentAcademicYear)->count(),
             'approved' => GradeSubmission::where('status', 'approved')->where('academic_year', $currentAcademicYear)->count(),
-            'rejected' => GradeSubmission::where('status', 'rejected')->where('academic_year', $currentAcademicYear)->count(),
+            'rejected' => GradeSubmission::whereIn('status', ['rejected', 'revision_requested'])->where('academic_year', $currentAcademicYear)->count(),
             'draft' => GradeSubmission::where('status', 'draft')->where('academic_year', $currentAcademicYear)->count(),
         ];
 
@@ -669,7 +669,7 @@ class FacultyHeadController extends Controller
     public function approveSubmission(Request $request, GradeSubmission $submission)
     {
         $request->validate([
-            'action' => 'required|in:approve,reject,request_revision',
+            'action' => 'required|in:approve,request_revision',
             'review_notes' => 'nullable|string|max:1000'
         ]);
 
@@ -680,11 +680,6 @@ class FacultyHeadController extends Controller
                 case 'approve':
                     $submission->approve($currentUser->id, $request->review_notes);
                     $message = "Grades approved successfully! Students can now view their grades.";
-                    break;
-                    
-                case 'reject':
-                    $submission->reject($currentUser->id, $request->review_notes);
-                    $message = "Grades rejected. Teacher has been notified.";
                     break;
                     
                 case 'request_revision':
@@ -980,7 +975,7 @@ class FacultyHeadController extends Controller
             if ($adviser) {
                 $adviserData = [
                     'name' => $adviser->teacher->user->name ?? 'Unknown',
-                    'assigned_date' => $adviser->assigned_date->format('M d, Y')
+                    'assigned_date' => $adviser->assigned_date ? $adviser->assigned_date->format('M d, Y') : 'N/A'
                 ];
             }
             

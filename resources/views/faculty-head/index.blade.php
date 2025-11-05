@@ -91,7 +91,7 @@
             <tbody>
               @forelse($recentSubmissions as $submission)
               <tr>
-                <td>{{ $submission->teacher->name }}</td>
+                <td>{{ $submission->teacher->full_name }}</td>
                 <td>{{ $submission->subject->subject_name }}</td>
                 <td>{{ $submission->grade_level }} - {{ $submission->section }}</td>
                 <td>{{ $submission->quarter }}</td>

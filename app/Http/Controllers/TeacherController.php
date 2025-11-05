@@ -41,12 +41,15 @@ class TeacherController extends Controller
             }
             
             // Get recent grade submissions
-            $recentSubmissions = GradeSubmission::where('teacher_id', $teacher->id)
-                ->where('academic_year', $currentAcademicYear)
-                ->with(['subject'])
-                ->orderBy('created_at', 'desc')
-                ->limit(5)
-                ->get();
+            $recentSubmissions = collect();
+            if ($teacherRecord) {
+                $recentSubmissions = GradeSubmission::where('teacher_id', $teacherRecord->id)
+                    ->where('academic_year', $currentAcademicYear)
+                    ->with(['subject'])
+                    ->orderBy('created_at', 'desc')
+                    ->limit(5)
+                    ->get();
+            }
                 
             // Calculate statistics
             $stats = [
@@ -118,11 +121,23 @@ class TeacherController extends Controller
      */
     public function getDashboardStats()
     {
-        $teacher = Auth::user();
+        $user = Auth::user();
         $currentAcademicYear = date('Y') . '-' . (date('Y') + 1);
         
+        // Check if user has teacher profile
+        if (!$user->teacher) {
+            return response()->json([
+                'total_classes' => 0,
+                'total_students' => 0,
+                'grade_submissions' => 0,
+                'weekly_hours' => 0,
+            ]);
+        }
+        
+        $teacherId = $user->teacher->id;
+        
         // Get teacher's assignments
-        $assignments = FacultyAssignment::where('teacher_id', $teacher->id)
+        $assignments = FacultyAssignment::where('teacher_id', $teacherId)
             ->where('academic_year', $currentAcademicYear)
             ->where('status', 'active')
             ->get();
@@ -131,7 +146,7 @@ class TeacherController extends Controller
         $stats = [
             'total_classes' => $assignments->count(),
             'total_students' => $assignments->sum('student_count') ?: 0,
-            'grade_submissions' => GradeSubmission::where('teacher_id', $teacher->id)
+            'grade_submissions' => GradeSubmission::where('teacher_id', $teacherId)
                 ->where('academic_year', $currentAcademicYear)
                 ->count(),
             'weekly_hours' => $assignments->sum('weekly_hours') ?: 0,

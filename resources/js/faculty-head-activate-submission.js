@@ -1,11 +1,16 @@
-/**
- * Faculty Head - Activate Grade Submission JavaScript
- * Handles grade submission activation/deactivation and quarter settings
- * Interconnected with teacher grade submission functionality
- */
-
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Faculty Head Activate Submission JS loaded');
+    console.log('Current URL:', window.location.pathname);
+    console.log('Page title:', document.title);
+    
+    // Check if we're on the activate submission page
+    const isActivateSubmissionPage = window.location.pathname.includes('/activate-submission');
+    console.log('Is activate submission page:', isActivateSubmissionPage);
+    
+    if (!isActivateSubmissionPage) {
+        console.log('Not on activate submission page, skipping initialization');
+        return;
+    }
     
     const toggleBtn = document.getElementById('toggleSubmissionBtn');
     const toggleIcon = document.getElementById('toggleIcon');
@@ -175,7 +180,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // Disable button during request
         toggleBtn.disabled = true;
         const originalHTML = toggleBtn.innerHTML;
-        toggleBtn.innerHTML = '<i class="ri-loader-4-line me-2 spin"></i>Processing...';
+        const actionText = newStatus ? 'Activating...' : 'Deactivating...';
+        toggleBtn.innerHTML = `<i class="ri-loader-4-line me-2 spin"></i>${actionText}`;
         
         console.log('Making request to:', '/faculty-head/activate-submission/toggle');
         
@@ -221,6 +227,9 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(error => {
             console.error('Error toggling grade submission:', error);
             showAlert('danger', 'Failed to update grade submission status. Please try again.');
+            
+            // Restore original content on error
+            toggleBtn.innerHTML = originalHTML;
         })
         .finally(() => {
             // Re-enable button

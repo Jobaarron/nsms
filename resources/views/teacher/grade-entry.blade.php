@@ -5,7 +5,17 @@
       <div>
         <h1 class="section-title mb-0">Grade Entry</h1>
         <div class="text-muted">
-          <i class="ri-book-open-line me-1"></i>{{ $assignment->subject->subject_name }} - {{ $assignment->grade_level }} {{ $assignment->section }}
+          <i class="ri-book-open-line me-1"></i>{{ $assignment->subject->subject_name }} - 
+          @php
+            $className = $assignment->grade_level . ' - ' . $assignment->section;
+            if ($assignment->strand) {
+                $className = $assignment->grade_level . ' - ' . $assignment->section . ' - ' . $assignment->strand;
+                if ($assignment->track) {
+                    $className = $assignment->grade_level . ' - ' . $assignment->section . ' - ' . $assignment->strand . ' - ' . $assignment->track;
+                }
+            }
+          @endphp
+          {{ $className }}
         </div>
       </div>
       <a href="{{ route('teacher.grades') }}" class="btn btn-outline-secondary">
@@ -40,7 +50,16 @@
           </div>
           <div class="col-md-3">
             <strong>Class:</strong><br>
-            {{ $assignment->grade_level }} - {{ $assignment->section }}
+            @php
+              $classInfo = $assignment->grade_level . ' - ' . $assignment->section;
+              if ($assignment->strand) {
+                  $classInfo = $assignment->grade_level . ' - ' . $assignment->section . ' - ' . $assignment->strand;
+                  if ($assignment->track) {
+                      $classInfo = $assignment->grade_level . ' - ' . $assignment->section . ' - ' . $assignment->strand . ' - ' . $assignment->track;
+                  }
+              }
+            @endphp
+            {{ $classInfo }}
           </div>
           <div class="col-md-3">
             <strong>Academic Year:</strong><br>
@@ -112,7 +131,18 @@
                     <td>{{ $index + 1 }}</td>
                     <td>
                       <div class="fw-medium">{{ $student->full_name }}</div>
-                      <div class="small text-muted">{{ $student->grade_level }} - {{ $student->section }}</div>
+                      <div class="small text-muted">
+                        @php
+                          $studentClass = $student->grade_level . ' - ' . $student->section;
+                          if ($student->strand) {
+                              $studentClass = $student->grade_level . ' - ' . $student->section . ' - ' . $student->strand;
+                              if ($student->track) {
+                                  $studentClass = $student->grade_level . ' - ' . $student->section . ' - ' . $student->strand . ' - ' . $student->track;
+                              }
+                          }
+                        @endphp
+                        {{ $studentClass }}
+                      </div>
                     </td>
                     <td>
                       <span class="badge bg-light text-dark">{{ $student->student_id }}</span>
@@ -166,7 +196,18 @@
             <div class="text-center py-5">
               <i class="ri-user-line display-4 text-muted mb-3"></i>
               <h5>No Students Found</h5>
-              <p class="text-muted">No active students found for {{ $assignment->grade_level }} - {{ $assignment->section }}</p>
+              <p class="text-muted">No active students found for 
+                @php
+                  $noStudentsClass = $assignment->grade_level . ' - ' . $assignment->section;
+                  if ($assignment->strand) {
+                      $noStudentsClass = $assignment->grade_level . ' - ' . $assignment->section . ' - ' . $assignment->strand;
+                      if ($assignment->track) {
+                          $noStudentsClass = $assignment->grade_level . ' - ' . $assignment->section . ' - ' . $assignment->strand . ' - ' . $assignment->track;
+                      }
+                  }
+                @endphp
+                {{ $noStudentsClass }}
+              </p>
             </div>
           @endif
         </div>

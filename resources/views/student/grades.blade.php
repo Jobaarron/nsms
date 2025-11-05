@@ -58,11 +58,18 @@
         <div class="row">
           <div class="col-md-6">
             <strong>Student Info:</strong><br>
-            ID: {{ $student->id }}<br>
-            Grade Level: {{ $student->grade_level }}<br>
-            Section: {{ $student->section }}<br>
-            Strand: {{ $student->strand ?? 'N/A' }}<br>
-            Track: {{ $student->track ?? 'N/A' }}<br>
+            ID: {{ $student->student_id }}<br>
+            Class: 
+            @php
+                $gradesClass = $student->grade_level . ' - ' . $student->section;
+                if ($student->strand) {
+                    $gradesClass = $student->grade_level . ' - ' . $student->section . ' - ' . $student->strand;
+                    if ($student->track) {
+                        $gradesClass = $student->grade_level . ' - ' . $student->section . ' - ' . $student->strand . ' - ' . $student->track;
+                    }
+                }
+            @endphp
+            {{ $gradesClass }}<br>
             Academic Year: {{ $student->academic_year }}
           </div>
           <div class="col-md-6">

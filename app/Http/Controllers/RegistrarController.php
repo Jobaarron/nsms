@@ -1215,15 +1215,14 @@ class RegistrarController extends Controller
                                     ->orderBy('first_name')
                                     ->get();
             
-            // Build class info string
-            $classInfo = $selectedGrade;
+            // Build class info string using consistent format
+            $classInfo = $selectedGrade . ' - ' . $selectedSection;
             if ($selectedStrand) {
-                $classInfo .= ' ' . $selectedStrand;
+                $classInfo = $selectedGrade . ' - ' . $selectedSection . ' - ' . $selectedStrand;
                 if ($selectedTrack) {
-                    $classInfo .= '-' . $selectedTrack;
+                    $classInfo = $selectedGrade . ' - ' . $selectedSection . ' - ' . $selectedStrand . ' - ' . $selectedTrack;
                 }
             }
-            $classInfo .= ' - Section ' . $selectedSection;
             
             // Get class adviser
             $adviserQuery = FacultyAssignment::where('grade_level', $selectedGrade)

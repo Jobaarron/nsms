@@ -5,13 +5,17 @@
       <div>
         <h1 class="section-title mb-0">{{ $quarter }} Quarter Grades</h1>
         <div class="text-muted">
-          <i class="ri-file-text-line me-1"></i>{{ $student->grade_level }} - {{ $student->section }}
-          @if($student->strand)
-            <span class="badge bg-info ms-2">{{ $student->strand }}</span>
-            @if($student->track)
-              <span class="badge bg-warning ms-1">{{ $student->track }}</span>
-            @endif
-          @endif
+          <i class="ri-file-text-line me-1"></i>
+          @php
+            $gradeDetailsClass = $student->grade_level . ' - ' . $student->section;
+            if ($student->strand) {
+                $gradeDetailsClass = $student->grade_level . ' - ' . $student->section . ' - ' . $student->strand;
+                if ($student->track) {
+                    $gradeDetailsClass = $student->grade_level . ' - ' . $student->section . ' - ' . $student->strand . ' - ' . $student->track;
+                }
+            }
+          @endphp
+          {{ $gradeDetailsClass }}
         </div>
       </div>
       <a href="{{ route('student.grades.index') }}" class="btn btn-outline-secondary">

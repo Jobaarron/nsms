@@ -7,9 +7,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const titleText = titleElement?.textContent?.trim() || '';
     
     console.log('Page title:', titleText);
+    console.log('Current URL:', window.location.pathname);
     
     // Only run dashboard functionality if we're on the actual dashboard
-    if (titleText === 'Teacher Dashboard') {
+    if (titleText === 'Teacher Dashboard' && window.location.pathname === '/teacher') {
         console.log('On teacher dashboard - initializing functionality');
         initializeDashboard();
     } else {

@@ -1,7 +1,3 @@
-/**
- * Faculty Head - Assign Teacher JavaScript
- * CLEAN EXTERNAL VERSION - Loaded in HEAD
- */
 
 console.log('=== EXTERNAL FACULTY HEAD SCRIPT LOADING ===');
 
@@ -443,15 +439,14 @@ function showSectionDetailsAdviser() {
 
 // Function to view class list from assignment tables
 function viewClassList(gradeLevel, section, strand, track) {
-    // Build class title
-    let classTitle = `${gradeLevel}`;
+    // Build class title using consistent format
+    let classTitle = `${gradeLevel} - ${section}`;
     if (strand && strand !== '') {
-        classTitle += ` ${strand}`;
+        classTitle = `${gradeLevel} - ${section} - ${strand}`;
         if (track && track !== '') {
-            classTitle += `-${track}`;
+            classTitle = `${gradeLevel} - ${section} - ${strand} - ${track}`;
         }
     }
-    classTitle += ` Section ${section}`;
     
     // Show modal
     const modal = new bootstrap.Modal(document.getElementById('sectionDetailsModal'));

@@ -315,16 +315,19 @@
                                     <div class="fw-semibold text-capitalize">{{ $student->student_type ?? 'New' }}</div>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label text-muted small">Section</label>
+                                    <label class="form-label text-muted small">Class</label>
                                     <div class="fw-semibold">
                                         @if($student->section)
-                                            {{ $student->section }}
-                                            @if($student->strand)
-                                                <br><span class="badge bg-info">{{ $student->strand }}</span>
-                                                @if($student->track)
-                                                    <span class="badge bg-warning ms-1">{{ $student->track }}</span>
-                                                @endif
-                                            @endif
+                                            @php
+                                                $dashboardClass = $student->grade_level . ' - ' . $student->section;
+                                                if ($student->strand) {
+                                                    $dashboardClass = $student->grade_level . ' - ' . $student->section . ' - ' . $student->strand;
+                                                    if ($student->track) {
+                                                        $dashboardClass = $student->grade_level . ' - ' . $student->section . ' - ' . $student->strand . ' - ' . $student->track;
+                                                    }
+                                                }
+                                            @endphp
+                                            {{ $dashboardClass }}
                                         @else
                                             <span class="text-muted">Processing assignment...</span>
                                         @endif
@@ -411,10 +414,23 @@
                             </div>
                             <div class="timeline-item {{ $student->section ? 'completed' : '' }}">
                                 <h6 class="mb-1 {{ $student->section ? 'text-success' : 'text-muted' }}">
-                                    <i class="ri-group-line me-1"></i>Section Assignment
+                                    <i class="ri-group-line me-1"></i>Class Assignment
                                 </h6>
                                 <small class="text-muted">
-                                    {{ $student->section ?? 'To be assigned' }}
+                                    @if($student->section)
+                                        @php
+                                            $timelineClass = $student->grade_level . ' - ' . $student->section;
+                                            if ($student->strand) {
+                                                $timelineClass = $student->grade_level . ' - ' . $student->section . ' - ' . $student->strand;
+                                                if ($student->track) {
+                                                    $timelineClass = $student->grade_level . ' - ' . $student->section . ' - ' . $student->strand . ' - ' . $student->track;
+                                                }
+                                            }
+                                        @endphp
+                                        {{ $timelineClass }}
+                                    @else
+                                        To be assigned
+                                    @endif
                                 </small>
                             </div>
                         </div>

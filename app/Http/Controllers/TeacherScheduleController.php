@@ -103,19 +103,42 @@ class TeacherScheduleController extends Controller
         // Group students by class
         $studentsByClass = collect();
         foreach ($assignments as $assignment) {
-            $students = Student::where('grade_level', $assignment->grade_level)
-                              ->where('section', $assignment->section)
-                              ->where('academic_year', $currentAcademicYear)
-                              ->where('is_active', true)
-                              ->orderBy('last_name')
-                              ->orderBy('first_name')
-                              ->get();
+            // Build student query with proper filtering - only enrolled and paid students
+            $studentsQuery = Student::where('grade_level', $assignment->grade_level)
+                                   ->where('section', $assignment->section)
+                                   ->where('academic_year', $currentAcademicYear)
+                                   ->where('is_active', true)
+                                   ->where('enrollment_status', 'enrolled')
+                                   ->where('is_paid', true);
+            
+            // Add strand filter if assignment has strand
+            if ($assignment->strand) {
+                $studentsQuery->where('strand', $assignment->strand);
+            }
+            
+            // Add track filter if assignment has track
+            if ($assignment->track) {
+                $studentsQuery->where('track', $assignment->track);
+            }
+            
+            $students = $studentsQuery->orderBy('last_name')
+                                    ->orderBy('first_name')
+                                    ->get();
+
+            // Build proper class name with strand and track
+            $className = $assignment->grade_level . ' - ' . $assignment->section;
+            if ($assignment->strand) {
+                $className = $assignment->grade_level . ' - ' . $assignment->section . ' - ' . $assignment->strand;
+                if ($assignment->track) {
+                    $className = $assignment->grade_level . ' - ' . $assignment->section . ' - ' . $assignment->strand . ' - ' . $assignment->track;
+                }
+            }
 
             $studentsByClass->push([
                 'assignment' => $assignment,
                 'students' => $students,
-                'class_name' => $assignment->grade_level . ' - ' . $assignment->section,
-                'subject' => $assignment->subject ? $assignment->subject->subject_name : 'No Subject Assigned'
+                'class_name' => $className,
+                'subject' => $assignment->subject ? $assignment->subject->subject_name : 'Advisory Class'
             ]);
         }
 
@@ -147,14 +170,27 @@ class TeacherScheduleController extends Controller
             return redirect()->route('teacher.schedule')->with('error', 'You are not assigned to this class.');
         }
 
-        // Get students in this class
-        $students = Student::where('grade_level', $gradeLevel)
-                          ->where('section', $section)
-                          ->where('academic_year', $currentAcademicYear)
-                          ->where('is_active', true)
-                          ->orderBy('last_name')
-                          ->orderBy('first_name')
-                          ->get();
+        // Get students in this class - only enrolled and paid students
+        $studentsQuery = Student::where('grade_level', $gradeLevel)
+                               ->where('section', $section)
+                               ->where('academic_year', $currentAcademicYear)
+                               ->where('is_active', true)
+                               ->where('enrollment_status', 'enrolled')
+                               ->where('is_paid', true);
+        
+        // Add strand filter if assignment has strand
+        if ($assignment->strand) {
+            $studentsQuery->where('strand', $assignment->strand);
+        }
+        
+        // Add track filter if assignment has track
+        if ($assignment->track) {
+            $studentsQuery->where('track', $assignment->track);
+        }
+        
+        $students = $studentsQuery->orderBy('last_name')
+                                ->orderBy('first_name')
+                                ->get();
 
         // Get class schedule
         $schedule = ClassSchedule::where('teacher_id', $teacher->id)

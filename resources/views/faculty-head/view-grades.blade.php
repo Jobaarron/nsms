@@ -193,11 +193,8 @@
                 <button type="submit" name="action" value="approve" class="btn btn-success" onclick="return confirm('Are you sure you want to approve these grades? Students will be able to view them.')">
                   <i class="ri-check-circle-line me-2"></i>Approve Grades
                 </button>
-                <button type="submit" name="action" value="request_revision" class="btn btn-warning" onclick="return confirm('Request revision? Teacher will be able to edit and resubmit.')">
+                <button type="submit" name="action" value="request_revision" class="btn btn-warning" onclick="return confirm('Request revision? Teacher will be able to edit and resubmit these grades.')">
                   <i class="ri-edit-line me-2"></i>Request Revision
-                </button>
-                <button type="submit" name="action" value="reject" class="btn btn-danger" onclick="return confirm('Are you sure you want to reject these grades? Please provide review notes.')">
-                  <i class="ri-close-circle-line me-2"></i>Reject Grades
                 </button>
               </div>
             </div>
@@ -278,8 +275,13 @@
                           <span class="badge bg-success">Approved</span>
                           @break
                         @case('rejected')
+                          <span class="badge bg-danger">Revised</span>
+                          @break
+                        @case('revision_requested')
                           <span class="badge bg-warning">Revised</span>
                           @break
+                        @default
+                          <span class="badge bg-secondary">{{ ucfirst($submission->status) }}</span>
                       @endswitch
                     </td>
                     <td>

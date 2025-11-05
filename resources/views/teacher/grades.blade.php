@@ -175,9 +175,6 @@
                 </td>
                 <td>
                   @switch($submission->status)
-                    @case('draft')
-                      <span class="badge bg-warning">Pending Review</span>
-                      @break
                     @case('submitted')
                       <span class="badge bg-warning">Under Review</span>
                       @break
@@ -185,11 +182,13 @@
                       <span class="badge bg-success">Approved</span>
                       @break
                     @case('rejected')
-                      <span class="badge bg-warning">Revised</span>
+                      <span class="badge bg-danger">Revised</span>
                       @break
                     @case('revision_requested')
                       <span class="badge bg-info">Revision Requested</span>
                       @break
+                    @default
+                      <span class="badge bg-secondary">{{ ucfirst($submission->status) }}</span>
                   @endswitch
                   @if($submission->review_notes)
                     <div class="small text-muted mt-1" title="{{ $submission->review_notes }}">

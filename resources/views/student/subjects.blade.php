@@ -269,8 +269,23 @@
                             </div>
                         @endif
                         <div class="mb-3">
-                            <label class="form-label text-muted small">Section</label>
-                            <div class="fw-semibold">{{ $student->section ?? 'To be assigned' }}</div>
+                            <label class="form-label text-muted small">Class</label>
+                            <div class="fw-semibold">
+                                @if($student->section)
+                                    @php
+                                        $classInfo = $student->grade_level . ' - ' . $student->section;
+                                        if ($student->strand) {
+                                            $classInfo = $student->grade_level . ' - ' . $student->section . ' - ' . $student->strand;
+                                            if ($student->track) {
+                                                $classInfo = $student->grade_level . ' - ' . $student->section . ' - ' . $student->strand . ' - ' . $student->track;
+                                            }
+                                        }
+                                    @endphp
+                                    {{ $classInfo }}
+                                @else
+                                    To be assigned
+                                @endif
+                            </div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label text-muted small">Academic Year</label>

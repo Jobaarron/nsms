@@ -57,8 +57,20 @@
         <div class="card card-summary card-schedule h-100">
           <div class="card-body text-center">
             <i class="ri-group-line display-6 mb-2"></i>
-            <div>Section</div>
-            <h3>{{ $stats['section'] }}</h3>
+            <div>Class</div>
+            <h3>
+              @php
+                $student = Auth::guard('student')->user();
+                $classDisplay = $student->grade_level . ' - ' . $student->section;
+                if ($student->strand) {
+                    $classDisplay = $student->grade_level . ' - ' . $student->section . ' - ' . $student->strand;
+                    if ($student->track) {
+                        $classDisplay = $student->grade_level . ' - ' . $student->section . ' - ' . $student->strand . ' - ' . $student->track;
+                    }
+                }
+              @endphp
+              {{ $classDisplay }}
+            </h3>
           </div>
         </div>
       </div>
