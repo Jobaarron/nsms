@@ -264,15 +264,18 @@ function submitPaymentSchedule() {
     .then(data => {
         if (data.success) {
             showAlert(data.message, 'success');
-            
-            // Redirect after a short delay
-            setTimeout(() => {
-                if (data.redirect_url) {
-                    window.location.href = data.redirect_url;
-                } else {
-                    window.location.reload();
+            // Show PDF modal instead of redirecting immediately
+            showPDFModal({
+                transactionId: data.transaction_id,
+                onClose: () => {
+                    // After modal is closed, redirect or reload
+                    if (data.redirect_url) {
+                        window.location.href = data.redirect_url;
+                    } else {
+                        window.location.reload();
+                    }
                 }
-            }, 2000);
+            });
         } else {
             showAlert(data.message || 'Failed to create payment schedule.', 'danger');
             resetSubmitButton();
@@ -283,6 +286,62 @@ function submitPaymentSchedule() {
         showAlert('An error occurred while processing your request.', 'danger');
         resetSubmitButton();
     });
+    // Show PDF modal after successful payment
+    function showPDFModal({ transactionId, onClose }) {
+        // Remove existing modal if present
+        let existing = document.getElementById('pdf-modal');
+        if (existing) existing.remove();
+
+        // Build the receipt URL with transaction_id if available
+        let receiptUrl = '/pdf/receipt';
+        if (transactionId) {
+            receiptUrl += '?transaction_id=' + encodeURIComponent(transactionId);
+        }
+
+        // Modal HTML
+        const modal = document.createElement('div');
+        modal.id = 'pdf-modal';
+        modal.style.position = 'fixed';
+        modal.style.top = '0';
+        modal.style.left = '0';
+        modal.style.width = '100vw';
+        modal.style.height = '100vh';
+        modal.style.background = 'rgba(0,0,0,0.5)';
+        modal.style.zIndex = '10000';
+        modal.style.display = 'flex';
+        modal.style.alignItems = 'center';
+        modal.style.justifyContent = 'center';
+
+        modal.innerHTML = `
+            <div style="background: #fff; border-radius: 8px; max-width: 90vw; max-height: 90vh; width: 600px; box-shadow: 0 2px 16px rgba(0,0,0,0.2); display: flex; flex-direction: column;">
+                <div style="padding: 1rem; border-bottom: 1px solid #eee; display: flex; align-items: center; justify-content: space-between;">
+                    <h5 style="margin: 0;">Download Receipt</h5>
+                    <button id="pdf-modal-close" style="background: none; border: none; font-size: 1.5rem; line-height: 1; cursor: pointer;">&times;</button>
+                </div>
+                <div style="flex: 1; overflow: auto; padding: 1rem;">
+                    <iframe src="${receiptUrl}" style="width: 100%; height: 400px; border: none;"></iframe>
+                </div>
+                <div style="padding: 1rem; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 0.5rem;">
+                    <button id="pdf-modal-cancel" class="btn btn-secondary">Cancel</button>
+                    <a id="pdf-modal-download" href="${receiptUrl}" download class="btn btn-primary">Download Receipt</a>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Close modal handler
+        function closeModal() {
+            modal.remove();
+            if (typeof onClose === 'function') onClose();
+        }
+        document.getElementById('pdf-modal-close').onclick = closeModal;
+        document.getElementById('pdf-modal-cancel').onclick = closeModal;
+        // Download button: close modal after click
+        document.getElementById('pdf-modal-download').onclick = function() {
+            setTimeout(closeModal, 500); // Give time for download to start
+        };
+    }
 }
 
 function collectFormData() {

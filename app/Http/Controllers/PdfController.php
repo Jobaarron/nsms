@@ -661,4 +661,75 @@ class PdfController extends Controller
             return response($pdf->Output('Disciplinary-Conference-Reports.pdf', 'S'))
                 ->header('Content-Type', 'application/pdf');
         }
+            /**
+     * Show static receipt PDF with dynamic overlay fields.
+     * Fields: application_id, student_id, transaction_id, student full name, timestamp, appointment date, event
+     * @param Request $request
+     * @return \Illuminate\Http\Response
+     */
+    public function showReceipt(Request $request)
+    {
+        $transactionId = $request->query('transaction_id');
+        if (!$transactionId) {
+            abort(404, 'Transaction ID is required.');
+        }
+
+        // Find payment by transaction_id
+        $payment = \App\Models\Payment::where('transaction_id', $transactionId)->first();
+        if (!$payment) {
+            abort(404, 'Payment not found.');
+        }
+
+        // Get Enrollee and Student
+        $enrollee = null;
+        $student = null;
+        if ($payment->payable_type === 'App\\Models\\Enrollee') {
+            $enrollee = $payment->payable;
+            $student = $enrollee->student;
+        } elseif ($payment->payable_type === 'App\\Models\\Student') {
+            $student = $payment->payable;
+            $enrollee = $student->enrollee;
+        }
+
+        // Fallbacks
+        $applicationId = $enrollee ? $enrollee->application_id : '';
+        $studentId = $student ? $student->student_id : '';
+        $studentName = $student ? ($student->full_name ?? ($student->first_name . ' ' . $student->last_name)) : '';
+        $timestamp = $payment->paid_at ? $payment->paid_at->format('Y-m-d H:i:s') : ($payment->created_at ? $payment->created_at->format('Y-m-d H:i:s') : '');
+    // Use scheduled_date from payment table for appointment date
+    $appointmentDate = $payment->scheduled_date ? (\Carbon\Carbon::parse($payment->scheduled_date)->format('Y-m-d')) : '';
+        $event = $payment->period_name ?? '';
+
+        // Load static PDF
+        $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
+        $templatePath = storage_path('app/public/receipt/Receipt.pdf');
+        if (!file_exists($templatePath)) {
+            abort(404, 'Receipt PDF template not found.');
+        }
+        $pdf->setSourceFile($templatePath);
+        $tplId = $pdf->importPage(1);
+        $size = $pdf->getTemplateSize($tplId);
+        $orientation = ($size['width'] > $size['height']) ? 'L' : 'P';
+        $pdf->AddPage($orientation, [$size['width'], $size['height']]);
+        $pdf->SetFont('dejavusans', '', 10);
+        $pdf->useTemplate($tplId);
+
+        // Overlay fields (adjust coordinates as needed for your template)
+        $pdf->SetXY(120, 82); // Application ID
+        $pdf->Write(0, '' . $applicationId);
+        $pdf->SetXY(95, 82); // Student ID
+        $pdf->Write(0, '' . $studentId);
+        $pdf->SetXY(95, 63); // Transaction ID
+        $pdf->Write(0, '' . $transactionId);
+    $pdf->SetXY(95, 98); // Student Name
+    $pdf->Write(0, $studentName . ' /');
+        $pdf->SetXY(95, 72); // Timestamp
+        $pdf->Write(0, '' . $timestamp);
+        $pdf->SetXY(95, 108); // Appointment Date
+        $pdf->Write(0, '' . $appointmentDate);
+        $pdf->SetXY(95, 120); // Event
+        $pdf->Write(0, '' . $event);
+
+        return response($pdf->Output('Receipt.pdf', 'S'))->header('Content-Type', 'application/pdf');
+    }
     }

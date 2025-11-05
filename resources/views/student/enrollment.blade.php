@@ -240,7 +240,7 @@
                                             <label class="form-label">Amount to Pay</label>
                                             <div class="input-group">
                                                 <span class="input-group-text">₱</span>
-                                                <input type="number" class="form-control" name="full_payment_amount" step="0.01" min="0" value="{{ number_format($totalAmount, 2, '.', '') }}" placeholder="0.00">
+                                                <input type="number" class="form-control" name="full_payment_amount" step="0.01" min="0" value="{{ number_format($totalAmount, 2, '.', '') }}" placeholder="0.00" disabled>
                                             </div>
                                         </div>
                                     </div>
@@ -275,7 +275,7 @@
                                                     <input type="date" class="form-control form-control-sm mb-2" name="quarterly_date_1" min="{{ date('Y-m-d') }}" value="{{ $quarterDates[0] }}">
                                                     <div class="input-group input-group-sm">
                                                         <span class="input-group-text">₱</span>
-                                                        <input type="number" class="form-control" name="quarterly_amount_1" step="0.01" min="0" value="{{ number_format($quarterlyAmount, 2, '.', '') }}" placeholder="0.00">
+                                                        <input type="number" class="form-control" name="quarterly_amount_1" step="0.01" min="0" value="{{ number_format($quarterlyAmount, 2, '.', '') }}" placeholder="0.00" disabled>
                                                     </div>
                                                 </div>
                                             </div>
@@ -287,7 +287,7 @@
                                                     <input type="date" class="form-control form-control-sm mb-2" name="quarterly_date_2" min="{{ date('Y-m-d') }}" value="{{ $quarterDates[1] }}">
                                                     <div class="input-group input-group-sm">
                                                         <span class="input-group-text">₱</span>
-                                                        <input type="number" class="form-control" name="quarterly_amount_2" step="0.01" min="0" value="{{ number_format($quarterlyAmount, 2, '.', '') }}" placeholder="0.00">
+                                                        <input type="number" class="form-control" name="quarterly_amount_2" step="0.01" min="0" value="{{ number_format($quarterlyAmount, 2, '.', '') }}" placeholder="0.00" disabled>
                                                     </div>
                                                 </div>
                                             </div>
@@ -299,7 +299,7 @@
                                                     <input type="date" class="form-control form-control-sm mb-2" name="quarterly_date_3" min="{{ date('Y-m-d') }}" value="{{ $quarterDates[2] }}">
                                                     <div class="input-group input-group-sm">
                                                         <span class="input-group-text">₱</span>
-                                                        <input type="number" class="form-control" name="quarterly_amount_3" step="0.01" min="0" value="{{ number_format($quarterlyAmount, 2, '.', '') }}" placeholder="0.00">
+                                                        <input type="number" class="form-control" name="quarterly_amount_3" step="0.01" min="0" value="{{ number_format($quarterlyAmount, 2, '.', '') }}" placeholder="0.00" disabled>
                                                     </div>
                                                 </div>
                                             </div>
@@ -311,7 +311,7 @@
                                                     <input type="date" class="form-control form-control-sm mb-2" name="quarterly_date_4" min="{{ date('Y-m-d') }}" value="{{ $quarterDates[3] }}">
                                                     <div class="input-group input-group-sm">
                                                         <span class="input-group-text">₱</span>
-                                                        <input type="number" class="form-control" name="quarterly_amount_4" step="0.01" min="0" value="{{ number_format($quarterlyAmount, 2, '.', '') }}" placeholder="0.00">
+                                                        <input type="number" class="form-control" name="quarterly_amount_4" step="0.01" min="0" value="{{ number_format($quarterlyAmount, 2, '.', '') }}" placeholder="0.00" disabled>
                                                     </div>
                                                 </div>
                                             </div>
@@ -355,7 +355,7 @@
                                                         <input type="date" class="form-control form-control-sm mb-1" name="monthly_date_{{ $i }}" min="{{ date('Y-m-d') }}" value="{{ $monthDates[$i-1] }}">
                                                         <div class="input-group input-group-sm">
                                                             <span class="input-group-text">₱</span>
-                                                            <input type="number" class="form-control" name="monthly_amount_{{ $i }}" step="0.01" min="0" value="{{ number_format($monthlyAmount, 2, '.', '') }}" placeholder="0.00">
+                                                            <input type="number" class="form-control" name="monthly_amount_{{ $i }}" step="0.01" min="0" value="{{ number_format($monthlyAmount, 2, '.', '') }}" placeholder="0.00" disabled>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -399,7 +399,7 @@
                                     @elseif(in_array($paymentScheduleStatus->confirmation_status, ['rejected', 'declined']))
                                         <div class="d-grid gap-2">
                                             <button type="submit" class="btn btn-primary btn-lg" id="enrollBtn">
-                                                <i class="ri-send-plane-line me-2"></i>Resubmit Payment Schedule
+                                                <i class="ri-send-plane-line me-2"></i>Resubmit Payment
                                             </button>
                                             <a href="{{ route('student.dashboard') }}" class="btn btn-outline-secondary">
                                                 <i class="ri-arrow-left-line me-2"></i>Back to Dashboard
@@ -409,7 +409,7 @@
                                 @else
                                     <div class="d-grid gap-2">
                                         <button type="submit" class="btn btn-primary btn-lg" id="enrollBtn">
-                                            <i class="ri-send-plane-line me-2"></i>Submit Payment Schedule
+                                            <i class="ri-send-plane-line me-2"></i>Confirm Payment
                                         </button>
                                         <a href="{{ route('student.dashboard') }}" class="btn btn-outline-secondary">
                                             <i class="ri-arrow-left-line me-2"></i>Back to Dashboard

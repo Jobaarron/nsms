@@ -859,3 +859,6 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
 
 // PDF route for counseling session
 Route::get('/pdf/counseling-session', [PdfController::class, 'show']);
+
+// PDF Receipt (dynamic overlay)
+Route::get('/pdf/receipt', [PdfController::class, 'showReceipt'])->name('pdf.receipt');
