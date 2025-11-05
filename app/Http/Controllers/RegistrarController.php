@@ -34,7 +34,21 @@ class RegistrarController extends Controller
             ->take(5)
             ->get();
 
-        return view('registrar.dashboard', compact('stats', 'recent_applications'));
+        // Applications by grade level (from reports)
+        $by_grade = Enrollee::selectRaw('grade_level_applied, count(*) as count')
+            ->groupBy('grade_level_applied')
+            ->orderBy('grade_level_applied')
+            ->get();
+
+        // Applications by month (from reports)
+        $by_month = Enrollee::selectRaw('MONTH(created_at) as month, YEAR(created_at) as year, count(*) as count')
+            ->groupBy('month', 'year')
+            ->orderBy('year', 'desc')
+            ->orderBy('month', 'desc')
+            ->take(12)
+            ->get();
+
+        return view('registrar.dashboard', compact('stats', 'recent_applications', 'by_grade', 'by_month'));
     }
 
     /**
@@ -422,34 +436,6 @@ class RegistrarController extends Controller
         return view('registrar.approved', compact('approved_applications'));
     }
 
-    /**
-     * Show reports
-     */
-    public function reports()
-    {
-        $stats = [
-            'total_applications' => Enrollee::count(),
-            'pending_applications' => Enrollee::where('enrollment_status', 'pending')->count(),
-            'approved_applications' => Enrollee::where('enrollment_status', 'approved')->count(),
-            'declined_applications' => Enrollee::where('enrollment_status', 'declined')->count(),
-        ];
-
-        // Applications by grade level
-        $by_grade = Enrollee::selectRaw('grade_level_applied, count(*) as count')
-            ->groupBy('grade_level_applied')
-            ->orderBy('grade_level_applied')
-            ->get();
-
-        // Applications by month
-        $by_month = Enrollee::selectRaw('MONTH(created_at) as month, YEAR(created_at) as year, count(*) as count')
-            ->groupBy('month', 'year')
-            ->orderBy('year', 'desc')
-            ->orderBy('month', 'desc')
-            ->take(12)
-            ->get();
-
-        return view('registrar.reports', compact('stats', 'by_grade', 'by_month'));
-    }
 
     /**
      * Get application documents

@@ -19,13 +19,17 @@ class CashierController extends Controller
     /**
      * Display the cashier dashboard.
      */
-    public function index()
+    public function index(Request $request)
     {
         $cashier = Auth::guard('cashier')->user();
         
         if (!$cashier) {
             return redirect()->route('cashier.login');
         }
+
+        // Handle date filtering for reports
+        $dateFrom = $request->get('date_from', now()->startOfMonth()->format('Y-m-d'));
+        $dateTo = $request->get('date_to', now()->format('Y-m-d'));
 
         // Get payment statistics
         $pendingPayments = Payment::pending()->count();
@@ -101,7 +105,9 @@ class CashierController extends Controller
             'paymentMethodData',
             'monthlyRevenue',
             'dailyRevenue',
-            'topFeeCategories'
+            'topFeeCategories',
+            'dateFrom',
+            'dateTo'
         ));
     }
 
@@ -686,6 +692,101 @@ class CashierController extends Controller
             'success' => true,
             'message' => "Fee {$status} successfully!",
             'is_active' => $fee->is_active
+        ]);
+    }
+
+    /**
+     * Display payment archives (merged completed payments and history).
+     */
+    public function paymentArchives()
+    {
+        $cashier = Auth::guard('cashier')->user();
+        
+        if (!$cashier) {
+            return redirect()->route('cashier.login');
+        }
+
+        return view('cashier.payment-archives', compact('cashier'));
+    }
+
+    /**
+     * Get payment archives data for AJAX requests.
+     */
+    public function getPaymentArchivesData(Request $request)
+    {
+        $query = Payment::with(['payable', 'fee', 'cashier']);
+
+        // Apply filters
+        if ($request->filled('payment_method')) {
+            $query->where('payment_method', $request->payment_method);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('confirmation_status', $request->status);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('transaction_id', 'like', "%{$search}%")
+                  ->orWhereHas('payable', function ($subQ) use ($search) {
+                      $subQ->where('first_name', 'like', "%{$search}%")
+                           ->orWhere('last_name', 'like', "%{$search}%")
+                           ->orWhere('student_id', 'like', "%{$search}%")
+                           ->orWhere('application_id', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        // Get confirmed and completed payments
+        $query->whereIn('confirmation_status', ['confirmed', 'completed']);
+
+        $payments = $query->orderBy('confirmed_at', 'desc')->paginate(20);
+
+        // Get statistics
+        $statistics = [
+            'confirmed_payments' => Payment::where('confirmation_status', 'confirmed')->count(),
+            'completed_payments' => Payment::where('confirmation_status', 'completed')->count(),
+        ];
+
+        return response()->json([
+            'success' => true,
+            'payments' => $payments,
+            'statistics' => $statistics
+        ]);
+    }
+
+    /**
+     * Get completed payments data for AJAX requests.
+     */
+    public function getCompletedPaymentsData(Request $request)
+    {
+        $query = Payment::with(['payable', 'fee', 'cashier'])
+            ->where('confirmation_status', 'confirmed');
+
+        // Apply filters
+        if ($request->filled('payment_method')) {
+            $query->where('payment_method', $request->payment_method);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('transaction_id', 'like', "%{$search}%")
+                  ->orWhereHas('payable', function ($subQ) use ($search) {
+                      $subQ->where('first_name', 'like', "%{$search}%")
+                           ->orWhere('last_name', 'like', "%{$search}%")
+                           ->orWhere('student_id', 'like', "%{$search}%")
+                           ->orWhere('application_id', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        $payments = $query->orderBy('confirmed_at', 'desc')->paginate(20);
+
+        return response()->json([
+            'success' => true,
+            'payments' => $payments
         ]);
     }
 }

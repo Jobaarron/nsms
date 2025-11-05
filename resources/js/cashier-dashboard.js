@@ -278,10 +278,63 @@ function viewPaymentDetails(paymentId) {
     // TODO: Implement payment details modal
 }
 
+/**
+ * Set date range for reports filtering
+ * @param {string} range - Range type (today, week, month, year)
+ */
+function setDateRange(range) {
+    const today = new Date();
+    let fromDate, toDate;
+
+    switch(range) {
+        case 'today':
+            fromDate = toDate = today.toISOString().split('T')[0];
+            break;
+        case 'week':
+            const weekStart = new Date(today.setDate(today.getDate() - today.getDay()));
+            fromDate = weekStart.toISOString().split('T')[0];
+            toDate = new Date().toISOString().split('T')[0];
+            break;
+        case 'month':
+            fromDate = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+            toDate = new Date().toISOString().split('T')[0];
+            break;
+        case 'year':
+            fromDate = new Date(today.getFullYear(), 0, 1).toISOString().split('T')[0];
+            toDate = new Date().toISOString().split('T')[0];
+            break;
+    }
+
+    const dateFromInput = document.getElementById('date_from');
+    const dateToInput = document.getElementById('date_to');
+    
+    if (dateFromInput) dateFromInput.value = fromDate;
+    if (dateToInput) dateToInput.value = toDate;
+}
+
+/**
+ * Export payment breakdown data
+ */
+function exportPaymentBreakdown() {
+    console.log('Export payment breakdown');
+    alert('Export functionality will be implemented');
+}
+
+/**
+ * Export all reports
+ */
+function exportAllReports() {
+    console.log('Export all reports');
+    alert('Export functionality will be implemented');
+}
+
 // Global function assignments for onclick handlers
 window.viewPaymentDetails = viewPaymentDetails;
 window.setCashierDashboardData = setCashierDashboardData;
 window.initializeCashierDashboard = initializeCashierDashboard;
+window.setDateRange = setDateRange;
+window.exportPaymentBreakdown = exportPaymentBreakdown;
+window.exportAllReports = exportAllReports;
 
 // Auto-initialize when script loads
 initializeCashierDashboard();

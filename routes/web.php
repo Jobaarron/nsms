@@ -731,8 +731,6 @@ Route::prefix('registrar')->name('registrar.')->group(function () {
         Route::get('/notices/{id}', [RegistrarController::class, 'getNotice'])->name('notices.get.single');
         Route::get('/recipients/preview', [RegistrarController::class, 'previewRecipients'])->name('recipients.preview');
         
-        // Reports
-        Route::get('/reports', [RegistrarController::class, 'reports'])->name('reports');
         
         // Class Lists Management
         Route::get('/class-lists', [RegistrarController::class, 'classLists'])->name('class-lists');
@@ -830,9 +828,12 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         
         // Payment Management
         Route::get('/payments', [CashierController::class, 'payments'])->name('payments');
+        Route::get('/payment-archives', [CashierController::class, 'paymentArchives'])->name('payment-archives');
         Route::get('/completed-payments', [CashierController::class, 'completedPayments'])->name('completed-payments');
         Route::get('/payment-history', [CashierController::class, 'paymentHistory'])->name('payment-history');
         Route::get('/api/payment-history', [CashierController::class, 'getPaymentHistoryData'])->name('api.payment-history');
+        Route::get('/api/payment-archives', [CashierController::class, 'getPaymentArchivesData'])->name('api.payment-archives');
+        Route::get('/api/completed-payments', [CashierController::class, 'getCompletedPaymentsData'])->name('api.completed-payments');
         
         // Payment Actions
         Route::post('/payments/{payment}/confirm', [CashierController::class, 'confirmPayment'])->name('payments.confirm');

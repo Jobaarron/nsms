@@ -145,13 +145,13 @@
                             </a>
                         </div>
                         <div class="col-md-3">
-                            <a href="{{ route('cashier.payment-history') }}" class="btn btn-outline-primary w-100">
-                                <i class="ri-history-line me-2"></i>View History
+                            <a href="{{ route('cashier.payment-archives') }}" class="btn btn-outline-primary w-100">
+                                <i class="ri-archive-line me-2"></i>Payment Archives
                             </a>
                         </div>
                         <div class="col-md-3">
-                            <a href="{{ route('cashier.reports') }}" class="btn disabled btn-outline-success w-100">
-                                <i class="ri-bar-chart-line me-2"></i>Generate Reports
+                            <a href="{{ route('cashier.fees') }}" class="btn btn-outline-info w-100">
+                                <i class="ri-money-dollar-circle-line me-2"></i>Fee Management
                             </a>
                         </div>
                     </div>
@@ -237,6 +237,81 @@
         </div>
     </div>
 
+
+    <!-- Payment Methods Breakdown Table -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 pb-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="ri-table-line me-2"></i>Payment Methods Breakdown
+                        </h5>
+                        <button class="btn btn-outline-success btn-sm" onclick="exportPaymentBreakdown()">
+                            <i class="ri-download-line me-2"></i>Export
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if($paymentMethodData['full']['count'] > 0 || $paymentMethodData['quarterly']['count'] > 0 || $paymentMethodData['monthly']['count'] > 0)
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Payment Method</th>
+                                        <th>Transaction Count</th>
+                                        <th>Total Amount</th>
+                                        <th>Percentage</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @php
+                                        $totalMethodAmount = $paymentMethodData['full']['amount'] + $paymentMethodData['quarterly']['amount'] + $paymentMethodData['monthly']['amount'];
+                                        $methods = [
+                                            ['name' => 'Full Payment', 'count' => $paymentMethodData['full']['count'], 'amount' => $paymentMethodData['full']['amount']],
+                                            ['name' => 'Quarterly', 'count' => $paymentMethodData['quarterly']['count'], 'amount' => $paymentMethodData['quarterly']['amount']],
+                                            ['name' => 'Monthly', 'count' => $paymentMethodData['monthly']['count'], 'amount' => $paymentMethodData['monthly']['amount']]
+                                        ];
+                                    @endphp
+                                    @foreach($methods as $method)
+                                        @if($method['count'] > 0)
+                                            @php
+                                                $percentage = $totalMethodAmount > 0 ? ($method['amount'] / $totalMethodAmount) * 100 : 0;
+                                            @endphp
+                                            <tr>
+                                                <td>
+                                                    <span class="fw-bold">{{ $method['name'] }}</span>
+                                                </td>
+                                                <td>{{ number_format($method['count']) }}</td>
+                                                <td>
+                                                    <span class="fw-bold text-success">
+                                                        ₱{{ number_format($method['amount'], 2) }}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="progress flex-grow-1 me-2" style="height: 8px;">
+                                                            <div class="progress-bar bg-success" style="width: {{ $percentage }}%"></div>
+                                                        </div>
+                                                        <small class="text-muted">{{ number_format($percentage, 1) }}%</small>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        @endif
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @else
+                        <div class="text-center py-4">
+                            <i class="ri-file-list-line fs-1 text-muted mb-3"></i>
+                            <p class="text-muted">No payment data available</p>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
 
     @push('scripts')
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
