@@ -473,6 +473,230 @@ class RolePermissionSeeder extends Seeder
         // Assign teacher role
         $teacherUser->assignRole('teacher');
 
+        // 4. Create Teacher User 2
+        $teacherUser2 = User::firstOrCreate(
+            ['email' => 'teacher2@nicolites.edu'],
+            [
+                'name' => 'Maria Santos',
+                'password' => bcrypt('teacher123'),
+            ]
+        );
+        
+        // Create Teacher record
+        Teacher::firstOrCreate(
+            ['user_id' => $teacherUser2->id],
+            [
+                'employee_id' => 'TCH002',
+                'department' => 'Science Department',
+                'position' => 'Senior High School Teacher',
+                'specialization' => 'Biology and Chemistry',
+                'hire_date' => '2020-08-15',
+                'phone_number' => '09456789013',
+                'address' => '456 Science Ave, Quezon City',
+                'qualifications' => 'Bachelor of Science in Biology, Master of Science in Chemistry',
+                'is_active' => true,
+            ]
+        );
+        
+        // Assign teacher role
+        $teacherUser2->assignRole('teacher');
+
+        // 5. Create Teacher User 3
+        $teacherUser3 = User::firstOrCreate(
+            ['email' => 'teacher3@nicolites.edu'],
+            [
+                'name' => 'Robert Cruz',
+                'password' => bcrypt('teacher123'),
+            ]
+        );
+        
+        // Create Teacher record
+        Teacher::firstOrCreate(
+            ['user_id' => $teacherUser3->id],
+            [
+                'employee_id' => 'TCH003',
+                'department' => 'English Department',
+                'position' => 'Junior High School Teacher',
+                'specialization' => 'English Literature and Communication',
+                'hire_date' => '2019-06-20',
+                'phone_number' => '09456789014',
+                'address' => '789 Literature St, Pasig City',
+                'qualifications' => 'Bachelor of Arts in English, Master of Arts in English Literature',
+                'is_active' => true,
+            ]
+        );
+        
+        // Assign teacher role
+        $teacherUser3->assignRole('teacher');
+
+        // 6. Create Teacher User 4
+        $teacherUser4 = User::firstOrCreate(
+            ['email' => 'teacher4@nicolites.edu'],
+            [
+                'name' => 'Ana Garcia',
+                'password' => bcrypt('teacher123'),
+            ]
+        );
+        
+        // Create Teacher record
+        Teacher::firstOrCreate(
+            ['user_id' => $teacherUser4->id],
+            [
+                'employee_id' => 'TCH004',
+                'department' => 'Social Studies Department',
+                'position' => 'Senior High School Teacher',
+                'specialization' => 'Philippine History and Government',
+                'hire_date' => '2022-01-12',
+                'phone_number' => '09456789015',
+                'address' => '123 History Blvd, Mandaluyong City',
+                'qualifications' => 'Bachelor of Arts in History, Master of Arts in Philippine Studies',
+                'is_active' => true,
+            ]
+        );
+        
+        // Assign teacher role
+        $teacherUser4->assignRole('teacher');
+
+        // 7. Create Teacher User 5
+        $teacherUser5 = User::firstOrCreate(
+            ['email' => 'teacher5@nicolites.edu'],
+            [
+                'name' => 'Michael Torres',
+                'password' => bcrypt('teacher123'),
+            ]
+        );
+        
+        // Create Teacher record
+        Teacher::firstOrCreate(
+            ['user_id' => $teacherUser5->id],
+            [
+                'employee_id' => 'TCH005',
+                'department' => 'Physical Education Department',
+                'position' => 'Elementary Teacher',
+                'specialization' => 'Physical Education and Health',
+                'hire_date' => '2021-09-05',
+                'phone_number' => '09456789016',
+                'address' => '567 Sports Complex, Taguig City',
+                'qualifications' => 'Bachelor of Science in Physical Education, Certificate in Sports Training',
+                'is_active' => true,
+            ]
+        );
+        
+        // Assign teacher role
+        $teacherUser5->assignRole('teacher');
+
+        // 8. Create Teacher User 6
+        $teacherUser6 = User::firstOrCreate(
+            ['email' => 'teacher6@nicolites.edu'],
+            [
+                'name' => 'Lisa Mendoza',
+                'password' => bcrypt('teacher123'),
+            ]
+        );
+        
+        // Create Teacher record
+        Teacher::firstOrCreate(
+            ['user_id' => $teacherUser6->id],
+            [
+                'employee_id' => 'TCH006',
+                'department' => 'Arts Department',
+                'position' => 'Junior High School Teacher',
+                'specialization' => 'Visual Arts and Music',
+                'hire_date' => '2020-11-18',
+                'phone_number' => '09456789017',
+                'address' => '890 Arts District, Muntinlupa City',
+                'qualifications' => 'Bachelor of Fine Arts, Certificate in Music Education',
+                'is_active' => true,
+            ]
+        );
+        
+        // Assign teacher role
+        $teacherUser6->assignRole('teacher');
+
+        // 9. Create Teacher User 7
+        $teacherUser7 = User::firstOrCreate(
+            ['email' => 'teacher7@nicolites.edu'],
+            [
+                'name' => 'David Villanueva',
+                'password' => bcrypt('teacher123'),
+            ]
+        );
+        
+        // Create Teacher record
+        Teacher::firstOrCreate(
+            ['user_id' => $teacherUser7->id],
+            [
+                'employee_id' => 'TCH007',
+                'department' => 'Technology Department',
+                'position' => 'Senior High School Teacher',
+                'specialization' => 'Information Technology and Computer Science',
+                'hire_date' => '2018-04-25',
+                'phone_number' => '09456789018',
+                'address' => '234 Tech Hub, Parañaque City',
+                'qualifications' => 'Bachelor of Science in Information Technology, Master of Science in Computer Science',
+                'is_active' => true,
+            ]
+        );
+        
+        // Assign teacher role
+        $teacherUser7->assignRole('teacher');
+
+        // 10. Create Teacher User 8
+        $teacherUser8 = User::firstOrCreate(
+            ['email' => 'teacher8@nicolites.edu'],
+            [
+                'name' => 'Carmen Flores',
+                'password' => bcrypt('teacher123'),
+            ]
+        );
+        
+        // Create Teacher record
+        Teacher::firstOrCreate(
+            ['user_id' => $teacherUser8->id],
+            [
+                'employee_id' => 'TCH008',
+                'department' => 'Home Economics Department',
+                'position' => 'Senior High School Teacher',
+                'specialization' => 'Culinary Arts and Food Technology',
+                'hire_date' => '2021-07-30',
+                'phone_number' => '09456789019',
+                'address' => '678 Culinary Street, Las Piñas City',
+                'qualifications' => 'Bachelor of Science in Food Technology, Certificate in Culinary Arts',
+                'is_active' => true,
+            ]
+        );
+        
+        // Assign teacher role
+        $teacherUser8->assignRole('teacher');
+
+        // 11. Create Teacher User 9
+        $teacherUser9 = User::firstOrCreate(
+            ['email' => 'teacher9@nicolites.edu'],
+            [
+                'name' => 'James Rodriguez',
+                'password' => bcrypt('teacher123'),
+            ]
+        );
+        
+        // Create Teacher record
+        Teacher::firstOrCreate(
+            ['user_id' => $teacherUser9->id],
+            [
+                'employee_id' => 'TCH009',
+                'department' => 'Values Education Department',
+                'position' => 'Elementary Teacher',
+                'specialization' => 'Values Education and Christian Living',
+                'hire_date' => '2019-12-02',
+                'phone_number' => '09456789020',
+                'address' => '345 Faith Avenue, Marikina City',
+                'qualifications' => 'Bachelor of Arts in Theology, Master of Arts in Religious Education',
+                'is_active' => true,
+            ]
+        );
+        
+        // Assign teacher role
+        $teacherUser9->assignRole('teacher');
+
         // 6. Create Registrar User for Testing
         $registrarUser = \App\Models\Registrar::firstOrCreate(
             ['email' => 'registrar@nicolites.edu'],
@@ -789,6 +1013,14 @@ class RolePermissionSeeder extends Seeder
         $this->command->info('cashier@nicolites.edu / cashier123');
         $this->command->info('assistant.cashier@nicolites.edu / assistant123');
         $this->command->info('teacher@nicolites.edu / teacher123');
+        $this->command->info('teacher2@nicolites.edu / teacher123');
+        $this->command->info('teacher3@nicolites.edu / teacher123');
+        $this->command->info('teacher4@nicolites.edu / teacher123');
+        $this->command->info('teacher5@nicolites.edu / teacher123');
+        $this->command->info('teacher6@nicolites.edu / teacher123');
+        $this->command->info('teacher7@nicolites.edu / teacher123');
+        $this->command->info('teacher8@nicolites.edu / teacher123');
+        $this->command->info('teacher9@nicolites.edu / teacher123');
         $this->command->info('faculty.head@nicolites.edu / facultyhead2024');
         $this->command->info('guidance.counselor.new@nicolites.edu / guidance2024');
         $this->command->info('head.counselor@nicolites.edu / headcounselor2024');
