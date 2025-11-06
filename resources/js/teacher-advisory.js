@@ -95,39 +95,37 @@ document.addEventListener('DOMContentLoaded', function() {
 window.viewStudentGrades = function(studentId) {
     const modal = new bootstrap.Modal(document.getElementById('viewGradesModal'));
     const modalContent = document.getElementById('gradesModalContent');
-    
-    // Reset modal content
+
+    // Show loading spinner
     modalContent.innerHTML = `
         <div class="text-center">
             <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Loading...</span>
             </div>
-            <p class="mt-2">Loading grades...</p>
+            <p class="mt-2">Loading report card PDF...</p>
         </div>
     `;
-    
     modal.show();
-    
-    // Fetch student grades via AJAX
-    fetch(`/teacher/advisory/student/${studentId}/grades`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                modalContent.innerHTML = data.html;
-            } else {
-                modalContent.innerHTML = `
-                    <div class="alert alert-warning">
-                        <i class="ri-information-line me-2"></i>
-                        ${data.message || 'No grades found for this student.'}
-                    </div>
-                `;
-            }
+
+    // Fetch the report card PDF as a blob and embed in modal
+    fetch(`/teacher/report-card/pdf/${studentId}`)
+        .then(response => {
+            if (!response.ok) throw new Error('Failed to fetch PDF');
+            return response.blob();
+        })
+        .then(blob => {
+            const url = URL.createObjectURL(blob);
+            modalContent.innerHTML = `
+                <div class="ratio ratio-4x3 mb-2">
+                    <iframe src="${url}" frameborder="0" style="width:100%;height:100%;"></iframe>
+                </div>
+            `;
         })
         .catch(error => {
             modalContent.innerHTML = `
                 <div class="alert alert-danger">
                     <i class="ri-error-warning-line me-2"></i>
-                    Error loading grades. Please try again.
+                    Error loading report card PDF. Please try again.
                 </div>
             `;
         });

@@ -197,6 +197,11 @@ Route::middleware(['auth', 'role:teacher'])->prefix('teacher')->name('teacher.')
     // Teacher Advisory Routes
     Route::get('/advisory', [App\Http\Controllers\TeacherAdvisoryController::class, 'advisory'])
         ->name('advisory');
+
+    // Route to generate Report Card PDF
+    // Route to generate Report Card PDF for a specific student
+    Route::get('/report-card/pdf/{student}', [App\Http\Controllers\PdfController::class, 'generateReportCardPdf'])
+        ->name('report-card.pdf');
         
     // Teacher Advisory AJAX Routes
     Route::get('/advisory/student/{student}/grades', [App\Http\Controllers\TeacherAdvisoryController::class, 'getStudentGrades'])
