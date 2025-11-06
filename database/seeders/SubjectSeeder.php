@@ -131,7 +131,10 @@ class SubjectSeeder extends Seeder
             'Araling Panlipunan (AP)',
             'Edukasyon sa Pagpapakatao (EsP)',
             'Technology and Livelihood Education (TLE)',
-            'MAPEH (Music, Arts, Physical Education & Health)',
+            'Music',
+            'Arts',
+            'Physical Education',
+            'Health',
         ];
 
         foreach ($grade10Subjects as $subjectName) {
