@@ -214,6 +214,66 @@ document.addEventListener('DOMContentLoaded', function() {
 // Export functions for global access
 window.showAlert = showAlert;
 
+// PDF Modal for Receipt
+function showPDFModal({ transactionId, onClose }) {
+    // Remove existing modal if present
+    let existing = document.getElementById('pdf-modal');
+    if (existing) existing.remove();
+
+    // Build the receipt URL with transaction_id
+    let receiptUrl = '/pdf/receipt?transaction_id=' + encodeURIComponent(transactionId);
+
+    // Modal HTML
+    const modal = document.createElement('div');
+    modal.id = 'pdf-modal';
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.width = '100vw';
+    modal.style.height = '100vh';
+    modal.style.background = 'rgba(0,0,0,0.5)';
+    modal.style.zIndex = '10000';
+    modal.style.display = 'flex';
+    modal.style.alignItems = 'center';
+    modal.style.justifyContent = 'center';
+
+    modal.innerHTML = `
+        <div style="background: #fff; border-radius: 8px; max-width: 90vw; max-height: 90vh; width: 600px; box-shadow: 0 2px 16px rgba(0,0,0,0.2); display: flex; flex-direction: column;">
+            <div style="padding: 1rem; border-bottom: 1px solid #eee; display: flex; align-items: center; justify-content: space-between;">
+                <h5 style="margin: 0;">Payment Receipt</h5>
+                <button id="pdf-modal-close" style="background: none; border: none; font-size: 1.5rem; line-height: 1; cursor: pointer;">&times;</button>
+            </div>
+            <div style="flex: 1; overflow: auto; padding: 1rem;">
+                <iframe id="pdf-iframe" src="${receiptUrl}" style="width: 100%; height: 400px; border: none;"></iframe>
+            </div>
+            <div style="padding: 1rem; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 0.5rem;">
+                <button id="pdf-modal-print" class="btn btn-primary">Print</button>
+                <button id="pdf-modal-cancel" class="btn btn-secondary">Cancel</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Close modal handler
+    function closeModal() {
+        modal.remove();
+        if (typeof onClose === 'function') onClose();
+    }
+    document.getElementById('pdf-modal-close').onclick = closeModal;
+    document.getElementById('pdf-modal-cancel').onclick = closeModal;
+
+    // Print button handler
+    document.getElementById('pdf-modal-print').onclick = function() {
+        const iframe = document.getElementById('pdf-iframe');
+        if (iframe) {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+        }
+    };
+}
+window.showPDFModal = showPDFModal;
+
 // Utility functions
 function showAlert(message, type = 'info') {
     // Create alert container if it doesn't exist
