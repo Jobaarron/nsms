@@ -803,6 +803,7 @@ Route::middleware(['auth:cashier'])->prefix('cashier/api')->name('cashier.api.')
     Route::get('/payment-history', [PaymentScheduleController::class, 'getPaymentHistory'])->name('payment-history');
     Route::get('/pending-payment-schedules', [PaymentScheduleController::class, 'getPendingPaymentSchedules'])->name('pending-payment-schedules');
     Route::get('/due-payment-schedules', [PaymentScheduleController::class, 'getDuePaymentSchedules'])->name('due-payment-schedules');
+    Route::get('/pdf/cashier-receipt', [PdfController::class, 'showCashierReceipt'])->name('pdf.cashier-receipt');
 });
 
 // ===== CASHIER ROUTES =====
@@ -847,3 +848,6 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
 
 // PDF route for counseling session
 Route::get('/pdf/counseling-session', [PdfController::class, 'show']);
+
+// PDF Receipt (dynamic overlay)
+Route::get('/pdf/receipt', [PdfController::class, 'showReceipt'])->name('pdf.receipt');

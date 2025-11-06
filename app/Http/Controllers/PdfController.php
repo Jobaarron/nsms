@@ -661,4 +661,235 @@ class PdfController extends Controller
             return response($pdf->Output('Disciplinary-Conference-Reports.pdf', 'S'))
                 ->header('Content-Type', 'application/pdf');
         }
+            /**
+     * Show static receipt PDF with dynamic overlay fields.
+     * Fields: application_id, student_id, transaction_id, student full name, timestamp, appointment date, event
+     * @param Request $request
+     * @return \Illuminate\Http\Response
+     */
+    public function showReceipt(Request $request)
+    {
+        $transactionId = $request->query('transaction_id');
+        if (!$transactionId) {
+            abort(404, 'Transaction ID is required.');
+        }
+
+        // Find payment by transaction_id
+        $payment = \App\Models\Payment::where('transaction_id', $transactionId)->first();
+        if (!$payment) {
+            abort(404, 'Payment not found.');
+        }
+
+        // Get Enrollee and Student
+        $enrollee = null;
+        $student = null;
+        if ($payment->payable_type === 'App\\Models\\Enrollee') {
+            $enrollee = $payment->payable;
+            $student = $enrollee->student;
+        } elseif ($payment->payable_type === 'App\\Models\\Student') {
+            $student = $payment->payable;
+            $enrollee = $student->enrollee;
+        }
+
+        // Fallbacks
+        $applicationId = $enrollee ? $enrollee->application_id : '';
+        $studentId = $student ? $student->student_id : '';
+        $studentName = $student ? ($student->full_name ?? ($student->first_name . ' ' . $student->last_name)) : '';
+        $timestamp = $payment->paid_at ? $payment->paid_at->format('Y-m-d H:i:s') : ($payment->created_at ? $payment->created_at->format('Y-m-d H:i:s') : '');
+    // Use scheduled_date from payment table for appointment date
+    $appointmentDate = $payment->scheduled_date ? (\Carbon\Carbon::parse($payment->scheduled_date)->format('Y-m-d')) : '';
+        $event = $payment->period_name ?? '';
+
+        // Load static PDF
+        $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
+        $templatePath = storage_path('app/public/receipt/Receipt.pdf');
+        if (!file_exists($templatePath)) {
+            abort(404, 'Receipt PDF template not found.');
+        }
+        $pdf->setSourceFile($templatePath);
+        $tplId = $pdf->importPage(1);
+        $size = $pdf->getTemplateSize($tplId);
+        $orientation = ($size['width'] > $size['height']) ? 'L' : 'P';
+        $pdf->AddPage($orientation, [$size['width'], $size['height']]);
+        $pdf->SetFont('dejavusans', '', 10);
+        $pdf->useTemplate($tplId);
+
+        // Overlay fields (adjust coordinates as needed for your template)
+        // $pdf->SetXY(120, 82); // Application ID
+        // $pdf->Write(0, '' . $applicationId);
+        $pdf->SetXY(95, 82); // Student ID
+        $pdf->Write(0, '' . $studentId);
+        $pdf->SetXY(95, 63); // Transaction ID
+        $pdf->Write(0, '' . $transactionId);
+    $pdf->SetXY(95, 98); // Student Name
+    $pdf->Write(0, $studentName);
+        $pdf->SetXY(95, 72); // Timestamp
+        $pdf->Write(0, '' . $timestamp);
+        $pdf->SetXY(95, 108); // Appointment Date
+        // Determine time of day if scheduled_time exists
+        $appointmentTimeOfDay = '';
+        if (!empty($payment->scheduled_time)) {
+            $time = $payment->scheduled_time;
+            if ($time instanceof \DateTimeInterface) {
+                $hour = (int)$time->format('H');
+            } else {
+                $hour = (int)date('H', strtotime($time));
+            }
+            if ($hour >= 5 && $hour < 12) {
+                $appointmentTimeOfDay = 'MORNING';
+            } elseif ($hour >= 12 && $hour < 13) {
+                $appointmentTimeOfDay = 'NOON';
+            } elseif ($hour >= 13 && $hour < 18) {
+                $appointmentTimeOfDay = 'AFTERNOON';
+            } else {
+                $appointmentTimeOfDay = 'EVENING';
+            }
+        }
+        $appointmentDateDisplay = $appointmentDate;
+        if ($appointmentDate && $appointmentTimeOfDay) {
+            $appointmentDateDisplay .= ' (' . $appointmentTimeOfDay . ')';
+        }
+        $pdf->Write(0, '' . $appointmentDateDisplay);
+        $pdf->SetXY(95, 120); // Event
+        $pdf->Write(0, '' . $event);
+
+        return response($pdf->Output('Receipt.pdf', 'S'))->header('Content-Type', 'application/pdf');
+    }
+        /**
+     * Generate dynamic cashier receipt PDF using TCPDF.
+     * Path: storage/app/public/receipt/cashier_receipt.pdf
+     * Fields: date, year, lastname, firstname, middleinitial, gradelevel, entrancefee, Miscellaneous Fee, Tuition Fee, Others fee, totalfee, amount in words, cashier name
+     * @param Request $request
+     * @return \Illuminate\Http\Response
+     */
+    public function showCashierReceipt(Request $request)
+    {
+        $transactionId = $request->query('transaction_id');
+        if (!$transactionId) {
+            abort(404, 'Transaction ID is required.');
+        }
+
+        // Find payment by transaction_id
+        $payment = \App\Models\Payment::where('transaction_id', $transactionId)->first();
+        if (!$payment) {
+            abort(404, 'Payment not found.');
+        }
+
+        // Get related models
+        $student = null;
+        $enrollee = null;
+        if ($payment->payable_type === 'App\\Models\\Enrollee') {
+            $enrollee = $payment->payable;
+            $student = $enrollee->student;
+        } elseif ($payment->payable_type === 'App\\Models\\Student') {
+            $student = $payment->payable;
+            $enrollee = $student->enrollee;
+        }
+
+        // Date and year
+        $date = $payment->paid_at ? $payment->paid_at->format('Y-m-d') : ($payment->created_at ? $payment->created_at->format('Y-m-d') : '');
+        $year = $payment->paid_at ? $payment->paid_at->format('Y') : ($payment->created_at ? $payment->created_at->format('Y') : '');
+
+        // Student info
+        $lastname = $student ? ($student->last_name ?? '') : '';
+        $firstname = $student ? ($student->first_name ?? '') : '';
+        $middleinitial = $student && !empty($student->middle_name) ? strtoupper(substr($student->middle_name, 0, 1)) : '';
+        $gradelevel = $student ? ($student->grade_level ?? '') : '';
+
+        // Fee breakdown: fetch 'others' fee from Fee model for the student's grade and academic year
+        $entranceFee = $payment->entrance_fee ?? '';
+        $miscFee = $payment->miscellaneous_fee ?? '';
+        $tuitionFee = $payment->tuition_fee ?? '';
+        $othersFee = $payment->others_fee ?? '';
+        $totalFee = $payment->total_fee ?? $payment->amount ?? '';
+
+        // If not directly on payment, try to get from related models (e.g., Enrollee or Student)
+        if ($entranceFee === '' && $enrollee && isset($enrollee->entrance_fee)) {
+            $entranceFee = $enrollee->entrance_fee;
+        }
+        if ($miscFee === '' && $enrollee && isset($enrollee->miscellaneous_fee)) {
+            $miscFee = $enrollee->miscellaneous_fee;
+        }
+        if ($tuitionFee === '' && $enrollee && isset($enrollee->tuition_fee)) {
+            $tuitionFee = $enrollee->tuition_fee;
+        }
+        if ($totalFee === '' && $enrollee && isset($enrollee->total_fee)) {
+            $totalFee = $enrollee->total_fee;
+        }
+
+        // Always fetch 'tuition' and 'others' fee from Fee model for the student's grade and academic year, but only override if non-zero
+        if ($student && !empty($student->grade_level)) {
+            $academicYear = $student->academic_year ?? $payment->period_name ?? null;
+            $feeBreakdown = \App\Models\Fee::calculateTotalFeesForGrade($student->grade_level, $academicYear);
+            if (!empty($feeBreakdown['breakdown']['tuition']) && $feeBreakdown['breakdown']['tuition'] != 0) {
+                $tuitionFee = $feeBreakdown['breakdown']['tuition'];
+            }
+            if (!empty($feeBreakdown['breakdown']['other']) && $feeBreakdown['breakdown']['other'] != 0) {
+                $othersFee = $feeBreakdown['breakdown']['other'];
+            }
+        }
+
+        // Amount in words (use a helper if available, else simple fallback)
+        if (!function_exists('convert_number_to_words')) {
+            function convert_number_to_words($number) {
+                // Simple PHP number to words (English, for demonstration)
+                $f = new \NumberFormatter("en", \NumberFormatter::SPELLOUT);
+                return ucfirst($f->format($number));
+            }
+        }
+    $amountInWords = $totalFee !== '' ? strtoupper(convert_number_to_words($totalFee) . ' PESOS ONLY') : '';
+
+        // Cashier name (assume Payment has cashier_id or user_id, or fallback to current user)
+        $cashierName = '';
+        if ($payment->processed_by) {
+            $cashier = \App\Models\Cashier::find($payment->processed_by);
+            $cashierName = $cashier ? $cashier->full_name : '';
+        }
+
+        // Load cashier receipt PDF template
+        $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
+        $templatePath = storage_path('app/public/receipt/cashier_receipt.pdf');
+        if (!file_exists($templatePath)) {
+            abort(404, 'Cashier Receipt PDF template not found.');
+        }
+        $pdf->setSourceFile($templatePath);
+        $tplId = $pdf->importPage(1);
+        $size = $pdf->getTemplateSize($tplId);
+        $orientation = ($size['width'] > $size['height']) ? 'L' : 'P';
+        $pdf->AddPage($orientation, [$size['width'], $size['height']]);
+        $pdf->SetFont('dejavusans', '', 10);
+        $pdf->useTemplate($tplId);
+
+        // Overlay fields (adjust coordinates as needed for your template)
+        $pdf->SetXY(125,44); // Date
+        $pdf->Write(0, $date);
+        // $pdf->SetXY(60, 30); // Year
+        // $pdf->Write(0, $year);
+        $pdf->SetXY(55, 62); // Lastname
+        $pdf->Write(0, $lastname);
+        $pdf->SetXY(90, 62); // Firstname
+        $pdf->Write(0, $firstname);
+        $pdf->SetXY(125, 62); // Middle Initial
+        $pdf->Write(0, $middleinitial);
+        $pdf->SetXY(149, 62); // Grade Level
+        $pdf->Write(0, $gradelevel);
+        $pdf->SetXY(30, 60); // Entrance Fee
+        $pdf->Write(0, $entranceFee);
+        $pdf->SetXY(30, 70); // Miscellaneous Fee
+        $pdf->Write(0, $miscFee);
+        $pdf->SetXY(75, 139); // Tuition Fee
+        $pdf->Write(0, 'Tuition Fee');
+        $pdf->SetXY(142, 139); // Tuition Fee
+        $pdf->Write(0, $tuitionFee);
+        $pdf->SetXY(30, 90); // Others Fee
+         $pdf->Write(0, $othersFee);
+        $pdf->SetXY(143, 147); // Total Fee
+        $pdf->Write(0, $totalFee);
+        $pdf->SetXY(57, 161); // Amount in Words
+        $pdf->Write(0, $amountInWords);
+        $pdf->SetXY(120, 185); // Cashier Name
+        $pdf->Write(0, $cashierName);
+
+        return response($pdf->Output('Cashier-Receipt.pdf', 'S'))->header('Content-Type', 'application/pdf');
+    }
     }
