@@ -275,11 +275,9 @@ class TeacherController extends Controller
             ->orderByDesc('scheduled_date')
             ->get();
 
-        // Optionally, eager load the user who reported (if available)
-        // If 'reported_by' is a user_id or staff_id, adjust as needed
-
         return view('teacher.observationreport', compact('reports'));
     }
+
         /**
      * Serve the Teacher Observation Report PDF
      */

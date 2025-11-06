@@ -143,8 +143,8 @@ function createPaymentRow(payment) {
                 <small class="text-muted">${paymentMethodDisplay}</small>
             </td>
             <td>
-                <div class="fw-semibold">${student.student_id}</div>
-                <small class="text-muted">${student.first_name} ${student.last_name}</small>
+                <div class="fw-semibold">${studentId}</div>
+                <small class="text-muted">${student?.first_name || 'N/A'} ${student?.last_name || ''}</small>
             </td>
             <td>
                 <span class="fw-bold">₱${formatNumber(payment.total_amount || payment.amount)}</span><br>

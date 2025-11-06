@@ -26,10 +26,20 @@
     @if($advisoryAssignment)
     <div class="card">
       <div class="card-header">
-        <h5 class="mb-0">
-          <i class="ri-user-star-line me-2"></i>Advisory Class - {{ $className }}
-          <span class="badge bg-primary ms-2">{{ $students->count() }} Students</span>
-        </h5>
+        <div class="d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">
+            <i class="ri-user-star-line me-2"></i>Advisory Class - {{ $className }}
+            <span class="badge bg-primary ms-2">{{ $students->count() }} Students</span>
+          </h5>
+          <div class="btn-group" role="group">
+            <button type="button" class="btn btn-outline-success" onclick="printAllReportCards()">
+              <i class="ri-printer-line me-1"></i>Print All Report Cards
+            </button>
+            <button type="button" class="btn btn-outline-info" onclick="viewAllGrades()">
+              <i class="ri-file-list-3-line me-1"></i>View All Grades
+            </button>
+          </div>
+        </div>
       </div>
       <div class="card-body">
         @if($students->count() > 0)
@@ -69,6 +79,14 @@
                   </td>
                   <td>
                     <div class="btn-group" role="group">
+                      <button type="button" class="btn btn-sm btn-outline-primary" 
+                              onclick="viewStudentGrades({{ $student->id }})" title="View Grades">
+                        <i class="ri-file-list-3-line"></i>
+                      </button>
+                      <button type="button" class="btn btn-sm btn-outline-success" 
+                              onclick="printReportCard({{ $student->id }})" title="Print Report Card">
+                        <i class="ri-printer-line"></i>
+                      </button>
                       <a href="{{ route('teacher.recommend-counseling.form', ['student_id' => $student->id]) }}" 
                          class="btn btn-sm btn-outline-warning" title="Recommend Counseling">
                         <i class="ri-heart-pulse-line"></i>
@@ -119,5 +137,62 @@
       </div>
     </div>
     @endif
+
+    <!-- View Grades Modal -->
+    <div class="modal fade" id="viewGradesModal" tabindex="-1" aria-labelledby="viewGradesModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="viewGradesModalLabel">
+              <i class="ri-file-list-3-line me-2"></i>Student Grades
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body" id="gradesModalContent">
+            <div class="text-center">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+              <p class="mt-2">Loading grades...</p>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-success" onclick="printCurrentGrades()">
+              <i class="ri-printer-line me-1"></i>Print Grades
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- All Grades Modal -->
+    <div class="modal fade" id="allGradesModal" tabindex="-1" aria-labelledby="allGradesModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-fullscreen-lg-down modal-xl" style="max-width: 95vw;">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="allGradesModalLabel">
+              <i class="ri-file-list-3-line me-2"></i>All Advisory Students Grades
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body" id="allGradesModalContent">
+            <div class="text-center">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+              <p class="mt-2">Loading all grades...</p>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-success" onclick="printAllGrades()">
+              <i class="ri-printer-line me-1"></i>Print All Grades
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </main>
+
 </x-teacher-layout>

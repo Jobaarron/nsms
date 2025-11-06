@@ -195,13 +195,13 @@
       <div class="card-body">
         <div class="row g-3">
           <div class="col-md-4">
-            <div class="card h-100 border">
+            <div class="card h-100 border-0 shadow-sm">
               <div class="card-body text-center">
-                <i class="ri-calendar-2-line display-4 text-primary mb-3"></i>
-                <h6>View My Schedule</h6>
-                <p class="text-muted small">Check your weekly teaching schedule and class times</p>
-                <a href="{{ route('teacher.schedule') }}" class="btn btn-outline-primary">
-                  <i class="ri-calendar-2-line me-2"></i>View Schedule
+                <i class="ri-user-star-line display-4 text-primary mb-3"></i>
+                <h6>View My Advisory</h6>
+                <p class="text-muted small">View students in your advisory class</p>
+                <a href="{{ route('teacher.advisory') }}" class="btn btn-outline-primary">
+                  <i class="ri-user-star-line me-2"></i>View Advisory
                 </a>
               </div>
             </div>
