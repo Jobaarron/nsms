@@ -614,6 +614,7 @@ Route::prefix('enrollee')->name('enrollee.')->group(function () {
         // Document management
         Route::get('/documents', [EnrolleeController::class, 'documents'])->name('documents');
         Route::post('/documents/upload', [EnrolleeController::class, 'uploadDocument'])->name('documents.upload');
+        Route::post('/documents/replace', [EnrolleeController::class, 'replaceDocument'])->name('documents.replace');
         Route::delete('/documents/delete', [EnrolleeController::class, 'deleteDocument'])->name('documents.delete');
         Route::get('/documents/view/{index}', [EnrolleeController::class, 'viewDocument'])->name('documents.view');
         Route::get('/documents/download/{index}', [EnrolleeController::class, 'downloadDocument'])->name('documents.download');

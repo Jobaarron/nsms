@@ -12,8 +12,9 @@
 
     <!-- Remix Icons -->
     <link 
-    href="https://cdn.jsdelivr.net/npm/remixicon@3.4.0/fonts/remixicon.css" 
+    href="https://cdn.jsdelivr.net/npm/remixicon@4.3.0/fonts/remixicon.css" 
     rel="stylesheet"
+    crossorigin="anonymous"
     />
 
     <!-- Google Font -->
@@ -28,7 +29,24 @@
   @vite(['resources/js/app.js'])
 
   <style>
-   
+    /* Ensure icons are properly displayed */
+    .btn i {
+      font-size: 1rem;
+      line-height: 1;
+      vertical-align: middle;
+    }
+    
+    /* Icon fallback styling */
+    .btn i::before {
+      font-family: "remixicon" !important;
+      font-style: normal;
+      font-weight: normal;
+      font-variant: normal;
+      text-transform: none;
+      line-height: 1;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
   </style>
 </head>
 <body>

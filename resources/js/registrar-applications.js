@@ -210,12 +210,63 @@ function updateSelectAllCheckbox() {
     }
 }
 
-// Load applications data
-function loadApplicationsData() {
-    console.log('Loading applications data...');
-    // This would typically make an AJAX call to refresh the data
-    // For now, we'll just update the UI state
-    updateBulkActionsPanel();
+// Load applications data with AJAX and tab filtering
+function loadApplicationsData(tab = null) {
+    console.log('Loading applications data with AJAX...');
+    
+    // Get current tab if not specified
+    if (!tab) {
+        const activeTab = document.querySelector('.nav-link.active[data-bs-target]');
+        if (activeTab) {
+            const target = activeTab.getAttribute('data-bs-target');
+            tab = target ? target.replace('#', '') : 'pending';
+        } else {
+            // Fallback: check URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            tab = urlParams.get('tab') || 'pending';
+        }
+    }
+    
+    // Show loading state
+    showLoading();
+    
+    // Get current filters
+    const searchInput = document.getElementById('search-input');
+    const statusFilter = document.getElementById('status-filter');
+    const gradeFilter = document.getElementById('grade-filter');
+    
+    const params = new URLSearchParams();
+    params.append('tab', tab);
+    
+    if (searchInput?.value) params.append('search', searchInput.value);
+    if (statusFilter?.value) params.append('status', statusFilter.value);
+    if (gradeFilter?.value) params.append('grade_level', gradeFilter.value);
+    
+    fetch(`/registrar/applications/data?${params.toString()}`, {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            updateApplicationsTable(data.applications, tab);
+            updateApplicationsCount(data.counts);
+            updateBulkActionsPanel();
+        } else {
+            showAlert('Failed to load applications', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error loading applications:', error);
+        showAlert('Error loading applications', 'danger');
+    })
+    .finally(() => {
+        hideLoading();
+    });
 }
 
 // Load documents data
@@ -380,20 +431,30 @@ function applyFilters() {
 }
 
 // Update applications table with new data
-function updateApplicationsTable(applications) {
-    const tbody = document.getElementById('applications-tbody');
-    if (!tbody) return;
+function updateApplicationsTable(applications, tabType = 'applications') {
+    const tableBody = document.getElementById(`${tabType}-table-body`) || document.getElementById('applications-tbody');
+    const contentDiv = document.getElementById(`${tabType}-content`);
+    const emptyDiv = document.getElementById(`${tabType}-empty`);
     
-    tbody.innerHTML = '';
+    if (!tableBody) return;
     
-    applications.forEach(application => {
-        const row = createApplicationRow(application);
-        tbody.appendChild(row);
-    });
+    if (applications && applications.length > 0) {
+        tableBody.innerHTML = '';
+        applications.forEach(application => {
+            const row = createApplicationRow(application, tabType);
+            tableBody.appendChild(row);
+        });
+        
+        if (contentDiv) contentDiv.style.display = 'block';
+        if (emptyDiv) emptyDiv.style.display = 'none';
+    } else {
+        if (contentDiv) contentDiv.style.display = 'none';
+        if (emptyDiv) emptyDiv.style.display = 'block';
+    }
 }
 
 // Create table row for application
-function createApplicationRow(application) {
+function createApplicationRow(application, tabType = 'applications') {
     const row = document.createElement('tr');
     row.setAttribute('data-id', application.id);
     
@@ -401,6 +462,9 @@ function createApplicationRow(application) {
     const actionButtons = createActionButtons(application);
     
     row.innerHTML = `
+        <td>
+            <input type="checkbox" class="form-check-input application-checkbox" value="${application.id}">
+        </td>
         <td>${application.application_id}</td>
         <td>${application.first_name} ${application.last_name}</td>
         <td>${application.grade_level_applied}</td>
@@ -797,7 +861,7 @@ function submitDecline() {
     currentApplicationId = null;
 }
 
-// Process application action (approve/decline)
+// Process application action (approve/decline) with AJAX refresh
 function processApplicationAction(applicationId, action, data = {}) {
     showLoading();
     
@@ -818,10 +882,13 @@ function processApplicationAction(applicationId, action, data = {}) {
     .then(data => {
         if (data.success) {
             showAlert(data.message, 'success');
-            // Refresh the applications table
+            // Refresh data without page reload
             setTimeout(() => {
-                location.reload();
-            }, 1500);
+                loadApplicationsData();
+                if (typeof loadDocumentsData === 'function') {
+                    loadDocumentsData();
+                }
+            }, 1000);
         } else {
             showAlert(data.message || 'Action failed', 'danger');
         }
@@ -1119,6 +1186,16 @@ function getPriorityColor(priority) {
         case 'high': return 'warning';
         case 'normal': return 'secondary';
         default: return 'secondary';
+    }
+}
+
+function getNoticeTypeColor(type) {
+    switch(type) {
+        case 'info': return 'info';
+        case 'warning': return 'warning';
+        case 'success': return 'success';
+        case 'error': return 'danger';
+        default: return 'primary';
     }
 }
 
@@ -2628,17 +2705,31 @@ function viewNotice(noticeId) {
         if (data.success) {
             const notice = data.notice;
             
-            // Populate modal
-            document.getElementById('view-notice-title').textContent = notice.title;
-            document.getElementById('view-notice-type').textContent = notice.type;
-            document.getElementById('view-notice-type').className = `badge bg-${getNoticeTypeColor(notice.type)}`;
-            document.getElementById('view-notice-priority').textContent = notice.priority;
-            document.getElementById('view-notice-priority').className = `badge bg-${getPriorityColor(notice.priority)}`;
-            document.getElementById('view-notice-date').textContent = notice.created_at;
-            document.getElementById('view-notice-status').textContent = notice.read_at ? 'Read' : 'Unread';
-            document.getElementById('view-notice-status').className = `badge bg-${notice.read_at ? 'success' : 'warning'}`;
-            document.getElementById('view-notice-recipient').textContent = notice.is_global ? 'All Applicants' : (notice.enrollee ? `${notice.enrollee.full_name} (${notice.enrollee.application_id})` : 'Unknown');
-            document.getElementById('view-notice-message').textContent = notice.message;
+            // Populate modal with null checks
+            const titleEl = document.getElementById('view-notice-title');
+            const typeEl = document.getElementById('view-notice-type');
+            const priorityEl = document.getElementById('view-notice-priority');
+            const dateEl = document.getElementById('view-notice-date');
+            const statusEl = document.getElementById('view-notice-status');
+            const recipientEl = document.getElementById('view-notice-recipient');
+            const messageEl = document.getElementById('view-notice-message');
+            
+            if (titleEl) titleEl.textContent = notice.title || 'N/A';
+            if (typeEl) {
+                typeEl.textContent = notice.type || 'N/A';
+                typeEl.className = `badge bg-${getNoticeTypeColor(notice.type)}`;
+            }
+            if (priorityEl) {
+                priorityEl.textContent = notice.priority || 'N/A';
+                priorityEl.className = `badge bg-${getPriorityColor(notice.priority)}`;
+            }
+            if (dateEl) dateEl.textContent = notice.created_at || 'N/A';
+            if (statusEl) {
+                statusEl.textContent = notice.read_at ? 'Read' : 'Unread';
+                statusEl.className = `badge bg-${notice.read_at ? 'success' : 'warning'}`;
+            }
+            if (recipientEl) recipientEl.textContent = notice.is_global ? 'All Applicants' : (notice.enrollee ? `${notice.enrollee.full_name} (${notice.enrollee.application_id})` : 'Unknown');
+            if (messageEl) messageEl.textContent = notice.message || 'N/A';
             
             // Show modal
             const modal = new bootstrap.Modal(document.getElementById('viewNoticeModal'));
@@ -2650,6 +2741,108 @@ function viewNotice(noticeId) {
     .catch(error => {
         console.error('Error loading notice:', error);
         showAlert('Failed to load notice', 'error');
+    });
+}
+
+
+// Handle tab switching based on URL parameters
+function handleTabSwitching() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const activeTab = urlParams.get('tab') || 'pending';
+    
+    // Activate the correct tab
+    const tabButton = document.querySelector(`[data-bs-target="#${activeTab}"]`);
+    const tabContent = document.getElementById(activeTab);
+    
+    if (tabButton && tabContent) {
+        // Remove active classes from all tabs
+        document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+        document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active', 'show'));
+        
+        // Add active classes to current tab
+        tabButton.classList.add('active');
+        tabContent.classList.add('active', 'show');
+    }
+    
+    // Add event listeners to tabs to update URL
+    document.querySelectorAll('.nav-link[data-bs-target]').forEach(tab => {
+        tab.addEventListener('click', function() {
+            const targetTab = this.getAttribute('data-bs-target').replace('#', '');
+            const newUrl = new URL(window.location);
+            newUrl.searchParams.set('tab', targetTab);
+            window.history.pushState({}, '', newUrl);
+        });
+    });
+}
+
+// Approve appointment function
+function approveAppointment(appointmentId) {
+    if (!confirm('Are you sure you want to approve this appointment?')) {
+        return;
+    }
+    
+    fetch(`/registrar/appointments/${appointmentId}/approve`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('Appointment approved successfully', 'success');
+            loadApplicationsData(); // Refresh data
+        } else {
+            showAlert(data.message || 'Failed to approve appointment', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error approving appointment:', error);
+        showAlert('Failed to approve appointment', 'error');
+    });
+}
+
+// Reject appointment function
+function rejectAppointment(appointmentId) {
+    if (!confirm('Are you sure you want to reject this appointment?')) {
+        return;
+    }
+    
+    fetch(`/registrar/appointments/${appointmentId}/reject`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('Appointment rejected successfully', 'success');
+            loadApplicationsData(); // Refresh data
+        } else {
+            showAlert(data.message || 'Failed to reject appointment', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error rejecting appointment:', error);
+        showAlert('Failed to reject appointment', 'error');
+    });
+}
+
+
+
+
+// Update applications count in tab badges
+function updateApplicationsCount(counts) {
+    if (!counts) return;
+    
+    Object.keys(counts).forEach(tab => {
+        const badge = document.querySelector(`[data-bs-target="#${tab}"] .badge`);
+        if (badge) {
+            badge.textContent = counts[tab];
+        }
     });
 }
 
@@ -2692,6 +2885,13 @@ window.approveApplicationFromModal = approveApplicationFromModal;
 window.declineApplicationFromModal = declineApplicationFromModal;
 window.confirmDecline = confirmDecline;
 
+// Load appointments data (placeholder function)
+function loadAppointmentsData() {
+    console.log('Loading appointments data...');
+    // This function should load appointments data if needed
+    // For now, it's a placeholder to prevent errors
+}
+
 // Additional utility functions
 window.submitDecline = submitDecline;
 window.refreshApplications = refreshApplications;
@@ -2712,3 +2912,8 @@ window.formatDate = formatDate;
 window.updateDocumentStatusInTab = updateDocumentStatusInTab;
 window.setupDocumentFilters = setupDocumentFilters;
 window.handleTabSwitching = handleTabSwitching;
+window.loadApplicationsData = loadApplicationsData;
+window.updateApplicationsTable = updateApplicationsTable;
+window.createApplicationRow = createApplicationRow;
+window.updateApplicationsCount = updateApplicationsCount;
+window.processApplicationAction = processApplicationAction;

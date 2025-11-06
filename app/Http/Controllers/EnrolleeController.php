@@ -94,9 +94,8 @@ class EnrolleeController extends Controller
 
         try {
             $request->validate([
-                'document_type' => 'required|string',
-                'document_file' => 'required|file|mimes:pdf,jpg,jpeg,png,docx|max:5120', // 5MB max
-                'other_document_type' => 'nullable|string|max:255|required_if:document_type,other',
+                'document_files' => 'required|array',
+                'document_files.*' => 'file|mimes:pdf,jpg,jpeg,png|max:5120', // 5MB max per file
                 'document_notes' => 'nullable|string|max:500'
             ]);
         } catch (ValidationException $e) {
@@ -111,11 +110,7 @@ class EnrolleeController extends Controller
         }
 
         try {
-            $file = $request->file('document_file');
-            $documentType = $request->document_type === 'other' ? $request->other_document_type : $request->document_type;
-            
-            // Store file in public storage for easy access
-            $path = $file->store('documents', 'public');
+            $files = $request->file('document_files');
             
             // Get existing documents or initialize empty array
             $documents = $enrollee->documents;
@@ -126,17 +121,27 @@ class EnrolleeController extends Controller
                 $documents = [];
             }
             
-            // Add new document
-            $documents[] = [
-                'type' => $documentType,
-                'filename' => $file->getClientOriginalName(),
-                'path' => $path,
-                'mime_type' => $file->getMimeType(),
-                'size' => $file->getSize(),
-                'uploaded_at' => now()->toISOString(),
-                'status' => 'pending',
-                'notes' => $request->document_notes
-            ];
+            $uploadedCount = 0;
+            
+            // Process each uploaded file
+            foreach ($files as $file) {
+                // Store file in public storage for easy access
+                $path = $file->store('documents', 'public');
+                
+                // Add new document
+                $documents[] = [
+                    'type' => 'Document',
+                    'filename' => $file->getClientOriginalName(),
+                    'path' => $path,
+                    'mime_type' => $file->getMimeType(),
+                    'size' => $file->getSize(),
+                    'uploaded_at' => now()->toISOString(),
+                    'status' => 'pending',
+                    'notes' => $request->document_notes
+                ];
+                
+                $uploadedCount++;
+            }
             
             // Update enrollee documents
             $enrollee->update(['documents' => $documents]);
@@ -144,12 +149,12 @@ class EnrolleeController extends Controller
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Document uploaded successfully!',
-                    'document' => end($documents)
+                    'message' => $uploadedCount === 1 ? 'Document uploaded successfully!' : "{$uploadedCount} documents uploaded successfully!",
+                    'uploadedCount' => $uploadedCount
                 ]);
             }
             
-            return redirect()->back()->with('success', 'Document uploaded successfully!');
+            return redirect()->back()->with('success', $uploadedCount === 1 ? 'Document uploaded successfully!' : "{$uploadedCount} documents uploaded successfully!");
             
         } catch (\Exception $e) {
             \Log::error('Document upload error: ' . $e->getMessage());
@@ -228,6 +233,100 @@ class EnrolleeController extends Controller
         $request->session()->regenerateToken();
         
         return redirect()->route('enrollee.login')->with('success', 'You have been logged out successfully.');
+    }
+
+    /**
+     * Replace a document
+     */
+    public function replaceDocument(Request $request)
+    {
+        try {
+            $enrollee = Auth::guard('enrollee')->user();
+            
+            // Only allow replacement for pending applications
+            if ($enrollee->enrollment_status !== 'pending') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Documents can only be replaced for pending applications.'
+                ], 403);
+            }
+
+            $request->validate([
+                'document_index' => 'required|integer|min:0',
+                'document_file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120', // 5MB max
+                'document_notes' => 'nullable|string|max:500'
+            ]);
+
+            $documentIndex = $request->input('document_index');
+            
+            // Handle both array and JSON string formats
+            $documents = $enrollee->documents;
+            if (is_string($documents)) {
+                $documents = json_decode($documents, true) ?? [];
+            }
+            if (!is_array($documents)) {
+                $documents = [];
+            }
+            
+            if (!isset($documents[$documentIndex])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Document not found.'
+                ], 404);
+            }
+
+            // Get the old document to delete from storage
+            $oldDocument = $documents[$documentIndex];
+            
+            // Handle both old format (string paths) and new format (arrays with metadata)
+            if (is_string($oldDocument)) {
+                // Old format: just the file path
+                $oldFullPath = storage_path('app/public/' . $oldDocument);
+            } else {
+                // New format: array with metadata
+                $oldFullPath = storage_path('app/public/' . $oldDocument['path']);
+            }
+            
+            // Delete old file if it exists
+            if (file_exists($oldFullPath)) {
+                unlink($oldFullPath);
+            }
+
+            // Upload new file
+            $file = $request->file('document_file');
+            $path = $file->store('documents', 'public');
+            
+            // Update document with new file information
+            $documents[$documentIndex] = [
+                'type' => is_array($oldDocument) ? $oldDocument['type'] : 'Document',
+                'filename' => $file->getClientOriginalName(),
+                'path' => $path,
+                'mime_type' => $file->getMimeType(),
+                'size' => $file->getSize(),
+                'uploaded_at' => now()->toISOString(),
+                'status' => 'pending', // Reset status to pending for review
+                'notes' => $request->document_notes,
+                'replaced_at' => now()->toISOString()
+            ];
+            
+            // Update enrollee record
+            $enrollee->documents = $documents;
+            $enrollee->save();
+
+            return response()->json([
+                'success' => true, 
+                'message' => 'Document replaced successfully! It will be reviewed again.',
+                'document' => $documents[$documentIndex]
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Document replacement error: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while replacing the document.'
+            ], 500);
+        }
     }
 
     /**

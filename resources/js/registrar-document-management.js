@@ -77,7 +77,6 @@ window.RegistrarDocumentManagement = (function() {
                                         </div>
                                         <div class="card-body">
                                             <div id="document-info">
-                                                <p><strong>Document Type:</strong> <span id="doc-type">-</span></p>
                                                 <p><strong>File Name:</strong> <span id="doc-filename">-</span></p>
                                                 <p><strong>Upload Date:</strong> <span id="doc-upload-date">-</span></p>
                                                 <p><strong>File Size:</strong> <span id="doc-file-size">-</span></p>
@@ -221,11 +220,10 @@ window.RegistrarDocumentManagement = (function() {
                             <i class="${fileIcon} fs-2 text-primary"></i>
                         </div>
                         <div class="flex-grow-1">
-                            <h6 class="mb-1">${doc.document_type}</h6>
-                            <p class="mb-1 text-muted small">${doc.file_name}</p>
+                            <h6 class="mb-1">${doc.file_name}</h6>
                             <div class="d-flex justify-content-between align-items-center">
                                 <small class="text-muted">Uploaded: ${new Date(doc.created_at).toLocaleDateString()}</small>
-                                <span class="badge ${statusClass}">${doc.status}</span>
+                                <span class="badge ${statusClass}">${doc.status === 'rejected' ? 'Revised' : doc.status}</span>
                             </div>
                         </div>
                         <div class="ms-2">
@@ -252,14 +250,13 @@ window.RegistrarDocumentManagement = (function() {
         }
         
         // Populate document information
-        document.getElementById('document-title').textContent = `${docData.document_type}`;
-        document.getElementById('doc-type').textContent = docData.document_type;
+        document.getElementById('document-title').textContent = docData.file_name;
         document.getElementById('doc-filename').textContent = docData.file_name;
         document.getElementById('doc-upload-date').textContent = new Date(docData.created_at).toLocaleDateString();
         document.getElementById('doc-file-size').textContent = docData.file_size || 'Unknown';
         
         const statusBadge = document.getElementById('doc-status');
-        statusBadge.textContent = docData.status;
+        statusBadge.textContent = docData.status === 'rejected' ? 'Revised' : docData.status;
         statusBadge.className = `badge ${getDocumentStatusBadge(docData.status)}`;
         
         // Load document preview
@@ -355,7 +352,7 @@ window.RegistrarDocumentManagement = (function() {
                 
                 // Update status badge in modal
                 const statusBadge = document.getElementById('doc-status');
-                statusBadge.textContent = status;
+                statusBadge.textContent = status === 'rejected' ? 'Revised' : status;
                 statusBadge.className = `badge ${getDocumentStatusBadge(status)}`;
                 
                 // Refresh documents list
@@ -438,7 +435,7 @@ window.RegistrarDocumentManagement = (function() {
     function getDocumentStatusBadge(status) {
         switch(status) {
             case 'approved': return 'bg-success';
-            case 'rejected': return 'bg-danger';
+            case 'rejected': return 'bg-warning text-dark';
             case 'pending': return 'bg-warning text-dark';
             default: return 'bg-secondary';
         }

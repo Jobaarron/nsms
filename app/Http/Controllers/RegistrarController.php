@@ -104,6 +104,7 @@ class RegistrarController extends Controller
         ));
     }
 
+
     /**
      * Get specific application details
      */
@@ -1002,39 +1003,93 @@ class RegistrarController extends Controller
     /**
      * Get applications data for AJAX requests
      */
-    public function getApplicationsData(): JsonResponse
+    public function getApplicationsData(Request $request): JsonResponse
     {
         try {
-            $applications = Enrollee::select([
+            $tab = $request->get('tab', 'pending');
+            
+            // Base query
+            $query = Enrollee::query();
+            
+            // Filter by tab
+            switch ($tab) {
+                case 'pending':
+                    $query->where('enrollment_status', 'pending');
+                    break;
+                case 'approved':
+                    $query->where('enrollment_status', 'approved');
+                    break;
+                case 'declined':
+                    $query->where('enrollment_status', 'declined');
+                    break;
+                case 'applications':
+                    // Show all applications (same as 'all')
+                    break;
+                case 'notices':
+                    // For notices tab, show all applications
+                    break;
+                case 'all':
+                    // No additional filter
+                    break;
+                default:
+                    // Default to pending if unknown tab
+                    $query->where('enrollment_status', 'pending');
+                    break;
+            }
+            
+            // Apply additional filters
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->where(function($q) use ($search) {
+                    $q->where('first_name', 'like', "%{$search}%")
+                      ->orWhere('last_name', 'like', "%{$search}%")
+                      ->orWhere('application_id', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%");
+                });
+            }
+            
+            if ($request->filled('status')) {
+                $query->where('enrollment_status', $request->status);
+            }
+            
+            if ($request->filled('date')) {
+                $query->whereDate('created_at', $request->date);
+            }
+            
+            $applications = $query->select([
                 'id',
                 'application_id', 
                 'first_name', 
                 'last_name', 
                 'email',
-                'enrollment_status'
+                'enrollment_status',
+                'grade_level_applied',
+                'created_at'
             ])
             ->orderBy('created_at', 'desc')
-            ->get()
-            ->map(function ($app) {
-                return [
-                    'id' => $app->id,
-                    'application_id' => $app->application_id,
-                    'first_name' => $app->first_name,
-                    'last_name' => $app->last_name,
-                    'email' => $app->email,
-                    'enrollment_status' => $app->enrollment_status
-                ];
-            });
+            ->get();
+            
+            // Calculate counts for all tabs
+            $counts = [
+                'pending' => Enrollee::where('enrollment_status', 'pending')->count(),
+                'approved' => Enrollee::where('enrollment_status', 'approved')->count(),
+                'declined' => Enrollee::where('enrollment_status', 'declined')->count(),
+                'applications' => Enrollee::count(),
+                'notices' => Enrollee::count(),
+                'all' => Enrollee::count(),
+            ];
 
             return response()->json([
                 'success' => true,
-                'applications' => $applications
+                'applications' => $applications,
+                'counts' => $counts
             ]);
         } catch (\Exception $e) {
-            Log::error('Error fetching applications data: ' . $e->getMessage());
+            \Log::error('Error in getApplicationsData: ' . $e->getMessage());
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to fetch applications data'
+                'message' => 'Failed to load applications data: ' . $e->getMessage()
             ], 500);
         }
     }
