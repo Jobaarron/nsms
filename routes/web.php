@@ -169,10 +169,6 @@ Route::get('/teacher/dashboard/stats', [TeacherController::class, 'getDashboardS
     ->name('teacher.dashboard.stats')
     ->middleware(['auth', 'role:teacher']);
 
-// Teacher Quick Access Routes (shortcuts for dashboard)
-Route::get('/teacher/schedule', [App\Http\Controllers\TeacherScheduleController::class, 'index'])
-    ->name('teacher.schedule')
-    ->middleware(['auth', 'role:teacher|faculty_head']);
 
 Route::get('/teacher/grades', [App\Http\Controllers\TeacherGradeController::class, 'index'])
     ->name('teacher.grades')
@@ -185,11 +181,8 @@ Route::middleware(['auth', 'role:teacher'])->prefix('teacher')->name('teacher.')
     Route::post('/recommend-counseling', [TeacherController::class, 'recommendToCounseling'])
         ->name('recommend-counseling');
 
-    // Route for the Teacher Observation Report page
-    Route::get('/reports', [TeacherController::class, 'showObservationReport'])
-        ->name('reports');
 
-    // Alias route for compatibility with 'teacher.observationreport' references
+    // Route for the Teacher Observation Report page
     Route::get('/observationreport', [TeacherController::class, 'showObservationReport'])
         ->name('observationreport');
 
@@ -200,21 +193,22 @@ Route::middleware(['auth', 'role:teacher'])->prefix('teacher')->name('teacher.')
     // Teacher Observation Report: Teacher Reply (update case meeting)
     Route::post('/observationreport/reply/{caseMeeting}', [App\Http\Controllers\TeacherController::class, 'submitObservationReply'])
         ->name('observationreport.reply');
+
+    // Teacher Advisory Routes
+    Route::get('/advisory', [App\Http\Controllers\TeacherAdvisoryController::class, 'advisory'])
+        ->name('advisory');
+        
+    // Teacher Advisory AJAX Routes
+    Route::get('/advisory/student/{student}/grades', [App\Http\Controllers\TeacherAdvisoryController::class, 'getStudentGrades'])
+        ->name('advisory.student.grades');
+    Route::get('/advisory/all-grades', [App\Http\Controllers\TeacherAdvisoryController::class, 'getAllAdvisoryGrades'])
+        ->name('advisory.all-grades');
+    Route::get('/advisory/student/{student}/report-card', [App\Http\Controllers\TeacherAdvisoryController::class, 'generateStudentReportCard'])
+        ->name('advisory.student.report-card');
+    Route::get('/advisory/all-report-cards', [App\Http\Controllers\TeacherAdvisoryController::class, 'generateAllReportCards'])
+        ->name('advisory.all-report-cards');
 });
 
-// Teacher Schedule Routes (Extended functionality)
-Route::middleware(['auth', 'role:teacher|faculty_head'])->prefix('teacher')->name('teacher.')->group(function () {
-    Route::get('/schedule/calendar', [App\Http\Controllers\TeacherScheduleController::class, 'calendar'])
-        ->name('schedule.calendar');
-    Route::get('/my-students', [App\Http\Controllers\TeacherScheduleController::class, 'allStudents'])
-        ->name('my-students');
-    Route::get('/schedule/students', [App\Http\Controllers\TeacherScheduleController::class, 'students'])
-        ->name('schedule.students');
-    Route::get('/schedule/data', [App\Http\Controllers\TeacherScheduleController::class, 'getScheduleData'])
-        ->name('schedule.data');
-    Route::get('/classes/list', [App\Http\Controllers\TeacherScheduleController::class, 'getClassList'])
-        ->name('classes.list');
-});
 
 // Teacher Grade Routes (Extended functionality)
 Route::middleware(['auth', 'role:teacher|faculty_head'])->prefix('teacher')->name('teacher.')->group(function () {
@@ -731,8 +725,6 @@ Route::prefix('registrar')->name('registrar.')->group(function () {
         Route::get('/notices/{id}', [RegistrarController::class, 'getNotice'])->name('notices.get.single');
         Route::get('/recipients/preview', [RegistrarController::class, 'previewRecipients'])->name('recipients.preview');
         
-        // Reports
-        Route::get('/reports', [RegistrarController::class, 'reports'])->name('reports');
         
         // Class Lists Management
         Route::get('/class-lists', [RegistrarController::class, 'classLists'])->name('class-lists');
@@ -830,11 +822,9 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::get('/dashboard', [CashierController::class, 'index'])->name('dashboard');
         
         // Payment Management
-        Route::get('/pending-payments', [CashierController::class, 'pendingPayments'])->name('pending-payments');
-        Route::get('/due-payments', [CashierController::class, 'duePayments'])->name('due-payments');
-        Route::get('/completed-payments', [CashierController::class, 'completedPayments'])->name('completed-payments');
-        Route::get('/payment-history', [CashierController::class, 'paymentHistory'])->name('payment-history');
-        Route::get('/api/payment-history', [CashierController::class, 'getPaymentHistoryData'])->name('api.payment-history');
+        Route::get('/payments', [CashierController::class, 'payments'])->name('payments');
+        Route::get('/payment-archives', [CashierController::class, 'paymentArchives'])->name('payment-archives');
+        Route::get('/api/payment-archives', [CashierController::class, 'getPaymentArchivesData'])->name('api.payment-archives');
         
         // Payment Actions
         Route::post('/payments/{payment}/confirm', [CashierController::class, 'confirmPayment'])->name('payments.confirm');
@@ -850,8 +840,6 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::delete('/fees/{fee}', [CashierController::class, 'destroyFee'])->name('fees.destroy');
         Route::post('/fees/{fee}/toggle', [CashierController::class, 'toggleFeeStatus'])->name('fees.toggle');
         
-        // Reports
-        Route::get('/reports', [CashierController::class, 'reports'])->name('reports');
         
         // Logout
         Route::post('/logout', [CashierController::class, 'logout'])->name('logout');

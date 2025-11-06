@@ -320,12 +320,24 @@ class FileUploadManager {
         const preview = document.getElementById('id_photo_preview');
 
         if (file) {
-            uploadZone.style.display = 'none';
+            // Keep upload zone visible but update its text
+            const uploadText = uploadZone.querySelector('.upload-text');
+            const uploadSubtext = uploadZone.querySelector('.upload-subtext');
+            uploadText.textContent = 'Click to replace ID photo';
+            uploadSubtext.innerHTML = '<span style="color: #198754;">✓ ID Photo uploaded. Click to replace with new photo</span>';
+            uploadZone.style.borderColor = '#198754';
+            
             preview.style.display = 'block';
             preview.querySelector('.file-name').textContent = file.name;
             preview.querySelector('.file-size').textContent = this.formatFileSize(file.size);
         } else {
-            uploadZone.style.display = 'block';
+            // Reset to original state
+            const uploadText = uploadZone.querySelector('.upload-text');
+            const uploadSubtext = uploadZone.querySelector('.upload-subtext');
+            uploadText.textContent = 'Click to upload or drag and drop';
+            uploadSubtext.textContent = 'JPG, PNG up to 5MB';
+            uploadZone.style.borderColor = '';
+            
             preview.style.display = 'none';
         }
     }
@@ -335,7 +347,7 @@ class FileUploadManager {
         const preview = document.getElementById('documents_preview');
 
         if (this.uploadedFiles.documents.length > 0) {
-            uploadZone.style.display = 'none';
+            // Keep upload zone visible for adding more files
             preview.innerHTML = this.uploadedFiles.documents.map(file => `
                 <div class="file-item" data-file-id="${file.id}">
                     <i class="ri-file-line file-icon"></i>
@@ -353,7 +365,6 @@ class FileUploadManager {
             // Update document count indicator
             this.updateDocumentCountIndicator();
         } else {
-            uploadZone.style.display = 'block';
             preview.style.display = 'none';
             this.updateDocumentCountIndicator();
         }
@@ -369,9 +380,9 @@ class FileUploadManager {
         const uploadSubtext = uploadZone.querySelector('.upload-subtext');
         
         if (count > 0) {
-            uploadText.innerHTML = `${count} of ${required} minimum documents uploaded`;
+            uploadText.innerHTML = `Click to add more documents (${count} uploaded)`;
             if (count < required) {
-                uploadSubtext.innerHTML = `<span style="color: #dc3545;">Upload ${required - count} more document(s)</span>`;
+                uploadSubtext.innerHTML = `<span style="color: #dc3545;">Need ${required - count} more document(s) to meet minimum requirement</span>`;
                 uploadZone.style.borderColor = '#dc3545';
             } else {
                 uploadSubtext.innerHTML = `<span style="color: #198754;">✓ Minimum requirement met. You can upload more if needed.</span>`;

@@ -102,7 +102,7 @@
                     <option value="">Section</option>
                     <!-- Sections will be populated dynamically based on selected grade level -->
                   </select>
-                  <button type="button" class="btn btn-outline-info" id="checkSectionBtn" onclick="showSectionDetails()" title="Check Section Details" disabled>
+                  <button type="button" class="btn btn-outline-info" id="checkSectionBtn" onclick="checkSectionFromForm()" title="Check Section Details" disabled>
                     <i class="ri-information-line"></i>
                   </button>
                 </div>
@@ -186,7 +186,7 @@
                     <option value="">Section</option>
                     <!-- Sections will be populated dynamically based on selected grade level -->
                   </select>
-                  <button type="button" class="btn btn-outline-info" id="checkSectionBtnAdviser" onclick="showSectionDetailsAdviser()" title="Check Section Details" disabled>
+                  <button type="button" class="btn btn-outline-info" id="checkSectionBtnAdviser" onclick="checkSectionFromAdviserForm()" title="Check Section Details" disabled>
                     <i class="ri-information-line"></i>
                   </button>
                 </div>
@@ -249,7 +249,7 @@
                 <td>
                   <span class="badge bg-secondary" 
                         style="cursor: pointer;" 
-                        onclick="viewClassList('{{ $assignment->grade_level }}', '{{ $assignment->section }}', '{{ $assignment->strand }}', '{{ $assignment->track }}')"
+                        onclick="viewClassList('{{ $assignment->grade_level }}', '{{ $assignment->section }}', '{{ $assignment->strand ?? '' }}', '{{ $assignment->track ?? '' }}')"
                         title="Click to view class list">
                     {{ $assignment->section }}
                   </span>
@@ -427,6 +427,8 @@
                       <!-- Dynamic content -->
                     </div>
                   </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -438,34 +440,35 @@
                   </h6>
                 </div>
                 <div class="card-body">
-                  <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                      <thead class="table-light">
-                        <tr>
-                          <th>#</th>
-                          <th>Student ID</th>
-                          <th>Name</th>
-                          <th>Grade</th>
-                          <th>Section</th>
-                          <th id="strandHeader" style="display: none;">Strand</th>
-                          <th id="trackHeader" style="display: none;">Track</th>
-                          <th>Contact</th>
-                          <th>Status</th>
-                        </tr>
-                      </thead>
-                      <tbody id="studentTableBody">
-                        <!-- Dynamic student rows -->
-                      </tbody>
-                    </table>
+                  <div id="studentsList">
+                    <div class="table-responsive">
+                      <table class="table table-hover">
+                        <thead>
+                          <tr>
+                            <th>#</th>
+                            <th>Student ID</th>
+                            <th>Name</th>
+                            <th>Grade</th>
+                            <th>Section</th>
+                            <th id="strandHeader" style="display: none;">Strand</th>
+                            <th id="trackHeader" style="display: none;">Track</th>
+                            <th>Contact</th>
+                            <th>Status</th>
+                          </tr>
+                        </thead>
+                        <tbody id="studentTableBody">
+                          <!-- Dynamic content -->
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <!-- Empty State -->
+                  <div class="text-center py-4" id="emptyState" style="display: none;">
+                    <i class="ri-user-line display-6 text-muted mb-2 d-block"></i>
+                    <p class="text-muted">No students found in this class.</p>
                   </div>
                 </div>
-              </div>
-
-              <!-- Empty State -->
-              <div id="emptyState" class="text-center py-5" style="display: none;">
-                <i class="ri-group-line display-1 text-muted mb-3"></i>
-                <h5 class="text-muted">No Students Found</h5>
-                <p class="text-muted">No students are enrolled in this class.</p>
               </div>
             </div>
           </div>
@@ -479,3 +482,4 @@
     </div>
   </div>
 </x-faculty-head-layout>
+

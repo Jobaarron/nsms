@@ -77,13 +77,13 @@ class CreateTestPaymentData extends Command
             'updated_at' => now()
         ]);
 
-        // Insert full payment
+        // Insert full payment (due tomorrow - should be highlighted as due soon)
         DB::table('payments')->insert([
             'transaction_id' => 'TXN-TEST-FULL-001',
             'payable_type' => 'App\\Models\\Student',
             'payable_id' => $studentId,
             'amount' => 21500,
-            'scheduled_date' => now()->format('Y-m-d'),
+            'scheduled_date' => now()->addDay()->format('Y-m-d'),
             'period_name' => 'Full Payment',
             'payment_method' => 'full',
             'status' => 'pending',
@@ -128,13 +128,21 @@ class CreateTestPaymentData extends Command
         $quarters = ['1st Quarter', '2nd Quarter', '3rd Quarter', '4th Quarter'];
         $baseDate = now();
 
+        // Create quarterly payments with mixed due dates
+        $dueDates = [
+            now()->subDays(10)->format('Y-m-d'), // 1st Quarter - 10 days overdue (Critical)
+            now()->subDays(5)->format('Y-m-d'),  // 2nd Quarter - 5 days overdue (High)
+            now()->subDays(1)->format('Y-m-d'),  // 3rd Quarter - 1 day overdue (Medium)
+            now()->addDays(7)->format('Y-m-d')   // 4th Quarter - Due in 7 days (Scheduled)
+        ];
+
         foreach ($quarters as $index => $quarter) {
             DB::table('payments')->insert([
                 'transaction_id' => 'TXN-TEST-QUARTERLY-' . ($index + 1),
                 'payable_type' => 'App\\Models\\Student',
                 'payable_id' => $studentId,
                 'amount' => $quarterlyAmount,
-                'scheduled_date' => $baseDate->copy()->addMonths($index * 3)->format('Y-m-d'),
+                'scheduled_date' => $dueDates[$index],
                 'period_name' => $quarter,
                 'payment_method' => 'quarterly',
                 'status' => 'pending',
@@ -180,13 +188,27 @@ class CreateTestPaymentData extends Command
         $months = ['June', 'July', 'August', 'September', 'October', 'November', 'December', 'January', 'February', 'March'];
         $baseDate = now();
 
+        // Create monthly payments with mixed due dates
+        $monthlyDueDates = [
+            now()->subDays(15)->format('Y-m-d'), // June - 15 days overdue (Critical)
+            now()->subDays(8)->format('Y-m-d'),  // July - 8 days overdue (Critical)
+            now()->subDays(4)->format('Y-m-d'),  // August - 4 days overdue (High)
+            now()->subDays(2)->format('Y-m-d'),  // September - 2 days overdue (Medium)
+            now()->format('Y-m-d'),              // October - Due today
+            now()->addDays(3)->format('Y-m-d'),  // November - Due in 3 days (Scheduled)
+            now()->addDays(10)->format('Y-m-d'), // December - Due in 10 days (Scheduled)
+            now()->addDays(17)->format('Y-m-d'), // January - Due in 17 days (Scheduled)
+            now()->addDays(24)->format('Y-m-d'), // February - Due in 24 days (Scheduled)
+            now()->addDays(31)->format('Y-m-d')  // March - Due in 31 days (Scheduled)
+        ];
+
         foreach ($months as $index => $month) {
             DB::table('payments')->insert([
                 'transaction_id' => 'TXN-TEST-MONTHLY-' . ($index + 1),
                 'payable_type' => 'App\\Models\\Student',
                 'payable_id' => $studentId,
                 'amount' => $monthlyAmount,
-                'scheduled_date' => $baseDate->copy()->addMonths($index)->format('Y-m-d'),
+                'scheduled_date' => $monthlyDueDates[$index],
                 'period_name' => $month,
                 'payment_method' => 'monthly',
                 'status' => 'pending',

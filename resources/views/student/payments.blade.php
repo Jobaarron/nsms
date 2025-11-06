@@ -157,7 +157,7 @@
                                 <h5 class="card-title mb-0">
                                     <i class="ri-calendar-check-line me-2"></i>Payment Schedule
                                 </h5>
-                                <span class="badge bg-primary">Auto-Generated Schedule</span>
+                                
                             </div>
                         </div>
                         <div class="card-body">

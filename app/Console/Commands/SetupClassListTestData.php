@@ -138,12 +138,18 @@ class SetupClassListTestData extends Command
                     'place_of_birth' => 'Test City',
                 ]);
                 
-                $classDisplay = $classData['grade'] . ' - ' . $section;
+                // Build class display using consistent format with strand/track first
                 if (isset($classData['strand'])) {
-                    $classDisplay .= ' - ' . $classData['strand'];
                     if (isset($classData['track'])) {
-                        $classDisplay .= ' - ' . $classData['track'];
+                        // For TVL with track: "Grade 11 TVL-ICT Section A"
+                        $classDisplay = $classData['grade'] . ' ' . $classData['strand'] . '-' . $classData['track'] . ' Section ' . $section;
+                    } else {
+                        // For non-TVL strands: "Grade 11 STEM Section A"
+                        $classDisplay = $classData['grade'] . ' ' . $classData['strand'] . ' Section ' . $section;
                     }
+                } else {
+                    // For Elementary/JHS: "Grade 7 Section A"
+                    $classDisplay = $classData['grade'] . ' Section ' . $section;
                 }
                 
                 $createdStudents[] = [

@@ -34,7 +34,21 @@ class RegistrarController extends Controller
             ->take(5)
             ->get();
 
-        return view('registrar.dashboard', compact('stats', 'recent_applications'));
+        // Applications by grade level (from reports)
+        $by_grade = Enrollee::selectRaw('grade_level_applied, count(*) as count')
+            ->groupBy('grade_level_applied')
+            ->orderBy('grade_level_applied')
+            ->get();
+
+        // Applications by month (from reports)
+        $by_month = Enrollee::selectRaw('MONTH(created_at) as month, YEAR(created_at) as year, count(*) as count')
+            ->groupBy('month', 'year')
+            ->orderBy('year', 'desc')
+            ->orderBy('month', 'desc')
+            ->take(12)
+            ->get();
+
+        return view('registrar.dashboard', compact('stats', 'recent_applications', 'by_grade', 'by_month'));
     }
 
     /**
@@ -422,34 +436,6 @@ class RegistrarController extends Controller
         return view('registrar.approved', compact('approved_applications'));
     }
 
-    /**
-     * Show reports
-     */
-    public function reports()
-    {
-        $stats = [
-            'total_applications' => Enrollee::count(),
-            'pending_applications' => Enrollee::where('enrollment_status', 'pending')->count(),
-            'approved_applications' => Enrollee::where('enrollment_status', 'approved')->count(),
-            'declined_applications' => Enrollee::where('enrollment_status', 'declined')->count(),
-        ];
-
-        // Applications by grade level
-        $by_grade = Enrollee::selectRaw('grade_level_applied, count(*) as count')
-            ->groupBy('grade_level_applied')
-            ->orderBy('grade_level_applied')
-            ->get();
-
-        // Applications by month
-        $by_month = Enrollee::selectRaw('MONTH(created_at) as month, YEAR(created_at) as year, count(*) as count')
-            ->groupBy('month', 'year')
-            ->orderBy('year', 'desc')
-            ->orderBy('month', 'desc')
-            ->take(12)
-            ->get();
-
-        return view('registrar.reports', compact('stats', 'by_grade', 'by_month'));
-    }
 
     /**
      * Get application documents
@@ -564,10 +550,47 @@ class RegistrarController extends Controller
                 'created_by' => Auth::guard('registrar')->id(),
             ]);
 
+            // Check if all documents are approved and auto-approve application
+            if ($request->status === 'approved') {
+                $allDocumentsApproved = true;
+                foreach ($documents as $doc) {
+                    if (($doc['status'] ?? 'pending') !== 'approved') {
+                        $allDocumentsApproved = false;
+                        break;
+                    }
+                }
+
+                // Auto-approve application if all documents are approved
+                if ($allDocumentsApproved && $application->enrollment_status === 'pending') {
+                    $application->update([
+                        'enrollment_status' => 'approved',
+                        'approved_at' => now(),
+                        'approved_by' => Auth::guard('registrar')->id()
+                    ]);
+
+                    // Create approval notice
+                    Notice::create([
+                        'enrollee_id' => $application->id,
+                        'title' => 'Application Approved',
+                        'message' => 'Congratulations! Your enrollment application has been approved. All your documents have been verified and accepted. You may now proceed with the next steps.',
+                        'type' => 'success',
+                        'priority' => 'high',
+                        'is_global' => false,
+                        'created_by' => Auth::guard('registrar')->id(),
+                    ]);
+
+                    $responseMessage = "Document approved successfully. Application automatically approved since all documents are now approved.";
+                } else {
+                    $responseMessage = "Document {$request->status} successfully";
+                }
+            } else {
+                $responseMessage = "Document {$request->status} successfully";
+            }
+
             // Always return JSON response since method signature requires JsonResponse
             return response()->json([
                 'success' => true,
-                'message' => "Document {$request->status} successfully"
+                'message' => $responseMessage
             ]);
         } catch (\Exception $e) {
             Log::error('Error updating document status: ' . $e->getMessage());
@@ -1215,13 +1238,18 @@ class RegistrarController extends Controller
                                     ->orderBy('first_name')
                                     ->get();
             
-            // Build class info string using consistent format
-            $classInfo = $selectedGrade . ' - ' . $selectedSection;
+            // Build class info string using consistent format with strand/track first
             if ($selectedStrand) {
-                $classInfo = $selectedGrade . ' - ' . $selectedSection . ' - ' . $selectedStrand;
                 if ($selectedTrack) {
-                    $classInfo = $selectedGrade . ' - ' . $selectedSection . ' - ' . $selectedStrand . ' - ' . $selectedTrack;
+                    // For TVL with track: "Grade 11 TVL-ICT Section A"
+                    $classInfo = $selectedGrade . ' ' . $selectedStrand . '-' . $selectedTrack . ' Section ' . $selectedSection;
+                } else {
+                    // For non-TVL strands: "Grade 11 STEM Section A"
+                    $classInfo = $selectedGrade . ' ' . $selectedStrand . ' Section ' . $selectedSection;
                 }
+            } else {
+                // For Elementary/JHS: "Grade 7 Section A"
+                $classInfo = $selectedGrade . ' Section ' . $selectedSection;
             }
             
             // Get class adviser

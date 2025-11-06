@@ -43,6 +43,9 @@ window.RegistrarDataChangeRequests = (function() {
 function initializeDataChangeRequests() {
     console.log('Initializing registrar data change requests...');
     
+    // Setup CSRF token first
+    setupCSRFToken();
+    
     // Check if required elements exist
     const tab = document.getElementById('data-change-requests-tab');
     const pane = document.getElementById('data-change-requests');
@@ -80,6 +83,8 @@ function setupCSRFToken() {
     const token = document.querySelector('meta[name="csrf-token"]');
     if (token) {
         window.csrfToken = token.getAttribute('content');
+    } else {
+        console.error('CSRF token not found in meta tags');
     }
 }
 
@@ -554,13 +559,22 @@ function processChangeRequest(requestId, action, notes = '') {
         btn.innerHTML = '<i class="ri-loader-line ri-spin"></i>';
     });
     
+    // Get fresh CSRF token
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || window.csrfToken || '';
+    
+    if (!csrfToken) {
+        console.error('CSRF token not available');
+        showAlert('Security token not found. Please refresh the page.', 'error');
+        return;
+    }
+    
     fetch(`/registrar/data-change-requests/${requestId}/process`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
             'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': window.csrfToken || ''
+            'X-CSRF-TOKEN': csrfToken
         },
         body: JSON.stringify({
             action: action,

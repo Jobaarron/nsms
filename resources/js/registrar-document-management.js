@@ -90,11 +90,8 @@ window.RegistrarDocumentManagement = (function() {
                                                 <button type="button" class="btn btn-success" id="accept-document-btn">
                                                     <i class="ri-check-line me-1"></i>Accept Document
                                                 </button>
-                                                <button type="button" class="btn btn-danger" id="reject-document-btn">
-                                                    <i class="ri-close-line me-1"></i>Reject Document
-                                                </button>
-                                                <button type="button" class="btn btn-warning" id="pending-document-btn">
-                                                    <i class="ri-time-line me-1"></i>Mark as Pending
+                                                <button type="button" class="btn btn-warning" id="reject-document-btn">
+                                                    <i class="ri-edit-line me-1"></i>Revised Document
                                                 </button>
                                                 <button type="button" class="btn btn-primary" id="download-document-btn">
                                                     <i class="ri-download-line me-1"></i>Download
@@ -134,8 +131,6 @@ window.RegistrarDocumentManagement = (function() {
                 updateDocumentStatus('approved');
             } else if (e.target.id === 'reject-document-btn') {
                 updateDocumentStatus('rejected');
-            } else if (e.target.id === 'pending-document-btn') {
-                updateDocumentStatus('pending');
             } else if (e.target.id === 'download-document-btn') {
                 downloadDocument();
             } else if (e.target.id === 'save-notes-btn') {
@@ -331,7 +326,7 @@ window.RegistrarDocumentManagement = (function() {
         const notes = document.getElementById('document-notes').value;
         
         // Show loading state
-        const buttons = ['accept-document-btn', 'reject-document-btn', 'pending-document-btn'];
+        const buttons = ['accept-document-btn', 'reject-document-btn'];
         buttons.forEach(btnId => {
             const btn = document.getElementById(btnId);
             if (btn) btn.disabled = true;

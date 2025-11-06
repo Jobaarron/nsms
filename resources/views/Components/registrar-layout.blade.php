@@ -27,8 +27,10 @@
   
   @vite('resources/sass/app.scss')
   @vite(['resources/css/index_registrar.css'])
+  @vite(['resources/css/registrar-dashboard.css'])
   @vite(['resources/js/app.js'])
   @vite(['resources/js/registrar-class-lists.js'])
+  @vite(['resources/js/registrar-dashboard.js'])
 
 </head>
 <body>
@@ -69,11 +71,6 @@
               <i class="ri-check-line me-2"></i>Approved
             </a>
           </li> 
-          <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('registrar.reports') ? 'active' : '' }}" href="{{ route('registrar.reports') }}">
-              <i class="ri-bar-chart-line me-2"></i>Reports
-            </a>
-          </li>
         </ul>
         
         <!-- LOGOUT SECTION -->
@@ -107,7 +104,5 @@
       </main>
     </div>
   </div>
-
-  
 </body>
 </html>

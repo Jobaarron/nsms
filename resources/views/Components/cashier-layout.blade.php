@@ -84,37 +84,20 @@
           </li>
           
           <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('cashier.pending-payments') ? 'active' : '' }}" href="{{ route('cashier.pending-payments') }}">
-              <i class="ri-time-line me-2"></i>Pending Payments
+            <a class="nav-link {{ request()->routeIs('cashier.payments') ? 'active' : '' }}" href="{{ route('cashier.payments') }}">
+              <i class="ri-time-line me-2"></i>Payments
             </a>
           </li>
           
           <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('cashier.due-payments') ? 'active' : '' }}" href="{{ route('cashier.due-payments') }}">
-              <i class="ri-alarm-warning-line me-2"></i>Due Payments
-            </a>
-          </li>
-          
-          <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('cashier.completed-payments') ? 'active' : '' }}" href="{{ route('cashier.completed-payments') }}">
-              <i class="ri-check-double-line me-2"></i>Completed Payments
-            </a>
-          </li>
-          
-          <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('cashier.payment-history') ? 'active' : '' }}" href="{{ route('cashier.payment-history') }}">
-              <i class="ri-history-line me-2"></i>Payment History
+            <a class="nav-link {{ request()->routeIs('cashier.payment-archives') ? 'active' : '' }}" href="{{ route('cashier.payment-archives') }}">
+              <i class="ri-archive-line me-2"></i>Payment Archives
             </a>
           </li>
           
           <li class="nav-item mb-2">
             <a class="nav-link {{ request()->routeIs('cashier.fees*') ? 'active' : '' }}" href="{{ route('cashier.fees') }}">
               <i class="ri-money-dollar-circle-line me-2"></i>Fee Management
-            </a>
-          </li>
-          <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('cashier.reports') ? 'active' : '' }}" href="{{ route('cashier.reports') }}">
-              <i class="ri-bar-chart-line me-2"></i>Reports
             </a>
           </li>
          

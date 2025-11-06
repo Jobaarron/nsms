@@ -439,13 +439,19 @@ function showSectionDetailsAdviser() {
 
 // Function to view class list from assignment tables
 function viewClassList(gradeLevel, section, strand, track) {
-    // Build class title using consistent format
-    let classTitle = `${gradeLevel} - ${section}`;
+    // Build class title with strand/track first, then section for SHS
+    let classTitle;
     if (strand && strand !== '') {
-        classTitle = `${gradeLevel} - ${section} - ${strand}`;
         if (track && track !== '') {
-            classTitle = `${gradeLevel} - ${section} - ${strand} - ${track}`;
+            // For TVL with track: "Grade 11 TVL-ICT Section A"
+            classTitle = `${gradeLevel} ${strand}-${track} Section ${section}`;
+        } else {
+            // For non-TVL strands: "Grade 11 STEM Section A"
+            classTitle = `${gradeLevel} ${strand} Section ${section}`;
         }
+    } else {
+        // For Elementary/JHS: "Grade 7 Section A"
+        classTitle = `${gradeLevel} Section ${section}`;
     }
     
     // Show modal
@@ -463,8 +469,9 @@ function viewClassList(gradeLevel, section, strand, track) {
     
     // Build query parameters
     let queryParams = `grade_level=${encodeURIComponent(gradeLevel)}&section=${encodeURIComponent(section)}`;
-    if (strand && strand !== '') queryParams += `&strand=${encodeURIComponent(strand)}`;
-    if (track && track !== '') queryParams += `&track=${encodeURIComponent(track)}`;
+    if (strand && strand !== '' && strand !== 'null') queryParams += `&strand=${encodeURIComponent(strand)}`;
+    if (track && track !== '' && track !== 'null') queryParams += `&track=${encodeURIComponent(track)}`;
+    
     
     // Fetch section details
     fetch(`/faculty-head/get-section-details?${queryParams}`, {
@@ -995,3 +1002,43 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 });
+
+// Function to check section details from form fields
+function checkSectionFromForm() {
+    // Get values from form fields
+    const gradeLevel = document.getElementById('grade_level')?.value;
+    const section = document.getElementById('section')?.value;
+    const strand = document.querySelector('select[name="strand"]')?.value || '';
+    const track = document.querySelector('select[name="track"]')?.value || '';
+    
+    // Validate required fields
+    if (!gradeLevel || !section) {
+        alert('Please select both Grade Level and Section first.');
+        return;
+    }
+    
+    // Call the working viewClassList function with form values
+    viewClassList(gradeLevel, section, strand, track);
+}
+
+// Function to check section details from adviser form fields
+function checkSectionFromAdviserForm() {
+    // Get values from adviser form fields
+    const gradeLevel = document.getElementById('grade_level_adviser')?.value;
+    const section = document.getElementById('section_adviser')?.value;
+    const strand = document.getElementById('strand_adviser')?.value || '';
+    const track = document.getElementById('track_adviser')?.value || '';
+    
+    // Validate required fields
+    if (!gradeLevel || !section) {
+        alert('Please select both Grade Level and Section first.');
+        return;
+    }
+    
+    // Call the working viewClassList function with form values
+    viewClassList(gradeLevel, section, strand, track);
+}
+
+// Make functions globally available
+window.checkSectionFromForm = checkSectionFromForm;
+window.checkSectionFromAdviserForm = checkSectionFromAdviserForm;

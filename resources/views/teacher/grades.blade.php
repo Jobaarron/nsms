@@ -12,10 +12,6 @@
         <div class="text-muted">
           <i class="ri-file-text-line me-1"></i>{{ $currentAcademicYear }}
         </div>
-        <div class="d-flex align-items-center">
-          <span class="text-muted me-2">Submission Status:</span>
-          <span class="grade-submission-status badge bg-secondary">Checking...</span>
-        </div>
       </div>
     </div>
 

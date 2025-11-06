@@ -215,12 +215,15 @@ class TestClassListLogic extends Command
                 $data = $response->getData(true);
                 
                 if (isset($data['success']) && $data['success']) {
-                    $classDisplay = $testCase['grade_level'] . ' - ' . $testCase['section'];
+                    // Build class display using consistent format with strand/track first
                     if (isset($testCase['strand'])) {
-                        $classDisplay .= ' - ' . $testCase['strand'];
                         if (isset($testCase['track'])) {
-                            $classDisplay .= ' - ' . $testCase['track'];
+                            $classDisplay = $testCase['grade_level'] . ' ' . $testCase['strand'] . '-' . $testCase['track'] . ' Section ' . $testCase['section'];
+                        } else {
+                            $classDisplay = $testCase['grade_level'] . ' ' . $testCase['strand'] . ' Section ' . $testCase['section'];
                         }
+                    } else {
+                        $classDisplay = $testCase['grade_level'] . ' Section ' . $testCase['section'];
                     }
                     
                     $studentCount = isset($data['students']) ? count($data['students']) : 0;

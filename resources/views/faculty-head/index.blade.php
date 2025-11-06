@@ -152,7 +152,7 @@
                 <td>
                   <span class="badge bg-secondary" 
                         style="cursor: pointer;" 
-                        onclick="viewClassList('{{ $assignment->grade_level }}', '{{ $assignment->section }}', '{{ $assignment->strand }}', '{{ $assignment->track }}')"
+                        onclick="viewClassList('{{ $assignment->grade_level }}', '{{ $assignment->section }}', '{{ $assignment->strand ?? '' }}', '{{ $assignment->track ?? '' }}')"
                         title="Click to view class list">
                     {{ $assignment->section }}
                   </span>
@@ -221,7 +221,7 @@
                 <td>
                   <span class="badge bg-secondary" 
                         style="cursor: pointer;" 
-                        onclick="viewClassList('{{ $assignment->grade_level }}', '{{ $assignment->section }}', '{{ $assignment->strand }}', '{{ $assignment->track }}')"
+                        onclick="viewClassList('{{ $assignment->grade_level }}', '{{ $assignment->section }}', '{{ $assignment->strand ?? '' }}', '{{ $assignment->track ?? '' }}')"
                         title="Click to view class list">
                     {{ $assignment->section }}
                   </span>

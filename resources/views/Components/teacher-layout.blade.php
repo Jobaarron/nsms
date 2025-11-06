@@ -21,7 +21,17 @@
   @vite(['resources/css/index_teacher.css'])
   @vite('resources/js/teacher-dashboard.js')
   @vite('resources/js/teacher-recommend-counseling.js')
+  @vite('resources/js/teacher-advisory.js')
 
+  <style>
+    .spin {
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+  </style>
   
 </head>
 <body>
@@ -47,11 +57,6 @@
             </a>
           </li>
           
-          <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('teacher.schedule*') ? 'active' : '' }}" href="{{ route('teacher.schedule') }}">
-              <i class="ri-calendar-line me-2"></i>Class Schedule
-            </a>
-          </li>
           
           <li class="nav-item mb-2">
             <a class="nav-link {{ request()->routeIs('teacher.grades*') ? 'active' : '' }}" href="{{ route('teacher.grades') }}">
@@ -66,7 +71,7 @@
           </li>
           
           <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('teacher.my-students') ? 'active' : '' }}" href="{{ route('teacher.my-students') }}">
+            <a class="nav-link {{ request()->routeIs('teacher.advisory') ? 'active' : '' }}" href="{{ route('teacher.advisory') }}">
               <i class="ri-user-star-line me-2"></i>Advisory
             </a>
           </li>

@@ -127,19 +127,6 @@
         <!-- Summary Cards -->
         <div class="row mb-4">
             <div class="col-lg-3 col-md-6 mb-3">
-                <div class="card border-0 shadow-sm card-summary card-paid h-100">
-                    <div class="card-body d-flex align-items-center">
-                        <div class="flex-shrink-0 me-3">
-                            <i class="ri-money-dollar-circle-line fs-2"></i>
-                        </div>
-                        <div class="flex-grow-1">
-                            <h3 class="fw-bold fs-4 mb-0 text-white">₱{{ number_format($student->total_paid ?? 0, 2) }}</h3>
-                            <small class="text-white">Total Paid</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6 mb-3">
                 <div class="card border-0 shadow-sm card-summary card-credits h-100">
                     <div class="card-body d-flex align-items-center">
                         <div class="flex-shrink-0 me-3">
