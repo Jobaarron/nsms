@@ -33,6 +33,8 @@ class RedirectIfAuthenticated
                             return redirect()->route('student.dashboard');
                         case 'enrollee':
                             return redirect()->route('enrollee.dashboard');
+                        case 'cashier':
+                            return redirect()->route('cashier.dashboard');
                         case 'web':
                         default:
                             return redirect('/home');
