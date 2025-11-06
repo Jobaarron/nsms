@@ -63,7 +63,7 @@
             </div>
         @endif
 
-        <form id="enrollmentForm" action="{{ route('student.enrollment.submit') }}" method="POST">
+    <form id="enrollmentForm" action="{{ route('student.enrollment.submit') }}" method="POST" onsubmit="event.preventDefault(); submitEnrollmentForm();">
             @csrf
             <div class="row">
                 <!-- Left Column - Subjects -->
@@ -524,14 +524,46 @@
         <script>
             // Initialize enrollment data when page loads
             document.addEventListener('DOMContentLoaded', function() {
-                // Pass Laravel data to JavaScript
                 if (typeof window.initializeEnrollmentData === 'function') {
                     window.initializeEnrollmentData(
-                        {{ $totalAmount ?? 0 }}, 
+                        {{ $totalAmount ?? 0 }},
                         '{{ now()->addDays(7)->format('Y-m-d') }}'
                     );
                 }
             });
+
+            // Custom form submission to show PDF modal after payment
+            function submitEnrollmentForm() {
+                const form = document.getElementById('enrollmentForm');
+                const formData = new FormData(form);
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                fetch(form.action, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json',
+                    },
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.transaction_id) {
+                        if (window.showPDFModal) {
+                            window.showPDFModal({
+                                transactionId: data.transaction_id,
+                                onClose: function() {
+                                    window.location.href = data.redirect_url || '/student/dashboard';
+                                }
+                            });
+                        }
+                    } else {
+                        if (window.showAlert) window.showAlert(data.message || 'Failed to submit payment.', 'danger');
+                    }
+                })
+                .catch(() => {
+                    if (window.showAlert) window.showAlert('An error occurred while submitting payment.', 'danger');
+                });
+            }
         </script>
     @endpush
 </x-student-layout>
