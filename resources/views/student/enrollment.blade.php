@@ -240,7 +240,7 @@
                                             <label class="form-label">Amount to Pay</label>
                                             <div class="input-group">
                                                 <span class="input-group-text">₱</span>
-                                                <input type="number" class="form-control" name="full_payment_amount" step="0.01" min="0" value="{{ number_format($totalAmount, 2, '.', '') }}" placeholder="0.00" disabled>
+                                                <input type="number" class="form-control" name="full_payment_amount" step="0.01" min="0" value="{{ number_format($totalAmount, 2, '.', '') }}" placeholder="0.00" readonly>
                                             </div>
                                         </div>
                                     </div>
@@ -275,7 +275,7 @@
                                                     <input type="date" class="form-control form-control-sm mb-2" name="quarterly_date_1" min="{{ date('Y-m-d') }}" value="{{ $quarterDates[0] }}">
                                                     <div class="input-group input-group-sm">
                                                         <span class="input-group-text">₱</span>
-                                                        <input type="number" class="form-control" name="quarterly_amount_1" step="0.01" min="0" value="{{ number_format($quarterlyAmount, 2, '.', '') }}" placeholder="0.00" disabled>
+                                                        <input type="number" class="form-control" name="quarterly_amount_1" step="0.01" min="0" value="{{ number_format($quarterlyAmount, 2, '.', '') }}" placeholder="0.00" readonly>
                                                     </div>
                                                 </div>
                                             </div>
@@ -287,7 +287,7 @@
                                                     <input type="date" class="form-control form-control-sm mb-2" name="quarterly_date_2" min="{{ date('Y-m-d') }}" value="{{ $quarterDates[1] }}">
                                                     <div class="input-group input-group-sm">
                                                         <span class="input-group-text">₱</span>
-                                                        <input type="number" class="form-control" name="quarterly_amount_2" step="0.01" min="0" value="{{ number_format($quarterlyAmount, 2, '.', '') }}" placeholder="0.00" disabled>
+                                                        <input type="number" class="form-control" name="quarterly_amount_2" step="0.01" min="0" value="{{ number_format($quarterlyAmount, 2, '.', '') }}" placeholder="0.00" readonly>
                                                     </div>
                                                 </div>
                                             </div>
@@ -299,7 +299,7 @@
                                                     <input type="date" class="form-control form-control-sm mb-2" name="quarterly_date_3" min="{{ date('Y-m-d') }}" value="{{ $quarterDates[2] }}">
                                                     <div class="input-group input-group-sm">
                                                         <span class="input-group-text">₱</span>
-                                                        <input type="number" class="form-control" name="quarterly_amount_3" step="0.01" min="0" value="{{ number_format($quarterlyAmount, 2, '.', '') }}" placeholder="0.00" disabled>
+                                                        <input type="number" class="form-control" name="quarterly_amount_3" step="0.01" min="0" value="{{ number_format($quarterlyAmount, 2, '.', '') }}" placeholder="0.00" readonly>
                                                     </div>
                                                 </div>
                                             </div>
@@ -311,7 +311,7 @@
                                                     <input type="date" class="form-control form-control-sm mb-2" name="quarterly_date_4" min="{{ date('Y-m-d') }}" value="{{ $quarterDates[3] }}">
                                                     <div class="input-group input-group-sm">
                                                         <span class="input-group-text">₱</span>
-                                                        <input type="number" class="form-control" name="quarterly_amount_4" step="0.01" min="0" value="{{ number_format($quarterlyAmount, 2, '.', '') }}" placeholder="0.00" disabled>
+                                                        <input type="number" class="form-control" name="quarterly_amount_4" step="0.01" min="0" value="{{ number_format($quarterlyAmount, 2, '.', '') }}" placeholder="0.00" readonly>
                                                     </div>
                                                 </div>
                                             </div>
@@ -355,7 +355,7 @@
                                                         <input type="date" class="form-control form-control-sm mb-1" name="monthly_date_{{ $i }}" min="{{ date('Y-m-d') }}" value="{{ $monthDates[$i-1] }}">
                                                         <div class="input-group input-group-sm">
                                                             <span class="input-group-text">₱</span>
-                                                            <input type="number" class="form-control" name="monthly_amount_{{ $i }}" step="0.01" min="0" value="{{ number_format($monthlyAmount, 2, '.', '') }}" placeholder="0.00" disabled>
+                                                            <input type="number" class="form-control" name="monthly_amount_{{ $i }}" step="0.01" min="0" value="{{ number_format($monthlyAmount, 2, '.', '') }}" placeholder="0.00" readonly>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -399,7 +399,7 @@
                                     @elseif(in_array($paymentScheduleStatus->confirmation_status, ['rejected', 'declined']))
                                         <div class="d-grid gap-2">
                                             <button type="submit" class="btn btn-primary btn-lg" id="enrollBtn">
-                                                <i class="ri-send-plane-line me-2"></i>Resubmit Payment
+                                                <i class="ri-send-plane-line me-2"></i>Reconfirm Payment Schedule
                                             </button>
                                             <a href="{{ route('student.dashboard') }}" class="btn btn-outline-secondary">
                                                 <i class="ri-arrow-left-line me-2"></i>Back to Dashboard
@@ -409,7 +409,7 @@
                                 @else
                                     <div class="d-grid gap-2">
                                         <button type="submit" class="btn btn-primary btn-lg" id="enrollBtn">
-                                            <i class="ri-send-plane-line me-2"></i>Confirm Payment
+                                            <i class="ri-send-plane-line me-2"></i>Confirm Payment Schedule
                                         </button>
                                         <a href="{{ route('student.dashboard') }}" class="btn btn-outline-secondary">
                                             <i class="ri-arrow-left-line me-2"></i>Back to Dashboard
@@ -522,337 +522,14 @@
     @push('scripts')
         @vite('resources/js/student-enrollment.js')
         <script>
-            // Global variables
-            const totalAmount = {{ $totalAmount ?? 0 }};
-            const preferredScheduleDate = '{{ now()->addDays(7)->format('Y-m-d') }}';
-            
-            console.log('Default schedule date loaded:', preferredScheduleDate);
-            
-            // Define functions globally FIRST so they can be accessed by onclick handlers
-            window.populatePaymentDates = function() {
-                console.log('Populating payment dates with preferred schedule:', preferredScheduleDate);
-                const baseDate = new Date(preferredScheduleDate);
-                
-                // Add a small delay to ensure elements are visible
-                setTimeout(() => {
-                    // Full payment date
-                    const fullPaymentDate = document.querySelector('input[name="full_payment_date"]');
-                    if (fullPaymentDate) {
-                        fullPaymentDate.value = preferredScheduleDate;
-                        console.log('Set full payment date to:', preferredScheduleDate);
-                    } else {
-                        console.log('Full payment date input not found');
-                    }
-                    
-                    // Quarterly payment dates
-                    for (let i = 1; i <= 4; i++) {
-                        const quarterlyDate = document.querySelector(`input[name="quarterly_date_${i}"]`);
-                        if (quarterlyDate) {
-                            const date = new Date(baseDate);
-                            date.setMonth(date.getMonth() + (i - 1) * 3);
-                            const formattedDate = date.toISOString().split('T')[0];
-                            quarterlyDate.value = formattedDate;
-                            console.log(`Set quarterly date ${i} to:`, formattedDate);
-                        } else {
-                            console.log(`Quarterly date ${i} input not found`);
-                        }
-                    }
-                    
-                    // Monthly payment dates
-                    for (let i = 1; i <= 10; i++) {
-                        const monthlyDate = document.querySelector(`input[name="monthly_date_${i}"]`);
-                        if (monthlyDate) {
-                            const date = new Date(baseDate);
-                            date.setMonth(date.getMonth() + (i - 1));
-                            const formattedDate = date.toISOString().split('T')[0];
-                            monthlyDate.value = formattedDate;
-                            console.log(`Set monthly date ${i} to:`, formattedDate);
-                        } else {
-                            console.log(`Monthly date ${i} input not found`);
-                        }
-                    }
-                    
-                    // Auto-populate amounts
-                window.populatePaymentAmounts();
-            }, 100); // 100ms delay to ensure elements are rendered
-        }
-        
-        // Verify function is defined
-        console.log('populatePaymentDates function defined:', typeof window.populatePaymentDates);
-
-        window.populatePaymentAmounts = function() {
-                // Full payment amount
-                const fullPaymentAmount = document.querySelector('input[name="full_payment_amount"]');
-                if (fullPaymentAmount) {
-                    fullPaymentAmount.value = totalAmount.toFixed(2);
-                }
-                
-                // Quarterly amounts
-                const quarterlyAmount = (totalAmount / 4).toFixed(2);
-                for (let i = 1; i <= 4; i++) {
-                    const quarterlyAmountInput = document.querySelector(`input[name="quarterly_amount_${i}"]`);
-                    if (quarterlyAmountInput) {
-                        quarterlyAmountInput.value = quarterlyAmount;
-                    }
-                }
-                
-                // Monthly amounts
-                const monthlyAmount = (totalAmount / 10).toFixed(2);
-                for (let i = 1; i <= 10; i++) {
-                    const monthlyAmountInput = document.querySelector(`input[name="monthly_amount_${i}"]`);
-                    if (monthlyAmountInput) {
-                        monthlyAmountInput.value = monthlyAmount;
-                    }
-                }
-                
-                // Update display amounts
-                document.querySelectorAll('.quarterly-amount').forEach(el => {
-                    el.textContent = parseFloat(quarterlyAmount).toLocaleString('en-US', {minimumFractionDigits: 2});
-                });
-                
-                document.querySelectorAll('.monthly-amount').forEach(el => {
-                    el.textContent = parseFloat(monthlyAmount).toLocaleString('en-US', {minimumFractionDigits: 2});
-                });
-                
-                // Update breakdown totals
-                const fullTotalElement = document.getElementById('full-total-amount');
-                const quarterlyTotalElement = document.getElementById('quarterly-total-amount');
-                const quarterlyPerPaymentElement = document.getElementById('quarterly-per-payment');
-                const monthlyTotalElement = document.getElementById('monthly-total-amount');
-                const monthlyPerPaymentElement = document.getElementById('monthly-per-payment');
-                
-                if (fullTotalElement) fullTotalElement.textContent = totalAmount.toLocaleString('en-US', {minimumFractionDigits: 2});
-                if (quarterlyTotalElement) quarterlyTotalElement.textContent = totalAmount.toLocaleString('en-US', {minimumFractionDigits: 2});
-                if (quarterlyPerPaymentElement) quarterlyPerPaymentElement.textContent = parseFloat(quarterlyAmount).toLocaleString('en-US', {minimumFractionDigits: 2});
-                if (monthlyTotalElement) monthlyTotalElement.textContent = totalAmount.toLocaleString('en-US', {minimumFractionDigits: 2});
-                if (monthlyPerPaymentElement) monthlyPerPaymentElement.textContent = parseFloat(monthlyAmount).toLocaleString('en-US', {minimumFractionDigits: 2});
-            }
-
-            window.showPaymentScheduleCard = function(mode) {
-                // Show the payment schedule card
-                const paymentScheduleCard = document.getElementById('payment-schedule-card');
-                if (paymentScheduleCard) {
-                    paymentScheduleCard.style.display = 'block';
-                }
-                
-                // Hide all payment breakdowns first
-                document.querySelectorAll('.payment-breakdown').forEach(breakdown => {
-                    breakdown.style.display = 'none';
-                });
-                
-                // Show the selected payment breakdown
-                const selectedBreakdown = document.getElementById(`${mode}-payment-breakdown`);
-                if (selectedBreakdown) {
-                    selectedBreakdown.style.display = 'block';
-                }
-            }
-            
+            // Initialize enrollment data when page loads
             document.addEventListener('DOMContentLoaded', function() {
-                const paymentOptions = document.querySelectorAll('input[name="payment_method"]');
-                const scheduleDiv = document.getElementById('payment-schedule');
-                const scheduleContent = document.getElementById('schedule-content');
-                
-                // Auto-populate payment dates based on preferred schedule
-                window.populatePaymentDates();
-                
-                paymentOptions.forEach(option => {
-                    option.addEventListener('change', function() {
-                        console.log('Payment mode changed to:', this.value);
-                        updatePaymentSchedule(this.value);
-                        updatePaymentOptionStyles();
-                        window.showPaymentScheduleCard(this.value);
-                        // Populate dates after showing the card with a longer delay
-                        setTimeout(() => {
-                            window.populatePaymentDates();
-                        }, 200);
-                    });
-                });
-                
-                // Initialize with selected option
-                const selectedOption = document.querySelector('input[name="payment_method"]:checked');
-                if (selectedOption) {
-                    updatePaymentSchedule(selectedOption.value);
-                    updatePaymentOptionStyles();
-                    window.showPaymentScheduleCard(selectedOption.value);
-                    window.populatePaymentDates(); // Populate dates on initialization
-                }
-                
-                function updatePaymentSchedule(mode) {
-                    if (totalAmount <= 0) return;
-                    
-                    scheduleDiv.style.display = 'block';
-                    let html = '';
-                    
-                    switch(mode) {
-                        case 'full':
-                            html = `
-                                <div class="alert alert-success">
-                                    <strong>Full Payment:</strong> ₱${totalAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}
-                                    <br><small>Pay the entire amount upon enrollment</small>
-                                </div>
-                            `;
-                            break;
-                        case 'quarterly':
-                            const quarterlyAmount = totalAmount / 4;
-                            html = `
-                                <div class="alert alert-warning">
-                                    <strong>Quarterly Payment:</strong> ₱${quarterlyAmount.toLocaleString('en-US', {minimumFractionDigits: 2})} per quarter
-                                    <br><small>4 payments throughout the academic year</small>
-                                </div>
-                                <div class="small">
-                                    <div class="d-flex justify-content-between py-1">
-                                        <span>1st Quarter:</span>
-                                        <span>₱${quarterlyAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-                                    </div>
-                                    <div class="d-flex justify-content-between py-1">
-                                        <span>2nd Quarter:</span>
-                                        <span>₱${quarterlyAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-                                    </div>
-                                    <div class="d-flex justify-content-between py-1">
-                                        <span>3rd Quarter:</span>
-                                        <span>₱${quarterlyAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-                                    </div>
-                                    <div class="d-flex justify-content-between py-1">
-                                        <span>4th Quarter:</span>
-                                        <span>₱${quarterlyAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-                                    </div>
-                                </div>
-                            `;
-                            break;
-                        case 'monthly':
-                            const monthlyAmount = totalAmount / 10;
-                            html = `
-                                <div class="alert alert-info">
-                                    <strong>Monthly Payment:</strong> ₱${monthlyAmount.toLocaleString('en-US', {minimumFractionDigits: 2})} per month
-                                    <br><small>10 payments throughout the academic year</small>
-                                </div>
-                                <div class="small">
-                                    <div class="d-flex justify-content-between py-1">
-                                        <span>Monthly (10 months):</span>
-                                        <span>₱${monthlyAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-                                    </div>
-                                </div>
-                            `;
-                            break;
-                    }
-                    
-                    scheduleContent.innerHTML = html;
-                }
-                
-                function populatePaymentAmounts() {
-                    // Full payment amount
-                    const fullPaymentAmount = document.querySelector('input[name="full_payment_amount"]');
-                    if (fullPaymentAmount) {
-                        fullPaymentAmount.value = totalAmount.toFixed(2);
-                    }
-                    
-                    // Quarterly amounts
-                    const quarterlyAmount = (totalAmount / 4).toFixed(2);
-                    for (let i = 1; i <= 4; i++) {
-                        const quarterlyAmountInput = document.querySelector(`input[name="quarterly_amount_${i}"]`);
-                        if (quarterlyAmountInput) {
-                            quarterlyAmountInput.value = quarterlyAmount;
-                        }
-                    }
-                    
-                    // Monthly amounts
-                    const monthlyAmount = (totalAmount / 10).toFixed(2);
-                    for (let i = 1; i <= 10; i++) {
-                        const monthlyAmountInput = document.querySelector(`input[name="monthly_amount_${i}"]`);
-                        if (monthlyAmountInput) {
-                            monthlyAmountInput.value = monthlyAmount;
-                        }
-                    }
-                    
-                    // Update display amounts
-                    document.querySelectorAll('.quarterly-amount').forEach(el => {
-                        el.textContent = parseFloat(quarterlyAmount).toLocaleString('en-US', {minimumFractionDigits: 2});
-                    });
-                    
-                    document.querySelectorAll('.monthly-amount').forEach(el => {
-                        el.textContent = parseFloat(monthlyAmount).toLocaleString('en-US', {minimumFractionDigits: 2});
-                    });
-                    
-                    // Update breakdown totals
-                    document.getElementById('full-total-amount').textContent = totalAmount.toLocaleString('en-US', {minimumFractionDigits: 2});
-                    document.getElementById('quarterly-total-amount').textContent = totalAmount.toLocaleString('en-US', {minimumFractionDigits: 2});
-                    document.getElementById('quarterly-per-payment').textContent = parseFloat(quarterlyAmount).toLocaleString('en-US', {minimumFractionDigits: 2});
-                    document.getElementById('monthly-total-amount').textContent = totalAmount.toLocaleString('en-US', {minimumFractionDigits: 2});
-                    document.getElementById('monthly-per-payment').textContent = parseFloat(monthlyAmount).toLocaleString('en-US', {minimumFractionDigits: 2});
-                }
-                
-                function updatePaymentSchedule(mode) {
-                    if (totalAmount <= 0) return;
-                    
-                    scheduleDiv.style.display = 'block';
-                    let html = '';
-                    
-                    switch(mode) {
-                        case 'full':
-                            html = `
-                                <div class="alert alert-success">
-                                    <strong>Full Payment:</strong> ₱${totalAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}
-                                    <br><small>Pay the entire amount upon enrollment</small>
-                                </div>
-                            `;
-                            break;
-                        case 'quarterly':
-                            const quarterlyAmount = totalAmount / 4;
-                            html = `
-                                <div class="alert alert-warning">
-                                    <strong>Quarterly Payment:</strong> ₱${quarterlyAmount.toLocaleString('en-US', {minimumFractionDigits: 2})} per quarter
-                                    <br><small>4 payments throughout the academic year</small>
-                                </div>
-                                <div class="small">
-                                    <div class="d-flex justify-content-between py-1">
-                                        <span>1st Quarter:</span>
-                                        <span>₱${quarterlyAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-                                    </div>
-                                    <div class="d-flex justify-content-between py-1">
-                                        <span>2nd Quarter:</span>
-                                        <span>₱${quarterlyAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-                                    </div>
-                                    <div class="d-flex justify-content-between py-1">
-                                        <span>3rd Quarter:</span>
-                                        <span>₱${quarterlyAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-                                    </div>
-                                    <div class="d-flex justify-content-between py-1">
-                                        <span>4th Quarter:</span>
-                                        <span>₱${quarterlyAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-                                    </div>
-                                </div>
-                            `;
-                            break;
-                        case 'monthly':
-                            const monthlyAmount = totalAmount / 10;
-                            html = `
-                                <div class="alert alert-info">
-                                    <strong>Monthly Payment:</strong> ₱${monthlyAmount.toLocaleString('en-US', {minimumFractionDigits: 2})} per month
-                                    <br><small>10 payments (excluding vacation months)</small>
-                                </div>
-                                <div class="small">
-                                    <div class="d-flex justify-content-between py-1">
-                                        <span>Monthly (10 months):</span>
-                                        <span>₱${monthlyAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-                                    </div>
-                                </div>
-                            `;
-                            break;
-                    }
-                    
-                    scheduleContent.innerHTML = html;
-                }
-                
-                function updatePaymentOptionStyles() {
-                    document.querySelectorAll('.payment-option').forEach(card => {
-                        card.classList.remove('border-primary', 'bg-light');
-                    });
-                    
-                    const selectedInput = document.querySelector('input[name="payment_method"]:checked');
-                    if (selectedInput) {
-                        const selectedCard = selectedInput.closest('.form-check').querySelector('.payment-option');
-                        selectedCard.classList.add('border-primary', 'bg-light');
-                    }
+                // Pass Laravel data to JavaScript
+                if (typeof window.initializeEnrollmentData === 'function') {
+                    window.initializeEnrollmentData(
+                        {{ $totalAmount ?? 0 }}, 
+                        '{{ now()->addDays(7)->format('Y-m-d') }}'
+                    );
                 }
             });
         </script>
