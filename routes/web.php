@@ -811,6 +811,7 @@ Route::middleware(['auth:cashier'])->prefix('cashier/api')->name('cashier.api.')
     Route::get('/payment-history', [PaymentScheduleController::class, 'getPaymentHistory'])->name('payment-history');
     Route::get('/pending-payment-schedules', [PaymentScheduleController::class, 'getPendingPaymentSchedules'])->name('pending-payment-schedules');
     Route::get('/due-payment-schedules', [PaymentScheduleController::class, 'getDuePaymentSchedules'])->name('due-payment-schedules');
+    Route::get('/pdf/cashier-receipt', [PdfController::class, 'showCashierReceipt'])->name('pdf.cashier-receipt');
 });
 
 // ===== CASHIER ROUTES =====

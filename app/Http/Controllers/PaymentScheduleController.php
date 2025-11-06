@@ -750,11 +750,13 @@ class PaymentScheduleController extends Controller
         return response()->json([
             'success' => true,
             'message' => $message,
+            'transaction_id' => $payment->transaction_id,
             'payment' => [
                 'id' => $payment->id,
                 'status' => $payment->confirmation_status,
                 'student_id' => $student->student_id,
-                'amount' => $payment->amount
+                'amount' => $payment->amount,
+                'transaction_id' => $payment->transaction_id
             ]
         ]);
     }

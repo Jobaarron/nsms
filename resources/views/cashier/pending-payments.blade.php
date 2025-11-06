@@ -259,6 +259,27 @@
     </div>
 
     @push('scripts')
+        <!-- PDF Modal -->
+        <div class="modal fade" id="pdfReceiptModal" tabindex="-1">
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Payment Receipt</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body" style="height:80vh;">
+                        <iframe id="pdfReceiptFrame" src="" width="100%" height="100%" style="border:none;"></iframe>
+                        <div id="pdf-error" class="alert alert-danger mt-3" style="display:none;"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" onclick="printPdfReceipt()">
+                            <i class="ri-printer-line me-2"></i>Print
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
         <script>
             let currentPaymentId = null;
 
@@ -352,7 +373,6 @@
 
             function processConfirmation() {
                 const notes = document.getElementById('confirmNotes').value;
-                
                 fetch(`/cashier/payments/${currentPaymentId}/confirm`, {
                     method: 'POST',
                     headers: {
@@ -367,7 +387,7 @@
                 .then(data => {
                     if (data.success) {
                         bootstrap.Modal.getInstance(document.getElementById('confirmPaymentModal')).hide();
-                        location.reload();
+                        showPdfModal(data.transaction_id || currentPaymentId);
                     } else {
                         alert('Failed to confirm payment');
                     }
@@ -380,12 +400,10 @@
 
             function processRejection() {
                 const notes = document.getElementById('rejectNotes').value;
-                
                 if (!notes.trim()) {
                     alert('Please provide a reason for rejection');
                     return;
                 }
-                
                 fetch(`/cashier/payments/${currentPaymentId}/reject`, {
                     method: 'POST',
                     headers: {
@@ -409,6 +427,39 @@
                     console.error('Error:', error);
                     alert('Failed to reject payment');
                 });
+            }
+
+            function showPdfModal(transactionId) {
+                const iframe = document.getElementById('pdfReceiptFrame');
+                if (!iframe) return;
+                // Remove previous error
+                let errorDiv = document.getElementById('pdf-error');
+                if (errorDiv) errorDiv.style.display = 'none';
+                iframe.style.display = 'none';
+                iframe.onload = function() {
+                    iframe.style.display = 'block';
+                    if (errorDiv) errorDiv.style.display = 'none';
+                };
+                iframe.onerror = function() {
+                    iframe.style.display = 'none';
+                    if (errorDiv) {
+                        errorDiv.textContent = '404 PDF Not Found. Please check if the payment is approved and the transaction ID is valid.';
+                        errorDiv.style.display = 'block';
+                    }
+                };
+                const pdfUrl = `/cashier/api/pdf/cashier-receipt?transaction_id=${transactionId}`;
+                iframe.src = pdfUrl;
+                new bootstrap.Modal(document.getElementById('pdfReceiptModal')).show();
+            }
+
+            function printPdfReceipt() {
+                const iframe = document.getElementById('pdfReceiptFrame');
+                if (iframe && iframe.contentWindow) {
+                    iframe.contentWindow.focus();
+                    iframe.contentWindow.print();
+                } else {
+                    window.open(iframe.src, '_blank').print();
+                }
             }
         </script>
     @endpush

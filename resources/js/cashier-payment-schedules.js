@@ -273,52 +273,78 @@ function processPayment(paymentId, action) {
 // Process individual payment installment (for partial payments)
 function processIndividualPayment(paymentId, action) {
     const actionText = action === 'approve' ? 'approve' : 'reject';
-    
-    if (!confirm(`Are you sure you want to ${actionText} this individual payment?`)) {
-        return;
-    }
-    
-    let reason = '';
-    if (action === 'reject') {
-        reason = prompt('Please enter reason for rejection:');
+    if (action === 'approve') {
+        if (!confirm('Are you sure you want to approve this individual payment?')) {
+            return;
+        }
+        const requestData = {
+            action: 'approve',
+            reason: ''
+        };
+        fetch(`/cashier/api/payment-schedules/individual/${paymentId}/process`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify(requestData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show PDF modal after approval
+                if (typeof showPdfModal === 'function') {
+                    showPdfModal(data.transaction_id || paymentId);
+                } else if (window.showPdfModal) {
+                    window.showPdfModal(data.transaction_id || paymentId);
+                }
+                showAlert(data.message, 'success');
+                updatePaymentRowStatus(paymentId, data.payment.status);
+                loadPaymentSchedules();
+                loadPaymentStatistics();
+            } else {
+                showAlert(data.message || `Failed to approve payment.`, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error processing individual payment:', error);
+            showAlert(`Error processing payment: ${error.message}`, 'danger');
+        });
+    } else {
+        // Reject flow (keep prompt for now)
+        let reason = prompt('Please enter reason for rejection:');
         if (!reason) {
             showAlert('Reason is required for rejection.', 'warning');
             return;
         }
+        const requestData = {
+            action: 'reject',
+            reason: reason
+        };
+        fetch(`/cashier/api/payment-schedules/individual/${paymentId}/process`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify(requestData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert(data.message, 'success');
+                updatePaymentRowStatus(paymentId, data.payment.status);
+                loadPaymentSchedules();
+                loadPaymentStatistics();
+            } else {
+                showAlert(data.message || `Failed to reject payment.`, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error processing individual payment:', error);
+            showAlert(`Error processing payment: ${error.message}`, 'danger');
+        });
     }
-    
-    const requestData = {
-        action: action,
-        reason: reason
-    };
-    
-    fetch(`/cashier/api/payment-schedules/individual/${paymentId}/process`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        },
-        body: JSON.stringify(requestData)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showAlert(data.message, 'success');
-            
-            // Update the specific payment row in the modal
-            updatePaymentRowStatus(paymentId, data.payment.status);
-            
-            // Reload payment schedules and statistics
-            loadPaymentSchedules();
-            loadPaymentStatistics();
-        } else {
-            showAlert(data.message || `Failed to ${actionText} payment.`, 'danger');
-        }
-    })
-    .catch(error => {
-        console.error('Error processing individual payment:', error);
-        showAlert(`Error processing payment: ${error.message}`, 'danger');
-    });
 }
 
 function updatePaymentRowStatus(paymentId, status) {
@@ -704,7 +730,12 @@ window.displayPaymentScheduleModal = function(schedule) {
 
 window.approvePaymentSchedule = function(studentId, paymentMethod) {
     if (confirm('Are you sure you want to approve this entire payment schedule?')) {
-        processPaymentSchedule(studentId, paymentMethod, 'approve');
+        // Call the processPaymentSchedule and on success, show the PDF modal
+        processPaymentSchedule(studentId, paymentMethod, 'approve', null, function(paymentId) {
+            if (paymentId) {
+                showPdfModal(paymentId);
+            }
+        });
     }
 };
 
@@ -715,17 +746,14 @@ window.rejectPaymentSchedule = function(studentId, paymentMethod) {
     }
 };
 
-function processPaymentSchedule(studentId, paymentMethod, action, reason = null) {
+function processPaymentSchedule(studentId, paymentMethod, action, reason = null, onSuccess = null) {
     console.log('Processing payment schedule:', {
         studentId: studentId,
         paymentMethod: paymentMethod,
         action: action,
         reason: reason
     });
-    
     const url = `/cashier/api/payment-schedules/student/${studentId}/${paymentMethod}/process`;
-    console.log('Request URL:', url);
-    
     fetch(url, {
         method: 'POST',
         headers: {
@@ -738,51 +766,105 @@ function processPaymentSchedule(studentId, paymentMethod, action, reason = null)
         })
     })
     .then(response => {
-        console.log('Response status:', response.status);
-        console.log('Response headers:', response.headers);
-        
         if (!response.ok) {
-            // Log the response text for debugging
-            return response.text().then(text => {
-                console.log('Error response body:', text);
-                throw new Error(`HTTP error! status: ${response.status}. Response: ${text.substring(0, 200)}`);
-            });
+            return response.text().then(text => { throw new Error(text); });
         }
-        
-        // Check if response is JSON
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-            return response.text().then(text => {
-                console.log('Non-JSON response body:', text);
-                throw new Error('Response is not JSON. Content-Type: ' + contentType + '. Response: ' + text.substring(0, 200));
-            });
-        }
-        
         return response.json();
     })
     .then(data => {
         if (data.success) {
             alert(data.message);
-            loadPaymentSchedules(); // Reload the table
+            loadPaymentSchedules();
+            if (typeof onSuccess === 'function') {
+                // Try to get the transaction_id from the response if available
+                let paymentId = null;
+                if (data.payment && data.payment.transaction_id) {
+                    paymentId = data.payment.transaction_id;
+                } else if (data.transaction_id) {
+                    paymentId = data.transaction_id;
+                }
+                onSuccess(paymentId);
+            }
         } else {
             alert('Error: ' + data.message);
         }
     })
     .catch(error => {
         console.error('Error processing payment schedule:', error);
-        
-        if (error.message.includes('HTTP error! status: 422')) {
-            alert('Validation error. Please check your input and try again.');
-        } else if (error.message.includes('HTTP error! status: 401')) {
-            alert('Authentication error. Please refresh the page and try again.');
-        } else if (error.message.includes('HTTP error! status: 404')) {
-            alert('Payment schedule not found. Please refresh the page.');
-        } else if (error.message.includes('not JSON')) {
-            alert('Server error. Please try again later.');
-        } else {
-            alert('An error occurred while processing the payment schedule: ' + error.message);
-        }
+        alert('An error occurred while processing the payment schedule.');
     });
+}
+
+// Show PDF modal for full schedule approval
+function showPdfModal(paymentId) {
+    // Remove existing modal if any
+    var existingModal = document.getElementById('pdfReceiptModal');
+    if (existingModal) existingModal.remove();
+
+    let pdfUrl = `/cashier/api/pdf/cashier-receipt?transaction_id=${paymentId}`;
+    const modalHtml = `
+        <div class="modal fade" id="pdfReceiptModal" tabindex="-1">
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Cashier Receipt</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body" style="height:80vh;position:relative;">
+                        <div id="pdf-error" class="alert alert-danger my-3" style="display:none;"></div>
+                        <iframe src="${pdfUrl}" style="width:100%;height:100%;border:none;display:none;" id="pdfReceiptFrame"></iframe>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-success" id="printPdfReceiptBtn">
+                            <i class="ri-printer-line me-2"></i>Print
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const modalElement = document.getElementById('pdfReceiptModal');
+    const iframe = document.getElementById('pdfReceiptFrame');
+    const errorDiv = document.getElementById('pdf-error');
+    if (iframe) {
+        iframe.onload = function() {
+            iframe.style.display = 'block';
+            if (errorDiv) errorDiv.style.display = 'none';
+        };
+        iframe.onerror = function() {
+            iframe.style.display = 'none';
+            if (errorDiv) {
+                errorDiv.textContent = '404 PDF Not Found. Please check if the payment is approved and the transaction ID is valid.';
+                errorDiv.style.display = 'block';
+            }
+        };
+    }
+    // Show modal (Bootstrap 5)
+    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+        new bootstrap.Modal(modalElement).show();
+    } else {
+        modalElement.classList.add('show');
+        modalElement.style.display = 'block';
+        modalElement.setAttribute('aria-modal', 'true');
+        modalElement.setAttribute('role', 'dialog');
+        // Add backdrop
+        const backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop fade show';
+        document.body.appendChild(backdrop);
+    }
+    const printBtn = document.getElementById('printPdfReceiptBtn');
+    if (printBtn) {
+        printBtn.onclick = function() {
+            if (iframe && iframe.contentWindow) {
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+            } else {
+                window.open(iframe.src, '_blank');
+            }
+        };
+    }
 }
 
 function updatePagination(payments) {
@@ -835,8 +917,19 @@ function rejectPayment(paymentId) {
 }
 
 function printReceipt(paymentId) {
-    // Open print view for payment receipt
-    window.open(`/cashier/payments/${paymentId}/receipt`, '_blank');
+    // Open cashier receipt PDF in a new tab using transaction_id
+    if (!paymentId) {
+        alert('Invalid transaction ID');
+        return;
+    }
+    // Try /cashier/api/pdf/cashier-receipt, fallback to /pdf/cashier-receipt if 404
+    const url = `/cashier/api/pdf/cashier-receipt?transaction_id=${paymentId}`;
+    const win = window.open(url, '_blank');
+    if (win) {
+        win.onerror = function() {
+            win.location.href = `/pdf/cashier-receipt?transaction_id=${paymentId}`;
+        };
+    }
 }
 
 // Modal-based confirmation functions

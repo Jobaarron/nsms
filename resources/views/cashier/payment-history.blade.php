@@ -203,7 +203,7 @@
                                 <button class="btn btn-outline-primary" onclick="viewPaymentScheduleDetails('${student ? student.student_id : payment.payable_id}', '${payment.payment_method}')" title="View Schedule">
                                     <i class="ri-eye-line"></i>
                                 </button>
-                                <button class="btn btn-outline-success" onclick="printReceipt(${payment.id})" title="Print Receipt">
+                                <button class="btn btn-outline-success" onclick="printReceipt('${payment.transaction_id}')" title="Print Receipt">
                                     <i class="ri-printer-line"></i>
                                 </button>
                             </div>
@@ -469,8 +469,12 @@
             }
 
             function printReceipt(paymentId) {
-                console.log('Print receipt for payment ID:', paymentId);
-                alert('Receipt printing functionality will be implemented');
+                // Open cashier receipt PDF in a new tab using transaction_id
+                if (!paymentId) {
+                    alert('Invalid transaction ID');
+                    return;
+                }
+                window.open(`/pdf/cashier-receipt?transaction_id=${paymentId}`, '_blank');
             }
 
             function printReceiptFromModal() {
