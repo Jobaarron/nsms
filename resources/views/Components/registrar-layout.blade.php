@@ -67,8 +67,8 @@
             </a>
           </li>
            <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('registrar.approved') ? 'active' : '' }}" href="{{ route('registrar.approved') }}">
-              <i class="ri-check-line me-2"></i>Approved
+            <a class="nav-link disabled {{ request()->routeIs('registrar.approved') ? 'active' : '' }}" href="{{ route('registrar.approved') }}">
+              <i class="ri-check-line me-2"></i>Payment Archives (WIP)
             </a>
           </li> 
         </ul>

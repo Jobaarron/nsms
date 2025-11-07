@@ -301,6 +301,14 @@ Route::middleware(['auth', 'role:faculty_head'])->prefix('faculty-head')->name('
     Route::get('/get-sections', [App\Http\Controllers\FacultyHeadController::class, 'getSections'])
         ->name('get-sections');
     
+    // Get grade sections for accordion
+    Route::get('/get-grade-sections', [App\Http\Controllers\FacultyHeadController::class, 'getGradeSections'])
+        ->name('get-grade-sections');
+    
+    // Get strand sections for Senior High School
+    Route::get('/get-strand-sections', [App\Http\Controllers\FacultyHeadController::class, 'getStrandSections'])
+        ->name('get-strand-sections');
+    
     // Get section details (students and adviser)
     Route::get('/get-section-details', [App\Http\Controllers\FacultyHeadController::class, 'getSectionDetails'])
         ->name('get-section-details');
@@ -732,6 +740,8 @@ Route::prefix('registrar')->name('registrar.')->group(function () {
         Route::get('/class-lists/get-strands', [RegistrarController::class, 'getClassListStrands'])->name('class-lists.get-strands');
         Route::get('/class-lists/get-tracks', [RegistrarController::class, 'getClassListTracks'])->name('class-lists.get-tracks');
         Route::get('/class-lists/get-sections', [RegistrarController::class, 'getClassListSections'])->name('class-lists.get-sections');
+        Route::get('/class-lists/get-students', [RegistrarController::class, 'getClassListStudents'])->name('class-lists.get-students');
+        Route::get('/class-lists/student/{student}', [RegistrarController::class, 'getStudentDetails'])->name('class-lists.student-details');
         
         // Data Change Requests
         Route::get('/data-change-requests', [DataChangeRequestController::class, 'getDataChangeRequests'])->name('data-change-requests.index');

@@ -1042,3 +1042,476 @@ function checkSectionFromAdviserForm() {
 // Make functions globally available
 window.checkSectionFromForm = checkSectionFromForm;
 window.checkSectionFromAdviserForm = checkSectionFromAdviserForm;
+
+// ============================================
+// NEW ACCORDION STRUCTURE FUNCTIONS
+// ============================================
+
+// Show strand sections for Senior High (Grade 11/12)
+function showStrandSections(grade, strand) {
+    const container = document.getElementById(`sections${grade.replace(' ', '')}`);
+    
+    // Get sections for this grade and strand from facultyData
+    const sections = window.facultyData.sections.filter(s => 
+        s.grade_level === grade && s.section_name
+    );
+    
+    // Check if TVL strand (needs track selection)
+    if (strand === 'TVL') {
+        showTVLTracks(grade, strand, container);
+    } else {
+        showSectionsForStrand(grade, strand, null, container, sections);
+    }
+}
+
+// Show TVL tracks
+function showTVLTracks(grade, strand, container) {
+    const tracks = ['ICT', 'H.E'];
+    const trackNames = {
+        'ICT': 'Information and Communications Technology',
+        'H.E': 'Home Economics'
+    };
+    
+    let html = `
+        <div class="p-3">
+            <div class="d-flex align-items-center mb-3">
+                <button class="btn btn-sm btn-light me-3" onclick="location.reload()" title="Back">
+                    <i class="ri-arrow-left-line"></i>
+                </button>
+                <h6 class="text-primary mb-0"><i class="ri-settings-line me-2"></i>Select Track for ${grade} - ${strand}</h6>
+            </div>
+            <div class="row g-3">
+    `;
+    
+    tracks.forEach(track => {
+        html += `
+            <div class="col-md-6">
+                <div class="track-card border rounded p-3 text-center" style="cursor: pointer;" onclick="showSectionsForStrand('${grade}', '${strand}', '${track}', document.getElementById('sections${grade.replace(' ', '')}'))">
+                    <div class="track-badge bg-success text-white rounded px-3 py-2 mb-2">
+                        ${track}
+                    </div>
+                    <h6 class="mb-1">${trackNames[track]}</h6>
+                    <small class="text-muted">Click to view sections</small>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += `</div></div>`;
+    container.innerHTML = html;
+}
+
+// Show sections for a strand/track
+function showSectionsForStrand(grade, strand, track, container, allSections = null) {
+    // Get sections for this strand/track from window.facultyData
+    const sections = allSections || window.facultyData.sections.filter(s => s.grade_level === grade);
+    
+    let html = `
+        <div class="p-3">
+            <div class="d-flex align-items-center mb-3">
+                <button class="btn btn-sm btn-light me-3" onclick="loadGradeSectionsForAssignment('${grade}')" title="Back to strands">
+                    <i class="ri-arrow-left-line"></i>
+                </button>
+                <h6 class="text-primary mb-0"><i class="ri-grid-line me-2"></i>Sections for ${grade} - ${strand}${track ? ' - ' + track : ''}</h6>
+            </div>
+    `;
+    
+    if (sections.length === 0) {
+        html += `
+            <div class="alert alert-info">
+                <i class="ri-information-line me-2"></i>
+                No sections available for ${grade} - ${strand}${track ? ' - ' + track : ''}. Please create sections first.
+            </div>
+        `;
+    } else {
+        sections.forEach(section => {
+            const sectionId = `${grade}_${section.section_name}_${strand}_${track || ''}`.replace(/[^a-zA-Z0-9]/g, '_');
+            html += `
+                <div class="section-item border-bottom" style="cursor: pointer;" onclick="showSectionDetailsAccordion('${sectionId}', '${grade}', '${section.section_name}', '${strand}', '${track || ''}')">
+                    <div class="d-flex justify-content-between align-items-center p-3 hover-bg-light">
+                        <div class="d-flex align-items-center">
+                            <div class="section-badge bg-success text-white rounded px-3 py-2 me-3">
+                                Section ${section.section_name}
+                            </div>
+                            <div>
+                                <h6 class="mb-0">Section ${section.section_name}</h6>
+                                <small class="text-muted">Click to manage</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="details${sectionId}" class="section-details" style="display: none;"></div>
+            `;
+        });
+    }
+    
+    html += `</div>`;
+    container.innerHTML = html;
+}
+
+// Show section details in accordion format (Assign Adviser + Subjects + Students nested accordions)
+function showSectionDetailsAccordion(sectionId, grade, section, strand, track) {
+    const container = document.getElementById(`details${sectionId}`);
+    
+    // Hide all other section details
+    document.querySelectorAll('.section-details').forEach(el => el.style.display = 'none');
+    
+    // Show this section's details
+    container.style.display = 'block';
+    
+    // Get data for this section
+    const adviser = window.facultyData.advisers.find(a => 
+        a.grade_level === grade && 
+        a.section === section && 
+        a.strand === strand && 
+        a.track === track
+    );
+    
+    const subjects = window.facultyData.subjects.filter(s => {
+        let match = s.grade_level === grade;
+        match = match && (s.strand === strand || s.strand === null);
+        match = match && (s.track === track || s.track === null);
+        return match;
+    });
+    
+    const assignments = window.facultyData.assignments.filter(a =>
+        a.grade_level === grade &&
+        a.section === section &&
+        a.strand === strand &&
+        a.track === track
+    );
+    
+    // Build HTML with nested accordions
+    let html = `
+        <div class="p-4 bg-light border-top">
+            <button class="btn btn-sm btn-light mb-3" onclick="location.reload()">
+                <i class="ri-arrow-left-line me-1"></i> Back
+            </button>
+            
+            <!-- ASSIGN ADVISER SECTION -->
+            <div class="mb-4">
+                ${adviser ? `
+                    <div class="alert alert-success d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="ri-user-star-line me-2"></i>
+                            <strong>Class Adviser:</strong> ${adviser.teacher.user.name}
+                            <span class="text-muted ms-2">(Assigned: ${new Date(adviser.assigned_date).toLocaleDateString()})</span>
+                        </div>
+                        <button class="btn btn-sm btn-outline-danger" onclick="removeAssignment(${adviser.id})" title="Remove Adviser">
+                            <i class="ri-user-unfollow-line"></i> Remove
+                        </button>
+                    </div>
+                ` : `
+                    <div class="card bg-white">
+                        <div class="card-body">
+                            <h6 class="mb-3"><i class="ri-user-add-line me-2"></i>Assign Class Adviser</h6>
+                            <form action="/faculty-head/assign-adviser" method="POST" class="row g-3">
+                                <input type="hidden" name="_token" value="${document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')}">
+                                <input type="hidden" name="grade_level" value="${grade}">
+                                <input type="hidden" name="section" value="${section}">
+                                <input type="hidden" name="strand" value="${strand}">
+                                <input type="hidden" name="track" value="${track}">
+                                <div class="col-md-6">
+                                    <label class="form-label">Teacher</label>
+                                    <select name="teacher_id" class="form-select" required>
+                                        <option value="">Select Teacher</option>
+                                        ${window.facultyData.teachers.map(t => `
+                                            <option value="${t.teacher?.id || ''}">${t.name}</option>
+                                        `).join('')}
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Effective Date</label>
+                                    <input type="date" name="effective_date" class="form-control" value="${new Date().toISOString().split('T')[0]}" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">&nbsp;</label>
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="ri-user-add-line me-1"></i>Assign
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                `}
+            </div>
+
+            <!-- NESTED ACCORDION FOR SUBJECTS AND STUDENTS -->
+            <div class="accordion" id="nested${sectionId}">
+                
+                <!-- SUBJECTS ACCORDION -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#subjects${sectionId}">
+                            <i class="ri-book-open-line me-2"></i>Subject
+                            <span class="badge bg-info ms-2">${subjects.length}</span>
+                        </button>
+                    </h2>
+                    <div id="subjects${sectionId}" class="accordion-collapse collapse" data-bs-parent="#nested${sectionId}">
+                        <div class="accordion-body">
+                            ${subjects.map(subject => {
+                                const assignment = assignments.find(a => a.subject_id === subject.id);
+                                return `
+                                    <div class="d-flex justify-content-between align-items-center mb-3 p-3 border rounded bg-white">
+                                        <div>
+                                            <strong>${subject.subject_name}</strong>
+                                            ${subject.subject_code ? `<span class="text-muted ms-2">(${subject.subject_code})</span>` : ''}
+                                            ${assignment ? `<div class="text-success small mt-1"><i class="ri-user-line"></i> ${assignment.teacher.user.name}</div>` : ''}
+                                        </div>
+                                        <div>
+                                            ${assignment ? `
+                                                <button class="btn btn-sm btn-outline-danger" onclick="removeAssignment(${assignment.id})">
+                                                    <i class="ri-user-unfollow-line"></i>
+                                                </button>
+                                            ` : `
+                                                <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#assignModal${sectionId}_${subject.id}">
+                                                    <i class="ri-user-add-line"></i> Assign Teacher
+                                                </button>
+                                            `}
+                                        </div>
+                                    </div>
+                                    ${!assignment ? `
+                                        <div class="modal fade" id="assignModal${sectionId}_${subject.id}" tabindex="-1">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">Assign Teacher</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <form action="/faculty-head/assign-teacher" method="POST">
+                                                        <input type="hidden" name="_token" value="${document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')}">
+                                                        <input type="hidden" name="grade_level" value="${grade}">
+                                                        <input type="hidden" name="section" value="${section}">
+                                                        <input type="hidden" name="strand" value="${strand}">
+                                                        <input type="hidden" name="track" value="${track}">
+                                                        <input type="hidden" name="subject_id" value="${subject.id}">
+                                                        <div class="modal-body">
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Subject</label>
+                                                                <input type="text" class="form-control" value="${subject.subject_name}" readonly>
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Teacher</label>
+                                                                <select name="teacher_id" class="form-select" required>
+                                                                    <option value="">Select Teacher</option>
+                                                                    ${window.facultyData.teachers.map(t => `
+                                                                        <option value="${t.teacher?.id || ''}">${t.name}</option>
+                                                                    `).join('')}
+                                                                </select>
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Effective Date</label>
+                                                                <input type="date" name="effective_date" class="form-control" value="${new Date().toISOString().split('T')[0]}" required>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                            <button type="submit" class="btn btn-primary">Assign</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ` : ''}
+                                `;
+                            }).join('')}
+                            ${subjects.length === 0 ? '<p class="text-muted text-center">No subjects for this class.</p>' : ''}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STUDENTS ACCORDION -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#students${sectionId}" onclick="loadStudentsForSection('${sectionId}', '${grade}', '${section}', '${strand}', '${track}')">
+                            <i class="ri-group-line me-2"></i>Student
+                            <span class="badge bg-primary ms-2" id="badge${sectionId}">View List</span>
+                        </button>
+                    </h2>
+                    <div id="students${sectionId}" class="accordion-collapse collapse" data-bs-parent="#nested${sectionId}">
+                        <div class="accordion-body">
+                            <div id="studentsList${sectionId}">
+                                <div class="text-center py-3">
+                                    <div class="spinner-border" role="status"></div>
+                                    <p class="mt-2">Loading...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+    `;
+    
+    container.innerHTML = html;
+}
+
+// Load students for a section
+let loadedSections = {};
+function loadStudentsForSection(sectionId, grade, section, strand, track) {
+    if (loadedSections[sectionId]) return;
+    
+    const container = document.getElementById(`studentsList${sectionId}`);
+    const badge = document.getElementById(`badge${sectionId}`);
+    
+    // Build query parameters
+    let queryParams = `grade_level=${encodeURIComponent(grade)}&section=${encodeURIComponent(section)}`;
+    if (strand && strand !== '') queryParams += `&strand=${encodeURIComponent(strand)}`;
+    if (track && track !== '') queryParams += `&track=${encodeURIComponent(track)}`;
+    
+    console.log('Loading students for:', { grade, section, strand, track });
+    
+    fetch(`/faculty-head/get-section-details?${queryParams}`)
+        .then(r => {
+            if (!r.ok) {
+                throw new Error(`HTTP error! status: ${r.status}`);
+            }
+            return r.json();
+        })
+        .then(data => {
+            console.log('Student data received:', data);
+            
+            if (data.success && data.details && data.details.students) {
+                const students = data.details.students;
+                
+                if (students.length > 0) {
+                    badge.textContent = students.length;
+                    badge.className = 'badge bg-primary ms-2';
+                    
+                    let html = '<div class="table-responsive"><table class="table table-sm table-hover"><thead><tr><th>#</th><th>Student ID</th><th>Name</th><th>Contact</th></tr></thead><tbody>';
+                    students.forEach((s, i) => {
+                        html += `<tr>
+                            <td>${i+1}</td>
+                            <td><strong>${s.student_id || 'N/A'}</strong></td>
+                            <td>${s.first_name} ${s.last_name}</td>
+                            <td>${s.contact_number || 'N/A'}</td>
+                        </tr>`;
+                    });
+                    html += '</tbody></table></div>';
+                    container.innerHTML = html;
+                } else {
+                    badge.textContent = '0';
+                    badge.className = 'badge bg-secondary ms-2';
+                    container.innerHTML = '<div class="text-center py-4"><i class="ri-user-line fs-1 text-muted"></i><p class="text-muted mt-2">No students enrolled in this section.</p></div>';
+                }
+            } else {
+                badge.textContent = '0';
+                badge.className = 'badge bg-secondary ms-2';
+                container.innerHTML = '<div class="text-center py-4"><i class="ri-user-line fs-1 text-muted"></i><p class="text-muted mt-2">No students enrolled in this section.</p></div>';
+            }
+            
+            loadedSections[sectionId] = true;
+        })
+        .catch(error => {
+            console.error('Error loading students:', error);
+            badge.textContent = 'Error';
+            badge.className = 'badge bg-danger ms-2';
+            container.innerHTML = `<div class="alert alert-danger"><i class="ri-error-warning-line me-2"></i>Error loading students: ${error.message}</div>`;
+        });
+}
+
+// Load sections for assignment (handles both regular grades and SHS with strands)
+let loadedGradesForAssignment = {};
+function loadGradeSectionsForAssignment(grade) {
+    // Only load once
+    if (loadedGradesForAssignment[grade]) return;
+    
+    const sectionsContainer = document.getElementById(`sections${grade.replace(' ', '')}`);
+    const badge = document.getElementById(`badge${grade.replace(' ', '')}`);
+    
+    // For Grade 11 & 12, show strands first
+    if (grade === 'Grade 11' || grade === 'Grade 12') {
+        loadSeniorHighStrandsForAssignment(grade, sectionsContainer, badge);
+    } else {
+        // For other grades, show sections directly
+        loadElementaryJuniorSectionsForAssignment(grade, sectionsContainer, badge);
+    }
+    
+    loadedGradesForAssignment[grade] = true;
+}
+
+// Load strands for Senior High
+function loadSeniorHighStrandsForAssignment(grade, container, badge) {
+    const strands = ['STEM', 'ABM', 'HUMSS', 'TVL'];
+    const strandNames = {
+        'STEM': 'Science, Technology, Engineering, and Mathematics',
+        'ABM': 'Accountancy, Business, and Management',
+        'HUMSS': 'Humanities and Social Sciences',
+        'TVL': 'Technical-Vocational-Livelihood'
+    };
+    
+    let html = `
+        <div class="p-3">
+            <div class="d-flex align-items-center mb-3">
+                <button class="btn btn-sm btn-light me-3" onclick="location.reload()" title="Back">
+                    <i class="ri-arrow-left-line"></i>
+                </button>
+                <h6 class="text-primary mb-0">
+                    <i class="ri-book-line me-2"></i>Select Strand for ${grade}
+                </h6>
+            </div>
+            <div class="row g-3">
+    `;
+    
+    strands.forEach(strand => {
+        html += `
+            <div class="col-md-6">
+                <div class="strand-card border rounded-3 p-4 text-center" style="cursor: pointer; transition: all 0.3s;" 
+                     onclick="showStrandSections('${grade}', '${strand}')"
+                     onmouseover="this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)'; this.style.transform='translateY(-2px)'"
+                     onmouseout="this.style.boxShadow=''; this.style.transform=''">
+                    <div class="strand-badge bg-success text-white rounded px-4 py-3 mb-3 fw-bold fs-5">
+                        ${strand}
+                    </div>
+                    <h6 class="mb-2">${strandNames[strand]}</h6>
+                    <small class="text-muted">Click to view sections</small>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += `</div></div>`;
+    container.innerHTML = html;
+    badge.textContent = 'Select Strand';
+    badge.className = 'badge bg-info rounded-pill ms-auto me-3';
+}
+
+// Load sections for Elementary/Junior High
+function loadElementaryJuniorSectionsForAssignment(grade, container, badge) {
+    // Get sections from window.facultyData
+    const sections = window.facultyData.sections.filter(s => s.grade_level === grade);
+    
+    let html = '<div class="p-3">';
+    
+    sections.forEach(section => {
+        const sectionId = `${grade}_${section.section_name}`.replace(/[^a-zA-Z0-9]/g, '_');
+        html += `
+            <div class="section-item border-bottom" style="cursor: pointer;" onclick="showSectionDetailsAccordion('${sectionId}', '${grade}', '${section.section_name}', '', '')">
+                <div class="d-flex justify-content-between align-items-center p-3 hover-bg-light">
+                    <div class="d-flex align-items-center">
+                        <div class="section-badge bg-success text-white rounded px-3 py-2 me-3">
+                            Section ${section.section_name}
+                        </div>
+                        <div>
+                            <h6 class="mb-0">Section ${section.section_name}</h6>
+                            <small class="text-muted">Click to manage</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="details${sectionId}" class="section-details" style="display: none;"></div>
+        `;
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+    badge.textContent = `${sections.length} sections`;
+}
+
+// Make new functions globally available
+window.showStrandSections = showStrandSections;
+window.showSectionsForStrand = showSectionsForStrand;
+window.showSectionDetailsAccordion = showSectionDetailsAccordion;
+window.loadStudentsForSection = loadStudentsForSection;
+window.loadGradeSectionsForAssignment = loadGradeSectionsForAssignment;

@@ -815,3 +815,37 @@
     border-color: rgba(13, 110, 253, 0.2);
     color: #084298;
   }
+
+  /* ============================================
+     ACCORDION STYLING - Faculty Assignment (Simple Colors Only)
+     ============================================ */
+  
+  /* Grade Level Accordion - Just Colors */
+  .accordion-button:not(.collapsed) {
+    background-color: var(--primary-color);
+    color: #fff;
+  }
+
+  /* Strand & Track Badges - Green Color */
+  .strand-badge {
+    background-color: var(--secondary-color) !important;
+  }
+
+  .track-badge {
+    background-color: var(--secondary-color) !important;
+  }
+
+  /* Section Badge - Green Color */
+  .section-badge {
+    background-color: var(--secondary-color) !important;
+  }
+
+  /* Assignment Table Headers - Green Gradient */
+  .card-header {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    color: #fff;
+  }
+
+  .card-header h5 {
+    color: #fff;
+  }

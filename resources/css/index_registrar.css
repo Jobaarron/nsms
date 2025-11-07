@@ -453,3 +453,177 @@
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
   }
+
+  /* Class Lists Accordion Styling */
+  .section-item {
+    border: 1px solid var(--border-gray);
+    border-radius: 0.5rem;
+    margin-bottom: 0.75rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+  
+  .section-item:hover {
+    background-color: var(--light-green);
+    border-color: var(--secondary-color);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(43, 122, 59, 0.1);
+  }
+  
+  .section-badge {
+    min-width: 80px !important;
+    text-align: center !important;
+    font-weight: 600 !important;
+    background-color: var(--registrar-accent) !important;
+    color: var(--white) !important;
+    border: none !important;
+  }
+  
+  /* Override Bootstrap bg-warning on section badges */
+  .section-badge.bg-warning {
+    background-color: var(--registrar-accent) !important;
+    color: var(--white) !important;
+    border-color: var(--registrar-accent) !important;
+  }
+  
+  /* Strand and track cards */
+  .strand-card, .track-card {
+    background: var(--white) !important;
+    border: 1px solid var(--secondary-color) !important;
+    border-radius: 0.75rem !important;
+    transition: all 0.3s ease !important;
+    cursor: pointer !important;
+    box-shadow: 0 2px 4px rgba(43, 122, 59, 0.1) !important;
+  }
+  
+  .strand-card:hover, .track-card:hover {
+    background-color: var(--light-green) !important;
+    border-color: var(--primary-color) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 12px rgba(43, 122, 59, 0.2) !important;
+  }
+  
+  .strand-badge, .track-badge {
+    background-color: var(--primary-color) !important;
+    color: var(--white) !important;
+    font-weight: 700 !important;
+    box-shadow: 0 2px 4px rgba(43, 122, 59, 0.2) !important;
+  }
+  
+  /* Force override Bootstrap bg-primary on strand badges */
+  .strand-badge.bg-primary {
+    background-color: var(--primary-color) !important;
+  }
+  
+  .track-badge.bg-success {
+    background-color: var(--secondary-color) !important;
+  }
+  
+  /* Student items */
+  .student-item {
+    transition: all 0.2s ease;
+    border-radius: 0.25rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .student-item:hover {
+    background-color: var(--light-green);
+    transform: translateX(5px);
+  }
+  
+  /* Section header */
+  .section-header {
+    background-color: var(--registrar-accent);
+    border-radius: 0.5rem 0.5rem 0 0;
+  }
+  
+  /* Back buttons */
+  .btn-light {
+    background-color: var(--white);
+    border-color: var(--secondary-color);
+    color: var(--primary-color);
+    font-weight: 600;
+  }
+  
+  .btn-light:hover {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+    color: var(--white);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(76, 175, 80, 0.2);
+  }
+
+  /* Override Bootstrap badges with registrar theme */
+  .badge.bg-info {
+    background-color: var(--secondary-color) !important;
+    color: var(--white) !important;
+  }
+  
+  .badge.bg-success {
+    background-color: var(--primary-color) !important;
+    color: var(--white) !important;
+  }
+  
+  .badge.bg-primary {
+    background-color: var(--registrar-accent) !important;
+    color: var(--white) !important;
+  }
+  
+  .badge.bg-warning {
+    background-color: var(--registrar-accent) !important;
+    color: var(--white) !important;
+  }
+  
+  /* Additional overrides for specific elements */
+  .bg-primary {
+    background-color: var(--primary-color) !important;
+  }
+  
+  .bg-success {
+    background-color: var(--secondary-color) !important;
+  }
+  
+  .bg-warning {
+    background-color: var(--registrar-accent) !important;
+  }
+  
+  .bg-info {
+    background-color: var(--secondary-color) !important;
+  }
+  
+  /* Accordion button overrides */
+  .accordion-button {
+    background-color: var(--primary-color) !important;
+    color: var(--white) !important;
+    border: none !important;
+    font-weight: 600 !important;
+  }
+  
+  .accordion-button:not(.collapsed) {
+    background-color: var(--registrar-accent) !important;
+    color: var(--white) !important;
+    box-shadow: none !important;
+  }
+  
+  .accordion-button::after {
+    filter: brightness(0) invert(1) !important;
+  }
+  
+  .accordion-button:focus {
+    box-shadow: 0 0 0 0.25rem rgba(43, 122, 59, 0.25) !important;
+    border-color: var(--primary-color) !important;
+  }
+  
+  .accordion-item {
+    border: 1px solid var(--border-gray) !important;
+    border-radius: 0.5rem !important;
+    margin-bottom: 0.75rem !important;
+  }
+  
+  .accordion-item:first-of-type .accordion-button {
+    border-radius: 0.5rem 0.5rem 0 0 !important;
+  }
+  
+  .accordion-item:last-of-type .accordion-button.collapsed {
+    border-radius: 0 0 0.5rem 0.5rem !important;
+  }

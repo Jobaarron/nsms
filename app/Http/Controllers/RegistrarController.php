@@ -1389,14 +1389,19 @@ class RegistrarController extends Controller
             $sectionsQuery->where('track', $track);
         }
         
-        $sections = $sectionsQuery->distinct()
-                                 ->pluck('section')
-                                 ->sort()
-                                 ->values();
+        $sections = $sectionsQuery->select('section')
+                                 ->selectRaw('COUNT(*) as student_count')
+                                 ->groupBy('section')
+                                 ->orderBy('section')
+                                 ->get();
         
-        // If no sections found in database, provide default sections
+        // If no sections found in database, provide default sections with 0 count
         if ($sections->isEmpty()) {
-            $sections = collect(['A', 'B', 'C']);
+            $sections = collect([
+                ['section' => 'A', 'student_count' => 0],
+                ['section' => 'B', 'student_count' => 0],
+                ['section' => 'C', 'student_count' => 0]
+            ]);
         }
         
         return response()->json([
@@ -1473,5 +1478,130 @@ class RegistrarController extends Controller
             'success' => true,
             'tracks' => $tracks
         ]);
+    }
+    
+    /**
+     * Get students for accordion view
+     */
+    public function getClassListStudents(Request $request)
+    {
+        $gradeLevel = $request->get('grade_level');
+        $section = $request->get('section');
+        $strand = $request->get('strand');
+        $track = $request->get('track');
+        
+        if (!$gradeLevel || !$section) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Grade level and section are required'
+            ]);
+        }
+        
+        // Build query for students
+        $studentsQuery = Student::where('grade_level', $gradeLevel)
+                               ->where('section', $section)
+                               ->where('is_active', true)
+                               ->where('enrollment_status', 'enrolled')
+                               ->where('is_paid', true);
+        
+        // Add strand filter for Grade 11 & 12
+        if (in_array($gradeLevel, ['Grade 11', 'Grade 12']) && $strand) {
+            $studentsQuery->where('strand', $strand);
+        }
+        
+        // Add track filter for TVL
+        if ($strand === 'TVL' && $track) {
+            $studentsQuery->where('track', $track);
+        }
+        
+        $students = $studentsQuery->orderBy('last_name')
+                                 ->orderBy('first_name')
+                                 ->get();
+        
+        // Build class info
+        $classInfo = $gradeLevel . ' - ' . $section;
+        if ($strand) {
+            $classInfo .= ' - ' . $strand;
+            if ($track) {
+                $classInfo .= ' - ' . $track;
+            }
+        }
+        
+        return response()->json([
+            'success' => true,
+            'students' => $students,
+            'class_info' => $classInfo,
+            'count' => $students->count()
+        ]);
+    }
+    
+    /**
+     * Get student details for modal display
+     */
+    public function getStudentDetails($studentId)
+    {
+        try {
+            $student = Student::where('id', $studentId)
+                             ->where('is_active', true)
+                             ->where('enrollment_status', 'enrolled')
+                             ->where('is_paid', true)
+                             ->first();
+            
+            if (!$student) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Student not found or not enrolled'
+                ]);
+            }
+            
+            // Build complete class information
+            $classInfo = $student->grade_level . ' - ' . $student->section;
+            if ($student->strand) {
+                $classInfo .= ' - ' . $student->strand;
+                if ($student->track) {
+                    $classInfo .= ' - ' . $student->track;
+                }
+            }
+            
+            return response()->json([
+                'success' => true,
+                'student' => array_merge($student->toArray(), [
+                    'class_info' => $classInfo,
+                    'strand_full_name' => $this->getStrandFullName($student->strand),
+                    'track_full_name' => $this->getTrackFullName($student->track)
+                ])
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error loading student details'
+            ]);
+        }
+    }
+    
+    /**
+     * Get full name for strand
+     */
+    private function getStrandFullName($strand)
+    {
+        $strandNames = [
+            'STEM' => 'Science, Technology, Engineering, and Mathematics',
+            'ABM' => 'Accountancy, Business, and Management',
+            'HUMSS' => 'Humanities and Social Sciences',
+            'TVL' => 'Technical-Vocational-Livelihood'
+        ];
+        return $strandNames[$strand] ?? null;
+    }
+    
+    /**
+     * Get full name for track
+     */
+    private function getTrackFullName($track)
+    {
+        $trackNames = [
+            'ICT' => 'Information and Communications Technology',
+            'H.E' => 'Home Economics'
+        ];
+        return $trackNames[$track] ?? null;
     }
 }
