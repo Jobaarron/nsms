@@ -2,14 +2,6 @@
     @vite(['resources/js/enrollee-documents.js'])
     @vite(['resources/css/enrollee-documents.css'])
     
-    <script>
-        // Pass Laravel routes to JavaScript
-        window.enrolleeRoutes = {
-            deleteDocument: '{{ route('enrollee.documents.delete') }}',
-            viewDocument: '{{ url('enrollee/documents/view') }}',
-            downloadDocument: '{{ url('enrollee/documents/download') }}'
-        };
-    </script>
     <div class="py-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1 class="section-title">My Documents</h1>
@@ -22,66 +14,6 @@
 
         <div class="row">
             <div class="col-lg-8">
-                <!-- DOCUMENT REQUIREMENTS -->
-                <div class="card mb-4">
-                    {{-- <div class="card-header">
-                        <h5 class="mb-0">
-                            <i class="ri-file-list-line me-2"></i>
-                            Required Documents
-                        </h5>
-                    </div> --}}
-                    {{-- <div class="card-body">
-                        <div class="alert alert-info">
-                            <i class="ri-information-line me-2"></i>
-                            Please ensure all required documents are submitted for your enrollment application.
-                        </div> --}}
-
-                        {{-- <div class="row">
-                            <div class="col-md-6">
-                                <h6 class="text-muted mb-3">Primary Documents</h6>
-                                <ul class="list-group list-group-flush">
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        Birth Certificate (PSA)
-                                        <span class="badge bg-danger">Required</span>
-                                    </li>
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        Report Card/Form 138
-                                        <span class="badge bg-danger">Required</span>
-                                    </li>
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        Good Moral Certificate
-                                        <span class="badge bg-danger">Required</span>
-                                    </li>
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        2x2 ID Photo
-                                        <span class="badge bg-danger">Required</span>
-                                    </li>
-                                </ul>
-                            </div> --}}
-                            {{-- <div class="col-md-6">
-                                <h6 class="text-muted mb-3">Additional Documents</h6>
-                                <ul class="list-group list-group-flush">
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        Medical Certificate
-                                        <span class="badge bg-warning">Optional</span>
-                                    </li>
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        Transfer Certificate
-                                        <span class="badge bg-secondary">If Transferee</span>
-                                    </li>
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        Barangay Clearance
-                                        <span class="badge bg-warning">Optional</span>
-                                    </li>
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        Parent's ID Copy
-                                        <span class="badge bg-warning">Optional</span>
-                                    </li>
-                                </ul>
-                            </div> To be use soon--}}
-                        </div>
-                    </div>
-                </div>
 
                 <!-- UPLOADED DOCUMENTS -->
                 <div class="card mb-4">
@@ -101,10 +33,6 @@
                                 }
                             }
                             
-                            // Allow upload only if:
-                            // 1. Application is pending AND no documents uploaded yet (initial submission)
-                            // 2. Has rejected documents (resubmission required)
-                            // 3. Admin specifically requested additional documents (could be indicated by admin_notes)
                             $canUpload = ($enrollee->enrollment_status === 'pending' && count($documents) === 0) || 
                                         $hasRejectedDocs || 
                                         (str_contains(strtolower($enrollee->admin_notes ?? ''), 'resubmit') || 
@@ -121,10 +49,10 @@
                             @endif
                         </button>
                         @elseif($enrollee->enrollment_status === 'pending' && count($documents) > 0)
-                        {{-- <span class="badge bg-info">
+                        <span class="badge bg-info">
                             <i class="ri-time-line me-1"></i>
                             Under Review
-                        </span> --}}
+                        </span>
                         @endif
                     </div>
                     <div class="card-body">
@@ -167,8 +95,8 @@
                                             <td>{{ $documentData['filename'] ?? 'Document ' . ($index + 1) }}</td>
                                             <td>{{ isset($documentData['uploaded_at']) ? \Carbon\Carbon::parse($documentData['uploaded_at'])->format('M d, Y') : 'N/A' }}</td>
                                             <td>
-                                                <span class="badge bg-{{ ($documentData['status'] ?? 'pending') === 'approved' ? 'success' : (($documentData['status'] ?? 'pending') === 'rejected' ? 'danger' : 'warning') }}">
-                                                    {{ ucfirst($documentData['status'] ?? 'pending') }}
+                                                <span class="badge bg-{{ ($documentData['status'] ?? 'pending') === 'approved' ? 'success' : (($documentData['status'] ?? 'pending') === 'rejected' ? 'warning' : 'warning') }}">
+                                                    {{ ($documentData['status'] ?? 'pending') === 'rejected' ? 'Revised' : ucfirst($documentData['status'] ?? 'pending') }}
                                                 </span>
                                             </td>
                                             <td>
@@ -188,7 +116,13 @@
                                                             title="Download Document">
                                                         <i class="ri-download-line"></i>
                                                     </button>
-                                                    @if($enrollee->enrollment_status === 'pending')
+                                                    @if($enrollee->enrollment_status === 'pending' && ($documentData['status'] ?? 'pending') === 'rejected')
+                                                    <button class="btn btn-outline-warning replace-doc-btn" 
+                                                            data-index="{{ $index }}" 
+                                                            title="Replace Document">
+                                                        <i class="ri-edit-line"></i>
+                                                    </button>
+                                                    @elseif($enrollee->enrollment_status === 'pending' && ($documentData['status'] ?? 'pending') === 'pending')
                                                     <button class="btn btn-outline-danger delete-doc-btn" 
                                                             data-index="{{ $index }}" 
                                                             title="Delete Document">
@@ -238,7 +172,7 @@
                             // Handle both old format (strings) and new format (arrays) for statistics
                             $approvedDocs = 0;
                             $pendingDocs = 0;
-                            $rejectedDocs = 0;
+                            $revisedDocs = 0;
                             
                             foreach ($documents as $document) {
                                 if (is_string($document)) {
@@ -250,7 +184,7 @@
                                     if ($status === 'approved' || $status === 'verified') {
                                         $approvedDocs++;
                                     } elseif ($status === 'rejected') {
-                                        $rejectedDocs++;
+                                        $revisedDocs++;
                                     } else {
                                         $pendingDocs++;
                                     }
@@ -279,8 +213,8 @@
                             </div>
                             <div class="col-3">
                                 <div class="info-card">
-                                    <h4 class="text-danger">{{ $rejectedDocs }}</h4>
-                                    <small class="text-muted">Rejected</small>
+                                    <h4 class="text-warning">{{ $revisedDocs }}</h4>
+                                    <small class="text-muted">Revised</small>
                                 </div>
                             </div>
                         </div>
@@ -299,48 +233,6 @@
 
             <!-- SIDEBAR -->
             <div class="col-lg-4">
-                <!-- ID PHOTO -->
-                {{-- @if($enrollee->hasIdPhoto())
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0">
-                            <i class="ri-image-line me-2"></i>
-                            ID Photo
-                        </h5>
-                    </div>
-                    <div class="card-body text-center">
-                        <img src="{{ $enrollee->id_photo_data_url }}" alt="ID Photo" class="img-fluid rounded mb-3" style="max-height: 200px;">
-                        <div>
-                            <span class="badge bg-success">
-                                <i class="ri-check-line me-1"></i>
-                                Uploaded
-                            </span>
-                        </div>
-                    </div>
-                </div>
-                @else
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0">
-                            <i class="ri-image-line me-2"></i>
-                            ID Photo
-                        </h5>
-                    </div>
-                    <div class="card-body text-center">
-                        <div class="document-upload">
-                            <i class="ri-image-add-line display-4 text-muted"></i>
-                            <p class="text-muted mt-2">No ID photo uploaded</p>
-                            @if($enrollee->enrollment_status === 'pending')
-                            <button class="btn btn-outline-primary btn-sm">
-                                <i class="ri-upload-line me-1"></i>
-                                Upload Photo
-                            </button>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-                @endif --}}
-
                 <!-- DOCUMENT GUIDELINES -->
                 <div class="card mb-4">
                     <div class="card-header">
@@ -408,7 +300,7 @@
                 <div class="modal-header">
                     <h5 class="modal-title">
                         <i class="ri-upload-line me-2"></i>
-                        Upload Document
+                        Upload Documents
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
@@ -416,34 +308,14 @@
                     @csrf
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label for="document_type" class="form-label">Document Type</label>
-                            <select class="form-select" id="document_type" name="document_type" required>
-                                <option value="">Select Document Type</option>
-                                <option value="birth_certificate">Birth Certificate (PSA)</option>
-                                <option value="report_card">Report Card/Form 138</option>
-                                <option value="good_moral">Good Moral Certificate</option>
-                                <option value="medical_certificate">Medical Certificate</option>
-                                <option value="transfer_certificate">Transfer Certificate</option>
-                                <option value="barangay_clearance">Barangay Clearance</option>
-                                <option value="parent_id">Parent's ID Copy</option>
-                                <option value="other">Other</option>
-                            </select>
-                        </div>
-
-                        <div class="mb-3" id="other_type_field" style="display: none;">
-                            <label for="other_document_type" class="form-label">Specify Document Type</label>
-                            <input type="text" class="form-control" id="other_document_type" name="other_document_type" placeholder="Enter document type">
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="document_file" class="form-label">Select Document</label>
-                            <input type="file" class="form-control" id="document_file" name="document_file" accept=".pdf,.jpg,.jpeg,.png,.docx" required>
-                            <div class="form-text">Accepted formats: PDF, JPG, PNG, DOCX. Maximum size: 5MB</div>
+                            <label for="document_files" class="form-label">Select Documents</label>
+                            <input type="file" class="form-control" id="document_files" name="document_files[]" accept=".pdf,.jpg,.jpeg,.png" multiple required>
+                            <div class="form-text">Accepted formats: PDF, JPG, PNG. Maximum size: 5MB per file. You can select multiple files at once.</div>
                             <div id="filePreview" class="mt-2" style="display: none;">
                                 <div class="alert alert-info">
                                     <i class="ri-file-line me-2"></i>
-                                    <span id="fileName"></span>
-                                    <span id="fileSize" class="text-muted"></span>
+                                    <span id="fileCount"></span>
+                                    <div id="fileList" class="mt-2"></div>
                                 </div>
                             </div>
                         </div>
@@ -492,6 +364,71 @@
                     </button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Replace Document Modal -->
+    <div class="modal fade" id="replaceDocumentModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="ri-edit-line me-2"></i>
+                        Replace Document
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="replaceDocumentForm" method="POST" action="{{ route('enrollee.documents.replace') }}" enctype="multipart/form-data">
+                    @csrf
+                    <input type="hidden" id="replace_document_index" name="document_index">
+                    <div class="modal-body">
+                        <div class="alert alert-warning">
+                            <i class="ri-information-line me-2"></i>
+                            You are replacing a document that was marked for revision. The new document will be submitted for review.
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Current Document</label>
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        <i class="ri-file-text-line fs-4 text-muted me-3"></i>
+                                        <div>
+                                            <h6 class="mb-1" id="current-doc-type">Document Type</h6>
+                                            <small class="text-muted" id="current-doc-filename">filename.pdf</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="replace_document_file" class="form-label">Select New Document</label>
+                            <input type="file" class="form-control" id="replace_document_file" name="document_file" accept=".pdf,.jpg,.jpeg,.png" required>
+                            <div class="form-text">Accepted formats: PDF, JPG, PNG. Maximum size: 5MB</div>
+                            <div id="replaceFilePreview" class="mt-2" style="display: none;">
+                                <div class="alert alert-info">
+                                    <i class="ri-file-line me-2"></i>
+                                    <span id="replaceFileName"></span>
+                                    <span id="replaceFileSize" class="text-muted"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="replace_document_notes" class="form-label">Notes (Optional)</label>
+                            <textarea class="form-control" id="replace_document_notes" name="document_notes" rows="3" placeholder="Any additional notes about this replacement document"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="ri-edit-line me-1"></i>
+                            Replace Document
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

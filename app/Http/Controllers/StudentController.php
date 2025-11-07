@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\Log;
 use App\Models\Subject;
 use App\Models\Fee;
 use App\Models\Payment;
+use App\Models\ClassSchedule;
+use App\Models\Grade;
 use Illuminate\Support\Facades\DB;
 
 class StudentController extends Controller
@@ -287,18 +289,8 @@ class StudentController extends Controller
         try {
             Log::info('Starting enrollment submission for student: ' . $student->id);
             
-            // Get enrollee data to fetch preferred_schedule
+            // Set default payment schedule date
             $preferredScheduleDate = now()->addDays(7); // Default date
-            
-            try {
-                $enrollee = $student->enrollee;
-                if ($enrollee && $enrollee->preferred_schedule) {
-                    $preferredScheduleDate = Carbon::parse($enrollee->preferred_schedule);
-                }
-            } catch (\Exception $e) {
-                Log::warning('Could not fetch enrollee data: ' . $e->getMessage());
-                // Continue with default date
-            }
             
             Log::info('Preferred schedule date: ' . $preferredScheduleDate);
 
@@ -308,10 +300,83 @@ class StudentController extends Controller
             
             Log::info('Total amount calculated: ' . $totalAmount);
 
-            // Create payment schedules based on payment mode
+
+            // Create payment schedules and get the first payment's transaction_id
             Log::info('Creating payment schedules with method: ' . $paymentSchedule);
-            $this->createPaymentSchedules($student, $paymentSchedule, $totalAmount, $preferredScheduleDate, $request->payment_notes);
-            
+            $transactionId = null;
+            $schedules = [];
+            // Ensure baseDate is a Carbon instance
+            $baseDate = $preferredScheduleDate instanceof \Carbon\Carbon ? $preferredScheduleDate : \Carbon\Carbon::parse($preferredScheduleDate);
+            switch ($paymentSchedule) {
+                case 'full':
+                    $schedules[] = [
+                        'period_name' => 'Full Payment',
+                        'amount' => $totalAmount,
+                        'scheduled_date' => $baseDate->format('Y-m-d'),
+                    ];
+                    break;
+                case 'quarterly':
+                    $quarterlyAmount = $totalAmount / 4;
+                    $quarters = ['1st Quarter', '2nd Quarter', '3rd Quarter', '4th Quarter'];
+                    for ($i = 0; $i < 4; $i++) {
+                        $schedules[] = [
+                            'period_name' => $quarters[$i],
+                            'amount' => $quarterlyAmount,
+                            'scheduled_date' => $baseDate->copy()->addMonths($i * 3)->format('Y-m-d'),
+                        ];
+                    }
+                    break;
+                case 'monthly':
+                    $monthlyAmount = $totalAmount / 10;
+                    $months = ['June', 'July', 'August', 'September', 'October', 'November', 'December', 'January', 'February', 'March'];
+                    for ($i = 0; $i < 10; $i++) {
+                        $schedules[] = [
+                            'period_name' => $months[$i],
+                            'amount' => $monthlyAmount,
+                            'scheduled_date' => $baseDate->copy()->addMonths($i)->format('Y-m-d'),
+                        ];
+                    }
+                    break;
+            }
+            foreach ($schedules as $idx => $schedule) {
+                try {
+                    $payment = Payment::create([
+                        'transaction_id' => 'TXN-' . $student->student_id . '-' . time() . '-' . rand(100, 999),
+                        'payable_type' => 'App\\Models\\Student',
+                        'payable_id' => $student->id,
+                        'fee_id' => null,
+                        'amount' => $schedule['amount'],
+                        'scheduled_date' => $schedule['scheduled_date'],
+                        'period_name' => $schedule['period_name'],
+                        'payment_method' => $paymentSchedule,
+                        'status' => 'pending',
+                        'confirmation_status' => 'pending',
+                        'processed_by' => null,
+                        'notes' => $request->payment_notes,
+                    ]);
+                    if ($idx === 0) {
+                        $transactionId = $payment->transaction_id;
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Payment creation failed: ' . $e->getMessage());
+                    Log::error('Payment creation stack trace: ' . $e->getTraceAsString());
+                    Log::error('Payment data: ' . json_encode([
+                        'transaction_id' => 'TXN-' . $student->student_id . '-' . time() . '-' . rand(100, 999),
+                        'payable_type' => 'App\\Models\\Student',
+                        'payable_id' => $student->id,
+                        'fee_id' => null,
+                        'amount' => $schedule['amount'],
+                        'scheduled_date' => $schedule['scheduled_date'],
+                        'period_name' => $schedule['period_name'],
+                        'payment_method' => $paymentSchedule,
+                        'status' => 'pending',
+                        'confirmation_status' => 'pending',
+                        'processed_by' => null,
+                        'notes' => $request->payment_notes,
+                    ]));
+                    throw $e;
+                }
+            }
             Log::info('Payment schedules created successfully');
 
             // Update student with fee information but keep pre_registered status until payment is approved
@@ -335,7 +400,8 @@ class StudentController extends Controller
                 return response()->json([
                     'success' => true,
                     'message' => 'Payment schedule submitted successfully! Your schedule is now pending approval from the cashier\'s office.',
-                    'redirect_url' => '/student/dashboard'
+                    'redirect_url' => '/student/dashboard',
+                    'transaction_id' => $transactionId
                 ]);
             }
             
@@ -761,5 +827,21 @@ class StudentController extends Controller
         ]);
         
         Log::info("Student payment totals refreshed - ID: {$student->id}, Total Paid: {$totalPaid}, Total Due: {$totalFeesDue}, Fully Paid: " . ($isFullyPaid ? 'Yes' : 'No'));
+    }
+
+    public function submitViolationReply(Request $request, Violation $violation)
+    {
+        $request->validate([
+            'incident' => 'required|string',
+            'feeling' => 'required|string',
+            'action_plan' => 'required|string',
+        ]);
+
+        $violation->student_statement = $request->incident;
+        $violation->incident_feelings = $request->feeling;
+        $violation->action_plan = $request->action_plan;
+        $violation->save();
+
+        return redirect()->route('student.violations')->with('info', 'Your reply has been submitted successfully.');
     }
 }

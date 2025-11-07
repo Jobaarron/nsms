@@ -15,8 +15,33 @@ class CashierSeeder extends Seeder
      */
     public function run(): void
     {
+        // Create cashier permissions first
+        $cashierPermissions = [
+            'Cashier Dashboard',
+            'Pending Payments',
+            'Due Payments', 
+            'Completed Payments',
+            'Payment History',
+            'Payment Reports',
+            'Confirm Payments',
+            'Reject Payments',
+            'View Payment Details',
+            'Process Payments',
+            'Generate Payment Reports',
+            'Export Payment Data',
+            'View Reports',
+        ];
+
+        foreach ($cashierPermissions as $permission) {
+            Permission::firstOrCreate([
+                'name' => $permission,
+                'guard_name' => 'cashier'
+            ]);
+        }
+
         // Create cashier role if it doesn't exist
         $cashierRole = Role::firstOrCreate(['name' => 'cashier', 'guard_name' => 'cashier']);
+        $cashierRole->syncPermissions($cashierPermissions);
 
         // Create main cashier
         $cashier = Cashier::firstOrCreate(
@@ -50,7 +75,7 @@ class CashierSeeder extends Seeder
             ]
         );
 
-        // Assign cashier role
+        // Assign cashier role (using web guard)
         $cashier->assignRole('cashier');
 
         // Create assistant cashier
@@ -85,11 +110,11 @@ class CashierSeeder extends Seeder
             ]
         );
 
-        // Assign cashier role
+        // Assign cashier role (using web guard)
         $assistantCashier->assignRole('cashier');
 
         $this->command->info('Cashier users created successfully!');
-        $this->command->info('Main Cashier: cashier@nicolites.edu / cashier123');
-        $this->command->info('Assistant Cashier: assistant.cashier@nicolites.edu / assistant123');
+        $this->command->info('cashier@nicolites.edu / cashier123');
+        $this->command->info('assistant.cashier@nicolites.edu / assistant123');
     }
 }

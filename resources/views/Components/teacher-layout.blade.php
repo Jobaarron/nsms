@@ -2,7 +2,7 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -19,59 +19,68 @@
   <!-- App CSS & JS (includes Bootstrap 5 via Vite) -->
   @vite(['resources/sass/app.scss','resources/js/app.js'])
   @vite(['resources/css/index_teacher.css'])
+  @vite('resources/js/teacher-dashboard.js')
+  @vite('resources/js/teacher-recommend-counseling.js')
+  @vite('resources/js/teacher-advisory.js')
 
+  <style>
+    .spin {
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+  </style>
   
 </head>
 <body>
   <div class="container-fluid">
     <div class="row">
       <!-- SIDEBAR -->
-      <nav class="col-12 col-md-2 sidebar d-none d-md-block py-4">
+  <nav class="col-12 col-md-2 sidebar py-4">
         <!-- School Logo -->
         <div class="text-center mb-3">
           <img src="{{ Vite::asset('resources/assets/images/nms logo.png') }}" alt="Nicolites Montessori School" class="sidebar-logo">
         </div>
         
         <!-- User Info -->
-        {{-- <div class="user-info">
+        <!-- <div class="user-info">
           <div class="user-name">{{ Auth::user()->name }}</div>
           <div class="user-role">{{ ucwords(str_replace('_', ' ', Auth::user()->getRoleNames()->first())) }}</div>
-        </div> --}}
+        </div> -->
+        
         <ul class="nav flex-column">
           <li class="nav-item mb-2">
-            <a class="nav-link active" href="#">
+            <a class="nav-link {{ request()->routeIs('teacher.dashboard') ? 'active' : '' }}" href="{{ route('teacher.dashboard') }}">
               <i class="ri-dashboard-line me-2"></i>Dashboard
             </a>
           </li>
+          
+          
           <li class="nav-item mb-2">
-            <span class="nav-link d-flex justify-content-between align-items-center">
-              <span><i class="ri-book-3-line me-2"></i>My Classes</span>
-              {{-- <small class="badge bg-light text-dark">Soon</small> --}}
-            </span>
+            <a class="nav-link {{ request()->routeIs('teacher.grades*') ? 'active' : '' }}" href="{{ route('teacher.grades') }}">
+              <i class="ri-pencil-ruler-2-line me-2"></i>Submit Grades
+            </a>
           </li>
+
           <li class="nav-item mb-2">
-            <span class="nav-link disabled d-flex justify-content-between align-items-center">
-              <span><i class="ri-team-line me-2"></i>Students</span>
-              <small class="badge bg-light text-dark">Soon</small>
-            </span>
+            <a class="nav-link {{ request()->routeIs('teacher.observationreport*') ? 'active' : '' }}" href="{{ route('teacher.observationreport') }}">
+              <i class="ri-file-list-3-line me-2"></i>Observation Report
+            </a>
           </li>
+          
           <li class="nav-item mb-2">
-            <span class="nav-link disabled d-flex justify-content-between align-items-center">
-              <span><i class="ri-pencil-ruler-2-line me-2"></i>Grade Book</span>
-              <small class="badge bg-light text-dark">Soon</small>
-            </span>
+            <a class="nav-link {{ request()->routeIs('teacher.advisory') ? 'active' : '' }}" href="{{ route('teacher.advisory') }}">
+              <i class="ri-user-star-line me-2"></i>Advisory
+            </a>
           </li>
+          
+          
           <li class="nav-item mb-2">
-            <span class="nav-link disabled d-flex justify-content-between align-items-center">
-              <span><i class="ri-time-line me-2"></i>Attendance</span>
-              <small class="badge bg-light text-dark">Soon</small>
-            </span>
-          </li>
-          <li class="nav-item">
-            <span class="nav-link disabled d-flex justify-content-between align-items-center">
-              <span><i class="ri-chat-1-line me-2"></i>Messages</span>
-              <small class="badge bg-light text-dark">Soon</small>
-            </span>
+            <a class="nav-link {{ request()->routeIs('teacher.recommend-counseling.*') ? 'active' : '' }}" href="{{ route('teacher.recommend-counseling.form') }}">
+              <i class="ri-heart-pulse-line me-2"></i>Recommend Counseling
+            </a>
           </li>
 
           <li class="nav-item mt-3">
@@ -85,7 +94,9 @@
         </ul>
       </nav>
 
-      {{ $slot }}
+      <main class="col-12 col-md-10 py-4">
+        {{ $slot }}
+      </main>
     </div>
   </div>
 </body>

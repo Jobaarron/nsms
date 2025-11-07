@@ -14,10 +14,10 @@ class EnrollStudentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // File Uploads
-            'id_photo'           => 'required|image|mimes:jpeg,png,jpg|max:5120', // 5MB limit
-            'documents'          => 'required|array|min:1',
-            'documents.*'        => 'file|mimes:pdf,docx,jpeg,png,jpg|max:8192', // 8MB limit
+            // File Uploads (optional since handled by AJAX)
+            'id_photo'           => 'nullable|image|mimes:jpeg,png,jpg|max:5120', // 5MB limit
+            'documents'          => 'nullable|array',
+            'documents.*'        => 'file|mimes:pdf,jpeg,png,jpg|max:8192', // 8MB limit
 
             // Enrollee Info
             'lrn'                => 'nullable|string|max:12|unique:enrollees,lrn',
@@ -76,7 +76,53 @@ class EnrollStudentRequest extends FormRequest
             // Medical & Payment
             'medical_history'    => 'nullable|string|max:1000',
             'payment_mode'       => 'nullable|in:cash,online payment,installment', // Made optional - will be handled in student portal
-            'preferred_schedule' => 'nullable|date|after_or_equal:today',
         ];
+    }
+
+    /**
+     * Configure the validator instance.
+     */
+    public function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+            // Check if files are uploaded via AJAX (stored in session)
+            $tempFiles = session('temp_enrollment_files', []);
+            
+            $hasIdPhoto = false;
+            $hasDocuments = false;
+            
+            foreach ($tempFiles as $fileData) {
+                if ($fileData['type'] === 'id_photo') {
+                    $hasIdPhoto = true;
+                } elseif ($fileData['type'] === 'documents') {
+                    $hasDocuments = true;
+                }
+            }
+            
+            // Validate that required files are uploaded
+            if (!$hasIdPhoto && !$this->hasFile('id_photo')) {
+                $validator->errors()->add('id_photo', 'ID Photo is required.');
+            }
+            
+            // Count total documents from both AJAX and direct upload
+            $documentCount = 0;
+            
+            // Count AJAX uploaded documents
+            foreach ($tempFiles as $fileData) {
+                if ($fileData['type'] === 'documents') {
+                    $documentCount++;
+                }
+            }
+            
+            // Count directly uploaded documents
+            if ($this->hasFile('documents')) {
+                $documentCount += count($this->file('documents'));
+            }
+            
+            // Require at least 3 documents
+            if ($documentCount < 3) {
+                $validator->errors()->add('documents', 'You must upload at least 3 documents to proceed with enrollment.');
+            }
+        });
     }
 }

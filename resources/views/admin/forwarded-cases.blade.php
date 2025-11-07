@@ -1,109 +1,300 @@
+
 <x-admin-layout>
-<div class="container mt-4">
-    <h1>Forwarded Case Meetings</h1>
+<div class="container-fluid">
+    <div class="mb-4">
+        <h2 class="fw-bold" style="color:#198754; letter-spacing:0.5px;">Case Meeting</h2>
+    </div>
+    <style>
+        .case-table-card {
+            border-radius: 18px;
+            box-shadow: 0 6px 32px 0 rgba(60,60,60,0.10);
+            border: none;
+            background: #fff;
+            margin-bottom: 2rem;
+        }
+        .case-table-header {
+            background: #198754;
+            color: #fff;
+            border-radius: 1rem 1rem 0 0;
+            font-weight: 600;
+            font-size: 1.15rem;
+            padding: 1.1rem 1.5rem;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .case-table {
+            border-radius: 12px;
+            background: #fff;
+            margin-bottom: 0;
+        }
+        .case-table thead th {
+            background: #f8fafb;
+            color: #198754;
+            font-weight: 600;
+            border: none;
+            font-size: 1.01rem;
+            padding-top: 0.8rem;
+            padding-bottom: 0.8rem;
+        }
+        .case-table tbody tr {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(67,179,106,0.07);
+            border-bottom: 1.5px solid #e0e0e0;
+            transition: background 0.15s;
+        }
+        .case-table tbody tr:last-child {
+            border-bottom: none;
+        }
+        .case-table td {
+            vertical-align: middle;
+            padding-top: 0.7rem;
+            padding-bottom: 0.7rem;
+        }
+        .case-table .badge {
+            font-size: 0.95rem;
+            border-radius: 6px;
+            padding: 0.4em 0.9em;
+        }
+        .case-table .btn-sm {
+            border-radius: 6px;
+            font-size: 0.97rem;
+        }
+    </style>
 
-    @if($caseMeetings->count() > 0)
-    <table class="table table-bordered table-striped mt-3">
-        <thead>
-            <tr>
-                <th>Student</th>
-                <th>Offense</th>
-                <th>Scheduled Date</th>
-                <th>Scheduled Time</th>
-
-                <th>Status</th>
-                <th>Sanctions</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($caseMeetings as $meeting)
-            <tr>
-                <td>{{ $meeting->student ? $meeting->student->full_name : 'Unknown' }}</td>
-                <td>
-                    @if($meeting->sanctions->count() > 0 && $meeting->sanctions->first()->violation)
-                        {{ $meeting->sanctions->first()->violation->title ?: $meeting->sanctions->first()->violation->description }}
-                    @else
-                        <span class="text-muted">-</span>
-                    @endif
-                </td>
-                <td>{{ $meeting->scheduled_date->format('Y-m-d') }}</td>
-                <td>{{ $meeting->scheduled_time->format('H:i') }}</td>
-
-                <td><span class="badge bg-warning">{{ $meeting->status === 'forwarded' ? 'Submitted' : ucfirst($meeting->status) }}</span></td>
-                <td>
-                    <ul>
-                        @foreach($meeting->sanctions as $sanction)
-                        <li>
-                            {{ $sanction->sanction }}
-                            @if($sanction->is_approved)
-                                <span class="badge bg-success">Approved</span>
-                            @else
-                                <span class="badge bg-secondary">Pending</span>
-                            @endif
-                        </li>
-                        @endforeach
-                    </ul>
-                </td>
-                <td>
-                    <div class="btn-group btn-group-sm">
-                        <!-- View Summary Button - Always Available -->
-                        <button class="btn btn-outline-info btn-sm view-summary-btn" data-meeting-id="{{ $meeting->id }}" title="View Summary Report" data-bs-toggle="modal" data-bs-target="#viewSummaryModal">
-                            <i class="ri-file-text-line"></i>
-                        </button>
-
-                        @foreach($meeting->sanctions as $sanction)
-                            @if(!$sanction->is_approved)
-                                <!-- Approve Button -->
-                                <button class="btn btn-outline-success btn-sm approve-sanction-btn" data-sanction-id="{{ $sanction->id }}" title="Approve Sanction">
-                                    <i class="ri-check-line"></i>
-                                </button>
-
-                                <!-- Reject Button -->
-                                <button class="btn btn-outline-danger btn-sm reject-sanction-btn" data-sanction-id="{{ $sanction->id }}" title="Reject Sanction">
-                                    <i class="ri-close-line"></i>
-                                </button>
-
-                                <!-- Revise Button -->
-                                <button class="btn btn-outline-warning btn-sm revise-sanction-btn" data-sanction-id="{{ $sanction->id }}" title="Revise Sanction" data-bs-toggle="modal" data-bs-target="#reviseSanctionModal" data-sanction="{{ $sanction->sanction }}" data-notes="{{ $sanction->notes }}">
-                                    <i class="ri-edit-line"></i>
-                                </button>
-                            @else
-                                <!-- Approved Status -->
-                                <span class="badge bg-success">Approved</span>
-                            @endif
-                        @endforeach
+    <!-- Tab Navigation -->
+    <ul class="nav nav-tabs mb-3" id="caseMeetingTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="forwarded-tab" data-bs-toggle="tab" data-bs-target="#forwarded" type="button" role="tab" aria-controls="forwarded" aria-selected="true">
+                Forwarded Case Meetings
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab" aria-controls="history" aria-selected="false">
+                Case Meeting History
+            </button>
+        </li>
+    </ul>
+    <div class="tab-content" id="caseMeetingTabsContent">
+        <!-- Forwarded Case Meetings Tab -->
+        <div class="tab-pane fade show active" id="forwarded" role="tabpanel" aria-labelledby="forwarded-tab">
+            <div class="case-table-card">
+                <div class="case-table-header d-flex align-items-center">
+                    <i class="ri-file-text-line me-2" style="font-size:1.5rem;"></i>
+                    <span>Forwarded Case Meetings</span>
+                </div>
+                <div class="p-0" style="padding-bottom:0;">
+                    @php
+                        $forwardedMeetings = $caseMeetings->filter(function($meeting) { return $meeting->status !== 'case_closed'; });
+                    @endphp
+                    @if($forwardedMeetings->count() > 0)
+                    <div class="table-responsive">
+                        <table class="table case-table table-sm align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Student</th>
+                                    <th>Offense</th>
+                                    <th>Sanction</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($forwardedMeetings as $meeting)
+                                <tr style="background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(67,179,106,0.07);">
+                                    <!-- Date cell: Date (bold), time (muted, small, below) -->
+                                    <td style="min-width:100px; padding-top:0.5rem; padding-bottom:0.5rem;">
+                                        <div>{{ $meeting->scheduled_date->format('M d, Y') }}</div>
+                                        <div class="text-muted small">{{ $meeting->scheduled_time ? $meeting->scheduled_time->format('h:i A') : '' }}</div>
+                                    </td>
+                                    <!-- Student cell: Name (bold), ID (muted, small, below) -->
+                                    <td style="min-width:120px; padding-top:0.5rem; padding-bottom:0.5rem;">
+                                        <div>{{ $meeting->student ? $meeting->student->full_name : 'Unknown' }}</div>
+                                        <div class="text-muted small">{{ $meeting->student ? $meeting->student->student_id : '' }}</div>
+                                    </td>
+                                    <!-- Offense cell: Title (bold), desc (muted, small, below) -->
+                                    <td style="min-width:150px; padding-top:0.5rem; padding-bottom:0.5rem;">
+                                        @if($meeting->sanctions->count() > 0 && $meeting->sanctions->first()->violation)
+                                            <div>{{ $meeting->sanctions->first()->violation->title }}</div>
+                                        @else
+                                            <span class="text-muted">-</span>
+                                        @endif
+                                    </td>
+                                    <!-- Sanction cell: Main sanction (bold), others (muted, small, below) -->
+                                    <td style="min-width:150px; padding-top:0.5rem; padding-bottom:0.5rem;">
+                                        @if($meeting->sanctions->count() > 0)
+                                            <di>{{ $meeting->sanctions->first()->sanction }}</div>
+                                            @if($meeting->sanctions->count() > 1)
+                                                <div class="text-muted small">
+                                                    @foreach($meeting->sanctions->slice(1) as $sanction)
+                                                        {{ $sanction->sanction }}@if(!$loop->last), @endif
+                                                    @endforeach
+                                                </div>
+                                            @endif
+                                        @else
+                                            <span class="text-muted">-</span>
+                                        @endif
+                                    </td>
+                                    <!-- Status cell -->
+                                    <td style="min-width:90px; padding-top:0.5rem; padding-bottom:0.5rem;">
+                                        <span class="badge bg-warning text-white" style="font-weight:600;">{{ $meeting->status === 'forwarded' ? 'Submitted' : ucfirst($meeting->status) }}</span>
+                                    </td>
+                                    <!-- Actions cell: icon buttons, horizontally aligned -->
+                                    <td style="min-width:110px; padding-top:0.5rem; padding-bottom:0.5rem;">
+                                        <div class="d-flex gap-2 align-items-center">
+                                            <button class="btn btn-outline-info btn-sm view-summary-btn" data-meeting-id="{{ $meeting->id }}" title="View Summary Report" data-bs-toggle="modal" data-bs-target="#viewSummaryModal">
+                                                <i class="ri-file-text-line"></i>
+                                            </button>
+                                            @foreach($meeting->sanctions as $sanction)
+                                                @if(!$sanction->is_approved)
+                                                    <button class="btn btn-outline-success btn-sm approve-sanction-btn" data-sanction-id="{{ $sanction->sanction_id }}" title="Approve Sanction">
+                                                        <i class="ri-check-line"></i>
+                                                    </button>
+                                                    <button class="btn btn-outline-warning btn-sm revise-sanction-btn" data-sanction-id="{{ $sanction->sanction_id }}" title="Revise Sanction" data-bs-toggle="modal" data-bs-target="#reviseSanctionModal" data-sanction="{{ $sanction->sanction }}" data-notes="{{ $sanction->notes }}">
+                                                        <i class="ri-edit-line"></i>
+                                                    </button>
+                                                @endif
+                                            @endforeach
+                                        </div>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
                     </div>
-                </td>
-            </tr>
-            @endforeach
-        </tbody>
-    </table>
-
-    {{ $caseMeetings->links() }}
-
-    @else
-    <p>No forwarded case meetings found.</p>
-    @endif
+                    @else
+                    <p class="text-center text-muted my-4 mb-0" style="margin-bottom:0;">No forwarded case meetings found.</p>
+                    @endif
+                </div>
+            </div>
+        </div>
+        <!-- Case Meeting History Tab -->
+        <div class="tab-pane fade" id="history" role="tabpanel" aria-labelledby="history-tab">
+            <div class="case-table-card">
+                <div class="case-table-header d-flex align-items-center" style="background:#6c757d;">
+                    <i class="ri-history-line me-2" style="font-size:1.5rem;"></i>
+                    <span>Case Meeting History</span>
+                </div>
+                <div class="p-0" style="padding-bottom:0;">
+                    @php
+                        $historyMeetings = $caseMeetings->filter(function($meeting) { return $meeting->status === 'case_closed'; });
+                    @endphp
+                    @if($historyMeetings->count() > 0)
+                    <div class="table-responsive">
+                        <table class="table case-table table-sm align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Student</th>
+                                    <th>Offense</th>
+                                    <th>Sanction</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($historyMeetings as $meeting)
+                                <tr style="background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(67,179,106,0.07);">
+                                    <!-- Date cell: Date (bold), time (muted, small, below) -->
+                                    <td style="min-width:100px; padding-top:0.5rem; padding-bottom:0.5rem;">
+                                        <div>{{ $meeting->scheduled_date->format('M d, Y') }}</div>
+                                        <div class="text-muted small">{{ $meeting->scheduled_time ? $meeting->scheduled_time->format('h:i A') : '' }}</div>
+                                    </td>
+                                    <!-- Student cell: Name (bold), ID (muted, small, below) -->
+                                    <td style="min-width:120px; padding-top:0.5rem; padding-bottom:0.5rem;">
+                                        <div>{{ $meeting->student ? $meeting->student->full_name : 'Unknown' }}</div>
+                                        <div class="text-muted small">{{ $meeting->student ? $meeting->student->student_id : '' }}</div>
+                                    </td>
+                                    <!-- Offense cell: Title (bold), desc (muted, small, below) -->
+                                    <td style="min-width:150px; padding-top:0.5rem; padding-bottom:0.5rem;">
+                                        @if($meeting->sanctions->count() > 0 && $meeting->sanctions->first()->violation)
+                                            <div>{{ $meeting->sanctions->first()->violation->title }}</div>
+                                        @else
+                                            <span class="text-muted">-</span>
+                                        @endif
+                                    </td>
+                                    <!-- Sanction cell: Main sanction (bold), others (muted, small, below) -->
+                                    <td style="min-width:150px; padding-top:0.5rem; padding-bottom:0.5rem;">
+                                        @if($meeting->sanctions->count() > 0)
+                                            <di>{{ $meeting->sanctions->first()->sanction }}</div>
+                                            @if($meeting->sanctions->count() > 1)
+                                                <div class="text-muted small">
+                                                    @foreach($meeting->sanctions->slice(1) as $sanction)
+                                                        {{ $sanction->sanction }}@if(!$loop->last), @endif
+                                                    @endforeach
+                                                </div>
+                                            @endif
+                                        @else
+                                            <span class="text-muted">-</span>
+                                        @endif
+                                    </td>
+                                    <!-- Status cell -->
+                                    <td style="min-width:90px; padding-top:0.5rem; padding-bottom:0.5rem;">
+                                        <span class="badge bg-success text-white" style="font-weight:600;">Closed</span>
+                                    </td>
+                                    <!-- Actions cell: icon buttons, horizontally aligned -->
+                                    <td style="min-width:110px; padding-top:0.5rem; padding-bottom:0.5rem;">
+                                        <div class="d-flex gap-2 align-items-center">
+                                            <button class="btn btn-outline-info btn-sm view-summary-btn" data-meeting-id="{{ $meeting->id }}" title="View Summary Report" data-bs-toggle="modal" data-bs-target="#viewSummaryModal">
+                                                <i class="ri-file-text-line"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                    @else
+                    <p class="text-center text-muted my-4 mb-0" style="margin-bottom:0;">No case meeting history found.</p>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- View Summary Modal -->
+    <!-- ...existing modal and script code... -->
+    {{-- Filter/Search Bar removed --}}
+</div>
+
+
+    <!-- View Summary Modal (restored for summary JS compatibility) -->
     <div class="modal fade" id="viewSummaryModal" tabindex="-1">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Case Meeting Summary Report</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content minimalist-modal">
+                <div class="modal-header border-0 pb-0" style="background:transparent;">
+                    <h5 class="modal-title fw-semibold" style="letter-spacing:0.5px;">Case Meeting Summary Report</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body" id="summaryModalBody">
+                <div class="modal-body" id="summaryModalBody" style="background:transparent;">
                     <!-- Content will be loaded dynamically -->
-                    <div class="text-center">
-                        <div class="spinner-border" role="status">
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-success" role="status">
                             <span class="visually-hidden">Loading...</span>
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <div class="modal-footer border-0 pt-0" style="background:transparent;">
+                    <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal" style="border-radius:6px;box-shadow:none;">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Incident Form PDF Preview Modal (optional, for future use) -->
+    <div class="modal fade" id="incidentFormPdfPreviewModal" tabindex="-1" aria-labelledby="incidentFormPdfPreviewModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content minimalist-modal">
+                <div class="modal-header border-0 pb-0" style="background:transparent;">
+                    <h5 class="modal-title fw-semibold" id="incidentFormPdfPreviewModalLabel" style="letter-spacing:0.5px;">Incident Form PDF Preview</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="background: #fff; min-height: 600px;">
+                    <iframe id="incidentFormPdfIframe" src="" width="100%" height="600px" style="border: none;"></iframe>
+                </div>
+                <div class="modal-footer border-0 pt-0" style="background:transparent;">
+                    <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal" style="border-radius:6px;box-shadow:none;">Close</button>
                 </div>
             </div>
         </div>
@@ -142,6 +333,54 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    // Minimalist modal/card hover CSS
+    const style = document.createElement('style');
+    style.innerHTML = `
+        .minimalist-modal {
+            border-radius: 18px;
+            box-shadow: 0 6px 32px 0 rgba(60,60,60,0.10);
+            border: none;
+            background: #fff;
+            transition: box-shadow 0.2s;
+        }
+        .minimalist-modal .card {
+            border: none;
+            border-radius: 14px;
+            box-shadow: 0 2px 12px 0 rgba(67,179,106,0.06);
+            margin-bottom: 1.2rem;
+            transition: box-shadow 0.2s, transform 0.2s;
+        }
+        .minimalist-modal .card:hover {
+            box-shadow: 0 6px 24px 0 rgba(67,179,106,0.13);
+            transform: translateY(-2px) scale(1.01);
+        }
+        .minimalist-modal .card-header {
+            background: transparent;
+            border-bottom: none;
+            font-weight: 600;
+            font-size: 1.08rem;
+            padding-bottom: 0.5rem;
+        }
+        .minimalist-modal .card-body {
+            padding-top: 0.5rem;
+        }
+        .minimalist-modal .btn-outline-primary.btn-sm {
+            border-radius: 6px;
+            padding: 0.25rem 0.75rem;
+            background: #fff;
+            color: #198754;
+            border-color: #198754;
+            transition: background 0.15s, color 0.15s, border 0.15s;
+        }
+        .minimalist-modal .btn-outline-primary.btn-sm:hover,
+        .minimalist-modal .btn-outline-primary.btn-sm:focus,
+        .minimalist-modal .btn-outline-primary.btn-sm:active {
+            background: #198754;
+            color: #fff;
+            border-color: #198754;
+        }
+    `;
+    document.head.appendChild(style);
     // View summary buttons
     const viewSummaryButtons = document.querySelectorAll('.view-summary-btn');
     viewSummaryButtons.forEach(button => {
@@ -169,7 +408,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 .then(data => {
                     alert(data.message);
                     if (data.success) {
-                        location.reload();
+                        // Remove the row from the table
+                        const row = button.closest('tr');
+                        if (row) row.remove();
                     }
                 })
                 .catch(error => {
@@ -328,12 +569,33 @@ function generateSummaryHTML(meeting) {
                     <div class="col-md-6">
                         <p><strong>Meeting Type:</strong> ${meeting.meeting_type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>
                         <p><strong>Scheduled Date:</strong> ${meeting.scheduled_date ? new Date(meeting.scheduled_date).toLocaleDateString() : 'TBD'}</p>
-                        <p><strong>Scheduled Time:</strong> ${meeting.scheduled_time ? new Date(meeting.scheduled_time).toLocaleTimeString() : 'TBD'}</p>
+                        <p><strong>Scheduled Time:</strong> ${meeting.scheduled_time ? meeting.scheduled_time : 'TBD'}</p>
                     </div>
-                    <div class="col-md-6">
-                        <p><strong>Location:</strong> ${meeting.location || 'TBD'}</p>
+                </div>
+            </div>
+        </div>
+    `;
 
-                    </div>
+    // Reports Card (PDF Attachments)
+    let hasNarrative = meeting.student && meeting.violation_id && (meeting.student_statement || meeting.incident_feelings || meeting.action_plan);
+    let hasTeacherObservation = meeting.id && (meeting.teacher_statement || meeting.action_plan);
+    html += `
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6 class="mb-0">Reports</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex flex-column gap-2">
+                    <a href="/admin/case-meetings/${meeting.id}/disciplinary-conference-report/pdf" target="_blank" class="btn btn-outline-primary btn-sm minimalist-attachment-btn"><i class="ri-download-2-line"></i> Disciplinary Conference Reports PDF</a>
+                    ${hasNarrative
+                        ? `<a href="/narrative-report/view/${meeting.student.id}/${meeting.violation_id}" target="_blank" class="btn btn-outline-primary btn-sm minimalist-attachment-btn"><i class="ri-attachment-2"></i> Student Narrative PDF</a>`
+                        : ''}
+                    ${hasTeacherObservation
+                        ? `<a href="/guidance/observationreport/pdf/${meeting.id}" target="_blank" class="btn btn-outline-success btn-sm minimalist-attachment-btn"><i class="ri-file-pdf-line"></i> Teacher Observation Report PDF</a>`
+                        : ''}
+                    ${!hasNarrative && !hasTeacherObservation
+                        ? '<span class="text-muted small">No Attachment</span>'
+                        : ''}
                 </div>
             </div>
         </div>
@@ -404,19 +666,6 @@ function generateSummaryHTML(meeting) {
         `;
     }
 
-    // Reason for Meeting
-    if (meeting.reason) {
-        html += `
-            <div class="card mb-3">
-                <div class="card-header">
-                    <h6 class="mb-0">Reason for Meeting</h6>
-                </div>
-                <div class="card-body">
-                    <p>${meeting.reason.replace(/\n/g, '<br>')}</p>
-                </div>
-            </div>
-        `;
-    }
 
     // Additional Notes
     if (meeting.notes) {

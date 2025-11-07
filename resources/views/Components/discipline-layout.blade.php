@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -62,19 +62,6 @@
             </a>
           </li>
           
-          {{-- <li class="nav-item mb-2">
-            <span class="nav-link disabled d-flex justify-content-between align-items-center">
-              <span><i class="ri-bar-chart-line me-2"></i>Analytics</span>
-              <small class="badge bg-light text-dark">Soon</small>
-            </span>
-          </li>
-          
-          <li class="nav-item mb-2">
-            <span class="nav-link disabled d-flex justify-content-between align-items-center">
-              <span><i class="ri-settings-3-line me-2"></i>Settings</span>
-              <small class="badge bg-light text-dark">Soon</small>
-            </span>
-          </li> --}}
           
           <li class="nav-item mt-3">
             <form method="POST" action="{{ route('discipline.logout') }}">
@@ -89,6 +76,7 @@
       
       <!-- MAIN CONTENT -->
       {{ $slot }}
+        @stack('scripts')
     </div>
   </div>
 </body>

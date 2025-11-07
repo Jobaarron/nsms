@@ -1,6 +1,7 @@
 <x-layout>
     @vite('resources/css/enroll.css')
     @vite('resources/js/enroll.js')
+    
     <div class="row justify-content-center">
         <div class="col-lg-8 col-md-10">
             <div class="content-card p-5">
@@ -33,16 +34,55 @@
                         <label for="id_photo" class="form-label fw-semibold" style="color: var(--primary-color);">
                             <i class="ri-image-add-line me-2"></i>ID Photo (JPG, PNG)
                         </label>
+                        
+                        <!-- ID Photo Requirements Reminder -->
+                        <div class="alert alert-warning mb-3" style="border-left: 4px solid #ffc107;">
+                            <div class="d-flex align-items-start">
+                                <i class="ri-camera-line me-2 mt-1" style="color: #ffc107;"></i>
+                                <div>
+                                    <strong>ID Photo Requirements:</strong>
+                                    <ul class="mb-0 mt-1">
+                                        <li><span class="fw-medium">Plain white background</span> - No patterns or colors</li>
+                                        <li><span class="fw-medium">No accessories</span> - Remove hats, sunglasses, or jewelry</li>
+                                        <li><span class="fw-medium">Decent appearance</span> - Proper grooming and attire</li>
+                                        <li><span class="fw-medium">Not edited in any editing tools</span> - Digital/softcopy from photo studio establishment</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- AJAX Upload Area -->
+                        <div class="file-upload-area" id="id_photo_upload_area">
+                            <div class="upload-zone" id="id_photo_zone">
+                                <i class="ri-image-add-line upload-icon"></i>
+                                <p class="upload-text">Click to upload or drag and drop</p>
+                                <p class="upload-subtext">JPG, PNG up to 5MB</p>
+                            </div>
+                            <div class="file-preview" id="id_photo_preview" style="display: none;">
+                                <div class="file-item">
+                                    <i class="ri-image-line file-icon"></i>
+                                    <div class="file-info">
+                                        <span class="file-name"></span>
+                                        <span class="file-size"></span>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-danger remove-file">
+                                        <i class="ri-close-line"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Hidden file input for fallback -->
                         <input
                             type="file"
                             id="id_photo"
                             name="id_photo"
-                            class="form-control form-control-lg @error('id_photo') is-invalid @enderror"
+                            class="d-none"
                             accept=".jpg,.jpeg,.png"
-                            required
                         />
+                        
                         @error('id_photo')
-                            <div class="invalid-feedback">{{ $message }}</div>
+                            <div class="invalid-feedback d-block">{{ $message }}</div>
                         @enderror
                     </div>
 
@@ -297,18 +337,50 @@
                     <!-- Documents -->
                     <div class="mb-3">
                         <label for="documents" class="form-label fw-semibold" style="color: var(--primary-color);">
-                            <i class="ri-file-list-3-line me-2"></i>Documents (PDF, DOCX, JPG, PNG)
+                            <i class="ri-file-list-3-line me-2"></i>Documents (PDF, JPG, PNG)
                         </label>
+                        
+                        <!-- Document Requirements Reminder -->
+                        <div class="alert alert-info mb-3" style="border-left: 4px solid var(--primary-color);">
+                            <div class="d-flex align-items-start">
+                                <i class="ri-information-line me-2 mt-1" style="color: var(--primary-color);"></i>
+                                <div>
+                                    <strong>Required Documents (Minimum 3 files):</strong>
+                                    <ul class="mb-0 mt-1">
+                                        <li><span class="fw-medium">Report Card/Form 137</span> - Previous academic records</li>
+                                        <li><span class="fw-medium">Birth Certificate (PSA)</span> - Official birth certificate from PSA</li>
+                                        <li><span class="fw-medium">Good Moral Certificate</span> - From previous school</li>
+                                    </ul>
+                                    <div class="mt-2">
+                                        <small class="text-muted"><i class="ri-alert-line me-1"></i>You must upload at least 3 documents to proceed with admission.</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- AJAX Upload Area -->
+                        <div class="file-upload-area" id="documents_upload_area">
+                            <div class="upload-zone" id="documents_zone">
+                                <i class="ri-file-add-line upload-icon"></i>
+                                <p class="upload-text">Click to upload or drag and drop</p>
+                                <p class="upload-subtext">PDF, JPG, PNG up to 8MB each</p>
+                            </div>
+                            <div class="files-preview" id="documents_preview">
+                                <!-- Uploaded files will appear here -->
+                            </div>
+                        </div>
+                        
+                        <!-- Hidden file input for fallback -->
                         <input
                             type="file"
                             id="documents"
                             name="documents[]"
-                            class="form-control form-control-lg @error('documents') is-invalid @enderror"
-                            accept=".pdf,.docx,.jpg,.jpeg,.png"
+                            class="d-none"
+                            accept=".pdf,.jpg,.jpeg,.png"
                             multiple
-                            required
                         />
-                        @error('documents') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        
+                        @error('documents') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                     </div>
 
                     <!-- Grade & Strand -->
@@ -566,40 +638,6 @@
                         @error('medical_history') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
 
-                    <!-- Payment & Schedule -->
-                    <div class="row mb-4">
-                        {{-- PAYMENT MODE SECTION - COMMENTED OUT FOR FUTURE STUDENT PORTAL IMPLEMENTATION
-                        <div class="col-md-6">
-                            <label for="payment_mode" class="form-label fw-semibold" style="color: var(--primary-color);">
-                                Mode of Payment
-                            </label>
-                            <select
-                                id="payment_mode"
-                                name="payment_mode"
-                                class="form-select form-select-lg @error('payment_mode') is-invalid @enderror"
-                            >
-                                <option value="">-- Select Mode --</option>
-                                <option value="cash" {{ old('payment_mode')=='cash'?'selected':'' }}>Cash</option>
-                                <option value="online payment" {{ old('payment_mode')=='Online Payment'?'selected':'' }}>Online Payment</option>
-                                <option value="installment" {{ old('payment_mode')=='installment'?'selected':'' }}>Installment</option>
-                                {{-- <option value="scholarship" {{ old('payment_mode')=='scholarship'?'selected':'' }}>Scholarship</option> --}}
-                            {{-- </select>
-                            @error('payment_mode') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                        </div> --}}
-                        {{-- <div class="col-md-6">
-                            <label for="preferred_schedule" class="form-label fw-semibold" style="color: var(--primary-color);">
-                                Preferred Schedule
-                            </label>
-                            <input
-                                type="date"
-                                id="preferred_schedule"
-                                name="preferred_schedule"
-                                class="form-control form-control-lg @error('preferred_schedule') is-invalid @enderror"
-                                value="{{ old('preferred_schedule') }}"
-                            >
-                            @error('preferred_schedule') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                        </div> --}}
-                    </div>
 
                     <button type="submit" class="btn btn-custom btn-lg w-100 mb-3">
                         <i class="ri-send-plane-line me-2"></i>Apply now

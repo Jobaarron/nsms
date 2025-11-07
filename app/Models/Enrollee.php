@@ -72,7 +72,6 @@ class Enrollee extends Authenticatable
         'enrollment_fee', // Keep for backward compatibility
         'payment_date',
         'payment_reference',
-        'preferred_schedule',
         'appointment_status',
         'appointment_notes',
         'enrollment_date',
@@ -107,7 +106,6 @@ class Enrollee extends Authenticatable
         'evaluation_completed_at' => 'datetime',
         'payment_date' => 'datetime',
         'payment_completed_at' => 'datetime',
-        'preferred_schedule' => 'date',
         'enrollment_date' => 'datetime',
         'application_date' => 'datetime',
         'pre_registered_at' => 'datetime',

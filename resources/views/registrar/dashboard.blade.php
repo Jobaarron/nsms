@@ -110,7 +110,7 @@
                                     </div>
                                     <div class="col-md-5">
                                         <div class="d-flex gap-2 justify-content-end">
-                                            <a href="{{ route('registrar.applications.get', $application->id) }}" class="btn btn-outline-primary">
+                                            <a href="{{ route('registrar.applications') }}?view={{ $application->id }}" class="btn btn-outline-primary">
                                                 <i class="ri-eye-line me-1"></i>View Details
                                             </a>
                                             <button class="btn btn-success" onclick="approveApplication({{ $application->id }})">
@@ -188,140 +188,111 @@
                 </div>
             </div>
 
-            <!-- QUICK ACTIONS -->
-            <!-- <div class="col-md-6">
+            <!-- ANALYTICS SECTION -->
+            <div class="col-md-6">
                 <div class="card border-0 shadow-sm h-100">
                     <div class="card-header bg-transparent border-0 py-3">
                         <h5 class="mb-0">
-                            <i class="ri-settings-line me-2 text-primary"></i>
-                            Quick Actions
+                            <i class="ri-bar-chart-line me-2 text-primary"></i>
+                            Applications by Grade Level
                         </h5>
-                        <p class="mb-0 mt-1 text-muted small">Common tasks and shortcuts</p>
+                        <p class="mb-0 mt-1 text-muted small">Distribution of applications across grade levels</p>
                     </div>
                     <div class="card-body">
-                        <div class="d-grid gap-3">
-                            <a href="{{ route('registrar.applications') }}" class="btn btn-registrar btn-lg">
-                                <div class="d-flex align-items-center">
-                                    <i class="ri-file-list-line fs-4 me-3"></i>
-                                    <div class="text-start">
-                                        <div class="fw-bold">Review All Applications</div>
-                                        <small class="opacity-75">View and manage all submissions</small>
-                                    </div>
-                                </div>
-                            </a>
-                            
-                            @if($stats['approved_applications'] > 0)
-                            <a href="{{ route('registrar.approved') }}" class="btn btn-outline-success btn-lg">
-                                <div class="d-flex align-items-center">
-                                    <i class="ri-check-line fs-4 me-3"></i>
-                                    <div class="text-start">
-                                        <div class="fw-bold">Manage Approved Students</div>
-                                        <small class="opacity-75">{{ $stats['approved_applications'] }} approved applications</small>
-                                    </div>
-                                </div>
-                            </a>
-                            @endif
-                            
-                            <a href="{{ route('registrar.reports') }}" class="btn btn-outline-primary btn-lg">
-                                <div class="d-flex align-items-center">
-                                    <i class="ri-bar-chart-line fs-4 me-3"></i>
-                                    <div class="text-start">
-                                        <div class="fw-bold">View Reports & Analytics</div>
-                                        <small class="opacity-75">Application statistics and trends</small>
-                                    </div>
-                                </div>
-                            </a>
-                        </div>
+                        @if($by_grade->count() > 0)
+                            <div class="table-responsive">
+                                <table class="table table-sm" id="grade-level-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Grade Level</th>
+                                            <th>Applications</th>
+                                            <th>Percentage</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($by_grade as $grade)
+                                        @php
+                                            $percentage = $stats['total_applications'] > 0 ? round(($grade->count / $stats['total_applications']) * 100, 1) : 0;
+                                        @endphp
+                                        <tr>
+                                            <td>{{ $grade->grade_level_applied }}</td>
+                                            <td>{{ $grade->count }}</td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="progress flex-grow-1 me-2" style="height: 8px;">
+                                                        <div class="progress-bar bg-primary" style="width: {{ $percentage }}%"></div>
+                                                    </div>
+                                                    <small>{{ $percentage }}%</small>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @else
+                            <div class="text-center py-4">
+                                <i class="ri-bar-chart-line fs-1 text-muted mb-3"></i>
+                                <p class="text-muted">No data available</p>
+                            </div>
+                        @endif
                     </div>
                 </div>
-            </div> -->
+            </div>
+        </div>
+
+        <!-- MONTHLY TRENDS -->
+        <div class="row g-4 mt-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-transparent border-0 py-3">
+                        <h5 class="mb-0">
+                            <i class="ri-calendar-line me-2 text-primary"></i>
+                            Applications by Month
+                        </h5>
+                        <p class="mb-0 mt-1 text-muted small">Monthly application submission trends</p>
+                    </div>
+                    <div class="card-body">
+                        @if($by_month->count() > 0)
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Month</th>
+                                            <th>Applications</th>
+                                            <th>Trend</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($by_month as $month)
+                                        @php
+                                            $monthName = date('M Y', mktime(0, 0, 0, $month->month, 1, $month->year));
+                                            $maxCount = $by_month->max('count');
+                                            $barWidth = $maxCount > 0 ? round(($month->count / $maxCount) * 100, 1) : 0;
+                                        @endphp
+                                        <tr>
+                                            <td>{{ $monthName }}</td>
+                                            <td>{{ $month->count }}</td>
+                                            <td>
+                                                <div class="progress" style="height: 8px;">
+                                                    <div class="progress-bar bg-success" style="width: {{ $barWidth }}%"></div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @else
+                            <div class="text-center py-4">
+                                <i class="ri-calendar-line fs-1 text-muted mb-3"></i>
+                                <p class="text-muted">No data available</p>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- JavaScript for Quick Actions -->
-    <script>
-    function approveApplication(applicationId) {
-        if (confirm('Are you sure you want to approve this application?')) {
-            fetch(`/registrar/applications/${applicationId}/approve`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    'Content-Type': 'application/json',
-                },
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    location.reload();
-                } else {
-                    alert('Error approving application. Please try again.');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Error approving application. Please try again.');
-            });
-        }
-    }
-
-    function declineApplication(applicationId) {
-        const reason = prompt('Please provide a reason for declining this application:');
-        if (reason && reason.trim() !== '') {
-            fetch(`/registrar/applications/${applicationId}/decline`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ reason: reason })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    location.reload();
-                } else {
-                    alert('Error declining application. Please try again.');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Error declining application. Please try again.');
-            });
-        }
-    }
-
-    // Add hover effects
-    document.querySelectorAll('.hover-bg-light').forEach(element => {
-        element.addEventListener('mouseenter', function() {
-            this.style.backgroundColor = '#f8f9fa';
-        });
-        element.addEventListener('mouseleave', function() {
-            this.style.backgroundColor = '';
-        });
-    });
-    </script>
-
-    <style>
-    .hover-bg-light {
-        transition: background-color 0.2s ease;
-        cursor: pointer;
-    }
-    
-    .card {
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-    
-    .card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
-    }
-    
-    .btn {
-        transition: all 0.2s ease;
-    }
-    
-    .badge {
-        font-weight: 500;
-    }
-    </style>
 </x-registrar-layout>

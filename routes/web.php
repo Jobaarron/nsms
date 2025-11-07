@@ -14,12 +14,12 @@ use App\Http\Controllers\EnrolleeController;
 use App\Http\Controllers\GuidanceController;
 use App\Http\Controllers\RegistrarController;
 use App\Http\Controllers\UserManagementController;
-use App\Http\Controllers\AdminEnrollmentController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DisciplineController;
 use App\Http\Controllers\PaymentScheduleController;
 use App\Http\Controllers\CashierController;
 use App\Http\Controllers\DataChangeRequestController;
+use App\Http\Controllers\PdfController;
 
 
 
@@ -44,6 +44,14 @@ Route::post('/enroll', [EnrollmentController::class, 'store'])
 Route::get('/api/fees/calculate/{gradeLevel}', [EnrollmentController::class, 'calculateFees'])
      ->name('api.fees.calculate');
 
+// AJAX file upload routes for enrollment
+Route::post('/enroll/upload-temp-file', [EnrollmentController::class, 'uploadTempFile'])
+     ->name('enroll.upload.temp');
+Route::delete('/enroll/delete-temp-file/{fileId}', [EnrollmentController::class, 'deleteTempFile'])
+     ->name('enroll.delete.temp');
+Route::get('/enroll/get-temp-files', [EnrollmentController::class, 'getTempFiles'])
+     ->name('enroll.get.temp');
+
 // Contact form routes
 Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
 
@@ -59,12 +67,12 @@ Route::prefix('admin')->group(function () {
     Route::post('/login', [AdminController::class, 'login'])->name('admin.login.submit');
     
     // Protected admin routes - use auth middleware
-    Route::middleware(['auth'])->group(function () {
-        // Dashboard
-        Route::middleware(['auth', 'role:admin'])->name('admin.')->group(function () {
+    Route::middleware(['auth', 'role:admin'])->name('admin.')->group(function () {
         
         Route::get('/dashboard', [AdminController::class, 'index'])->name('dashboard');
         Route::get('/dashboard/stats', [AdminController::class, 'getStats'])->name('dashboard.stats');
+        Route::get('/', [AdminController::class, 'index'])->name('dashboard');
+        Route::post('/logout', [AdminController::class, 'logout'])->name('logout');
 
         // Forwarded Case Meetings for President (Admin)
         Route::get('/forwarded-cases', [AdminController::class, 'forwardedCases'])->name('forwarded.cases');
@@ -76,12 +84,11 @@ Route::prefix('admin')->group(function () {
 
         // View summary report for case meeting
         Route::get('/case-meetings/{caseMeeting}/summary', [AdminController::class, 'viewSummaryReport'])->name('case-meetings.summary');
-        Route::get('/', [AdminController::class, 'index'])->name('admin.dashboard');
-        Route::post('/logout', [AdminController::class, 'logout'])->name('admin.logout');
+
+    // Route to download Disciplinary Conference Report PDF for a specific case meeting
+    Route::get('/case-meetings/{caseMeeting}/disciplinary-conference-report/pdf', [PdfController::class, 'DisciplinaryConReports'])->name('case-meetings.disciplinary-conference-report.pdf');
         
-       
-     
-        
+    
         // User Management - Use your custom permission middleware
         Route::middleware(['permission:Manage Users'])->group(function () {
             Route::get('/manage-users', [UserManagementController::class, 'index'])->name('manage.users');
@@ -98,67 +105,16 @@ Route::prefix('admin')->group(function () {
             // User Management
             Route::get('/user-management', [UserManagementController::class, 'index'])->name('user.management');
 
-            // User CRUD operations
-            Route::get('/users/{id}', [UserManagementController::class, 'show'])->name('users.show');
-            Route::put('/users/{id}', [UserManagementController::class, 'update'])->name('users.update');
-            Route::delete('/users/{id}', [UserManagementController::class, 'destroy'])->name('users.destroy');
-            Route::post('/users/admin', [UserManagementController::class, 'storeAdmin'])->name('users.store.admin');
-            Route::post('/users/teacher', [UserManagementController::class, 'storeTeacher'])->name('users.store.teacher');
-            Route::post('/users/guidance', [UserManagementController::class, 'storeGuidance'])->name('users.store.guidance');
-            Route::post('/users/discipline', [UserManagementController::class, 'storeDiscipline'])->name('users.store.discipline');
-            Route::post('/users/guidance-counselor', [UserManagementController::class, 'createGuidanceCounselor'])->name('users.store.guidance_counselor');
-            Route::post('/users/discipline-head', [UserManagementController::class, 'createDisciplineHead'])->name('users.store.discipline_head');
-            Route::post('/users/discipline-officer', [UserManagementController::class, 'createDisciplineOfficer'])->name('users.store.discipline_officer');
-            Route::post('/users/cashier', [UserManagementController::class, 'createCashier'])->name('users.store.cashier');
-            Route::post('/users/faculty-head', [UserManagementController::class, 'createFacultyHead'])->name('users.store.faculty_head');
-            Route::get('/users/stats', [UserManagementController::class, 'getStats'])->name('users.stats');
             
-            // Enrollments management 
-            Route::get('/enrollments', [AdminEnrollmentController::class, 'index'])->name('admin.enrollments');
+        // Contact Messages Management
+        Route::get('/contact-messages', [ContactController::class, 'adminIndex'])->name('contact.messages');
+        Route::get('/contact-messages/{message}', [ContactController::class, 'show'])->name('contact.show');
+        Route::post('/contact-messages/{message}/status', [ContactController::class, 'updateStatus'])->name('contact.status');
+        Route::delete('/contact-messages/{message}', [ContactController::class, 'destroy'])->name('contact.destroy');
+        Route::post('/contact-messages/bulk-action', [ContactController::class, 'bulkAction'])->name('contact.bulk');
             
-            // Enrollment API routes
-            Route::prefix('enrollments')->name('admin.enrollments.')->group(function () {
-                Route::get('/applications', [AdminEnrollmentController::class, 'getApplications'])->name('applications');
-                Route::get('/applications/{id}', [AdminEnrollmentController::class, 'getApplication'])->name('application');
-                Route::post('/applications/{id}/status', [AdminEnrollmentController::class, 'updateApplicationStatus'])->name('application.status');
-                
-                // Application actions
-                Route::post('/applications/{id}/approve', [AdminEnrollmentController::class, 'approveApplication'])->name('application.approve');
-                Route::post('/applications/{id}/decline', [AdminEnrollmentController::class, 'declineApplication'])->name('application.decline');
-                Route::delete('/applications/{id}', [AdminEnrollmentController::class, 'deleteApplication'])->name('application.delete');
-                
-                // Bulk actions
-                Route::post('/applications/bulk-approve', [AdminEnrollmentController::class, 'bulkApprove'])->name('applications.bulk-approve');
-                Route::post('/applications/bulk-decline', [AdminEnrollmentController::class, 'bulkDecline'])->name('applications.bulk-decline');
-                Route::post('/applications/bulk-delete', [AdminEnrollmentController::class, 'bulkDelete'])->name('applications.bulk-delete');
-                
-                Route::get('/documents', [AdminEnrollmentController::class, 'getDocuments'])->name('documents');
-                Route::get('/applications/{applicationId}/documents', [AdminEnrollmentController::class, 'getApplicationDocuments'])->name('application.documents');
-                Route::get('/documents/{enrolleeId}/{documentIndex}', [AdminEnrollmentController::class, 'getDocument'])->name('document');
-                Route::get('/documents/{enrolleeId}/{documentIndex}/view', [AdminEnrollmentController::class, 'viewDocument'])->name('document.view');
-                Route::get('/documents/{enrolleeId}/{documentIndex}/download', [AdminEnrollmentController::class, 'downloadDocument'])->name('document.download');
-                Route::post('/documents/{enrolleeId}/{documentIndex}/status', [AdminEnrollmentController::class, 'updateDocumentStatus'])->name('document.status');
-                
-                Route::get('/appointments', [AdminEnrollmentController::class, 'getAppointments'])->name('appointments');
-                Route::post('/applications/{applicationId}/appointment', [AdminEnrollmentController::class, 'updateAppointment'])->name('application.appointment');
-        
-                Route::get('/notices', [AdminEnrollmentController::class, 'getNotices'])->name('notices');
-                Route::post('/notices', [AdminEnrollmentController::class, 'createNotice'])->name('notices.create');
-                Route::post('/notices/bulk', [AdminEnrollmentController::class, 'sendBulkNotices'])->name('notices.bulk');
-                Route::delete('/notices/{noticeId}', [AdminEnrollmentController::class, 'deleteNotice'])->name('notices.delete');
-                
-                Route::get('/export', [AdminEnrollmentController::class, 'export'])->name('export');
-            });
-            
-            // Contact Messages Management
-            Route::get('/contact-messages', [ContactController::class, 'adminIndex'])->name('admin.contact.messages');
-            Route::get('/contact-messages/{message}', [ContactController::class, 'show'])->name('admin.contact.show');
-            Route::post('/contact-messages/{message}/status', [ContactController::class, 'updateStatus'])->name('admin.contact.status');
-            Route::delete('/contact-messages/{message}', [ContactController::class, 'destroy'])->name('admin.contact.destroy');
-            Route::post('/contact-messages/bulk-action', [ContactController::class, 'bulkAction'])->name('admin.contact.bulk');
         });
     });
-});
 });
 
    
@@ -169,9 +125,9 @@ Route::prefix('admin')->group(function () {
 
 // Inside the auth middleware group
 Route::middleware(['auth'])->group(function () {
-    // Dashboard - accessible to all authenticated users
-    Route::get('/admin', [AdminController::class, 'index'])->name('admin.dashboard');
-    Route::post('/logout', [AdminController::class, 'logout'])->name('admin.logout');
+    // Dashboard - accessible to all authenticated users (duplicate removed)
+    // Route::get('/admin', [AdminController::class, 'index'])->name('admin.dashboard');
+    // Route::post('/logout', [AdminController::class, 'logout'])->name('admin.logout');
     
     // User management - requires 'Manage users' permission
     Route::middleware(['permission:Manage users'])->group(function () {
@@ -208,12 +164,188 @@ Route::get('/teacher', [TeacherController::class, 'index'])
     ->name('teacher.dashboard')
     ->middleware(['auth', 'role:teacher']);
 
+// Teacher Dashboard AJAX Routes
+Route::get('/teacher/dashboard/stats', [TeacherController::class, 'getDashboardStats'])
+    ->name('teacher.dashboard.stats')
+    ->middleware(['auth', 'role:teacher']);
+
+
+Route::get('/teacher/grades', [App\Http\Controllers\TeacherGradeController::class, 'index'])
+    ->name('teacher.grades')
+    ->middleware(['auth', 'role:teacher|faculty_head']);
+
 // Teacher Counseling Recommendation Routes
 Route::middleware(['auth', 'role:teacher'])->prefix('teacher')->name('teacher.')->group(function () {
     Route::get('/recommend-counseling', [TeacherController::class, 'showRecommendForm'])
         ->name('recommend-counseling.form');
     Route::post('/recommend-counseling', [TeacherController::class, 'recommendToCounseling'])
         ->name('recommend-counseling');
+
+
+    // Route for the Teacher Observation Report page
+    Route::get('/observationreport', [TeacherController::class, 'showObservationReport'])
+        ->name('observationreport');
+
+    // Route to serve the dynamic teacher observation report PDF
+    Route::get('/observationreport/pdf/{caseMeeting}', [App\Http\Controllers\PdfController::class, 'teacherObservationReportPdf'])
+        ->name('observationreport.pdf');
+
+    // Teacher Observation Report: Teacher Reply (update case meeting)
+    Route::post('/observationreport/reply/{caseMeeting}', [App\Http\Controllers\TeacherController::class, 'submitObservationReply'])
+        ->name('observationreport.reply');
+
+    // Teacher Advisory Routes
+    Route::get('/advisory', [App\Http\Controllers\TeacherAdvisoryController::class, 'advisory'])
+        ->name('advisory');
+
+    // Route to generate Report Card PDF
+    // Route to generate Report Card PDF for a specific student
+    Route::get('/report-card/pdf/{student}', [App\Http\Controllers\PdfController::class, 'generateReportCardPdf'])
+        ->name('report-card.pdf');
+        
+    // Teacher Advisory AJAX Routes
+    Route::get('/advisory/student/{student}/grades', [App\Http\Controllers\TeacherAdvisoryController::class, 'getStudentGrades'])
+        ->name('advisory.student.grades');
+    Route::get('/advisory/all-grades', [App\Http\Controllers\TeacherAdvisoryController::class, 'getAllAdvisoryGrades'])
+        ->name('advisory.all-grades');
+    Route::get('/advisory/student/{student}/report-card', [App\Http\Controllers\TeacherAdvisoryController::class, 'generateStudentReportCard'])
+        ->name('advisory.student.report-card');
+    Route::get('/advisory/all-report-cards', [App\Http\Controllers\TeacherAdvisoryController::class, 'generateAllReportCards'])
+        ->name('advisory.all-report-cards');
+});
+
+
+// Teacher Grade Routes (Extended functionality)
+Route::middleware(['auth', 'role:teacher|faculty_head'])->prefix('teacher')->name('teacher.')->group(function () {
+    Route::get('/grades/create', [App\Http\Controllers\TeacherGradeController::class, 'create'])
+        ->name('grades.create');
+    Route::post('/grades', [App\Http\Controllers\TeacherGradeController::class, 'store'])
+        ->name('grades.store');
+    Route::get('/grades/{submission}/edit', [App\Http\Controllers\TeacherGradeController::class, 'edit'])
+        ->name('grades.edit');
+    Route::put('/grades/{submission}', [App\Http\Controllers\TeacherGradeController::class, 'update'])
+        ->name('grades.update');
+    Route::delete('/grades/{submission}', [App\Http\Controllers\TeacherGradeController::class, 'destroy'])
+        ->name('grades.destroy');
+    
+    // Check grade submission status
+    Route::get('/check-submission-status', [App\Http\Controllers\TeacherController::class, 'checkSubmissionStatus'])
+        ->name('check-submission-status');
+    
+    // Grade entry form for specific assignment
+    Route::get('/grades/submit/{assignment}', [App\Http\Controllers\TeacherGradeController::class, 'showGradeEntry'])
+        ->name('grades.submit');
+    Route::post('/grades/submit/{assignment}', [App\Http\Controllers\TeacherGradeController::class, 'submitGrades'])
+        ->name('grades.submit.store');
+    Route::get('/grades/{submission}/data', [App\Http\Controllers\TeacherGradeController::class, 'getSubmissionData'])
+        ->name('grades.data');
+    Route::get('/grades/stats', [App\Http\Controllers\TeacherGradeController::class, 'getSubmissionStats'])
+        ->name('grades.stats');
+});
+
+// Student Schedule Routes (requires payment)
+Route::middleware(['auth:student', 'student.payment'])->prefix('student')->name('student.')->group(function () {
+    Route::get('/schedule', [App\Http\Controllers\StudentScheduleController::class, 'index'])
+        ->name('schedule.index');
+    Route::get('/schedule/calendar', [App\Http\Controllers\StudentScheduleController::class, 'weeklyCalendar'])
+        ->name('schedule.calendar');
+    Route::get('/schedule/data', [App\Http\Controllers\StudentScheduleController::class, 'getScheduleData'])
+        ->name('schedule.data');
+});
+
+// Student Grade Routes (requires payment)
+Route::middleware(['auth:student', 'student.payment'])->prefix('student')->name('student.')->group(function () {
+    Route::get('/grades', [App\Http\Controllers\StudentGradeController::class, 'index'])
+        ->name('grades.index');
+    Route::get('/grades/{quarter}', [App\Http\Controllers\StudentGradeController::class, 'quarter'])
+        ->name('grades.quarter');
+    Route::get('/grades/{quarter}/details', [App\Http\Controllers\StudentGradeController::class, 'details'])
+        ->name('grades.details');
+    Route::get('/grades/report/{quarter?}', [App\Http\Controllers\StudentGradeController::class, 'report'])
+        ->name('grades.report');
+});
+
+// Faculty Head Authentication Routes
+Route::get('/faculty-head/login', [App\Http\Controllers\FacultyHeadController::class, 'showLoginForm'])
+    ->name('faculty-head.login');
+Route::post('/faculty-head/login', [App\Http\Controllers\FacultyHeadController::class, 'login'])
+    ->name('faculty-head.login.submit');
+Route::post('/faculty-head/logout', [App\Http\Controllers\FacultyHeadController::class, 'logout'])
+    ->name('faculty-head.logout');
+
+// Faculty Head Routes (Protected by web guard with role check)
+Route::middleware(['auth', 'role:faculty_head'])->prefix('faculty-head')->name('faculty-head.')->group(function () {
+    Route::get('/', [App\Http\Controllers\FacultyHeadController::class, 'index'])
+        ->name('dashboard');
+    
+    // Unified Faculty Assignments
+    Route::get('/assign-faculty', [App\Http\Controllers\FacultyHeadController::class, 'assignFaculty'])
+        ->name('assign-faculty');
+    
+    // Assign adviser per class
+    Route::get('/assign-adviser', [App\Http\Controllers\FacultyHeadController::class, 'assignAdviser'])
+        ->name('assign-adviser');
+    Route::post('/assign-adviser', [App\Http\Controllers\FacultyHeadController::class, 'storeAdviser'])
+        ->name('assign-adviser.store');
+    
+    // Assign teacher per subject/section
+    Route::get('/assign-teacher', [App\Http\Controllers\FacultyHeadController::class, 'assignTeacherForm'])
+        ->name('assign-teacher');
+    Route::post('/assign-teacher', [App\Http\Controllers\FacultyHeadController::class, 'storeTeacherAssignment'])
+        ->name('assign-teacher.store');
+    
+    // Remove assignment (both teacher and adviser)
+    Route::delete('/remove-assignment/{assignment}', [App\Http\Controllers\FacultyHeadController::class, 'removeAssignment'])
+        ->name('remove-assignment');
+    
+    // Get subjects for AJAX filtering
+    Route::get('/get-subjects', [App\Http\Controllers\FacultyHeadController::class, 'getSubjects'])
+        ->name('get-subjects');
+    
+    // Get sections for AJAX filtering
+    Route::get('/get-sections', [App\Http\Controllers\FacultyHeadController::class, 'getSections'])
+        ->name('get-sections');
+    
+    // Get grade sections for accordion
+    Route::get('/get-grade-sections', [App\Http\Controllers\FacultyHeadController::class, 'getGradeSections'])
+        ->name('get-grade-sections');
+    
+    // Get strand sections for Senior High School
+    Route::get('/get-strand-sections', [App\Http\Controllers\FacultyHeadController::class, 'getStrandSections'])
+        ->name('get-strand-sections');
+    
+    // Get section details (students and adviser)
+    Route::get('/get-section-details', [App\Http\Controllers\FacultyHeadController::class, 'getSectionDetails'])
+        ->name('get-section-details');
+    
+    
+    // View submitted grades from teachers
+    Route::get('/view-grades', [App\Http\Controllers\FacultyHeadController::class, 'viewGrades'])
+        ->name('view-grades');
+    
+    // Approve/reject submitted grades from teachers
+    Route::get('/approve-grades', [App\Http\Controllers\FacultyHeadController::class, 'approveGrades'])
+        ->name('approve-grades');
+    Route::post('/approve-grades/{submission}', [App\Http\Controllers\FacultyHeadController::class, 'approveSubmission'])
+        ->name('approve-grades.approve');
+    Route::post('/reject-grades/{submission}', [App\Http\Controllers\FacultyHeadController::class, 'rejectSubmission'])
+        ->name('approve-grades.reject');
+    
+    // Activate grade submission
+    Route::get('/activate-submission', [App\Http\Controllers\FacultyHeadController::class, 'activateSubmission'])
+        ->name('activate-submission');
+    Route::post('/activate-submission/toggle', [App\Http\Controllers\FacultyHeadController::class, 'toggleGradeSubmissionStatus'])
+        ->name('activate-submission.toggle');
+    Route::post('/activate-submission/quarter', [App\Http\Controllers\FacultyHeadController::class, 'updateQuarterSettings'])
+        ->name('activate-submission.quarter');
+    
+    // API endpoint for checking grade submission status (used by teacher views)
+    Route::get('/api/grade-submission-status', [App\Http\Controllers\FacultyHeadController::class, 'getGradeSubmissionStatus'])
+        ->name('api.grade-submission-status');
+    
+    // API endpoint for getting subjects by grade level (used by assign teacher form)
+    Route::get('/api/subjects-by-grade', [App\Http\Controllers\FacultyHeadController::class, 'getSubjectsByGrade'])
+        ->name('api.subjects-by-grade');
 });
 
 
@@ -222,7 +354,15 @@ Route::prefix('discipline')->name('discipline.')->group(function () {
     // Public routes
     Route::get('/login', [App\Http\Controllers\DisciplineController::class, 'showLogin'])->name('login');
     Route::post('/login', [App\Http\Controllers\DisciplineController::class, 'login'])->name('login.submit');
-    
+
+
+    // AJAX: Minor/Major violation stats for pie chart
+    Route::get('/minor-major-violation-stats', [App\Http\Controllers\DisciplineController::class, 'getMinorMajorViolationStats'])->name('minor-major-violation-stats');
+    // AJAX: Monthly bar chart stats
+    Route::get('/violation-bar-stats', [App\Http\Controllers\DisciplineController::class, 'getViolationBarStats'])->name('violation-bar-stats');
+    // AJAX: Case status pie chart (pending, ongoing, completed)
+    Route::get('/case-status-stats', [App\Http\Controllers\DisciplineController::class, 'getCaseStatusStats'])->name('case-status-stats');
+
     // Protected routes
     Route::middleware(['web'])->group(function () {
         // Dashboard
@@ -281,13 +421,26 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
     // Public routes
     Route::get('/login', [App\Http\Controllers\GuidanceController::class, 'showLogin'])->name('login');
     Route::post('/login', [App\Http\Controllers\GuidanceController::class, 'login'])->name('login.submit');
+    // API: Minor/Major violation stats for pie chart
+    Route::get('/minor-major-violation-stats', [App\Http\Controllers\GuidanceController::class, 'getMinorMajorViolationStats'])->name('minor-major-violation-stats');
     
     // Protected routes
+    
     Route::middleware(['web'])->group(function () {
         // Dashboard
         Route::get('/', [App\Http\Controllers\GuidanceController::class, 'dashboard'])->name('dashboard');
-        
-        // Logout
+            // API: Case status stats for dashboard pie chart
+            Route::get('/case-status-stats', [App\Http\Controllers\GuidanceController::class, 'getCaseStatusStats'])->name('case-status-stats');
+            // API: Closed cases per month for bar chart
+            Route::get('/closed-cases-stats', [App\Http\Controllers\GuidanceController::class, 'getClosedCasesStats'])->name('closed-cases-stats');
+            // API: Counseling sessions per month for bar chart
+            Route::get('/counseling-sessions-stats', [App\Http\Controllers\GuidanceController::class, 'getCounselingSessionsStats'])->name('counseling-sessions-stats');
+            // API: Discipline vs total students for histogram
+            Route::get('/discipline-vs-total-stats', [App\Http\Controllers\GuidanceController::class, 'getDisciplineVsTotalStats'])->name('discipline-vs-total-stats');
+            // API: Weekly violation list for dashboard
+            Route::get('/weekly-violations', [App\Http\Controllers\GuidanceController::class, 'getWeeklyViolations'])->name('weekly-violations');
+
+            Route::get('/top-cases', [App\Http\Controllers\GuidanceController::class, 'getTopCases']);        // Logout
         Route::post('/logout', [App\Http\Controllers\GuidanceController::class, 'logout'])->name('logout');
         
         // Case Meeting Routes
@@ -318,10 +471,33 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
 
             Route::post('/{caseMeeting}/forward', [App\Http\Controllers\GuidanceController::class, 'forwardToPresident'])
                 ->name('forward');
+
+                
         });
+        // API route to fetch all unique sanctions for dropdown (Guidance)
+      Route::get('/api/sanctions/list', [App\Http\Controllers\GuidanceController::class, 'sanctionList'])->name('api.sanctions.list');
+        // Overall Disciplinary Conference Summary Report (all students)
+        Route::get('/conference-summary-report/pdf', [PdfController::class, 'conferenceSummaryReportAllPdf'])->name('pdf.conference-summary-report.all');
+
+    Route::get('/observationreport/pdf/{caseMeeting}', [App\Http\Controllers\PdfController::class, 'teacherObservationReportPdf']);
+        // PDF route for case meeting attachment (moved outside case-meetings group)
+        Route::get('/pdf/case-meeting/{caseMeetingId}', [PdfController::class, 'caseMeetingAttachmentPdf'])->name('pdf.case-meeting.attachment');
         
         // Counseling Session Routes
-        Route::prefix('counseling-sessions')->name('counseling-sessions.')->group(function () {
+    Route::prefix('counseling-sessions')->name('counseling-sessions.')->group(function () {
+
+    // AJAX: Store counseling summary report
+    Route::post('/{counselingSession}/summary-report', [App\Http\Controllers\GuidanceController::class, 'createCounselingSummaryReport'])->name('summary-report');
+
+    // Counseling session detail API for modal (now inside counseling-sessions group)
+    Route::get('/api/counseling-sessions/{id}', [App\Http\Controllers\GuidanceController::class, 'apiShowCounselingSession'])->middleware(['auth'])->name('api.show');
+        
+            // AJAX: Reject counseling session with feedback and archive
+            Route::post('/{counselingSession}/reject-with-feedback', [App\Http\Controllers\GuidanceController::class, 'rejectCounselingSessionWithFeedback'])->name('reject-with-feedback');
+            // Show create summary form
+            Route::get('/{counselingSession}/summary/create', [App\Http\Controllers\GuidanceController::class, 'createCounselingSummaryForm'])->name('summary.create');
+              // Approve counseling session (AJAX)
+              Route::post('/approve', [App\Http\Controllers\GuidanceController::class, 'approveCounselingSession'])->name('approve');
             Route::get('/', [App\Http\Controllers\GuidanceController::class, 'counselingSessionsIndex'])->name('index');
             Route::post('/', [App\Http\Controllers\GuidanceController::class, 'scheduleCounselingSession'])->name('schedule');
             Route::get('/{counselingSession}', [App\Http\Controllers\GuidanceController::class, 'showCounselingSession'])->name('show');
@@ -335,6 +511,10 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
             Route::get('/export', [App\Http\Controllers\GuidanceController::class, 'exportCounselingSessions'])->name('export');
             Route::get('/', [App\Http\Controllers\GuidanceController::class, 'counselingSessionsIndex'])
                 ->name('index');
+                
+// AJAX route for counseling session approval
+Route::post('/guidance/counseling-sessions/approve', [GuidanceController::class, 'approveCounselingSession'])->name('guidance.counseling-sessions.approve');
+
 
             Route::post('/', [App\Http\Controllers\GuidanceController::class, 'scheduleCounselingSession'])
                 ->name('schedule');
@@ -376,6 +556,7 @@ Route::prefix('api/violations')->name('api.violations.')->group(function () {
 
 
 
+
 // Student routes
 Route::get('/student', [StudentController::class, 'index']);
 Route::prefix('student')->name('student.')->group(function () {
@@ -387,27 +568,43 @@ Route::prefix('student')->name('student.')->group(function () {
     // Protected student routes
     Route::middleware('auth:student')->group(function () {
         Route::get('/dashboard', [StudentController::class, 'index'])->name('dashboard');
-        Route::get('/violations', [StudentController::class, 'violations'])->name('violations');
         
-        // Enrollment routes
+        // Enrollment routes (always accessible for completing enrollment)
         Route::get('/enrollment', [StudentController::class, 'enrollment'])->name('enrollment');
         Route::post('/enrollment', [StudentController::class, 'submitEnrollment'])->name('enrollment.submit');
         
-        // Subjects routes
-        Route::get('/subjects', [StudentController::class, 'subjects'])->name('subjects');
-        
-        // Payments routes
-        Route::get('/payments', [StudentController::class, 'payments'])->name('payments');
-        Route::post('/payment/mode/update', [StudentController::class, 'updatePaymentMode'])->name('payment.mode.update');
-        
-        // Face registration routes
-        Route::get('/face-registration', [StudentController::class, 'faceRegistration'])->name('face-registration');
-        Route::post('/face-registration/save', [StudentController::class, 'saveFaceRegistration'])->name('face-registration.save');
-        Route::delete('/face-registration/delete', [StudentController::class, 'deleteFaceRegistration'])->name('face-registration.delete');
-        
         Route::post('/logout', [StudentController::class, 'logout'])->name('logout');
+        
+        // Payments routes (requires payment settlement - same as other features)
+        Route::middleware('student.payment')->group(function () {
+            Route::get('/payments', [StudentController::class, 'payments'])->name('payments');
+            Route::post('/payment/mode/update', [StudentController::class, 'updatePaymentMode'])->name('payment.mode.update');
+        });
+        
+        // Routes that require payment settlement and enrollment completion
+        Route::middleware('student.payment')->group(function () {
+            // Subjects routes (requires payment)
+            Route::get('/subjects', [StudentController::class, 'subjects'])->name('subjects');
+            
+            // Violations routes (requires payment)
+            Route::match(['get', 'post'], '/violations', [StudentController::class, 'violations'])->name('violations');
+            Route::post('/violations/reply/{violation}', [StudentController::class, 'submitViolationReply'])->name('violations.reply');
+
+            // Student Narrative Report - Reply Form (requires payment)
+            Route::get('/narrative-report/reply', function() {
+                return view('student.narrative_report');
+            })->name('narrative.reply');
+            
+            // Face registration routes (requires payment)
+            Route::get('/face-registration', [StudentController::class, 'faceRegistration'])->name('face-registration');
+            Route::post('/face-registration/save', [StudentController::class, 'saveFaceRegistration'])->name('face-registration.save');
+            Route::delete('/face-registration/delete', [StudentController::class, 'deleteFaceRegistration'])->name('face-registration.delete');
+        });
     });
 });
+
+// Student Narrative Report - View PDF Only (always available)
+Route::get('/narrative-report/view/{studentId}/{violationId}', [PdfController::class, 'studentNarrativePdf'])->name('student.pdf.studentNarrative');
 
 
 // Enrollee routes
@@ -430,16 +627,12 @@ Route::prefix('enrollee')->name('enrollee.')->group(function () {
         // Document management
         Route::get('/documents', [EnrolleeController::class, 'documents'])->name('documents');
         Route::post('/documents/upload', [EnrolleeController::class, 'uploadDocument'])->name('documents.upload');
+        Route::post('/documents/replace', [EnrolleeController::class, 'replaceDocument'])->name('documents.replace');
         Route::delete('/documents/delete', [EnrolleeController::class, 'deleteDocument'])->name('documents.delete');
         Route::get('/documents/view/{index}', [EnrolleeController::class, 'viewDocument'])->name('documents.view');
         Route::get('/documents/download/{index}', [EnrolleeController::class, 'downloadDocument'])->name('documents.download');
         
-        // Schedule management
-        Route::get('/schedule', [EnrolleeController::class, 'schedule'])->name('schedule');
-        Route::put('/schedule', [EnrolleeController::class, 'updateSchedule'])->name('schedule.update');
         
-        // Appointment management
-        Route::post('/appointment/request', [EnrolleeController::class, 'requestAppointment'])->name('appointment.request');
         
         // Notices management
         Route::get('/notices', [EnrolleeController::class, 'notices'])->name('notices');
@@ -522,9 +715,6 @@ Route::prefix('registrar')->name('registrar.')->group(function () {
         Route::post('/applications/{id}/documents/status', [RegistrarController::class, 'updateDocumentStatus'])->name('applications.documents.status');
         Route::get('/documents/view/{path}', [RegistrarController::class, 'serveDocument'])->name('documents.serve')->where('path', '.*');
         
-        // Appointment management
-        Route::post('/applications/{id}/appointment', [RegistrarController::class, 'scheduleAppointment'])->name('applications.appointment');
-        Route::post('/applications/{id}/schedule', [RegistrarController::class, 'scheduleAppointment'])->name('applications.schedule');
         
         // Notice management
         Route::post('/applications/{id}/notice', [RegistrarController::class, 'sendNotice'])->name('applications.notice');
@@ -537,15 +727,10 @@ Route::prefix('registrar')->name('registrar.')->group(function () {
         Route::get('/approved', [RegistrarController::class, 'approved'])->name('approved');
         Route::post('/applications/{id}/generate-credentials', [RegistrarController::class, 'generateStudentCredentials'])->name('applications.generate-credentials');
         
-        // Appointments, Notices, and Documents data
-        Route::get('/appointments', [RegistrarController::class, 'getAppointments'])->name('appointments.get');
+        // Notices and Documents data
         Route::get('/notices', [RegistrarController::class, 'getNotices'])->name('notices.get');
         Route::get('/documents', [RegistrarController::class, 'getAllDocuments'])->name('documents.get');
         
-        // Appointment management
-        Route::post('/appointments/{id}/approve', [RegistrarController::class, 'approveAppointment'])->name('appointments.approve');
-        Route::post('/appointments/{id}/reject', [RegistrarController::class, 'rejectAppointment'])->name('appointments.reject');
-        Route::post('/appointments/{id}/schedule', [RegistrarController::class, 'updateAppointmentSchedule'])->name('appointments.schedule');
         
         // Notice management
         Route::post('/notices/create', [RegistrarController::class, 'createNotice'])->name('notices.create');
@@ -554,8 +739,14 @@ Route::prefix('registrar')->name('registrar.')->group(function () {
         Route::get('/notices/{id}', [RegistrarController::class, 'getNotice'])->name('notices.get.single');
         Route::get('/recipients/preview', [RegistrarController::class, 'previewRecipients'])->name('recipients.preview');
         
-        // Reports
-        Route::get('/reports', [RegistrarController::class, 'reports'])->name('reports');
+        
+        // Class Lists Management
+        Route::get('/class-lists', [RegistrarController::class, 'classLists'])->name('class-lists');
+        Route::get('/class-lists/get-strands', [RegistrarController::class, 'getClassListStrands'])->name('class-lists.get-strands');
+        Route::get('/class-lists/get-tracks', [RegistrarController::class, 'getClassListTracks'])->name('class-lists.get-tracks');
+        Route::get('/class-lists/get-sections', [RegistrarController::class, 'getClassListSections'])->name('class-lists.get-sections');
+        Route::get('/class-lists/get-students', [RegistrarController::class, 'getClassListStudents'])->name('class-lists.get-students');
+        Route::get('/class-lists/student/{student}', [RegistrarController::class, 'getStudentDetails'])->name('class-lists.student-details');
         
         // Data Change Requests
         Route::get('/data-change-requests', [DataChangeRequestController::class, 'getDataChangeRequests'])->name('data-change-requests.index');
@@ -592,10 +783,18 @@ Route::prefix('registrar')->name('registrar.')->group(function () {
         
         // Logout
         Route::post('/logout', function(Request $request) {
+            // Clear all authentication guards to prevent session conflicts
             Auth::guard('registrar')->logout();
+            Auth::guard('web')->logout();
+            Auth::guard('enrollee')->logout();
+            Auth::guard('student')->logout();
+            
+            // Completely clear the session
             $request->session()->invalidate();
             $request->session()->regenerateToken();
-            return redirect()->route('registrar.login');
+            $request->session()->flush();
+            
+            return redirect()->route('registrar.login')->with('success', 'Logged out successfully');
         })->name('logout');
     });
 });
@@ -603,8 +802,8 @@ Route::prefix('registrar')->name('registrar.')->group(function () {
 // ===== PAYMENT SCHEDULING ROUTES ===== 
 
 
-// Student Payment Scheduling Routes
-Route::middleware(['auth:student'])->prefix('student')->name('student.')->group(function () {
+// Student Payment Scheduling Routes (requires payment settlement - same as other features)
+Route::middleware(['auth:student', 'student.payment'])->prefix('student')->name('student.')->group(function () {
     Route::post('/payment-schedule', [PaymentScheduleController::class, 'createPaymentSchedule'])->name('payment-schedule.create');
     Route::get('/payment-schedule/{studentId}', [PaymentScheduleController::class, 'getPaymentSchedule'])->name('payment-schedule.get');
 });
@@ -615,11 +814,12 @@ Route::middleware(['auth:cashier'])->prefix('cashier/api')->name('cashier.api.')
     Route::get('/payment-schedules/{paymentId}', [PaymentScheduleController::class, 'getPaymentDetails'])->name('payment-schedules.details');
     Route::get('/payment-schedules/student/{studentId}/{paymentMethod}', [PaymentScheduleController::class, 'getStudentPaymentSchedule'])->name('payment-schedules.student');
     Route::post('/payment-schedules/student/{studentId}/{paymentMethod}/process', [PaymentScheduleController::class, 'processStudentPaymentSchedule'])->name('payment-schedules.student.process');
-    Route::get('/payment-schedules/pending', [PaymentScheduleController::class, 'getPendingPaymentSchedules'])->name('payment-schedules.pending');
-    Route::get('/payment-schedules/due', [PaymentScheduleController::class, 'getDuePaymentSchedules'])->name('payment-schedules.due');
-    Route::post('/payment-schedules/{paymentId}/process', [PaymentScheduleController::class, 'processPayment'])->name('payment-schedules.process');
+    Route::post('/payment-schedules/individual/{paymentId}/process', [PaymentScheduleController::class, 'processIndividualPayment'])->name('payment-schedules.individual.process');
     Route::get('/payment-statistics', [PaymentScheduleController::class, 'getPaymentStatistics'])->name('payment-statistics');
     Route::get('/payment-history', [PaymentScheduleController::class, 'getPaymentHistory'])->name('payment-history');
+    Route::get('/pending-payment-schedules', [PaymentScheduleController::class, 'getPendingPaymentSchedules'])->name('pending-payment-schedules');
+    Route::get('/due-payment-schedules', [PaymentScheduleController::class, 'getDuePaymentSchedules'])->name('due-payment-schedules');
+    Route::get('/pdf/cashier-receipt', [PdfController::class, 'showCashierReceipt'])->name('pdf.cashier-receipt');
 });
 
 // ===== CASHIER ROUTES =====
@@ -638,10 +838,9 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::get('/dashboard', [CashierController::class, 'index'])->name('dashboard');
         
         // Payment Management
-        Route::get('/pending-payments', [CashierController::class, 'pendingPayments'])->name('pending-payments');
-        Route::get('/due-payments', [CashierController::class, 'duePayments'])->name('due-payments');
-        Route::get('/completed-payments', [CashierController::class, 'completedPayments'])->name('completed-payments');
-        Route::get('/payment-history', [CashierController::class, 'paymentHistory'])->name('payment-history');
+        Route::get('/payments', [CashierController::class, 'payments'])->name('payments');
+        Route::get('/payment-archives', [CashierController::class, 'paymentArchives'])->name('payment-archives');
+        Route::get('/api/payment-archives', [CashierController::class, 'getPaymentArchivesData'])->name('api.payment-archives');
         
         // Payment Actions
         Route::post('/payments/{payment}/confirm', [CashierController::class, 'confirmPayment'])->name('payments.confirm');
@@ -657,10 +856,14 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::delete('/fees/{fee}', [CashierController::class, 'destroyFee'])->name('fees.destroy');
         Route::post('/fees/{fee}/toggle', [CashierController::class, 'toggleFeeStatus'])->name('fees.toggle');
         
-        // Reports
-        Route::get('/reports', [CashierController::class, 'reports'])->name('reports');
         
         // Logout
         Route::post('/logout', [CashierController::class, 'logout'])->name('logout');
     });
 });
+
+// PDF route for counseling session
+Route::get('/pdf/counseling-session', [PdfController::class, 'show']);
+
+// PDF Receipt (dynamic overlay)
+Route::get('/pdf/receipt', [PdfController::class, 'showReceipt'])->name('pdf.receipt');

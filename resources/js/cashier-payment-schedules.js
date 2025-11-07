@@ -19,6 +19,22 @@ function initializeCashierPayments() {
     
     // Setup action handlers
     setupActionHandlers();
+    
+    // Setup real-time updates
+    setupRealTimeUpdates();
+}
+
+function setupRealTimeUpdates() {
+    // Real-time updates every 30 seconds for pending payments
+    setInterval(() => {
+        loadPaymentStatistics();
+        // Only reload table if no modals are open to avoid disrupting user interaction
+        if (!document.querySelector('.modal.show')) {
+            loadPaymentSchedules();
+        }
+    }, 30000);
+    
+    console.log('Real-time updates enabled for pending payments');
 }
 
 function loadPaymentStatistics() {
@@ -105,6 +121,8 @@ function createPaymentRow(payment) {
     const student = payment.payable;
     const statusBadge = getStatusBadge(payment.confirmation_status);
     const priorityBadge = getPriorityBadge(payment.scheduled_date);
+    const isDue = isDuePayment(payment.scheduled_date);
+    const rowClass = isDue ? 'table-danger' : '';
     
     // Debug: Log payment data to see structure (removed for cleaner console)
     
@@ -118,15 +136,15 @@ function createPaymentRow(payment) {
     const studentId = student?.student_id || student?.id || payment.payable_id;
     
     return `
-        <tr>
+        <tr class="${rowClass}">
             <td>${priorityBadge}</td>
             <td>
                 <span class="fw-bold">${payment.transaction_id}</span><br>
                 <small class="text-muted">${paymentMethodDisplay}</small>
             </td>
             <td>
-                <div class="fw-semibold">${student.student_id}</div>
-                <small class="text-muted">${student.first_name} ${student.last_name}</small>
+                <div class="fw-semibold">${studentId}</div>
+                <small class="text-muted">${student?.first_name || 'N/A'} ${student?.last_name || ''}</small>
             </td>
             <td>
                 <span class="fw-bold">₱${formatNumber(payment.total_amount || payment.amount)}</span><br>
@@ -201,12 +219,90 @@ function getPriorityBadge(scheduledDate) {
     const diffDays = Math.ceil((scheduled - today) / (1000 * 60 * 60 * 24));
     
     if (diffDays < 0) {
-        return '<span class="badge bg-danger">Overdue</span>';
-    } else if (diffDays <= 3) {
-        return '<span class="badge bg-warning">Due Soon</span>';
+        const overdueDays = Math.abs(diffDays);
+        if (overdueDays > 7) {
+            return '<span class="badge bg-danger">Critical</span>';
+        } else if (overdueDays > 3) {
+            return '<span class="badge bg-warning">High</span>';
+        } else {
+            return '<span class="badge bg-info">Medium</span>';
+        }
+    } else if (diffDays === 0) {
+        return '<span class="badge bg-warning">Due Today</span>';
     } else {
-        return '<span class="badge bg-info">Scheduled</span>';
+        return '<span class="badge bg-secondary">Scheduled</span>';
     }
+}
+
+function isDuePayment(scheduledDate) {
+    const today = new Date();
+    const scheduled = new Date(scheduledDate);
+    return scheduled <= today;
+}
+
+function setupFiltersAndSearch() {
+    // Setup due status filter
+    const dueStatusFilter = document.querySelector('select[name="due_status"]');
+    if (dueStatusFilter) {
+        dueStatusFilter.addEventListener('change', function() {
+            applyFilters();
+        });
+    }
+    
+    // Setup other filters
+    const statusFilter = document.querySelector('select[name="status"]');
+    if (statusFilter) {
+        statusFilter.addEventListener('change', function() {
+            applyFilters();
+        });
+    }
+    
+    // Setup search
+    const searchInput = document.getElementById('payment-search');
+    if (searchInput) {
+        searchInput.addEventListener('input', debounce(function() {
+            applyFilters();
+        }, 300));
+    }
+}
+
+function applyFilters() {
+    const filters = {
+        status: document.querySelector('select[name="status"]')?.value || '',
+        due_status: document.querySelector('select[name="due_status"]')?.value || '',
+        search: document.getElementById('payment-search')?.value || ''
+    };
+    
+    loadPaymentSchedules(filters);
+    updateBadgeCounts(filters);
+}
+
+function updateBadgeCounts(filters) {
+    const pendingBadge = document.getElementById('pending-count');
+    const dueBadge = document.getElementById('due-count');
+    
+    if (filters.due_status === 'due') {
+        pendingBadge.style.display = 'none';
+        dueBadge.style.display = 'inline-block';
+    } else if (filters.due_status === 'not_due') {
+        pendingBadge.style.display = 'inline-block';
+        dueBadge.style.display = 'none';
+    } else {
+        pendingBadge.style.display = 'inline-block';
+        dueBadge.style.display = 'none';
+    }
+}
+
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
 }
 
 function processPayment(paymentId, action) {
@@ -252,6 +348,104 @@ function processPayment(paymentId, action) {
         console.error('Error processing payment:', error);
         showAlert('An error occurred while processing the payment.', 'danger');
     });
+}
+
+// Process individual payment installment (for partial payments)
+function processIndividualPayment(paymentId, action) {
+    const actionText = action === 'approve' ? 'approve' : 'reject';
+    if (action === 'approve') {
+        if (!confirm('Are you sure you want to approve this individual payment?')) {
+            return;
+        }
+        const requestData = {
+            action: 'approve',
+            reason: ''
+        };
+        fetch(`/cashier/api/payment-schedules/individual/${paymentId}/process`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify(requestData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show PDF modal after approval
+                if (typeof showPdfModal === 'function') {
+                    showPdfModal(data.transaction_id || paymentId);
+                } else if (window.showPdfModal) {
+                    window.showPdfModal(data.transaction_id || paymentId);
+                }
+                showAlert(data.message, 'success');
+                updatePaymentRowStatus(paymentId, data.payment.status);
+                loadPaymentSchedules();
+                loadPaymentStatistics();
+            } else {
+                showAlert(data.message || `Failed to approve payment.`, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error processing individual payment:', error);
+            showAlert(`Error processing payment: ${error.message}`, 'danger');
+        });
+    } else {
+        // Reject flow (keep prompt for now)
+        let reason = prompt('Please enter reason for rejection:');
+        if (!reason) {
+            showAlert('Reason is required for rejection.', 'warning');
+            return;
+        }
+        const requestData = {
+            action: 'reject',
+            reason: reason
+        };
+        fetch(`/cashier/api/payment-schedules/individual/${paymentId}/process`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify(requestData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert(data.message, 'success');
+                updatePaymentRowStatus(paymentId, data.payment.status);
+                loadPaymentSchedules();
+                loadPaymentStatistics();
+            } else {
+                showAlert(data.message || `Failed to reject payment.`, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error processing individual payment:', error);
+            showAlert(`Error processing payment: ${error.message}`, 'danger');
+        });
+    }
+}
+
+function updatePaymentRowStatus(paymentId, status) {
+    // Find and update the payment row in the modal
+    const paymentRow = document.querySelector(`[data-payment-id="${paymentId}"]`);
+    if (paymentRow) {
+        const statusCell = paymentRow.querySelector('.payment-status');
+        const actionCell = paymentRow.querySelector('.payment-actions');
+        
+        if (statusCell) {
+            if (status === 'confirmed') {
+                statusCell.innerHTML = '<span class="badge bg-success">Paid</span>';
+            } else if (status === 'rejected') {
+                statusCell.innerHTML = '<span class="badge bg-danger">Rejected</span>';
+            }
+        }
+        
+        if (actionCell && status !== 'pending') {
+            actionCell.innerHTML = '<span class="text-muted">Processed</span>';
+        }
+    }
 }
 
 function viewPaymentDetails(paymentId) {
@@ -381,55 +575,6 @@ function calculateDaysOverdue(scheduledDate) {
     return diffDays;
 }
 
-function setupFiltersAndSearch() {
-    // Setup filter dropdowns
-    const filterElements = document.querySelectorAll('.payment-filter');
-    filterElements.forEach(element => {
-        element.addEventListener('change', applyFilters);
-    });
-    
-    // Setup search input
-    const searchInput = document.getElementById('payment-search');
-    if (searchInput) {
-        let searchTimeout;
-        searchInput.addEventListener('input', function() {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(applyFilters, 500);
-        });
-    }
-}
-
-function applyFilters() {
-    const filters = {};
-    
-    // Collect filter values
-    const filterElements = document.querySelectorAll('.payment-filter');
-    filterElements.forEach(element => {
-        if (element.value) {
-            filters[element.name] = element.value;
-        }
-    });
-    
-    // Add search term
-    const searchInput = document.getElementById('payment-search');
-    if (searchInput && searchInput.value) {
-        filters.search = searchInput.value;
-    }
-    
-    // Reload with filters
-    loadPaymentSchedules(filters);
-}
-
-function setupRealTimeUpdates() {
-    // Refresh data every 30 seconds
-    setInterval(() => {
-        loadPaymentStatistics();
-        // Only reload table if no modals are open
-        if (!document.querySelector('.modal.show')) {
-            loadPaymentSchedules();
-        }
-    }, 30000);
-}
 
 function setupActionHandlers() {
     // Setup bulk actions if needed
@@ -528,15 +673,43 @@ window.displayPaymentScheduleModal = function(schedule) {
                                             <th>Amount</th>
                                             <th>Due Date</th>
                                             <th>Status</th>
+                                            <th>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        ${schedule.payments.map(payment => `
-                                            <tr>
+                                        ${schedule.payments.map((payment, index) => `
+                                            <tr data-payment-id="${payment.id}">
                                                 <td>${payment.period_name}</td>
                                                 <td>₱${formatNumber(payment.amount)}</td>
                                                 <td>${formatDate(payment.scheduled_date)}</td>
-                                                <td><span class="badge bg-${payment.status === 'confirmed' ? 'success' : 'warning'}">${payment.status === 'confirmed' ? 'Paid' : 'Not yet paid'}</span></td>
+                                                <td class="payment-status">
+                                                    ${payment.confirmation_status === 'confirmed' ? 
+                                                        '<span class="badge bg-success">Paid</span>' : 
+                                                        payment.confirmation_status === 'rejected' ? 
+                                                        '<span class="badge bg-danger">Rejected</span>' : 
+                                                        '<span class="badge bg-warning">Not yet paid</span>'
+                                                    }
+                                                </td>
+                                                <td class="payment-actions">
+                                                    ${(payment.confirmation_status === 'pending' || !payment.confirmation_status) ? `
+                                                        ${index === 0 || (schedule.payments[index - 1] && schedule.payments[index - 1].confirmation_status === 'confirmed') ? `
+                                                            <button type="button" class="btn btn-success btn-sm me-1" 
+                                                                onclick="processIndividualPayment(${payment.id}, 'approve')" 
+                                                                title="Approve this payment">
+                                                                <i class="ri-check-line"></i>
+                                                            </button>
+                                                            <button type="button" class="btn btn-danger btn-sm" 
+                                                                onclick="processIndividualPayment(${payment.id}, 'reject')" 
+                                                                title="Reject this payment">
+                                                                <i class="ri-close-line"></i>
+                                                            </button>
+                                                        ` : `
+                                                            <span class="text-muted small">Pay previous first</span>
+                                                        `}
+                                                    ` : `
+                                                        <span class="text-muted">Processed</span>
+                                                    `}
+                                                </td>
                                             </tr>
                                         `).join('')}
                                     </tbody>
@@ -546,10 +719,10 @@ window.displayPaymentScheduleModal = function(schedule) {
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                        ${schedule.status === 'pending' ? `
-                            <button type="button" class="btn btn-success" onclick="approvePaymentSchedule(${schedule.student.id}, '${schedule.payment_method}')">Approve Schedule</button>
-                            <button type="button" class="btn btn-danger" onclick="rejectPaymentSchedule(${schedule.student.id}, '${schedule.payment_method}')">Reject Schedule</button>
-                        ` : ''}
+                        <div class="text-muted small">
+                            <i class="ri-information-line me-1"></i>
+                            Approve payments individually. First quarter must be approved before others.
+                        </div>
                     </div>
                 </div>
             </div>
@@ -566,13 +739,44 @@ window.displayPaymentScheduleModal = function(schedule) {
     document.body.insertAdjacentHTML('beforeend', modalHtml);
     
     // Show modal
-    const modal = new bootstrap.Modal(document.getElementById('paymentScheduleModal'));
-    modal.show();
+    const modalElement = document.getElementById('paymentScheduleModal');
+    if (typeof bootstrap !== 'undefined') {
+        const modal = new bootstrap.Modal(modalElement);
+        modal.show();
+    } else {
+        // Fallback for when Bootstrap is not available in global scope
+        modalElement.classList.add('show');
+        modalElement.style.display = 'block';
+        modalElement.setAttribute('aria-modal', 'true');
+        modalElement.setAttribute('role', 'dialog');
+        
+        // Add backdrop
+        const backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop fade show';
+        document.body.appendChild(backdrop);
+        
+        // Add close functionality
+        const closeButtons = modalElement.querySelectorAll('[data-bs-dismiss="modal"]');
+        closeButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                modalElement.classList.remove('show');
+                modalElement.style.display = 'none';
+                modalElement.removeAttribute('aria-modal');
+                modalElement.removeAttribute('role');
+                document.body.removeChild(backdrop);
+            });
+        });
+    }
 };
 
 window.approvePaymentSchedule = function(studentId, paymentMethod) {
     if (confirm('Are you sure you want to approve this entire payment schedule?')) {
-        processPaymentSchedule(studentId, paymentMethod, 'approve');
+        // Call the processPaymentSchedule and on success, show the PDF modal
+        processPaymentSchedule(studentId, paymentMethod, 'approve', null, function(paymentId) {
+            if (paymentId) {
+                showPdfModal(paymentId);
+            }
+        });
     }
 };
 
@@ -583,17 +787,14 @@ window.rejectPaymentSchedule = function(studentId, paymentMethod) {
     }
 };
 
-function processPaymentSchedule(studentId, paymentMethod, action, reason = null) {
+function processPaymentSchedule(studentId, paymentMethod, action, reason = null, onSuccess = null) {
     console.log('Processing payment schedule:', {
         studentId: studentId,
         paymentMethod: paymentMethod,
         action: action,
         reason: reason
     });
-    
     const url = `/cashier/api/payment-schedules/student/${studentId}/${paymentMethod}/process`;
-    console.log('Request URL:', url);
-    
     fetch(url, {
         method: 'POST',
         headers: {
@@ -606,51 +807,105 @@ function processPaymentSchedule(studentId, paymentMethod, action, reason = null)
         })
     })
     .then(response => {
-        console.log('Response status:', response.status);
-        console.log('Response headers:', response.headers);
-        
         if (!response.ok) {
-            // Log the response text for debugging
-            return response.text().then(text => {
-                console.log('Error response body:', text);
-                throw new Error(`HTTP error! status: ${response.status}. Response: ${text.substring(0, 200)}`);
-            });
+            return response.text().then(text => { throw new Error(text); });
         }
-        
-        // Check if response is JSON
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-            return response.text().then(text => {
-                console.log('Non-JSON response body:', text);
-                throw new Error('Response is not JSON. Content-Type: ' + contentType + '. Response: ' + text.substring(0, 200));
-            });
-        }
-        
         return response.json();
     })
     .then(data => {
         if (data.success) {
             alert(data.message);
-            loadPaymentSchedules(); // Reload the table
+            loadPaymentSchedules();
+            if (typeof onSuccess === 'function') {
+                // Try to get the transaction_id from the response if available
+                let paymentId = null;
+                if (data.payment && data.payment.transaction_id) {
+                    paymentId = data.payment.transaction_id;
+                } else if (data.transaction_id) {
+                    paymentId = data.transaction_id;
+                }
+                onSuccess(paymentId);
+            }
         } else {
             alert('Error: ' + data.message);
         }
     })
     .catch(error => {
         console.error('Error processing payment schedule:', error);
-        
-        if (error.message.includes('HTTP error! status: 422')) {
-            alert('Validation error. Please check your input and try again.');
-        } else if (error.message.includes('HTTP error! status: 401')) {
-            alert('Authentication error. Please refresh the page and try again.');
-        } else if (error.message.includes('HTTP error! status: 404')) {
-            alert('Payment schedule not found. Please refresh the page.');
-        } else if (error.message.includes('not JSON')) {
-            alert('Server error. Please try again later.');
-        } else {
-            alert('An error occurred while processing the payment schedule: ' + error.message);
-        }
+        alert('An error occurred while processing the payment schedule.');
     });
+}
+
+// Show PDF modal for full schedule approval
+function showPdfModal(paymentId) {
+    // Remove existing modal if any
+    var existingModal = document.getElementById('pdfReceiptModal');
+    if (existingModal) existingModal.remove();
+
+    let pdfUrl = `/cashier/api/pdf/cashier-receipt?transaction_id=${paymentId}`;
+    const modalHtml = `
+        <div class="modal fade" id="pdfReceiptModal" tabindex="-1">
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Cashier Receipt</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body" style="height:80vh;position:relative;">
+                        <div id="pdf-error" class="alert alert-danger my-3" style="display:none;"></div>
+                        <iframe src="${pdfUrl}" style="width:100%;height:100%;border:none;display:none;" id="pdfReceiptFrame"></iframe>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-success" id="printPdfReceiptBtn">
+                            <i class="ri-printer-line me-2"></i>Print
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const modalElement = document.getElementById('pdfReceiptModal');
+    const iframe = document.getElementById('pdfReceiptFrame');
+    const errorDiv = document.getElementById('pdf-error');
+    if (iframe) {
+        iframe.onload = function() {
+            iframe.style.display = 'block';
+            if (errorDiv) errorDiv.style.display = 'none';
+        };
+        iframe.onerror = function() {
+            iframe.style.display = 'none';
+            if (errorDiv) {
+                errorDiv.textContent = '404 PDF Not Found. Please check if the payment is approved and the transaction ID is valid.';
+                errorDiv.style.display = 'block';
+            }
+        };
+    }
+    // Show modal (Bootstrap 5)
+    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+        new bootstrap.Modal(modalElement).show();
+    } else {
+        modalElement.classList.add('show');
+        modalElement.style.display = 'block';
+        modalElement.setAttribute('aria-modal', 'true');
+        modalElement.setAttribute('role', 'dialog');
+        // Add backdrop
+        const backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop fade show';
+        document.body.appendChild(backdrop);
+    }
+    const printBtn = document.getElementById('printPdfReceiptBtn');
+    if (printBtn) {
+        printBtn.onclick = function() {
+            if (iframe && iframe.contentWindow) {
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+            } else {
+                window.open(iframe.src, '_blank');
+            }
+        };
+    }
 }
 
 function updatePagination(payments) {
@@ -703,8 +958,19 @@ function rejectPayment(paymentId) {
 }
 
 function printReceipt(paymentId) {
-    // Open print view for payment receipt
-    window.open(`/cashier/payments/${paymentId}/receipt`, '_blank');
+    // Open cashier receipt PDF in a new tab using transaction_id
+    if (!paymentId) {
+        alert('Invalid transaction ID');
+        return;
+    }
+    // Try /cashier/api/pdf/cashier-receipt, fallback to /pdf/cashier-receipt if 404
+    const url = `/cashier/api/pdf/cashier-receipt?transaction_id=${paymentId}`;
+    const win = window.open(url, '_blank');
+    if (win) {
+        win.onerror = function() {
+            win.location.href = `/pdf/cashier-receipt?transaction_id=${paymentId}`;
+        };
+    }
 }
 
 // Modal-based confirmation functions
@@ -714,8 +980,14 @@ function confirmFromModal() {
     if (currentPaymentId) {
         processPayment(currentPaymentId, 'confirm');
         // Close modal
-        const modal = bootstrap.Modal.getInstance(document.getElementById('confirmModal'));
-        if (modal) modal.hide();
+        const modalElement = document.getElementById('confirmModal');
+        if (typeof bootstrap !== 'undefined') {
+            const modal = bootstrap.Modal.getInstance(modalElement);
+            if (modal) modal.hide();
+        } else {
+            modalElement.style.display = 'none';
+            modalElement.classList.remove('show');
+        }
     }
 }
 
@@ -723,8 +995,14 @@ function rejectFromModal() {
     if (currentPaymentId) {
         processPayment(currentPaymentId, 'reject');
         // Close modal
-        const modal = bootstrap.Modal.getInstance(document.getElementById('rejectModal'));
-        if (modal) modal.hide();
+        const modalElement = document.getElementById('rejectModal');
+        if (typeof bootstrap !== 'undefined') {
+            const modal = bootstrap.Modal.getInstance(modalElement);
+            if (modal) modal.hide();
+        } else {
+            modalElement.style.display = 'none';
+            modalElement.classList.remove('show');
+        }
     }
 }
 
@@ -757,8 +1035,14 @@ function processConfirmation() {
                 loadPaymentSchedules();
                 loadPaymentStatistics();
                 // Close modal
-                const modal = bootstrap.Modal.getInstance(document.getElementById('confirmModal'));
-                if (modal) modal.hide();
+                const modalElement = document.getElementById('confirmModal');
+                if (typeof bootstrap !== 'undefined') {
+                    const modal = bootstrap.Modal.getInstance(modalElement);
+                    if (modal) modal.hide();
+                } else {
+                    modalElement.style.display = 'none';
+                    modalElement.classList.remove('show');
+                }
             } else {
                 showAlert(data.message || 'Failed to confirm payment.', 'danger');
             }
@@ -800,8 +1084,14 @@ function processRejection() {
                 loadPaymentSchedules();
                 loadPaymentStatistics();
                 // Close modal
-                const modal = bootstrap.Modal.getInstance(document.getElementById('rejectModal'));
-                if (modal) modal.hide();
+                const modalElement = document.getElementById('rejectModal');
+                if (typeof bootstrap !== 'undefined') {
+                    const modal = bootstrap.Modal.getInstance(modalElement);
+                    if (modal) modal.hide();
+                } else {
+                    modalElement.style.display = 'none';
+                    modalElement.classList.remove('show');
+                }
             } else {
                 showAlert(data.message || 'Failed to reject payment.', 'danger');
             }
@@ -824,3 +1114,11 @@ window.confirmFromModal = confirmFromModal;
 window.rejectFromModal = rejectFromModal;
 window.processConfirmation = processConfirmation;
 window.processRejection = processRejection;
+window.processIndividualPayment = processIndividualPayment;
+
+// Additional exports for payments page modal functions
+window.confirmPaymentModal = confirmPayment;
+window.rejectPaymentModal = rejectPayment;
+window.viewPaymentDetailsModal = viewPaymentDetails;
+window.processConfirmationModal = processConfirmation;
+window.processRejectionModal = processRejection;

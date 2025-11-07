@@ -5,11 +5,11 @@
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Automatically open the PDF modal when viewing details
-        var caseMeetingId = {{ $caseMeeting->id }};
-        var pdfUrl = `/storage/incident_forms/case_meeting_${caseMeetingId}.pdf`;
-        document.getElementById('incidentFormPdfIframe').src = pdfUrl;
-        var modal = new bootstrap.Modal(document.getElementById('incidentFormPdfPreviewModal'));
-        modal.show();
+    var caseMeetingId = {{ $caseMeeting->id }};
+    var pdfUrl = `/guidance/pdf/case-meeting/${caseMeetingId}`;
+    document.getElementById('incidentFormPdfIframe').src = pdfUrl;
+    var modal = new bootstrap.Modal(document.getElementById('incidentFormPdfPreviewModal'));
+    modal.show();
     });
     </script>
     <!-- Case Meeting Detail View -->
@@ -32,6 +32,9 @@
                     <button class="btn btn-outline-info" onclick="openIncidentFormPdfPreview({{ $caseMeeting->id }})">
                         <i class="ri-file-pdf-line me-2"></i>View Incident PDF
                     </button>
+                    <a href="{{ url('guidance/pdf/case-meeting/' . $caseMeeting->id) }}" target="_blank" class="btn btn-outline-success">
+                        <i class="ri-attachment-2"></i> View Attachment
+                    </a>
     <!-- INCIDENT FORM PDF PREVIEW MODAL (READ-ONLY) -->
     <div class="modal fade" id="incidentFormPdfPreviewModal" tabindex="-1" aria-labelledby="incidentFormPdfPreviewModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl">
@@ -51,9 +54,8 @@
     </div>
     <script>
     function openIncidentFormPdfPreview(caseMeetingId) {
-        // You should generate the correct PDF URL for the case meeting here
-        // Example: `/storage/incident_forms/case_meeting_${caseMeetingId}.pdf`
-        var pdfUrl = `/storage/incident_forms/case_meeting_${caseMeetingId}.pdf`;
+        // Use the dynamic PDF route for the case meeting
+        var pdfUrl = `/guidance/pdf/case-meeting/${caseMeetingId}`;
         document.getElementById('incidentFormPdfIframe').src = pdfUrl;
         var modal = new bootstrap.Modal(document.getElementById('incidentFormPdfPreviewModal'));
         modal.show();
@@ -98,10 +100,7 @@
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold">Meeting Type</label>
-                            <div>
-                                <span class="badge bg-secondary">{{ ucwords(str_replace('_', ' ', $caseMeeting->meeting_type)) }}</span>
-                            </div>
+                            <!-- Meeting Type removed -->
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Status</label>
@@ -125,10 +124,7 @@
 
                         @if($caseMeeting->location)
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold">Location</label>
-                            <div>
-                                <i class="ri-map-pin-line me-2 text-muted"></i>{{ $caseMeeting->location }}
-                            </div>
+                            <!-- Location removed -->
                         </div>
                         @endif
                         @if($caseMeeting->completed_at)
@@ -140,8 +136,7 @@
                         </div>
                         @endif
                         <div class="col-12">
-                            <label class="form-label fw-semibold">Reason</label>
-                            <div class="border rounded p-3 bg-light">{{ $caseMeeting->reason }}</div>
+                            <!-- Reason removed -->
                         </div>
                         @if($caseMeeting->notes)
                         <div class="col-12">
@@ -165,47 +160,39 @@
                         <div class="avatar-lg bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3">
                             <i class="ri-user-line fs-1 text-primary"></i>
                         </div>
-                        <div class="flex-grow-1">
-                            <div class="fw-semibold fs-5">{{ $caseMeeting->student ? $caseMeeting->student->full_name : 'Unknown' }}</div>
-                            <small class="text-muted">{{ $caseMeeting->student ? $caseMeeting->student->student_id : 'Unknown' }}</small>
+                        <div class="col-md-3">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" id="status-filter" onchange="filterCaseMeetings()">
+                                <option value="">All Status</option>
+                                <option value="scheduled">Scheduled</option>
+                                <option value="pre_completed">Pre-Completed</option>
+                                <option value="submitted">Submitted</option>
+                                <option value="completed">Completed</option>
+                                <option value="cancelled">Cancelled</option>
+                            </select>
                         </div>
-                    </div>
-                    @if($caseMeeting->student)
-                        <div class="row g-2 text-sm">
-                            <div class="col-6">
-                                <strong>Grade:</strong><br>
-                                {{ $caseMeeting->student->grade ?? 'N/A' }}
+                        <div class="col-md-3">
+                            <label class="form-label">Date Range</label>
+                            <div class="input-group">
+                                <input type="date" class="form-control" id="date-filter-start" placeholder="From">
+                                <span class="input-group-text">to</span>
+                                <input type="date" class="form-control" id="date-filter-end" placeholder="To">
                             </div>
-                            <div class="col-6">
-                                <strong>Section:</strong><br>
-                                {{ $caseMeeting->student->section ?? 'N/A' }}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Search</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="search-filter" placeholder="Search student name..." onkeyup="filterCaseMeetings()">
+                                <button class="btn btn-outline-secondary" onclick="clearFilters()">
+                                    <i class="ri-close-line"></i>
+                                </button>
                             </div>
                         </div>
-                    @endif
-                </div>
-            </div>
-
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white border-0">
-                    <h6 class="card-title mb-0">Counselor Information</h6>
-                </div>
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="avatar-lg bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3">
-                            <i class="ri-user-star-line fs-1 text-info"></i>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button class="btn btn-success w-100" type="button" onclick="window.open('/guidance/conference-summary-report/pdf', '_blank')">
+                                <i class="ri-file-list-3-line me-1"></i> SUMMARY REPORT
+                            </button>
                         </div>
-                        <div class="flex-grow-1">
-                            <div class="fw-semibold fs-5">{{ $caseMeeting->counselor ? $caseMeeting->counselor->name : 'Unknown' }}</div>
-                            <small class="text-muted">Guidance Counselor</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Case Summary -->
-    @if($caseMeeting->summary)
     <div class="row mb-4">
         <div class="col-12">
             <div class="card border-0 shadow-sm">
@@ -234,7 +221,7 @@
             </div>
         </div>
     </div>
-    @endif
+    
 
     <!-- Sanctions -->
     @if($caseMeeting->sanctions->isNotEmpty())
@@ -290,50 +277,6 @@
         </div>
     </div>
     @endif
-
-    <!-- Create Case Summary Modal -->
-    <div class="modal fade" id="createCaseSummaryModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Create Case Summary</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <form id="createCaseSummaryForm" onsubmit="submitCaseSummary(event)">
-                    <div class="modal-body">
-                        <div class="row g-3">
-                            <div class="col-12">
-                                <label class="form-label">Case Summary <span class="text-danger">*</span></label>
-                                <textarea class="form-control" name="summary" rows="4" required placeholder="Provide a detailed summary of the case meeting..."></textarea>
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label">Recommendations</label>
-                                <textarea class="form-control" name="recommendations" rows="3" placeholder="Any recommendations or actions to be taken..."></textarea>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="follow_up_required" id="follow_up_required">
-                                    <label class="form-check-label" for="follow_up_required">
-                                        Follow-up Required
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Follow-up Date</label>
-                                <input type="date" class="form-control" name="follow_up_date" min="{{ date('Y-m-d') }}">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="ri-save-line me-2"></i>Save Summary
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
 
     @else
     <!-- Header -->
@@ -470,6 +413,11 @@
                                     <i class="ri-close-line"></i>
                                 </button>
                             </div>
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button class="btn btn-success w-auto" type="button" onclick="window.open('/guidance/conference-summary-report/pdf', '_blank')">
+                                <i class="ri-file-list-3-line me-1"></i> Conference Summary Report
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -668,21 +616,80 @@
                                 <label class="form-label">Case Summary <span class="text-danger">*</span></label>
                                 <textarea class="form-control" name="summary" rows="4" required placeholder="Provide a detailed summary of the case meeting..."></textarea>
                             </div>
-                            <div class="col-12">
-                                <label class="form-label">Recommendations</label>
-                                <textarea class="form-control" name="recommendations" rows="3" placeholder="Any recommendations or actions to be taken..."></textarea>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="follow_up_required" id="follow_up_required">
-                                    <label class="form-check-label" for="follow_up_required">
-                                        Follow-up Required
-                                    </label>
+                            <div class="col-12 mt-4">
+                                <label class="form-label fw-bold">AGREED ACTIONS AND INTERVENTION:</label>
+                                <div class="border rounded p-3 bg-light">
+                                    <p class="mb-2">To address the pupil’s/student's behavior and support his/her/their improvement, the following actions and interventions have been agreed upon:</p>
+                                    <div class="form-check mb-2">
+                                        <input type="hidden" name="written_reflection" value="0">
+                                        <input class="form-check-input" type="checkbox" name="written_reflection" value="1" id="action_written_reflection">
+                                        <label class="form-check-label" for="action_written_reflection">
+                                            <strong>Written Reflection as Warning</strong> – The student will write a one-page reflection on the importance of respect, responsibility, and self-control. To be submitted on or before: <input type="date" name="written_reflection_due" class="form-control d-inline-block w-auto ms-2" autocomplete="off">
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input type="hidden" name="mentorship_counseling" value="0">
+                                        <input class="form-check-input" type="checkbox" name="mentorship_counseling" value="1" id="action_mentorship">
+                                        <label class="form-check-label" for="action_mentorship">
+                                            <strong>Mentorship/Counseling</strong> – The student will meet with the school counselor or a mentor weekly to discuss behavior management and coping strategies. Name of Mentor: <input type="text" name="mentor_name" class="form-control d-inline-block w-auto ms-2" placeholder="Name" autocomplete="off">
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input type="hidden" name="parent_teacher_communication" value="0">
+                                        <input class="form-check-input" type="checkbox" name="parent_teacher_communication" value="1" id="action_parent_teacher">
+                                        <label class="form-check-label" for="action_parent_teacher">
+                                            <strong>Parent-Teacher Communication</strong> – Weekly progress updates will be shared with the parents to monitor the student's behavior and academic performance. Date: <input type="date" name="parent_teacher_date" class="form-control d-inline-block w-auto ms-2" autocomplete="off">
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input type="hidden" name="restorative_justice_activity" value="0">
+                                        <input class="form-check-input" type="checkbox" name="restorative_justice_activity" value="1" id="action_restorative_justice">
+                                        <label class="form-check-label" for="action_restorative_justice">
+                                            <strong>Restorative Justice Activity</strong> – The student will participate in a peer mediation or conflict resolution session if their behavior impacted others. Date: <input type="date" name="restorative_justice_date" class="form-control d-inline-block w-auto ms-2" autocomplete="off">
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input type="hidden" name="follow_up_meeting" value="0">
+                                        <input class="form-check-input" type="checkbox" name="follow_up_meeting" value="1" id="action_follow_up_meeting">
+                                        <label class="form-check-label" for="action_follow_up_meeting">
+                                            <strong>Follow-up Meeting</strong> – A follow-up conference will be held in one month to assess progress and determine if further interventions are needed. Date: <input type="date" name="follow_up_meeting_date" class="form-control d-inline-block w-auto ms-2" autocomplete="off">
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input type="hidden" name="community_service" value="0">
+                                        <input class="form-check-input" type="checkbox" name="community_service" value="1" id="action_community_service">
+                                        <label class="form-check-label" for="action_community_service">
+                                            <strong>Conduct Community/ School Service</strong> – The student will be given the task to participate community or school service activity to promote cleanliness and orderliness of the surroundings. <br>Date: <input type="date" name="community_service_date" class="form-control d-inline-block w-auto ms-2" autocomplete="off"> Assigned Area: <input type="text" name="community_service_area" class="form-control d-inline-block w-auto ms-2" placeholder="Area" autocomplete="off">.
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2 align-items-center d-flex flex-wrap">
+                                        <input type="hidden" name="suspension" value="0">
+                                        <input class="form-check-input me-2" type="checkbox" name="suspension" value="1" id="action_suspension">
+                                        <label class="form-check-label me-2" for="action_suspension"><strong>Suspension</strong></label>
+                                        <span>– The student will serve</span>
+                                        <input type="hidden" name="suspension_3days" value="0">
+                                        <input type="checkbox" class="form-check-input ms-2 me-1" name="suspension_3days" value="1" id="suspension_3days">
+                                        <label for="suspension_3days" class="form-check-label me-2">3 days,</label>
+                                        <input type="hidden" name="suspension_5days" value="0">
+                                        <input type="checkbox" class="form-check-input ms-2 me-1" name="suspension_5days" value="1" id="suspension_5days">
+                                        <label for="suspension_5days" class="form-check-label me-2">5 days</label>
+                                        <span class="ms-2">or</span>
+                                        <input type="number" name="suspension_other_days" class="form-control d-inline-block w-auto ms-2" min="1" placeholder="Other" maxlength="3" autocomplete="off">
+                                        <span class="ms-2">more days suspension as a consequence for his/her/their actions, starting</span>
+                                        <input type="date" name="suspension_start" class="form-control d-inline-block w-auto ms-2" placeholder="" autocomplete="off">
+                                        <span class="ms-2">until</span>
+                                        <input type="date" name="suspension_end" class="form-control d-inline-block w-auto ms-2" placeholder="" autocomplete="off">
+                                        <span class="ms-2">and must accomplish the activity sheets missed during classes when he/she/they return to school on</span>
+                                        <input type="date" name="suspension_return" class="form-control d-inline-block w-auto ms-2" placeholder="" autocomplete="off">.
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input type="hidden" name="expulsion" value="0">
+                                        <input class="form-check-input" type="checkbox" name="expulsion" value="1" id="action_expulsion">
+                                        <label class="form-check-label" for="action_expulsion">
+                                            <strong>Expulsion</strong> – A student may not be issued his certificate of eligibility to transfer at the end of the school year when he is undergoing a penalty of suspension or expulsion for failure to settle satisfactorily his financial or property obligations to the school. However, it shall be released as soon as he will finish serving the suspension or expulsion shall have been lifted. (RMPS Sec. 146) Date: <input type="date" name="expulsion_date" class="form-control d-inline-block w-auto ms-2" autocomplete="off">.
+                                        </label>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Follow-up Date</label>
-                                <input type="date" class="form-control" name="follow_up_date" min="{{ date('Y-m-d') }}">
                             </div>
                         </div>
                     </div>
@@ -705,104 +712,24 @@
                     <h5 class="modal-title">Case Meeting Details</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Student</label>
-                            <div class="d-flex align-items-center">
-                                <div class="avatar-sm bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3">
-                                    <i class="ri-user-line text-primary"></i>
-                                </div>
-                                <div>
-                                    <div class="fw-semibold" id="view_student_name">N/A</div>
-                                    <small class="text-muted" id="view_student_id">N/A</small>
-                                </div>
-                            </div>
+                <div class="modal-body" id="viewCaseMeetingModalBody">
+                    <!-- Dynamic content will be injected here by JS -->
+                    @if(isset($caseMeeting) && isset($caseMeeting->violation))
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Violation Details:</label>
+                            <table class="table table-sm">
+                                <tbody>
+                                    <tr><td><strong>Title:</strong></td><td>{{ $caseMeeting->violation->title ?? 'N/A' }}</td></tr>
+                                    <tr><td><strong>Description:</strong></td><td>{{ $caseMeeting->violation->description ?? 'N/A' }}</td></tr>
+                                    <tr><td><strong>Severity:</strong></td><td>{{ $caseMeeting->violation->severity ?? 'N/A' }}</td></tr>
+                                    <tr><td><strong>Category:</strong></td><td>{{ $caseMeeting->violation->major_category ?? 'N/A' }}</td></tr>
+                                    <tr><td><strong>Status:</strong></td><td>{{ $caseMeeting->violation->status ?? 'N/A' }}</td></tr>
+                                    <tr><td><strong>Date:</strong></td><td>{{ $caseMeeting->violation->violation_date ? \Carbon\Carbon::parse($caseMeeting->violation->violation_date)->format('M d, Y') : 'N/A' }}</td></tr>
+                                    <tr><td><strong>Time:</strong></td><td>{{ $caseMeeting->violation->violation_time ? date('h:i A', strtotime($caseMeeting->violation->violation_time)) : 'N/A' }}</td></tr>
+                                </tbody>
+                            </table>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Counselor</label>
-                            <div class="d-flex align-items-center">
-                                <div class="avatar-sm bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3">
-                                    <i class="ri-user-star-line text-info"></i>
-                                </div>
-                                <div>
-                                    <div class="fw-semibold" id="view_counselor_name">N/A</div>
-                                    <small class="text-muted">Guidance Counselor</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Meeting Type</label>
-                            <div>
-                                <span class="badge bg-secondary" id="view_meeting_type">N/A</span>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Status</label>
-                            <div>
-                                <span class="badge" id="view_status">N/A</span>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Scheduled Date & Time</label>
-                            <div>
-                                <div class="fw-semibold" id="view_scheduled_date">TBD</div>
-                                <small class="text-muted" id="view_scheduled_time">TBD</small>
-                            </div>
-                        </div>
-
-                        <div class="col-md-6" id="view_location_container" style="display: none;">
-                            <label class="form-label fw-semibold">Location</label>
-                            <div>
-                                <i class="ri-map-pin-line me-2 text-muted"></i><span id="view_location"></span>
-                            </div>
-                        </div>
-                        <div class="col-md-6" id="view_completed_at_container" style="display: none;">
-                            <label class="form-label fw-semibold">Completed At</label>
-                            <div>
-                                <i class="ri-calendar-check-line me-2 text-success"></i><span id="view_completed_at"></span>
-                            </div>
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label fw-semibold">Reason</label>
-                            <div class="border rounded p-3 bg-light" id="view_reason">N/A</div>
-                        </div>
-                        <div class="col-12" id="view_notes_container" style="display: none;">
-                            <label class="form-label fw-semibold">Notes</label>
-                            <div class="border rounded p-3 bg-light" id="view_notes"></div>
-                        </div>
-                        <div class="col-12" id="view_summary_container" style="display: none;">
-                            <label class="form-label fw-semibold">Case Summary</label>
-                            <div class="border rounded p-3 bg-light" id="view_summary"></div>
-                        </div>
-                        <div class="col-12" id="view_recommendations_container" style="display: none;">
-                            <label class="form-label fw-semibold">Recommendations</label>
-                            <div class="border rounded p-3 bg-light" id="view_recommendations"></div>
-                        </div>
-                        <div class="col-12" id="view_follow_up_container" style="display: none;">
-                            <label class="form-label fw-semibold">Follow-up</label>
-                            <div class="border rounded p-3 bg-light" id="view_follow_up">
-                                <div class="d-flex align-items-center">
-                                    <i class="ri-calendar-event-line me-2 text-warning"></i>
-                                    <span id="view_follow_up_text"></span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Sanctions Section -->
-                    <div class="mt-4" id="view_sanctions_container" style="display: none;">
-                        <h6 class="fw-semibold mb-3">Sanctions</h6>
-                        <div class="list-group list-group-flush" id="view_sanctions_list">
-                            <!-- Sanctions will be populated here -->
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <div class="d-flex gap-2" id="view_actions_container">
-                        <!-- Actions will be populated here -->
-                    </div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -819,39 +746,26 @@
                 <form id="editCaseMeetingForm" onsubmit="submitEditCaseMeeting(event)">
                     <div class="modal-body">
                         <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Student <span class="text-danger">*</span></label>
-                                <select class="form-select" name="student_id" id="edit_student_id" required>
-                                    <option value="">Select Student</option>
-                                    @foreach($students as $student)
-                                        <option value="{{ $student->id }}">{{ $student->full_name }} ({{ $student->student_id }})</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Meeting Type <span class="text-danger">*</span></label>
-                                <select class="form-select" name="meeting_type" id="edit_meeting_type" required>
-                                    <option value="case_meeting">Case Meeting</option>
-                                    <option value="house_visit">House Visit</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Date <span class="text-danger">*</span></label>
-                                <input type="date" class="form-control" name="scheduled_date" id="edit_scheduled_date" required min="{{ date('Y-m-d') }}">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Time <span class="text-danger">*</span></label>
-                                <input type="time" class="form-control" name="scheduled_time" id="edit_scheduled_time" required>
-                            </div>
+                             <div class="col-md-6">
+                                 <label class="form-label">Date <span class="text-danger">*</span></label>
+                                 <input type="date" class="form-control" name="scheduled_date" id="edit_scheduled_date" required min="{{ date('Y-m-d') }}">
+                             </div>
+                             <div class="col-md-6">
+                                 <label class="form-label">Time <span class="text-danger">*</span></label>
+                                 <input type="time" class="form-control" name="scheduled_time" id="edit_scheduled_time" required>
+                             </div>
 
-                            <div class="col-12">
-                                <label class="form-label">Reason <span class="text-danger">*</span></label>
-                                <textarea class="form-control" name="reason" id="edit_reason" rows="3" required placeholder="Describe the reason for this meeting..."></textarea>
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label">Notes</label>
-                                <textarea class="form-control" name="notes" id="edit_notes" rows="2" placeholder="Additional notes..."></textarea>
-                            </div>
+                             <div class="col-12">
+                                 <label class="form-label">Summary</label>
+                                 <textarea class="form-control" name="summary" id="edit_summary" rows="3" placeholder="Enter summary..."></textarea>
+                             </div>
+                             <div class="col-12">
+                                 <label class="form-label">Sanctions</label>
+                                 <select class="form-control" name="sanction" id="edit_sanction">
+                                     <option value="">Select Sanction</option>
+                                     <!-- Options will be populated by JS -->
+                                 </select>
+                             </div>
                         </div>
                     </div>
                     <div class="modal-footer">

@@ -1,0 +1,30 @@
+/**
+ * Registrar Dashboard Styles
+ * Custom styles for the registrar dashboard page
+ */
+
+/* Hover effects for interactive elements */
+.hover-bg-light {
+    transition: background-color 0.2s ease;
+    cursor: pointer;
+}
+
+/* Card hover animations */
+.card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Button transitions */
+.btn {
+    transition: all 0.2s ease;
+}
+
+/* Badge styling */
+.badge {
+    font-weight: 500;
+}

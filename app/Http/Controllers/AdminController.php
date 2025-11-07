@@ -15,7 +15,8 @@ use App\Models\Admin;
 use App\Models\Student;
 use App\Models\Enrollee;
 use App\Models\Teacher;
-use App\Models\GuidanceDiscipline;
+use App\Models\Guidance;
+use App\Models\Discipline;
 use App\Traits\AdminAuthentication;
 use Illuminate\Support\Facades\Log;
 
@@ -36,7 +37,7 @@ class AdminController extends Controller
             'total_students' => Student::count(),
             'total_teachers' => Teacher::count(),
             'total_admins' => Admin::count(),
-            'total_guidance' => GuidanceDiscipline::count(),
+            'total_guidance' => Guidance::count() + Discipline::count(),
             'total_roles' => Role::count(),
             'total_permissions' => Permission::count()
         ];
@@ -130,7 +131,7 @@ class AdminController extends Controller
 
     public function manageUsers()
     {
-        $users = User::with(['roles', 'admin', 'teacher', 'guidanceDiscipline'])->get();
+        $users = User::with(['roles', 'admin', 'teacher', 'guidance', 'discipline'])->get();
         $roles = Role::with(['permissions', 'users'])->get();
         $permissions = Permission::with('roles')->get();
         
@@ -585,11 +586,11 @@ public function submittedCases()
             ]);
 
 
-            // Mark the related case meeting as completed
+            // Mark the related case meeting as case_closed
             $caseMeeting = $sanction->caseMeeting;
             if ($caseMeeting) {
                 $caseMeeting->update([
-                    'status' => 'completed',
+                    'status' => 'case_closed',
                     'completed_at' => now(),
                 ]);
                 // Set all related violations' statuses to 'submitted' (discipline side)
@@ -711,11 +712,22 @@ public function submittedCases()
             ], 403);
         }
 
-        $caseMeeting->load(['student', 'counselor', 'sanctions']);
+        $caseMeeting->load(['student', 'counselor', 'sanctions', 'violation']);
+
+        // Convert to array and format scheduled_time for summary modal (h:i A)
+        $meetingArr = $caseMeeting->toArray();
+        $meetingArr['scheduled_time'] = $caseMeeting->scheduled_time ? $caseMeeting->scheduled_time->format('h:i A') : null;
+        $meetingArr['scheduled_date'] = $caseMeeting->scheduled_date ? $caseMeeting->scheduled_date->format('Y-m-d') : null;
+        
+        // Include violation student reply fields if violation exists
+        $meetingArr['violation_id'] = $caseMeeting->violation_id;
+        $meetingArr['student_statement'] = $caseMeeting->violation ? $caseMeeting->violation->student_statement : null;
+        $meetingArr['incident_feelings'] = $caseMeeting->violation ? $caseMeeting->violation->incident_feelings : null;
+        $meetingArr['action_plan'] = $caseMeeting->violation ? $caseMeeting->violation->action_plan : null;
 
         return response()->json([
             'success' => true,
-            'meeting' => $caseMeeting
+            'meeting' => $meetingArr
         ]);
     }
 // REMOVED: generateAdmin() method

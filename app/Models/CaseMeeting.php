@@ -15,11 +15,19 @@ class CaseMeeting extends Model
             // Only sync if status was changed
             if ($caseMeeting->isDirty('status')) {
                 $newStatus = $caseMeeting->status;
-                // Map case meeting status to violation status
                 $violationStatus = self::mapStatusToViolationStatus($newStatus);
                 if ($violationStatus) {
+                    // Update direct violations
                     foreach ($caseMeeting->violations as $violation) {
                         $violation->update(['status' => $violationStatus]);
+                    }
+                    // Update violations via sanctions (if not already updated)
+                    $caseMeeting->load('sanctions.violation');
+                    foreach ($caseMeeting->sanctions as $sanction) {
+                        $violation = $sanction->violation;
+                        if ($violation && $violation->status !== $violationStatus) {
+                            $violation->update(['status' => $violationStatus]);
+                        }
                     }
                 }
             }
@@ -36,6 +44,7 @@ class CaseMeeting extends Model
     // Removed automatic status syncing between CaseMeeting and related violations
     protected $fillable = [
         'student_id',
+        'violation_id',
         'counselor_id',
         'meeting_type',
         'scheduled_date',
@@ -43,6 +52,8 @@ class CaseMeeting extends Model
         'location',
         'reason',
         'notes',
+        'teacher_statement',
+        'action_plan',
         'status',
         'summary',
         'recommendations',
@@ -54,7 +65,37 @@ class CaseMeeting extends Model
         'forwarded_to_president',
         'forwarded_at',
         'completed_at',
+        // Agreed Actions/Interventions fields
+        'written_reflection',
+        'written_reflection_due',
+        'mentor_name',
+        'mentorship_counseling',
+        'parent_teacher_communication',
+        'parent_teacher_date',
+        'restorative_justice_activity',
+        'restorative_justice_date',
+        'follow_up_meeting',
+        'follow_up_meeting_date',
+        'community_service',
+        'community_service_date',
+        'community_service_area',
+        'suspension',
+        'suspension_3days',
+        'suspension_5days',
+        'suspension_other_days',
+        'suspension_start',
+        'suspension_end',
+        'suspension_return',
+        'expulsion',
+        'expulsion_date',
     ];
+    /**
+     * Get the violation associated with this case meeting.
+     */
+    public function violation(): BelongsTo
+    {
+        return $this->belongsTo(Violation::class, 'violation_id');
+    }
 
     protected $casts = [
         'scheduled_date' => 'date',
@@ -64,6 +105,29 @@ class CaseMeeting extends Model
         'forwarded_to_president' => 'boolean',
         'forwarded_at' => 'datetime',
         'completed_at' => 'datetime',
+        // Agreed Actions/Interventions casts
+        'written_reflection' => 'boolean',
+        'written_reflection_due' => 'date',
+        'mentorship_counseling' => 'boolean',
+        'mentor_name' => 'string',
+        'parent_teacher_communication' => 'boolean',
+        'parent_teacher_date' => 'date',
+        'restorative_justice_activity' => 'boolean',
+        'restorative_justice_date' => 'date',
+        'follow_up_meeting' => 'boolean',
+        'follow_up_meeting_date' => 'date',
+        'community_service' => 'boolean',
+        'community_service_date' => 'date',
+        'community_service_area' => 'string',
+        'suspension' => 'boolean',
+        'suspension_3days' => 'boolean',
+        'suspension_5days' => 'boolean',
+        'suspension_other_days' => 'integer',
+        'suspension_start' => 'date',
+        'suspension_end' => 'date',
+        'suspension_return' => 'date',
+        'expulsion' => 'boolean',
+        'expulsion_date' => 'date',
     ];
 
     /**
@@ -180,7 +244,7 @@ class CaseMeeting extends Model
             'scheduled' => 'scheduled',
             'in_progress' => 'in_progress',
             'pre_completed' => 'pre_completed',
-            'completed' => 'completed',
+            'completed' => 'case_closed',
             'submitted' => 'submitted',
             'cancelled' => 'pending', // Return to pending if cancelled
             default => null
@@ -203,7 +267,7 @@ class CaseMeeting extends Model
                 $violation = $sanction->violation;
                 if ($violation) {
                     $violation->status = $newStatus;
-                    if ($newStatus === 'completed') {
+                    if ($newStatus === 'case_closed') {
                         $violation->resolved_at = now();
                         // Note: resolved_by might need to be set if there's a current user, but in model events, auth might not be available
                     }
@@ -219,6 +283,24 @@ class CaseMeeting extends Model
             ]);
             // Don't throw the exception to prevent breaking the case meeting creation/update
         }
+    }
+    /**
+     * Get the admin associated with this case meeting.
+     * Assumes there is an admin_id column referencing users table.
+     */
+    public function admin(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'admin_id');
+    }
+
+    /**
+     * Accessor: Get the teacher associated via the violation relationship.
+     * Usage: $caseMeeting->teacher
+     * For eager loading, use with(['violation.teacher'])
+     */
+    public function getTeacherAttribute()
+    {
+        return $this->violation ? $this->violation->teacher : null;
     }
 
     /**
@@ -239,4 +321,5 @@ class CaseMeeting extends Model
             }
         });
     }
+
 }

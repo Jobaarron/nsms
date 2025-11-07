@@ -2,20 +2,19 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf-token" content="{{ csrf_token() }}">
 
   <title>Applicant Portal | Nicolites Portal</title>
 
     <!-- Remix Icons -->
     <link 
-    href="https://cdn.jsdelivr.net/npm/remixicon@3.4.0/fonts/remixicon.css" 
+    href="https://cdn.jsdelivr.net/npm/remixicon@4.3.0/fonts/remixicon.css" 
     rel="stylesheet"
+    crossorigin="anonymous"
     />
 
     <!-- Google Font -->
@@ -30,7 +29,24 @@
   @vite(['resources/js/app.js'])
 
   <style>
-   
+    /* Ensure icons are properly displayed */
+    .btn i {
+      font-size: 1rem;
+      line-height: 1;
+      vertical-align: middle;
+    }
+    
+    /* Icon fallback styling */
+    .btn i::before {
+      font-family: "remixicon" !important;
+      font-style: normal;
+      font-weight: normal;
+      font-variant: normal;
+      text-transform: none;
+      line-height: 1;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
   </style>
 </head>
 <body>
@@ -66,11 +82,6 @@
               <i class="ri-folder-line me-2"></i>Documents
             </a>
           </li>
-          {{-- <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('enrollee.schedule') ? 'active' : '' }}" href="{{ route('enrollee.schedule') }}">
-              <i class="ri-calendar-line me-2"></i>Schedule
-            </a>
-          </li> --}}
           <li class="nav-item mb-2">
             <a class="nav-link {{ request()->routeIs('enrollee.notices') ? 'active' : '' }}" href="{{ route('enrollee.notices') }}">
               <i class="ri-notification-line me-2"></i>Notices
@@ -96,13 +107,6 @@
             <i class="ri-graduation-cap-line me-2"></i>
             Applicant Portal
           </h1>
-          {{-- <div class="btn-toolbar mb-2 mb-md-0">
-            <div class="btn-group me-2">
-              <span class="badge badge-status status-{{ strtolower(auth('enrollee')->user()->enrollment_status ?? 'pending') }}">
-                {{ ucfirst(auth('enrollee')->user()->enrollment_status ?? 'Pending') }}
-              </span>
-            </div>
-          </div> --}}
         </div>
 
         {{ $slot }}

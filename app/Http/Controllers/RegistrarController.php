@@ -8,6 +8,9 @@ use Illuminate\Http\JsonResponse;
 use App\Models\Enrollee;
 use App\Models\Notice;
 use App\Models\Registrar;
+use App\Models\Student;
+use App\Models\Section;
+use App\Models\FacultyAssignment;
 use App\Mail\StudentCredentialsMail;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Hash;
@@ -31,7 +34,21 @@ class RegistrarController extends Controller
             ->take(5)
             ->get();
 
-        return view('registrar.dashboard', compact('stats', 'recent_applications'));
+        // Applications by grade level (from reports)
+        $by_grade = Enrollee::selectRaw('grade_level_applied, count(*) as count')
+            ->groupBy('grade_level_applied')
+            ->orderBy('grade_level_applied')
+            ->get();
+
+        // Applications by month (from reports)
+        $by_month = Enrollee::selectRaw('MONTH(created_at) as month, YEAR(created_at) as year, count(*) as count')
+            ->groupBy('month', 'year')
+            ->orderBy('year', 'desc')
+            ->orderBy('month', 'desc')
+            ->take(12)
+            ->get();
+
+        return view('registrar.dashboard', compact('stats', 'recent_applications', 'by_grade', 'by_month'));
     }
 
     /**
@@ -66,7 +83,6 @@ class RegistrarController extends Controller
         $totalApplications = Enrollee::count();
         $pendingApplications = Enrollee::where('enrollment_status', 'pending')->count();
         $approvedApplications = Enrollee::where('enrollment_status', 'approved')->count();
-        $scheduledAppointments = Enrollee::whereNotNull('preferred_schedule')->count();
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -85,9 +101,9 @@ class RegistrarController extends Controller
             'totalApplications', 
             'pendingApplications', 
             'approvedApplications', 
-            'scheduledAppointments'
         ));
     }
+
 
     /**
      * Get specific application details
@@ -267,46 +283,6 @@ class RegistrarController extends Controller
         }
     }
 
-    /**
-     * Get appointments data
-     */
-    public function getAppointments(): JsonResponse
-    {
-        try {
-            $appointments = Enrollee::whereNotNull('preferred_schedule')
-                ->select([
-                    'id', 'application_id', 'first_name', 'last_name', 'email',
-                    'preferred_schedule', 'grade_level_applied', 'enrollment_status',
-                    'created_at'
-                ])
-                ->orderBy('preferred_schedule', 'asc')
-                ->get()
-                ->map(function ($enrollee) {
-                    return [
-                        'id' => $enrollee->id,
-                        'application_id' => $enrollee->application_id,
-                        'full_name' => trim($enrollee->first_name . ' ' . $enrollee->last_name),
-                        'email' => $enrollee->email,
-                        'grade_level' => $enrollee->grade_level_applied,
-                        'preferred_schedule' => $enrollee->preferred_schedule,
-                        'status' => $enrollee->enrollment_status,
-                        'appointment_status' => $this->getAppointmentStatus($enrollee->preferred_schedule, $enrollee->enrollment_status),
-                        'created_at' => $enrollee->created_at->format('M d, Y')
-                    ];
-                });
-
-            return response()->json([
-                'success' => true,
-                'appointments' => $appointments
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error fetching appointments: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to fetch appointments'
-            ], 500);
-        }
-    }
 
     /**
      * Get notices data
@@ -421,26 +397,6 @@ class RegistrarController extends Controller
         }
     }
 
-    /**
-     * Get appointment status based on schedule and enrollment status
-     */
-    private function getAppointmentStatus($preferredSchedule, $enrollmentStatus)
-    {
-        if (!$preferredSchedule) return 'No Schedule';
-        
-        $scheduleDate = \Carbon\Carbon::parse($preferredSchedule);
-        $now = \Carbon\Carbon::now();
-        
-        if ($enrollmentStatus === 'approved') {
-            return 'Completed';
-        } elseif ($scheduleDate->isPast()) {
-            return 'Overdue';
-        } elseif ($scheduleDate->isToday()) {
-            return 'Today';
-        } else {
-            return 'Scheduled';
-        }
-    }
 
     /**
      * Show approved applications
@@ -481,34 +437,6 @@ class RegistrarController extends Controller
         return view('registrar.approved', compact('approved_applications'));
     }
 
-    /**
-     * Show reports
-     */
-    public function reports()
-    {
-        $stats = [
-            'total_applications' => Enrollee::count(),
-            'pending_applications' => Enrollee::where('enrollment_status', 'pending')->count(),
-            'approved_applications' => Enrollee::where('enrollment_status', 'approved')->count(),
-            'declined_applications' => Enrollee::where('enrollment_status', 'declined')->count(),
-        ];
-
-        // Applications by grade level
-        $by_grade = Enrollee::selectRaw('grade_level_applied, count(*) as count')
-            ->groupBy('grade_level_applied')
-            ->orderBy('grade_level_applied')
-            ->get();
-
-        // Applications by month
-        $by_month = Enrollee::selectRaw('MONTH(created_at) as month, YEAR(created_at) as year, count(*) as count')
-            ->groupBy('month', 'year')
-            ->orderBy('year', 'desc')
-            ->orderBy('month', 'desc')
-            ->take(12)
-            ->get();
-
-        return view('registrar.reports', compact('stats', 'by_grade', 'by_month'));
-    }
 
     /**
      * Get application documents
@@ -623,10 +551,47 @@ class RegistrarController extends Controller
                 'created_by' => Auth::guard('registrar')->id(),
             ]);
 
+            // Check if all documents are approved and auto-approve application
+            if ($request->status === 'approved') {
+                $allDocumentsApproved = true;
+                foreach ($documents as $doc) {
+                    if (($doc['status'] ?? 'pending') !== 'approved') {
+                        $allDocumentsApproved = false;
+                        break;
+                    }
+                }
+
+                // Auto-approve application if all documents are approved
+                if ($allDocumentsApproved && $application->enrollment_status === 'pending') {
+                    $application->update([
+                        'enrollment_status' => 'approved',
+                        'approved_at' => now(),
+                        'approved_by' => Auth::guard('registrar')->id()
+                    ]);
+
+                    // Create approval notice
+                    Notice::create([
+                        'enrollee_id' => $application->id,
+                        'title' => 'Application Approved',
+                        'message' => 'Congratulations! Your enrollment application has been approved. All your documents have been verified and accepted. You may now proceed with the next steps.',
+                        'type' => 'success',
+                        'priority' => 'high',
+                        'is_global' => false,
+                        'created_by' => Auth::guard('registrar')->id(),
+                    ]);
+
+                    $responseMessage = "Document approved successfully. Application automatically approved since all documents are now approved.";
+                } else {
+                    $responseMessage = "Document {$request->status} successfully";
+                }
+            } else {
+                $responseMessage = "Document {$request->status} successfully";
+            }
+
             // Always return JSON response since method signature requires JsonResponse
             return response()->json([
                 'success' => true,
-                'message' => "Document {$request->status} successfully"
+                'message' => $responseMessage
             ]);
         } catch (\Exception $e) {
             Log::error('Error updating document status: ' . $e->getMessage());
@@ -637,63 +602,6 @@ class RegistrarController extends Controller
         }
     }
 
-    /**
-     * Schedule appointment
-     */
-    public function scheduleAppointment(Request $request, $id): JsonResponse
-    {
-        $request->validate([
-            'appointment_date' => 'required|date|after:today',
-            'appointment_time' => 'required|string',
-            'purpose' => 'required|string|max:255'
-        ]);
-
-        try {
-            // Try database ID first, then application_id
-            $application = Enrollee::where('id', $id)->first();
-            if (!$application) {
-                $application = Enrollee::where('application_id', $id)->firstOrFail();
-            }
-
-            // Combine date and time
-            $appointmentDateTime = $request->appointment_date . ' ' . $request->appointment_time;
-
-            $application->update([
-                'preferred_schedule' => $appointmentDateTime,
-                'appointment_purpose' => $request->purpose,
-                'appointment_scheduled_by' => Auth::id(),
-                'appointment_scheduled_at' => now()
-            ]);
-
-            // Create appointment notice
-            Notice::create([
-                'enrollee_id' => $application->id,
-                'title' => 'Appointment Scheduled',
-                'message' => "Your enrollment appointment has been scheduled for {$appointmentDateTime}. Purpose: {$request->purpose}. Please arrive 15 minutes early.",
-                'type' => 'info',
-                'priority' => 'high',
-                'is_global' => false,
-                'created_by' => Auth::id(),
-            ]);
-
-            Log::info('Appointment scheduled', [
-                'application_id' => $application->application_id,
-                'appointment_date' => $appointmentDateTime,
-                'scheduled_by' => Auth::id()
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Appointment scheduled successfully!'
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error scheduling appointment: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to schedule appointment'
-            ], 500);
-        }
-    }
 
     /**
      * Send notice to applicant
@@ -876,155 +784,8 @@ class RegistrarController extends Controller
         }
     }
 
-    /**
-     * Approve appointment
-     */
-    public function approveAppointment(Request $request, $id): JsonResponse
-    {
-        try {
-            // Try database ID first, then application_id
-            $application = Enrollee::where('id', $id)->first();
-            if (!$application) {
-                $application = Enrollee::where('application_id', $id)->firstOrFail();
-            }
 
-            $application->update([
-                'appointment_status' => 'approved',
-                'appointment_notes' => $request->notes ?? 'Appointment approved by registrar'
-            ]);
 
-            // Create notice
-            Notice::create([
-                'enrollee_id' => $application->id,
-                'title' => 'Appointment Approved',
-                'message' => 'Your appointment request has been approved. Please arrive on time for your scheduled appointment.',
-                'type' => 'success',
-                'priority' => 'normal',
-                'is_global' => false,
-                'created_by' => Auth::id(),
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Appointment approved successfully'
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error approving appointment: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to approve appointment'
-            ], 500);
-        }
-    }
-
-    /**
-     * Reject appointment
-     */
-    public function rejectAppointment(Request $request, $id): JsonResponse
-    {
-        $request->validate([
-            'notes' => 'required|string|max:500'
-        ]);
-
-        try {
-            // Try database ID first, then application_id
-            $application = Enrollee::where('id', $id)->first();
-            if (!$application) {
-                $application = Enrollee::where('application_id', $id)->firstOrFail();
-            }
-
-            $application->update([
-                'appointment_status' => 'rejected',
-                'appointment_notes' => $request->notes
-            ]);
-
-            // Create notice
-            Notice::create([
-                'enrollee_id' => $application->id,
-                'title' => 'Appointment Rejected',
-                'message' => 'Your appointment request has been rejected. Reason: ' . $request->notes,
-                'type' => 'error',
-                'priority' => 'normal',
-                'is_global' => false,
-                'created_by' => Auth::id(),
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Appointment rejected successfully'
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error rejecting appointment: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to reject appointment'
-            ], 500);
-        }
-    }
-
-    /**
-     * Update appointment schedule
-     */
-    public function updateAppointmentSchedule(Request $request, $id): JsonResponse
-    {
-        $request->validate([
-            'status' => 'required|in:pending,approved,rejected,completed',
-            'new_date' => 'nullable|date',
-            'new_time' => 'nullable|date_format:H:i',
-            'notes' => 'nullable|string|max:500'
-        ]);
-
-        try {
-            // Try database ID first, then application_id
-            $application = Enrollee::where('id', $id)->first();
-            if (!$application) {
-                $application = Enrollee::where('application_id', $id)->firstOrFail();
-            }
-
-            $updateData = [
-                'appointment_status' => $request->status,
-                'appointment_notes' => $request->notes ?? ''
-            ];
-
-            // Update schedule if provided
-            if ($request->new_date && $request->new_time) {
-                $newSchedule = $request->new_date . ' ' . $request->new_time;
-                $updateData['preferred_schedule'] = $newSchedule;
-            }
-
-            $application->update($updateData);
-
-            // Create notice
-            $noticeMessage = 'Your appointment has been updated. Status: ' . ucfirst($request->status);
-            if ($request->new_date && $request->new_time) {
-                $noticeMessage .= ' New schedule: ' . \Carbon\Carbon::parse($newSchedule)->format('M d, Y g:i A');
-            }
-            if ($request->notes) {
-                $noticeMessage .= ' Notes: ' . $request->notes;
-            }
-
-            Notice::create([
-                'enrollee_id' => $application->id,
-                'title' => 'Appointment Updated',
-                'message' => $noticeMessage,
-                'type' => $request->status === 'approved' ? 'success' : ($request->status === 'rejected' ? 'error' : 'info'),
-                'priority' => 'normal',
-                'is_global' => false,
-                'created_by' => Auth::id(),
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Appointment updated successfully'
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error updating appointment: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to update appointment'
-            ], 500);
-        }
-    }
 
     /**
      * Create notice
@@ -1242,39 +1003,93 @@ class RegistrarController extends Controller
     /**
      * Get applications data for AJAX requests
      */
-    public function getApplicationsData(): JsonResponse
+    public function getApplicationsData(Request $request): JsonResponse
     {
         try {
-            $applications = Enrollee::select([
+            $tab = $request->get('tab', 'pending');
+            
+            // Base query
+            $query = Enrollee::query();
+            
+            // Filter by tab
+            switch ($tab) {
+                case 'pending':
+                    $query->where('enrollment_status', 'pending');
+                    break;
+                case 'approved':
+                    $query->where('enrollment_status', 'approved');
+                    break;
+                case 'declined':
+                    $query->where('enrollment_status', 'declined');
+                    break;
+                case 'applications':
+                    // Show all applications (same as 'all')
+                    break;
+                case 'notices':
+                    // For notices tab, show all applications
+                    break;
+                case 'all':
+                    // No additional filter
+                    break;
+                default:
+                    // Default to pending if unknown tab
+                    $query->where('enrollment_status', 'pending');
+                    break;
+            }
+            
+            // Apply additional filters
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->where(function($q) use ($search) {
+                    $q->where('first_name', 'like', "%{$search}%")
+                      ->orWhere('last_name', 'like', "%{$search}%")
+                      ->orWhere('application_id', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%");
+                });
+            }
+            
+            if ($request->filled('status')) {
+                $query->where('enrollment_status', $request->status);
+            }
+            
+            if ($request->filled('date')) {
+                $query->whereDate('created_at', $request->date);
+            }
+            
+            $applications = $query->select([
                 'id',
                 'application_id', 
                 'first_name', 
                 'last_name', 
                 'email',
-                'enrollment_status'
+                'enrollment_status',
+                'grade_level_applied',
+                'created_at'
             ])
             ->orderBy('created_at', 'desc')
-            ->get()
-            ->map(function ($app) {
-                return [
-                    'id' => $app->id,
-                    'application_id' => $app->application_id,
-                    'first_name' => $app->first_name,
-                    'last_name' => $app->last_name,
-                    'email' => $app->email,
-                    'enrollment_status' => $app->enrollment_status
-                ];
-            });
+            ->get();
+            
+            // Calculate counts for all tabs
+            $counts = [
+                'pending' => Enrollee::where('enrollment_status', 'pending')->count(),
+                'approved' => Enrollee::where('enrollment_status', 'approved')->count(),
+                'declined' => Enrollee::where('enrollment_status', 'declined')->count(),
+                'applications' => Enrollee::count(),
+                'notices' => Enrollee::count(),
+                'all' => Enrollee::count(),
+            ];
 
             return response()->json([
                 'success' => true,
-                'applications' => $applications
+                'applications' => $applications,
+                'counts' => $counts
             ]);
         } catch (\Exception $e) {
-            Log::error('Error fetching applications data: ' . $e->getMessage());
+            \Log::error('Error in getApplicationsData: ' . $e->getMessage());
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to fetch applications data'
+                'message' => 'Failed to load applications data: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -1354,5 +1169,439 @@ class RegistrarController extends Controller
                 'message' => 'Failed to preview recipients'
             ], 500);
         }
+    }
+
+    /**
+     * Display class lists with filtering options
+     */
+    public function classLists(Request $request)
+    {
+        $currentAcademicYear = date('Y') . '-' . (date('Y') + 1);
+        
+        // Get filter parameters
+        $selectedGrade = $request->get('grade_level');
+        $selectedStrand = $request->get('strand');
+        $selectedTrack = $request->get('track');
+        $selectedSection = $request->get('section');
+        
+        // Get all available grade levels from enrolled students with settled payments
+        $availableGrades = Student::where('academic_year', $currentAcademicYear)
+                                 ->where('is_active', true)
+                                 ->where('enrollment_status', 'enrolled')
+                                 ->where('is_paid', true)
+                                 ->distinct()
+                                 ->pluck('grade_level')
+                                 ->sort()
+                                 ->values();
+        
+        // Grade level order for proper sorting
+        $gradeOrder = [
+            'Nursery', 'Junior Casa', 'Senior Casa', 'Kinder',
+            'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6',
+            'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'
+        ];
+        
+        // Sort grades according to proper order, fallback to all grades if no students found
+        if ($availableGrades->count() > 0) {
+            $orderedGrades = collect($gradeOrder)->filter(function($grade) use ($availableGrades) {
+                return $availableGrades->contains($grade);
+            });
+        } else {
+            $orderedGrades = collect($gradeOrder);
+        }
+        
+        // Get available strands for selected grade (if Grade 11 or 12)
+        $availableStrands = collect();
+        if ($selectedGrade && in_array($selectedGrade, ['Grade 11', 'Grade 12'])) {
+            $availableStrands = Student::where('grade_level', $selectedGrade)
+                                     ->where('academic_year', $currentAcademicYear)
+                                     ->where('is_active', true)
+                                     ->where('enrollment_status', 'enrolled')
+                                     ->where('is_paid', true)
+                                     ->whereNotNull('strand')
+                                     ->distinct()
+                                     ->pluck('strand')
+                                     ->sort()
+                                     ->values();
+        }
+        
+        // Get available tracks for selected strand (if TVL)
+        $availableTracks = collect();
+        if ($selectedStrand === 'TVL') {
+            $availableTracks = Student::where('grade_level', $selectedGrade)
+                                    ->where('strand', 'TVL')
+                                    ->where('academic_year', $currentAcademicYear)
+                                    ->where('is_active', true)
+                                    ->where('enrollment_status', 'enrolled')
+                                    ->where('is_paid', true)
+                                    ->whereNotNull('track')
+                                    ->distinct()
+                                    ->pluck('track')
+                                    ->sort()
+                                    ->values();
+        }
+        
+        // Get available sections for selected grade/strand/track
+        $availableSections = collect();
+        if ($selectedGrade) {
+            $sectionsQuery = Student::where('grade_level', $selectedGrade)
+                                   ->where('academic_year', $currentAcademicYear)
+                                   ->where('is_active', true)
+                                   ->where('enrollment_status', 'enrolled')
+                                   ->where('is_paid', true);
+            
+            if ($selectedStrand) {
+                $sectionsQuery->where('strand', $selectedStrand);
+            }
+            
+            if ($selectedTrack) {
+                $sectionsQuery->where('track', $selectedTrack);
+            }
+            
+            $availableSections = $sectionsQuery->distinct()
+                                             ->pluck('section')
+                                             ->sort()
+                                             ->values();
+        }
+        
+        // Get students for selected filters
+        $students = collect();
+        $classInfo = null;
+        $classAdviser = null;
+        $subjectTeachers = collect();
+        
+        if ($selectedGrade && $selectedSection) {
+            // Build the query - only enrolled students with settled payments
+            $studentsQuery = Student::where('grade_level', $selectedGrade)
+                                   ->where('section', $selectedSection)
+                                   ->where('academic_year', $currentAcademicYear)
+                                   ->where('is_active', true)
+                                   ->where('enrollment_status', 'enrolled')
+                                   ->where('is_paid', true);
+            
+            // Add strand/track filters if applicable
+            if ($selectedStrand) {
+                $studentsQuery->where('strand', $selectedStrand);
+            }
+            
+            if ($selectedTrack) {
+                $studentsQuery->where('track', $selectedTrack);
+            }
+            
+            // Get students ordered by name
+            $students = $studentsQuery->orderBy('last_name')
+                                    ->orderBy('first_name')
+                                    ->get();
+            
+            // Build class info string using consistent format with strand/track first
+            if ($selectedStrand) {
+                if ($selectedTrack) {
+                    // For TVL with track: "Grade 11 TVL-ICT Section A"
+                    $classInfo = $selectedGrade . ' ' . $selectedStrand . '-' . $selectedTrack . ' Section ' . $selectedSection;
+                } else {
+                    // For non-TVL strands: "Grade 11 STEM Section A"
+                    $classInfo = $selectedGrade . ' ' . $selectedStrand . ' Section ' . $selectedSection;
+                }
+            } else {
+                // For Elementary/JHS: "Grade 7 Section A"
+                $classInfo = $selectedGrade . ' Section ' . $selectedSection;
+            }
+            
+            // Get class adviser
+            $adviserQuery = FacultyAssignment::where('grade_level', $selectedGrade)
+                                           ->where('section', $selectedSection)
+                                           ->where('assignment_type', 'class_adviser')
+                                           ->where('academic_year', $currentAcademicYear)
+                                           ->where('status', 'active')
+                                           ->with(['teacher.user']);
+            
+            if ($selectedStrand) {
+                $adviserQuery->where('strand', $selectedStrand);
+            }
+            
+            if ($selectedTrack) {
+                $adviserQuery->where('track', $selectedTrack);
+            }
+            
+            $classAdviser = $adviserQuery->first();
+            
+            // Get subject teachers
+            $teachersQuery = FacultyAssignment::where('grade_level', $selectedGrade)
+                                            ->where('section', $selectedSection)
+                                            ->where('assignment_type', 'subject_teacher')
+                                            ->where('academic_year', $currentAcademicYear)
+                                            ->where('status', 'active')
+                                            ->with(['teacher.user', 'subject']);
+            
+            if ($selectedStrand) {
+                $teachersQuery->where('strand', $selectedStrand);
+            }
+            
+            if ($selectedTrack) {
+                $teachersQuery->where('track', $selectedTrack);
+            }
+            
+            $subjectTeachers = $teachersQuery->get();
+        }
+        
+        return view('registrar.class-lists', compact(
+            'orderedGrades',
+            'availableStrands',
+            'availableTracks',
+            'availableSections',
+            'students',
+            'classInfo',
+            'classAdviser',
+            'subjectTeachers',
+            'selectedGrade',
+            'selectedStrand',
+            'selectedTrack',
+            'selectedSection',
+            'currentAcademicYear'
+        ));
+    }
+    
+    /**
+     * Get sections via AJAX for dynamic filtering
+     */
+    public function getClassListSections(Request $request)
+    {
+        $gradeLevel = $request->get('grade_level');
+        $strand = $request->get('strand');
+        $track = $request->get('track');
+        $currentAcademicYear = date('Y') . '-' . (date('Y') + 1);
+        
+        if (!$gradeLevel) {
+            return response()->json(['success' => false, 'message' => 'Grade level is required']);
+        }
+        
+        $sectionsQuery = Student::where('grade_level', $gradeLevel)
+                               ->where('academic_year', $currentAcademicYear)
+                               ->where('is_active', true)
+                               ->where('enrollment_status', 'enrolled')
+                               ->where('is_paid', true);
+        
+        if ($strand) {
+            $sectionsQuery->where('strand', $strand);
+        }
+        
+        if ($track) {
+            $sectionsQuery->where('track', $track);
+        }
+        
+        $sections = $sectionsQuery->select('section')
+                                 ->selectRaw('COUNT(*) as student_count')
+                                 ->groupBy('section')
+                                 ->orderBy('section')
+                                 ->get();
+        
+        // If no sections found in database, provide default sections with 0 count
+        if ($sections->isEmpty()) {
+            $sections = collect([
+                ['section' => 'A', 'student_count' => 0],
+                ['section' => 'B', 'student_count' => 0],
+                ['section' => 'C', 'student_count' => 0]
+            ]);
+        }
+        
+        return response()->json([
+            'success' => true,
+            'sections' => $sections
+        ]);
+    }
+    
+    /**
+     * Get strands via AJAX for dynamic filtering
+     */
+    public function getClassListStrands(Request $request)
+    {
+        $gradeLevel = $request->get('grade_level');
+        $currentAcademicYear = date('Y') . '-' . (date('Y') + 1);
+        
+        if (!$gradeLevel || !in_array($gradeLevel, ['Grade 11', 'Grade 12'])) {
+            return response()->json(['success' => true, 'strands' => []]);
+        }
+        
+        $strands = Student::where('grade_level', $gradeLevel)
+                         ->where('academic_year', $currentAcademicYear)
+                         ->where('is_active', true)
+                         ->where('enrollment_status', 'enrolled')
+                         ->where('is_paid', true)
+                         ->whereNotNull('strand')
+                         ->distinct()
+                         ->pluck('strand')
+                         ->sort()
+                         ->values();
+        
+        // If no strands found in database, provide default options
+        if ($strands->isEmpty()) {
+            $strands = collect(['STEM', 'ABM', 'HUMSS', 'TVL']);
+        }
+        
+        return response()->json([
+            'success' => true,
+            'strands' => $strands
+        ]);
+    }
+    
+    /**
+     * Get tracks via AJAX for dynamic filtering
+     */
+    public function getClassListTracks(Request $request)
+    {
+        $gradeLevel = $request->get('grade_level');
+        $strand = $request->get('strand');
+        $currentAcademicYear = date('Y') . '-' . (date('Y') + 1);
+        
+        if (!$gradeLevel || $strand !== 'TVL') {
+            return response()->json(['success' => true, 'tracks' => []]);
+        }
+        
+        $tracks = Student::where('grade_level', $gradeLevel)
+                        ->where('strand', 'TVL')
+                        ->where('academic_year', $currentAcademicYear)
+                        ->where('is_active', true)
+                        ->where('enrollment_status', 'enrolled')
+                        ->where('is_paid', true)
+                        ->whereNotNull('track')
+                        ->distinct()
+                        ->pluck('track')
+                        ->sort()
+                        ->values();
+        
+        // If no tracks found in database, provide default TVL tracks
+        if ($tracks->isEmpty()) {
+            $tracks = collect(['ICT', 'H.E.']);
+        }
+        
+        return response()->json([
+            'success' => true,
+            'tracks' => $tracks
+        ]);
+    }
+    
+    /**
+     * Get students for accordion view
+     */
+    public function getClassListStudents(Request $request)
+    {
+        $gradeLevel = $request->get('grade_level');
+        $section = $request->get('section');
+        $strand = $request->get('strand');
+        $track = $request->get('track');
+        
+        if (!$gradeLevel || !$section) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Grade level and section are required'
+            ]);
+        }
+        
+        // Build query for students
+        $studentsQuery = Student::where('grade_level', $gradeLevel)
+                               ->where('section', $section)
+                               ->where('is_active', true)
+                               ->where('enrollment_status', 'enrolled')
+                               ->where('is_paid', true);
+        
+        // Add strand filter for Grade 11 & 12
+        if (in_array($gradeLevel, ['Grade 11', 'Grade 12']) && $strand) {
+            $studentsQuery->where('strand', $strand);
+        }
+        
+        // Add track filter for TVL
+        if ($strand === 'TVL' && $track) {
+            $studentsQuery->where('track', $track);
+        }
+        
+        $students = $studentsQuery->orderBy('last_name')
+                                 ->orderBy('first_name')
+                                 ->get();
+        
+        // Build class info
+        $classInfo = $gradeLevel . ' - ' . $section;
+        if ($strand) {
+            $classInfo .= ' - ' . $strand;
+            if ($track) {
+                $classInfo .= ' - ' . $track;
+            }
+        }
+        
+        return response()->json([
+            'success' => true,
+            'students' => $students,
+            'class_info' => $classInfo,
+            'count' => $students->count()
+        ]);
+    }
+    
+    /**
+     * Get student details for modal display
+     */
+    public function getStudentDetails($studentId)
+    {
+        try {
+            $student = Student::where('id', $studentId)
+                             ->where('is_active', true)
+                             ->where('enrollment_status', 'enrolled')
+                             ->where('is_paid', true)
+                             ->first();
+            
+            if (!$student) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Student not found or not enrolled'
+                ]);
+            }
+            
+            // Build complete class information
+            $classInfo = $student->grade_level . ' - ' . $student->section;
+            if ($student->strand) {
+                $classInfo .= ' - ' . $student->strand;
+                if ($student->track) {
+                    $classInfo .= ' - ' . $student->track;
+                }
+            }
+            
+            return response()->json([
+                'success' => true,
+                'student' => array_merge($student->toArray(), [
+                    'class_info' => $classInfo,
+                    'strand_full_name' => $this->getStrandFullName($student->strand),
+                    'track_full_name' => $this->getTrackFullName($student->track)
+                ])
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error loading student details'
+            ]);
+        }
+    }
+    
+    /**
+     * Get full name for strand
+     */
+    private function getStrandFullName($strand)
+    {
+        $strandNames = [
+            'STEM' => 'Science, Technology, Engineering, and Mathematics',
+            'ABM' => 'Accountancy, Business, and Management',
+            'HUMSS' => 'Humanities and Social Sciences',
+            'TVL' => 'Technical-Vocational-Livelihood'
+        ];
+        return $strandNames[$strand] ?? null;
+    }
+    
+    /**
+     * Get full name for track
+     */
+    private function getTrackFullName($track)
+    {
+        $trackNames = [
+            'ICT' => 'Information and Communications Technology',
+            'H.E' => 'Home Economics'
+        ];
+        return $trackNames[$track] ?? null;
     }
 }

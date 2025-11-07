@@ -81,6 +81,96 @@ document.addEventListener('DOMContentLoaded', function() {
     const currentValueInput = document.getElementById('current_value');
     const oldValueInput = document.getElementById('old_value');
     
+    // Get all new value input elements
+    const newValueInputs = {
+        text: document.getElementById('new_value'),
+        uppercase: document.getElementById('new_value_uppercase'),
+        email: document.getElementById('new_value_email'),
+        tel: document.getElementById('new_value_tel'),
+        date: document.getElementById('new_value_date'),
+        textarea: document.getElementById('new_value_textarea'),
+        gender: document.getElementById('new_value_gender'),
+        student_type: document.getElementById('new_value_student_type'),
+        grade_level: document.getElementById('new_value_grade_level'),
+        strand: document.getElementById('new_value_strand'),
+        track: document.getElementById('new_value_track'),
+        last_school_type: document.getElementById('new_value_last_school_type')
+    };
+    
+    // Define field input type mappings
+    const fieldInputTypes = {
+        // Name fields - uppercase
+        'first_name': 'uppercase',
+        'middle_name': 'uppercase',
+        'last_name': 'uppercase',
+        'suffix': 'uppercase',
+        'nationality': 'uppercase',
+        'religion': 'uppercase',
+        
+        // Contact fields
+        'email': 'email',
+        'contact_number': 'tel',
+        'father_contact': 'tel',
+        'mother_contact': 'tel',
+        'guardian_contact': 'tel',
+        
+        // Date fields
+        'date_of_birth': 'date',
+        
+        // Address fields - uppercase
+        'address': 'textarea',
+        'city': 'uppercase',
+        'province': 'uppercase',
+        'zip_code': 'text',
+        
+        // Dropdown fields
+        'gender': 'gender',
+        'student_type': 'student_type',
+        'grade_level_applied': 'grade_level',
+        'strand_applied': 'strand',
+        'track_applied': 'track',
+        'last_school_type': 'last_school_type',
+        
+        // Parent/Guardian names - uppercase
+        'father_name': 'uppercase',
+        'father_occupation': 'uppercase',
+        'mother_name': 'uppercase',
+        'mother_occupation': 'uppercase',
+        'guardian_name': 'uppercase',
+        'last_school_name': 'uppercase',
+        
+        // Medical history - textarea uppercase
+        'medical_history': 'textarea'
+    };
+    
+    function hideAllNewValueInputs() {
+        Object.values(newValueInputs).forEach(input => {
+            if (input) {
+                input.style.display = 'none';
+                input.removeAttribute('name');
+                input.required = false;
+            }
+        });
+    }
+    
+    function showNewValueInput(inputType) {
+        hideAllNewValueInputs();
+        
+        const input = newValueInputs[inputType];
+        if (input) {
+            input.style.display = 'block';
+            input.setAttribute('name', 'new_value');
+            input.required = true;
+            
+            // Clear previous value
+            if (input.tagName === 'SELECT') {
+                input.selectedIndex = 0;
+            } else {
+                input.value = '';
+            }
+        }
+    }
+    
     console.log('Field select element:', fieldSelect);
     console.log('Current value input:', currentValueInput);
     console.log('Old value input:', oldValueInput);
@@ -95,6 +185,10 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Selected field:', selectedField);
             console.log('Enrollee data keys:', Object.keys(enrolleeData));
             console.log('Field exists in data:', selectedField in enrolleeData);
+            
+            // Show appropriate input type
+            const inputType = fieldInputTypes[selectedField] || 'text';
+            showNewValueInput(inputType);
             
             if (selectedField && selectedField in enrolleeData) {
                 let currentValue = enrolleeData[selectedField];
@@ -137,6 +231,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         });
+        
+        // Initialize by hiding all inputs
+        hideAllNewValueInputs();
     } else {
         console.error('Required elements not found for data change request functionality');
     }

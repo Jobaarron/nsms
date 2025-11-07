@@ -139,6 +139,12 @@
   .card-credits  { background-color: var(--accent-color); }
   .card-subjects { background-color: var(--dark-green); }
   .card-gpa      { background-color: var(--secondary-color); color: var(--dark-green); }
+  
+  /* Schedule page specific cards */
+  .card-application { background-color: var(--primary-color); }
+  .card-status      { background-color: var(--accent-color); }
+  .card-payment     { background-color: var(--dark-green); }
+  .card-schedule    { background-color: var(--secondary-color); color: var(--dark-green); }
   /* Table Head */
   .table thead {
     background-color: var(--primary-color);

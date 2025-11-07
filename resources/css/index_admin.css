@@ -1,20 +1,33 @@
+/* Tighter spacing for action buttons in forwarded cases table */
+.d-flex.gap-2.align-items-center {
+  gap: 0.1rem !important;
+}
+/* Black font for User Distribution title */
+.user-distribution-black {
+  color: #000 !important;
+}
 /* Clean Color Palette - Matching Landing Page */
 :root {
-  --primary-color: #2B7A3B;      /* Rich green from logo shield */
-  --secondary-color: #4CAF50;     /* Lighter green from logo text */
-  --accent-color: #1B5E20;       /* Darker green for emphasis */
-  --light-green: #E8F5E9;        /* Very light green for subtle backgrounds */
-  --dark-green: #0D4F14;         /* Deep green for text */
-  --white: #FFFFFF;              /* Pure white for clean backgrounds */
-  --light-gray: #F8F9FA;         /* Light gray for subtle sections */
-  --border-gray: #E0E0E0;        /* Light border color */
-  --text-gray: #424242;          /* Professional gray for text */
-  
-  /* Complementary colors for admin */
-  --text-dark: #2B7A3B;
-  --text-light: #ffffff;
-  --bg-light: #FFFFFF;
-  --shadow-color: rgba(0, 0, 0, 0.05);
+  --primary-color: #43b36a;      /* New green */
+  --secondary-color: #2b7a3b;    /* Dark green */
+  --accent-color: #20c997;       /* Accent green */
+  --white: #FFFFFF;
+  --light-gray: #F8F9FA;
+  --border-gray: #E0E0E0;
+  --text-gray: #424242;
+  --shadow-color: rgba(67, 179, 106, 0.07);
+
+/* Icon color utility classes for admin dashboard */
+.admin-green-icon { color: var(--primary-color) !important; }
+.admin-green-light-icon { color: #7be495 !important; }
+.admin-green-dark-icon { color: var(--secondary-color) !important; }
+.admin-green-accent-icon { color: var(--accent-color) !important; }
+
+.admin-card-header {
+  background: var(--white) !important;
+  color: var(--secondary-color) !important;
+  border-bottom: 2px solid var(--primary-color) !important;
+}
 }
 
 body {
@@ -281,9 +294,13 @@ body {
 }
 
 /* Action Buttons in Table */
+
+/* Smaller action buttons for forwarded cases */
 .btn-sm {
-  border-radius: 6px;
-  padding: 0.4rem 0.6rem;
+  border-radius: 5px;
+  padding: 0.08rem 0.22rem;
+  font-size: 0.72rem;
+  line-height: 1;
   transition: all 0.3s ease;
 }
 

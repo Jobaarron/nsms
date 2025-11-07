@@ -1,3 +1,162 @@
+/* Force black font color for user names in user list */
+td strong, .user-list strong, .table td strong {
+    color: #000 !important;
+}
+/* Force black font color for all user name and email fields in user management tables */
+.user-name-cell,
+.user-email-cell,
+td.user-name-cell,
+td.user-email-cell,
+table.table td.user-name-cell,
+table.table td.user-email-cell {
+    color: #000 !important;
+}
+/* Force black font color for 'Remove role from:' and user/role name */
+p:has(strong#removeUserName),
+strong#removeUserName {
+    color: #000 !important;
+}
+/* Force black font color for role removal UI */
+p#removeUserName,
+label[for="removeRoleSelect"],
+#removeRoleSelect {
+    color: #000 !important;
+}
+/* Force user email cells to black regardless of table color */
+.user-email-cell {
+    color: #000 !important;
+}
+/* Force email text to black in user list */
+.user-email, td.user-email, .email-cell, td.email-cell {
+    color: #000 !important;
+}
+/* --- Green & White Modern Admin Theme --- */
+:root {
+    --admin-green: #198754;
+    --admin-green-light: #43b36a;
+    --admin-white: #fff;
+    --admin-border: #198754;
+    --admin-text: #198754;
+
+body {
+    background: var(--admin-white) !important;
+    color: var(--admin-text) !important;
+}
+
+/* Modal font color always black for minimalist clarity */
+.card, .table, .table-responsive, .card-header, .card-body {
+    background: var(--admin-white) !important;
+    border-color: var(--admin-border) !important;
+    color: var(--admin-text) !important;
+    box-shadow: 0 2px 12px rgba(25, 135, 84, 0.07);
+}
+.modal-content, .modal-header, .modal-footer, .modal-body {
+    background: var(--admin-white) !important;
+    border-color: var(--admin-border) !important;
+    color: #111 !important;
+    box-shadow: 0 2px 12px rgba(25, 135, 84, 0.07);
+}
+
+.card-header, .modal-header {
+    background: var(--admin-green) !important;
+    color: var(--admin-white) !important;
+    border-bottom: 2px solid var(--admin-green-light) !important;
+}
+
+.card-footer, .modal-footer {
+    background: var(--admin-white) !important;
+    border-top: 2px solid var(--admin-green-light) !important;
+}
+
+.table th, .table td {
+    border-color: var(--admin-green-light) !important;
+    color: var(--admin-text) !important;
+}
+
+.nav-tabs .nav-link.active, .nav-tabs .nav-link:hover {
+    background: var(--admin-green) !important;
+    color: var(--admin-white) !important;
+    border-color: var(--admin-green) var(--admin-green) var(--admin-white) !important;
+}
+
+.nav-tabs .nav-link {
+    color: var(--admin-green) !important;
+    background: var(--admin-white) !important;
+    border: 1px solid var(--admin-green-light) !important;
+}
+
+.badge {
+    background: var(--admin-green) !important;
+    color: var(--admin-white) !important;
+}
+
+.btn, .btn-sm, .btn-lg {
+    background: var(--admin-green) !important;
+    color: var(--admin-white) !important;
+    border: 2px solid var(--admin-green) !important;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+.btn:hover, .btn:focus {
+    background: var(--admin-white) !important;
+    color: var(--admin-green) !important;
+    border: 2px solid var(--admin-green) !important;
+}
+
+.form-control, .form-select {
+    border: 1.5px solid var(--admin-green-light) !important;
+    color: #111 !important;
+    background: var(--admin-white) !important;
+}
+.form-control:focus, .form-select:focus {
+    border-color: var(--admin-green) !important;
+    box-shadow: 0 0 0 0.2rem rgba(25,135,84,.15) !important;
+}
+
+.alert {
+    background: var(--admin-green-light) !important;
+    color: var(--admin-white) !important;
+    border: none !important;
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) {
+    background: #f6fff9 !important;
+}
+
+.btn-outline-primary, .btn-outline-warning, .btn-outline-info, .btn-outline-dark, .btn-outline-light {
+    background: var(--admin-white) !important;
+    color: var(--admin-green) !important;
+    border: 2px solid var(--admin-green) !important;
+}
+.btn-outline-primary:hover, .btn-outline-warning:hover, .btn-outline-info:hover, .btn-outline-dark:hover, .btn-outline-light:hover {
+    background: var(--admin-green) !important;
+    color: var(--admin-white) !important;
+    border: 2px solid var(--admin-green) !important;
+}
+
+/* Minimalist Red for Remove Role & Delete */
+.btn-danger, .btn-outline-danger {
+    background: #dc3545 !important;
+    color: #fff !important;
+    border: 2px solid #dc3545 !important;
+    font-weight: 600;
+    transition: background 0.2s, color 0.2s;
+}
+.btn-danger:hover, .btn-danger:focus {
+    background: #fff !important;
+    color: #dc3545 !important;
+    border: 2px solid #dc3545 !important;
+}
+.btn-outline-danger {
+    background: #fff !important;
+    color: #dc3545 !important;
+    border: 2px solid #dc3545 !important;
+}
+.btn-outline-danger:hover, .btn-outline-danger:focus {
+    background: #dc3545 !important;
+    color: #fff !important;
+    border: 2px solid #dc3545 !important;
+}
 .avatar-sm {
     width: 32px;
     height: 32px;
@@ -25,7 +184,13 @@
 .table th {
     border-top: none;
     font-weight: 600;
-    color: #495057;
+    color: #000;
+}
+
+/* Make Actions column and header black */
+.table th, .table td.actions-col, .actions-col {
+    color: #000 !important;
+}
 }
 
 .card {

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -27,7 +27,10 @@
   
   @vite('resources/sass/app.scss')
   @vite(['resources/css/index_registrar.css'])
+  @vite(['resources/css/registrar-dashboard.css'])
   @vite(['resources/js/app.js'])
+  @vite(['resources/js/registrar-class-lists.js'])
+  @vite(['resources/js/registrar-dashboard.js'])
 
 </head>
 <body>
@@ -58,16 +61,16 @@
               <i class="ri-file-list-line me-2"></i>Applications
             </a>
           </li>
-          {{-- <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('registrar.approved') ? 'active' : '' }}" href="{{ route('registrar.approved') }}">
-              <i class="ri-check-line me-2"></i>Approved
+          <li class="nav-item mb-2">
+            <a class="nav-link {{ request()->routeIs('registrar.class-lists') ? 'active' : '' }}" href="{{ route('registrar.class-lists') }}">
+              <i class="ri-group-line me-2"></i>Class Lists
             </a>
-          </li> --}}
-          {{-- <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('registrar.reports') ? 'active' : '' }}" href="{{ route('registrar.reports') }}">
-              <i class="ri-bar-chart-line me-2"></i>Reports
+          </li>
+           <li class="nav-item mb-2">
+            <a class="nav-link disabled {{ request()->routeIs('registrar.approved') ? 'active' : '' }}" href="{{ route('registrar.approved') }}">
+              <i class="ri-check-line me-2"></i>Payment Archives (WIP)
             </a>
-          </li> --}}
+          </li> 
         </ul>
         
         <!-- LOGOUT SECTION -->
@@ -101,7 +104,5 @@
       </main>
     </div>
   </div>
-
-  
 </body>
 </html>

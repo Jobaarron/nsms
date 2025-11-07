@@ -116,159 +116,145 @@ window.viewCaseMeeting = function(meetingId) {
     .then(data => {
         if (data.success) {
             const meeting = data.meeting;
+            // Debug: log meeting object to check for student_id, violation_id, and possible narrative_report_url
+            console.log('Meeting data:', meeting);
 
-            // Populate modal fields
-            document.getElementById('view_student_name').textContent = meeting.student_name || 'N/A';
-            document.getElementById('view_student_id').textContent = meeting.student_id || 'N/A';
-            document.getElementById('view_counselor_name').textContent = meeting.counselor_name || 'N/A';
-            document.getElementById('view_meeting_type').textContent = meeting.meeting_type_display || 'N/A';
-            document.getElementById('view_status').textContent = meeting.status_text || 'N/A';
-            document.getElementById('view_status').className = `badge ${meeting.status_class || 'bg-secondary'}`;
-            document.getElementById('view_scheduled_date').textContent = meeting.scheduled_date || 'TBD';
-            document.getElementById('view_scheduled_time').textContent = meeting.scheduled_time || 'TBD';
-
-
-            document.getElementById('view_reason').textContent = meeting.reason || 'N/A';
-
-            // Handle optional fields
-            const locationContainer = document.getElementById('view_location_container');
-            const locationSpan = document.getElementById('view_location');
-            if (meeting.location) {
-                locationSpan.textContent = meeting.location;
-                locationContainer.style.display = '';
-            } else {
-                locationContainer.style.display = 'none';
+            // Build the PDF URL for the narrative report - only show if student has replied
+            let narrativePdfUrl = '';
+            if (meeting.student_id && meeting.violation_id && 
+                (meeting.student_statement || meeting.incident_feelings || meeting.action_plan)) {
+                narrativePdfUrl = `/narrative-report/view/${meeting.student_id}/${meeting.violation_id}`;
+            } else if (meeting.narrative_report_url) {
+                narrativePdfUrl = meeting.narrative_report_url;
             }
 
-            const completedAtContainer = document.getElementById('view_completed_at_container');
-            const completedAtSpan = document.getElementById('view_completed_at');
-            if (meeting.completed_at) {
-                completedAtSpan.textContent = new Date(meeting.completed_at).toLocaleString();
-                completedAtContainer.style.display = '';
-            } else {
-                completedAtContainer.style.display = 'none';
+            // Build the PDF URL for the case meeting attachment - only show if student has replied
+            let caseMeetingAttachmentUrl = '';
+            if (meeting.id && (meeting.student_statement || meeting.incident_feelings || meeting.action_plan)) {
+                caseMeetingAttachmentUrl = `/guidance/pdf/case-meeting/${meeting.id}`;
             }
 
-            const notesContainer = document.getElementById('view_notes_container');
-            const notesDiv = document.getElementById('view_notes');
-            if (meeting.notes) {
-                notesDiv.textContent = meeting.notes;
-                notesContainer.style.display = '';
-            } else {
-                notesContainer.style.display = 'none';
+            // Build the PDF URL for the teacher observation report (guidance route)
+            let teacherObservationReportUrl = '';
+            if (
+                meeting.id && (
+                    (typeof meeting.teacher_statement === 'string' && meeting.teacher_statement.trim() !== '') ||
+                    (typeof meeting.action_plan === 'string' && meeting.action_plan.trim() !== '')
+                )
+            ) {
+                teacherObservationReportUrl = `/guidance/observationreport/pdf/${meeting.id}`;
             }
 
-            const summaryContainer = document.getElementById('view_summary_container');
-            const summaryDiv = document.getElementById('view_summary');
-            if (meeting.summary) {
-                summaryDiv.textContent = meeting.summary;
-                summaryContainer.style.display = '';
-            } else {
-                summaryContainer.style.display = 'none';
-            }
-
-            const recommendationsContainer = document.getElementById('view_recommendations_container');
-            const recommendationsDiv = document.getElementById('view_recommendations');
-            if (meeting.recommendations) {
-                recommendationsDiv.textContent = meeting.recommendations;
-                recommendationsContainer.style.display = '';
-            } else {
-                recommendationsContainer.style.display = 'none';
-            }
-
-            const followUpContainer = document.getElementById('view_follow_up_container');
-            const followUpText = document.getElementById('view_follow_up_text');
-            if (meeting.follow_up_required) {
-                followUpText.textContent = meeting.follow_up_date ? `Scheduled for ${new Date(meeting.follow_up_date).toLocaleDateString()}` : 'Required';
-                followUpContainer.style.display = '';
-            } else {
-                followUpContainer.style.display = 'none';
-            }
-
-            // Handle sanctions
-            const sanctionsContainer = document.getElementById('view_sanctions_container');
-            const sanctionsList = document.getElementById('view_sanctions_list');
-            sanctionsList.innerHTML = '';
-            if (meeting.sanctions && meeting.sanctions.length > 0) {
-                meeting.sanctions.forEach(sanction => {
-                    const sanctionItem = document.createElement('div');
-                    sanctionItem.className = 'list-group-item px-0';
-                    sanctionItem.innerHTML = `
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div class="flex-grow-1">
-                                <div class="fw-semibold">${sanction.type}</div>
-                                ${sanction.description ? `<small class="text-muted">${sanction.description}</small>` : ''}
-                                <div class="small text-muted mt-1">
-                                    <i class="ri-calendar-line me-1"></i>${new Date(sanction.created_at).toLocaleDateString()}
+            // Compose modal HTML (two-column, similar to violation modal)
+            document.getElementById('viewCaseMeetingModalBody').innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Student Information</h6>
+                        <table class="table table-sm">
+                            <tbody>
+                                <tr><td><strong>Name:</strong></td><td>${meeting.student_name || 'N/A'}</td></tr>
+                                <tr><td><strong>Student ID:</strong></td><td>${meeting.student_id || 'N/A'}</td></tr>
+                                <tr><td><strong>Status:</strong></td><td>
+                                    <span class="badge bg-${meeting.status_class ? meeting.status_class.replace('bg-', '') : 'secondary'}">
+                                        ${meeting.status_text || 'N/A'}
+                                    </span>
+                                </td></tr>
+                                <tr><td><strong>Schedule Date:</strong></td><td>${meeting.scheduled_date ? new Date(meeting.scheduled_date).toLocaleDateString() : 'N/A'}</td></tr>
+                                <tr><td><strong>Schedule Time:</strong></td><td>${meeting.scheduled_time ? meeting.scheduled_time.substring(0,5) : 'N/A'}</td></tr>
+                            </tbody>
+                        </table>
+                        <!-- Attachment Report Section -->
+                        <div class="mt-4">
+                            <div style="font-weight: bold; font-size: 16px; margin-bottom: 12px;">Attachment Report</div>
+                            ${caseMeetingAttachmentUrl ? `
+                                <div style="margin-bottom: 10px;">
+                                    <a href="${caseMeetingAttachmentUrl}" target="_blank" style="display: inline-flex; align-items: center; border: 2px solid #388e3c; color: #388e3c; border-radius: 6px; padding: 8px 18px; font-size: 16px; font-weight: 500; background: #fff; text-decoration: none; margin-bottom: 8px;">
+                                        <span style="margin-right: 8px; font-size: 18px;">&#128206;</span> <!-- Paperclip Unicode -->
+                                        Student Narrative Report
+                                    </a>
                                 </div>
-                            </div>
-                            <span class="badge bg-${getSanctionStatusColor(sanction.status || 'pending')}">${ucfirst(sanction.status || 'pending')}</span>
+                            ` : ''}
+                            ${teacherObservationReportUrl ? `
+                                <div>
+                                    <a href="${teacherObservationReportUrl}" target="_blank" style="display: inline-flex; align-items: center; border: 2px solid #388e3c; color: #388e3c; border-radius: 6px; padding: 8px 18px; font-size: 16px; font-weight: 500; background: #fff; text-decoration: none;">
+                                        <span style="margin-right: 8px; font-size: 18px;">&#128196;</span> <!-- Page with curl Unicode (PDF icon alternative) -->
+                                        View Teacher Observation Report
+                                    </a>
+                                </div>
+                            ` : ''}
                         </div>
-                    `;
-                    sanctionsList.appendChild(sanctionItem);
-                });
-                sanctionsContainer.style.display = '';
-            } else {
-                sanctionsContainer.style.display = 'none';
-            }
-
-            // Handle actions
-            const actionsContainer = document.getElementById('view_actions_container');
-            actionsContainer.innerHTML = '';
-
-            // Complete button
-            if (meeting.status === 'scheduled' || meeting.status === 'in_progress') {
-                const completeBtn = document.createElement('button');
-                completeBtn.className = 'btn btn-success';
-                completeBtn.onclick = () => completeCaseMeeting(meeting.id);
-                completeBtn.innerHTML = '<i class="ri-checkbox-circle-line me-2"></i>Mark as Completed';
-                actionsContainer.appendChild(completeBtn);
-            }
-
-            // Create summary button
-            if (!meeting.summary) {
-                const summaryBtn = document.createElement('button');
-                summaryBtn.className = 'btn btn-info';
-                summaryBtn.onclick = () => openCreateSummaryModal(meeting.id);
-                summaryBtn.innerHTML = '<i class="ri-file-text-line me-2"></i>Create Summary';
-                actionsContainer.appendChild(summaryBtn);
-            }
-
-            // Forward button
-            if (meeting.summary && meeting.status === 'pre_completed' && !meeting.forwarded_to_president) {
-                const forwardBtn = document.createElement('button');
-                forwardBtn.className = 'btn btn-warning';
-                forwardBtn.onclick = () => forwardToPresident(meeting.id);
-                forwardBtn.innerHTML = '<i class="ri-send-plane-line me-2"></i>Forward to President';
-                actionsContainer.appendChild(forwardBtn);
-            }
-            // Disable other action buttons except edit/view if not allowed
-            if (!['in_progress','scheduled','pre_completed','submitted','completed'].includes(meeting.status)) {
-                const disabledBtn = document.createElement('button');
-                disabledBtn.className = 'btn btn-secondary';
-                disabledBtn.disabled = true;
-                disabledBtn.innerText = 'Action Disabled';
-                actionsContainer.appendChild(disabledBtn);
-            }
-
-            // // Edit button
-            // const editBtn = document.createElement('button');
-            // editBtn.className = 'btn btn-outline-primary';
-            // editBtn.onclick = () => editCaseMeeting(meeting.id);
-            // editBtn.innerHTML = '<i class="ri-edit-line me-2"></i>Edit Meeting';
-            // actionsContainer.appendChild(editBtn);
-
-            // Show modal
-            const modal = new bootstrap.Modal(document.getElementById('viewCaseMeetingModal'));
-            modal.show();
-        } else {
-            showAlert('danger', 'Failed to load meeting details');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showAlert('danger', 'Error loading meeting details');
-    });
+                    </div>
+                <div class="col-md-6">
+                    ${meeting.violation ? `
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Violation Details:</label>
+                            <table class="table table-sm">
+                                <tbody>
+                                    <tr><td><strong>Violation Title:</strong></td><td>${meeting.violation.title || 'N/A'}</td></tr>
+                                    <tr><td><strong>Description:</strong></td><td>${meeting.violation.description || 'N/A'}</td></tr>
+                                    <tr><td><strong>Incident Date:</strong></td><td>${meeting.violation.violation_date ? new Date(meeting.violation.violation_date).toLocaleDateString() : 'N/A'}</td></tr>
+                                    <tr><td><strong>IncidentTime:</strong></td><td>${meeting.violation.violation_time ? (function() { const d = new Date('1970-01-01T' + meeting.violation.violation_time); return isNaN(d) ? meeting.violation.violation_time : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }); })() : 'N/A'}</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    ` : ''}
+                    ${meeting.summary ? `
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Summary:</label>
+                            <p>${meeting.summary}</p>
+                        </div>
+                    ` : ''}
+                    ${meeting.recommendations ? `
+                        <div class="mb-3">
+                            <tr><td><strong>Date:</strong></td><td>${meeting.scheduled_date ? meeting.scheduled_date : 'N/A'}</td></tr>
+                            <tr><td><strong>Time:</strong></td><td>${meeting.scheduled_time ? meeting.scheduled_time : 'N/A'}</td></tr>
+                        </div>
+                    ` : ''}
+                    
+                    ${meeting.completed_at ? `
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Completed On:</label>
+                            <p>${new Date(meeting.completed_at).toLocaleDateString()} at ${new Date(meeting.completed_at).toLocaleTimeString()}</p>
+                        </div>
+                    ` : ''}
+                    ${meeting.follow_up_required ? `
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Follow Up:</label>
+                            <p>${meeting.follow_up_date ? 'Scheduled for ' + new Date(meeting.follow_up_date).toLocaleDateString() : 'Required'}</p>
+                        </div>
+                    ` : ''}
+                    <!-- Sanctions (if any) -->
+                    ${(meeting.sanctions && meeting.sanctions.length > 0) ? `
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Sanctions:</label>
+                            <ul class="list-group">
+                                ${meeting.sanctions.map(sanction => `
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>
+                                            <span class="fw-semibold">${sanction.type}</span>
+                                            ${sanction.description ? `<small class='text-muted ms-2'>${sanction.description}</small>` : ''}
+                                            <div class="small text-muted mt-1"><i class="ri-calendar-line me-1"></i>${new Date(sanction.created_at).toLocaleDateString()}</div>
+                                        </span>
+                                        <span class="badge bg-${getSanctionStatusColor(sanction.status || 'pending')}">${ucfirst(sanction.status || 'pending')}</span>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+                        // Show modal
+                        const modal = new bootstrap.Modal(document.getElementById('viewCaseMeetingModal'));
+                        modal.show();
+                } else {
+                        showAlert('danger', 'Failed to load meeting details');
+                }
+        })
+        .catch(error => {
+                console.error('Error:', error);
+                showAlert('danger', 'Error loading meeting details');
+        });
 };
 
 window.openScheduleMeetingModal = function(studentId = 0) {
@@ -359,26 +345,47 @@ window.submitCaseMeeting = function(event) {
 };
 
 window.editCaseMeeting = function(meetingId) {
-    // Fetch meeting data and populate edit modal
-    fetch(`/guidance/case-meetings/${meetingId}/edit`, {
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'Accept': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
+    // Fetch meeting data and sanction options, then populate edit modal
+    Promise.all([
+        fetch(`/guidance/case-meetings/${meetingId}/edit`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        }).then(response => response.json()),
+        fetch('/guidance/api/sanctions/list', {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        }).then(response => response.json())
+    ]).then(([data, sanctionsData]) => {
+        if (data.success && sanctionsData.success) {
             const meeting = data.meeting;
+            const sanctions = sanctionsData.sanctions || [];
 
             // Populate form
-            document.getElementById('edit_student_id').value = meeting.student_id;
-            document.getElementById('edit_meeting_type').value = meeting.meeting_type;
-            document.getElementById('edit_scheduled_date').value = meeting.scheduled_date || '';
-            document.getElementById('edit_scheduled_time').value = meeting.scheduled_time || '';
+            var studentIdEl = document.getElementById('edit_student_id');
+            if (studentIdEl) studentIdEl.value = meeting.student_id;
+            var meetingTypeEl = document.getElementById('edit_meeting_type');
+            if (meetingTypeEl) meetingTypeEl.value = meeting.meeting_type;
+            var scheduledDateEl = document.getElementById('edit_scheduled_date');
+            if (scheduledDateEl) scheduledDateEl.value = meeting.scheduled_date || '';
+            var scheduledTimeEl = document.getElementById('edit_scheduled_time');
+            if (scheduledTimeEl) scheduledTimeEl.value = meeting.scheduled_time || '';
 
-            document.getElementById('edit_reason').value = meeting.reason || '';
-            document.getElementById('edit_notes').value = meeting.notes || '';
+            var reasonEl = document.getElementById('edit_reason');
+            if (reasonEl) reasonEl.value = meeting.reason || '';
+            var notesEl = document.getElementById('edit_notes');
+            if (notesEl) notesEl.value = meeting.notes || '';
+
+            // Populate sanction dropdown
+            var sanctionSelect = document.getElementById('edit_sanction');
+            if (sanctionSelect) {
+                sanctionSelect.innerHTML = '<option value="">Select Sanction</option>' +
+                    sanctions.map(s => `<option value="${s}">${s}</option>`).join('');
+                if (meeting.sanction) sanctionSelect.value = meeting.sanction;
+            }
 
             // Set form action
             document.getElementById('editCaseMeetingForm').action = `/guidance/case-meetings/${meetingId}`;
@@ -387,10 +394,9 @@ window.editCaseMeeting = function(meetingId) {
             const modal = new bootstrap.Modal(document.getElementById('editCaseMeetingModal'));
             modal.show();
         } else {
-            showAlert('danger', 'Failed to load meeting details');
+            showAlert('danger', 'Failed to load meeting details or sanctions');
         }
-    })
-    .catch(error => {
+    }).catch(error => {
         console.error('Error:', error);
         showAlert('danger', 'Error loading meeting for editing');
     });

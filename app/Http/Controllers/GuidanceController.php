@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Models\Student;
 use App\Models\CaseMeeting;
 use App\Models\CounselingSession;
+use App\Models\Violation;
 
 class GuidanceController extends Controller
 {
@@ -70,7 +71,8 @@ class GuidanceController extends Controller
         $completedCounselingSessions = CounselingSession::where('status', 'completed')->count();
         $pendingCases = CaseMeeting::where('status', 'pending')->count();
         $scheduledCounseling = CounselingSession::where('status', 'scheduled')->count();
-        $houseVisitsScheduled = CaseMeeting::where('meeting_type', 'house_visit')->where('status', 'scheduled')->count();
+        // Count unique students with at least one violation
+        $studentsWithDisciplinaryRecord = Violation::distinct('student_id')->count('student_id');
 
         $stats = [
             'total_students' => $totalStudents,
@@ -78,7 +80,7 @@ class GuidanceController extends Controller
             'completed_counseling_sessions' => $completedCounselingSessions,
             'pending_cases' => $pendingCases,
             'scheduled_counseling' => $scheduledCounseling,
-            'house_visits_scheduled' => $houseVisitsScheduled,
+            'students_with_disciplinary_record' => $studentsWithDisciplinaryRecord,
         ];
 
         return view('guidance.index', compact('stats'));
@@ -164,12 +166,12 @@ class GuidanceController extends Controller
         }
 
         // Get current user's guidance record
-        $guidanceRecord = $user->guidance ?? $user->guidanceDiscipline ?? null;
+        $guidanceRecord = $user->guidance ?? null;
 
         \Log::info('Schedule Case Meeting: Guidance Record Check', [
             'user_id' => $user->id,
             'has_guidance' => $user->guidance ? true : false,
-            'has_guidance_discipline' => $user->guidanceDiscipline ? true : false,
+            'has_guidance_discipline' => false, // Legacy field - now using separate guidance/discipline tables
             'guidance_record_id' => $guidanceRecord ? $guidanceRecord->id : null,
             'guidance_is_active' => $guidanceRecord ? $guidanceRecord->is_active : null,
         ]);
@@ -305,16 +307,64 @@ class GuidanceController extends Controller
             'recommendations' => 'nullable|string',
             'follow_up_required' => 'boolean',
             'follow_up_date' => 'nullable|date|after:today',
+            // Agreed Actions/Interventions fields
+            'written_reflection' => 'nullable|boolean',
+            'written_reflection_due' => 'nullable|date',
+            'mentorship_counseling' => 'nullable|boolean',
+            'mentor_name' => 'nullable|string|max:255',
+            'parent_teacher_communication' => 'nullable|boolean',
+            'parent_teacher_date' => 'nullable|date',
+            'restorative_justice_activity' => 'nullable|boolean',
+            'restorative_justice_date' => 'nullable|date',
+            'follow_up_meeting' => 'nullable|boolean',
+            'follow_up_meeting_date' => 'nullable|date',
+            'community_service' => 'nullable|boolean',
+            'community_service_date' => 'nullable|date',
+            'community_service_area' => 'nullable|string|max:255',
+            'suspension' => 'nullable|boolean',
+            'suspension_3days' => 'nullable|boolean',
+            'suspension_5days' => 'nullable|boolean',
+            'suspension_other_days' => 'nullable|integer',
+            'suspension_start' => 'nullable|date',
+            'suspension_end' => 'nullable|date',
+            'suspension_return' => 'nullable|date',
+            'expulsion' => 'nullable|boolean',
+            'expulsion_date' => 'nullable|date',
         ]);
 
-
-        $caseMeeting->update([
+        // Prepare update data
+        $updateData = [
             'summary' => $validatedData['summary'],
-            'recommendations' => $validatedData['recommendations'],
+            'recommendations' => $validatedData['recommendations'] ?? null,
             'follow_up_required' => $validatedData['follow_up_required'] ?? false,
-            'follow_up_date' => $validatedData['follow_up_date'],
+            'follow_up_date' => $validatedData['follow_up_date'] ?? null,
             'status' => 'pre_completed',
-        ]);
+            // Agreed Actions/Interventions
+            'written_reflection' => $request->boolean('written_reflection'),
+            'written_reflection_due' => $validatedData['written_reflection_due'] ?? null,
+            'mentorship_counseling' => $request->boolean('mentorship_counseling'),
+            'mentor_name' => $validatedData['mentor_name'] ?? null,
+            'parent_teacher_communication' => $request->boolean('parent_teacher_communication'),
+            'parent_teacher_date' => $validatedData['parent_teacher_date'] ?? null,
+            'restorative_justice_activity' => $request->boolean('restorative_justice_activity'),
+            'restorative_justice_date' => $validatedData['restorative_justice_date'] ?? null,
+            'follow_up_meeting' => $request->boolean('follow_up_meeting'),
+            'follow_up_meeting_date' => $validatedData['follow_up_meeting_date'] ?? null,
+            'community_service' => $request->boolean('community_service'),
+            'community_service_date' => $validatedData['community_service_date'] ?? null,
+            'community_service_area' => $validatedData['community_service_area'] ?? null,
+            'suspension' => $request->boolean('suspension'),
+            'suspension_3days' => $request->boolean('suspension_3days'),
+            'suspension_5days' => $request->boolean('suspension_5days'),
+            'suspension_other_days' => $validatedData['suspension_other_days'] ?? null,
+            'suspension_start' => $validatedData['suspension_start'] ?? null,
+            'suspension_end' => $validatedData['suspension_end'] ?? null,
+            'suspension_return' => $validatedData['suspension_return'] ?? null,
+            'expulsion' => $request->boolean('expulsion'),
+            'expulsion_date' => $validatedData['expulsion_date'] ?? null,
+        ];
+
+        $caseMeeting->update($updateData);
 
         // Automatically update all related violations' statuses
         foreach ($caseMeeting->violations as $violation) {
@@ -338,7 +388,7 @@ class GuidanceController extends Controller
      */
     public function showCaseMeeting(CaseMeeting $caseMeeting)
     {
-        $caseMeeting->load(['student', 'counselor', 'sanctions']);
+        $caseMeeting->load(['student', 'counselor', 'sanctions', 'violation']);
 
         if (request()->ajax()) {
             return response()->json([
@@ -347,18 +397,10 @@ class GuidanceController extends Controller
                     'id' => $caseMeeting->id,
                     'student_name' => $caseMeeting->student ? $caseMeeting->student->full_name : 'Unknown',
                     'student_id' => $caseMeeting->student ? $caseMeeting->student->student_id : 'Unknown',
-                    'counselor_name' => $caseMeeting->counselor ? $caseMeeting->counselor->name : 'Unknown',
-                    'meeting_type' => $caseMeeting->meeting_type,
-                    'meeting_type_display' => ucwords(str_replace('_', ' ', $caseMeeting->meeting_type)),
-                    'scheduled_date' => $caseMeeting->scheduled_date ? $caseMeeting->scheduled_date->format('M d, Y') : null,
-                    'scheduled_time' => $caseMeeting->scheduled_time ? $caseMeeting->scheduled_time->format('h:i A') : null,
-                    'location' => $caseMeeting->location,
+                    'violation_id' => $caseMeeting->violation_id,
                     'status' => $caseMeeting->status,
                     'status_text' => ucfirst($caseMeeting->status),
                     'status_class' => $this->getStatusClass($caseMeeting->status),
-                    'urgency_level' => $caseMeeting->urgency_level,
-                    'urgency_color' => $this->getUrgencyColor($caseMeeting->urgency_level),
-                    'reason' => $caseMeeting->reason,
                     'notes' => $caseMeeting->notes,
                     'summary' => $caseMeeting->summary,
                     'recommendations' => $caseMeeting->recommendations,
@@ -366,6 +408,17 @@ class GuidanceController extends Controller
                     'follow_up_date' => $caseMeeting->follow_up_date ? $caseMeeting->follow_up_date->format('M d, Y') : null,
                     'completed_at' => $caseMeeting->completed_at ? $caseMeeting->completed_at->format('M d, Y h:i A') : null,
                     'forwarded_to_president' => $caseMeeting->forwarded_to_president,
+                    'scheduled_date' => $caseMeeting->scheduled_date ? $caseMeeting->scheduled_date->format('M d, Y') : null,
+                    'scheduled_time' => $caseMeeting->scheduled_time ? $caseMeeting->scheduled_time->format('h:i A') : null,
+                    'scheduled_by_name' => $caseMeeting->counselor ? ($caseMeeting->counselor->first_name . ' ' . $caseMeeting->counselor->last_name) : null,
+                    'created_at' => $caseMeeting->created_at ? $caseMeeting->created_at->format('Y-m-d H:i:s') : null,
+                    // Include violation student reply fields if violation exists
+                    'student_statement' => $caseMeeting->violation ? $caseMeeting->violation->student_statement : null,
+                    'incident_feelings' => $caseMeeting->violation ? $caseMeeting->violation->incident_feelings : null,
+                    'action_plan' => $caseMeeting->violation ? $caseMeeting->violation->action_plan : null,
+                    // Add teacher reply fields from the case meeting itself
+                    'teacher_statement' => $caseMeeting->teacher_statement,
+                    'teacher_action_plan' => $caseMeeting->action_plan,
                     'sanctions' => $caseMeeting->sanctions->map(function ($sanction) {
                         return [
                             'id' => $sanction->id,
@@ -375,6 +428,16 @@ class GuidanceController extends Controller
                             'created_at' => $sanction->created_at->format('Y-m-d H:i:s'),
                         ];
                     }),
+                    // Add the full violation object for modal details
+                    'violation' => $caseMeeting->violation ? [
+                        'title' => $caseMeeting->violation->title,
+                        'description' => $caseMeeting->violation->description,
+                        'severity' => $caseMeeting->violation->severity,
+                        'major_category' => $caseMeeting->violation->major_category,
+                        'status' => $caseMeeting->violation->status,
+                        'violation_date' => $caseMeeting->violation->violation_date ? $caseMeeting->violation->violation_date->format('Y-m-d') : null,
+                        'violation_time' => $caseMeeting->violation->violation_time,
+                    ] : null,
                 ]
             ]);
         }
@@ -438,13 +501,13 @@ class GuidanceController extends Controller
     public function updateCaseMeeting(Request $request, CaseMeeting $caseMeeting)
     {
         $validatedData = $request->validate([
-            'student_id' => 'required|exists:students,id',
-            'meeting_type' => 'required|in:case_meeting,house_visit',
+            // 'student_id' => 'required|exists:students,id',
+            // 'meeting_type' => 'required|in:case_meeting,house_visit',
             'scheduled_date' => 'required|date|after:today',
             'scheduled_time' => 'required',
             'location' => 'nullable|string|max:255',
             'urgency_level' => 'nullable|in:low,medium,high,urgent',
-            'reason' => 'required|string',
+            // 'reason' => 'required|string',
             'notes' => 'nullable|string',
         ]);
 
@@ -601,8 +664,13 @@ class GuidanceController extends Controller
     public function counselingSessionsIndex()
     {
         $counselingSessions = CounselingSession::with(['student', 'counselor', 'recommender'])
-            ->orderByRaw("CASE WHEN status = 'recommended' THEN 0 ELSE 1 END, scheduled_date DESC")
+            ->orderByRaw("CASE WHEN status = 'recommended' THEN 0 ELSE 1 END, start_date DESC")
             ->paginate(20);
+
+        $scheduledSessions = CounselingSession::with('student')
+            ->where('status', 'scheduled')
+            ->orderBy('start_date', 'desc')
+            ->get();
 
         $students = Student::select('id', 'first_name', 'last_name', 'student_id')
             ->orderBy('last_name', 'asc')
@@ -613,7 +681,7 @@ class GuidanceController extends Controller
             ->orderBy('first_name')
             ->get();
 
-        return view('guidance.counseling-sessions', compact('counselingSessions', 'students', 'counselors'));
+        return view('guidance.counseling-sessions', compact('counselingSessions', 'scheduledSessions', 'students', 'counselors'));
     }
 
     /**
@@ -630,6 +698,11 @@ class GuidanceController extends Controller
             'location' => 'nullable|string|max:255',
             'reason' => 'required|string',
             'notes' => 'nullable|string',
+            'referral_academic' => 'nullable|array',
+            'referral_academic_other' => 'nullable|string',
+            'referral_social' => 'nullable|array',
+            'referral_social_other' => 'nullable|string',
+            'incident_description' => 'nullable|string',
         ]);
 
         // Get current user's guidance record
@@ -642,7 +715,28 @@ class GuidanceController extends Controller
         $validatedData['counselor_id'] = $guidanceRecord->id;
         $validatedData['status'] = 'scheduled';
 
-        $counselingSession = CounselingSession::create($validatedData);
+        // Auto-set session_no based on count of previous sessions for this student
+        $studentId = $validatedData['student_id'];
+        $sessionCount = CounselingSession::where('student_id', $studentId)->count();
+        $validatedData['session_no'] = $sessionCount + 1;
+
+        // Remove 'Others' from the checklist arrays before saving
+        $referralAcademic = $validatedData['referral_academic'] ?? [];
+        if (($key = array_search('Others', $referralAcademic)) !== false) {
+            unset($referralAcademic[$key]);
+        }
+        $referralSocial = $validatedData['referral_social'] ?? [];
+        if (($key = array_search('Others', $referralSocial)) !== false) {
+            unset($referralSocial[$key]);
+        }
+        $counselingSession = CounselingSession::create([
+            ...$validatedData,
+            'referral_academic' => !empty($referralAcademic) ? json_encode(array_values($referralAcademic)) : null,
+            'referral_academic_other' => $validatedData['referral_academic_other'] ?? null,
+            'referral_social' => !empty($referralSocial) ? json_encode(array_values($referralSocial)) : null,
+            'referral_social_other' => $validatedData['referral_social_other'] ?? null,
+            'incident_description' => $validatedData['incident_description'] ?? null,
+        ]);
 
         return redirect()->route('guidance.counseling-sessions.index')
             ->with('success', 'Counseling session scheduled successfully.');
@@ -789,7 +883,7 @@ class GuidanceController extends Controller
         }
 
         $counselingSessions = CounselingSession::with(['student', 'counselor', 'recommender'])
-            ->orderByRaw("CASE WHEN status = 'recommended' THEN 0 ELSE 1 END, scheduled_date DESC")
+            ->orderByRaw("CASE WHEN status = 'recommended' THEN 0 ELSE 1 END, start_date DESC")
             ->paginate(20);
 
         $students = Student::select('id', 'first_name', 'last_name', 'student_id')
@@ -1081,4 +1175,321 @@ class GuidanceController extends Controller
             default => 'bg-secondary'
         };
     }
-}
+
+    /**
+     * Approve counseling session via AJAX
+     */
+    public function approveCounselingSession(Request $request)
+    {
+
+        $request->validate([
+            'session_id' => 'required|exists:counseling_sessions,id',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'frequency' => 'required|in:everyday,every_other_day,once_a_week,twice_a_week',
+            'time_limit' => 'required|integer|min:1|max:240',
+            'time' => 'required|date_format:H:i',
+        ]);
+
+        $session = CounselingSession::findOrFail($request->session_id);
+        $session->start_date = $request->start_date;
+        $session->end_date = $request->end_date;
+        $session->frequency = $request->frequency;
+        $session->time_limit = $request->time_limit;
+        $session->time = $request->time;
+        $session->status = 'scheduled';
+
+        // Auto-set session_no: count all scheduled+completed sessions for this student (excluding this one if already scheduled)
+        $studentId = $session->student_id;
+        $sessionCount = CounselingSession::where('student_id', $studentId)
+            ->whereIn('status', ['scheduled', 'completed'])
+            ->where('id', '!=', $session->id)
+            ->count();
+        $session->session_no = $sessionCount + 1;
+
+        $session->save();
+
+        // Archive the approved session in archive_violations
+        $user = Auth::user();
+        $disciplineId = $user && $user->discipline ? $user->discipline->id : null;
+        $guidanceId = $user && $user->guidance ? $user->guidance->id : null;
+        $reportedBy = $disciplineId ?? $guidanceId;
+        if (!$reportedBy) {
+            $reportedBy = $user ? $user->id : 1;
+        }
+        $archiveData = [
+            'counseling_session_id' => $session->id,
+            'student_id' => $session->student_id,
+            'counselor_id' => $session->counselor_id,
+            'title' => 'Counseling Session Approved',
+            'description' => $session->reason ?? $session->notes ?? 'Approved counseling session',
+            'reason' => $session->reason,
+            'notes' => $session->notes,
+            'archived_at' => now(),
+            'violation_date' => $session->start_date ?? now(),
+            'reported_by' => $reportedBy,
+            'feedback' => null,
+        ];
+        \App\Models\ArchiveViolation::create($archiveData);
+
+        return response()->json(['success' => true]);
+    }
+    /**
+     * Reject counseling session with feedback and archive it
+     */
+    public function rejectCounselingSessionWithFeedback(Request $request, CounselingSession $counselingSession)
+    {   
+        $request->validate([
+            'feedback' => 'required|string',
+        ]);
+
+        // Archive the session with feedback
+        $user = Auth::user();
+        // Try to get discipline or guidance id for reported_by
+        $disciplineId = $user && $user->discipline ? $user->discipline->id : null;
+        $guidanceId = $user && $user->guidance ? $user->guidance->id : null;
+        $reportedBy = $disciplineId ?? $guidanceId;
+        if (!$reportedBy) {
+            // Fallback: use user id if neither discipline nor guidance exists
+            $reportedBy = $user ? $user->id : 1;
+        }
+        $archiveData = [
+            'counseling_session_id' => $counselingSession->id,
+            'student_id' => $counselingSession->student_id,
+            'counselor_id' => $counselingSession->counselor_id,
+            'title' => 'Counseling Session Rejection',
+            'description' => $counselingSession->reason ?? $counselingSession->notes ?? 'Rejected counseling session',
+            'reason' => $counselingSession->reason,
+            'notes' => $counselingSession->notes,
+            'feedback' => $request->feedback,
+            'archived_at' => now(),
+            'violation_date' => $counselingSession->scheduled_date ?? now(),
+            'reported_by' => $reportedBy,
+        ];
+
+        // Use ArchiveViolation model to store archive
+        \App\Models\ArchiveViolation::create($archiveData);
+
+        // Update the session status to rejected
+        $counselingSession->update([
+            'status' => 'rejected',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Counseling session rejected and archived with feedback.'
+        ]);
+    }
+        /**
+     * API: Get counseling session details (for modal)
+     */
+    public function apiShowCounselingSession($id)
+    {
+        $session = \App\Models\CounselingSession::with(['student', 'counselor'])
+            ->find($id);
+        if (!$session) {
+            return response()->json(['success' => false, 'message' => 'Session not found.']);
+        }
+        $student = $session->student;
+        $counselor = $session->counselor;
+        $documentsHtml = '';
+        // If you have documents, render them here. Otherwise, show placeholder.
+        // Example: $documentsHtml = '<a href="/path/to/doc.pdf">Document.pdf</a>';
+        return response()->json([
+            'success' => true,
+            'session' => [
+                'session_no' => $session->session_no,
+                'status_display' => ucfirst($session->status),
+                'reason' => $session->reason,
+                'notes' => $session->notes,
+                'scheduled_date' => $session->start_date ? $session->start_date->format('Y-m-d') : null,
+                'scheduled_time' => $session->time ? $session->time->format('H:i') : null,
+                'location' => $session->location,
+                'counselor_name' => $counselor ? ($counselor->first_name . ' ' . $counselor->last_name) : null,
+                'student_full_name' => $student ? ($student->full_name ?? ($student->first_name . ' ' . $student->last_name)) : null,
+                'student_lrn' => $student ? $student->lrn : null,
+                'student_birthdate' => ($student && $student->date_of_birth) ? (method_exists($student->date_of_birth, 'format') ? $student->date_of_birth->format('F j, Y') : (string)$student->date_of_birth) : null,
+                'student_gender' => $student ? $student->gender : null,
+                'student_nationality' => $student ? $student->nationality : null,
+                'student_religion' => $student ? $student->religion : null,
+                'student_photo_url' => $student && $student->photo_url ? $student->photo_url : null,
+                'documents_html' => $documentsHtml,
+            ]
+        ]);
+    }
+      /**
+     * Store counseling summary report for a session
+     */
+    public function createCounselingSummaryReport(Request $request, CounselingSession $counselingSession)
+    {
+        try {
+            if (!$counselingSession) {
+                \Log::error('CounselingSession not found for summary report', ['id' => $request->route('counselingSession')]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Counseling session not found.'
+                ], 404);
+            }
+            $validatedData = $request->validate([
+                'counseling_summary_report' => 'required|string',
+            ]);
+            $counselingSession->counseling_summary_report = $validatedData['counseling_summary_report'];
+            $counselingSession->save();
+            // Always return JSON for AJAX or fetch requests
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Counseling summary report saved successfully.',
+                    'counselingSession' => $counselingSession
+                ]);
+            }
+            // Fallback for non-AJAX requests
+            return redirect()->route('guidance.counseling-sessions.index')
+                ->with('success', 'Counseling summary report saved successfully.');
+        } catch (\Exception $e) {
+            \Log::error('Error saving counseling summary report', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'request' => $request->all(),
+            ]);
+            // Always return JSON for AJAX or fetch requests
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error saving summary report.'
+                ], 500);
+            }
+            // Fallback for non-AJAX requests
+            return redirect()->back()->with('error', 'Error saving summary report.');
+        }
+    }
+        /**
+     * API: Get all unique sanctions for dropdowns (AJAX)
+     */
+    public function sanctionList()
+    {
+        $sanctions = \App\Models\Sanction::query()
+            ->select('sanction')
+            ->distinct()
+            ->orderBy('sanction')
+            ->pluck('sanction');
+        return response()->json(['success' => true, 'sanctions' => $sanctions]);
+    }
+       /**
+     * API: Get case status counts for dashboard pie chart
+     */
+    public function getCaseStatusStats()
+    {
+        $onGoing = \App\Models\CaseMeeting::where('status', 'in_progress')->count();
+        $scheduled = \App\Models\CaseMeeting::where('status', 'scheduled')->count();
+        $preCompleted = \App\Models\CaseMeeting::where('status', 'pre_completed')->count();
+        return response()->json([
+            'success' => true,
+            'on_going_cases' => $onGoing,
+            'scheduled_meeting' => $scheduled,
+            'pre_completed' => $preCompleted,
+        ]);
+    }
+        /**
+     * API: Get closed cases per month for bar chart
+     */
+    public function getClosedCasesStats()
+    {
+        $months = [];
+        $data = [];
+        $now = now();
+        for ($i = 5; $i >= 0; $i--) {
+            $month = $now->copy()->subMonths($i);
+            $label = $month->format('M Y');
+            $count = \App\Models\CaseMeeting::where('status', 'case_closed')
+                ->whereYear('completed_at', $month->year)
+                ->whereMonth('completed_at', $month->month)
+                ->count();
+            $months[] = $label;
+            $data[] = $count;
+        }
+        return response()->json([
+            'success' => true,
+            'labels' => $months,
+            'data' => $data,
+        ]);
+    }
+        /**
+     * API: Get counseling sessions per month for bar chart
+     */
+    public function getCounselingSessionsStats()
+    {
+        $months = [];
+        $data = [];
+        $now = now();
+        for ($i = 5; $i >= 0; $i--) {
+            $month = $now->copy()->subMonths($i);
+            $label = $month->format('M Y');
+            $count = \App\Models\CounselingSession::whereYear('start_date', $month->year)
+                ->whereMonth('start_date', $month->month)
+                ->count();
+            $months[] = $label;
+            $data[] = $count;
+        }
+        return response()->json([
+            'success' => true,
+            'labels' => $months,
+            'data' => $data,
+        ]);
+    }
+    
+public function getDisciplineVsTotalStats()
+{
+    $currentYear = now()->year;
+    $years = [];
+    $withDiscipline = [];
+    $totalStudents = [];
+    for ($i = $currentYear - 5; $i <= $currentYear; $i++) {
+        $years[] = (string)$i;
+        // Only count violations with a valid violation_date in this year
+        $disciplineCount = \App\Models\Violation::whereNotNull('violation_date')
+            ->whereYear('violation_date', $i)
+            ->distinct('student_id')
+            ->count('student_id');
+        // Count all students created up to and including this year
+        $studentCount = \App\Models\Student::whereYear('created_at', '<=', $i)
+            ->count();
+        $withDiscipline[] = $disciplineCount;
+        $totalStudents[] = $studentCount;
+    }
+    return response()->json([
+        'success' => true,
+        'labels' => $years,
+        'data' => [
+            'with_discipline' => $withDiscipline,
+            'total_students' => $totalStudents,
+        ],
+    ]);
+}    // Weekly violation list for dashboard
+        // Weekly violation list for dashboard
+    // API: Get Top 5 Cases for dashboard
+    public function getTopCases()
+    {
+        // Group by student and case title, count occurrences, order by count desc, limit 5
+        $topCases = \App\Models\Violation::with('student')
+            ->selectRaw('student_id, title as case_title, COUNT(*) as count')
+            ->groupBy('student_id', 'case_title')
+            ->orderByDesc('count')
+            ->limit(5)
+            ->get();
+
+        $formatted = $topCases->map(function($c) {
+            $student = $c->student;
+            return [
+                'student_name' => $student ? ($student->first_name . ' ' . $student->last_name) : 'Unknown Student',
+                'case_title' => $c->case_title,
+                'count' => $c->count,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'cases' => $formatted
+        ]);
+    }
+    }

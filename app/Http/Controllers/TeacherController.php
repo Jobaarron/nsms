@@ -6,6 +6,9 @@ use App\Models\User;
 use App\Models\Teacher;
 use App\Models\Student;
 use App\Models\CounselingSession;
+use App\Models\FacultyAssignment;
+use App\Models\GradeSubmission;
+use App\Models\ClassSchedule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -20,7 +23,136 @@ class TeacherController extends Controller
      */
     public function index()
     {
-        return view('teacher.index');
+        $teacher = Auth::user();
+        $currentAcademicYear = date('Y') . '-' . (date('Y') + 1);
+        
+        try {
+            // Get teacher record first
+            $teacherRecord = Teacher::where('user_id', $teacher->id)->first();
+            
+            // Get teacher's assignments
+            $assignments = collect();
+            if ($teacherRecord) {
+                $assignments = FacultyAssignment::where('teacher_id', $teacherRecord->id)
+                    ->where('academic_year', $currentAcademicYear)
+                    ->where('status', 'active')
+                    ->with(['subject', 'teacher.user'])
+                    ->get();
+            }
+            
+            // Get recent grade submissions
+            $recentSubmissions = collect();
+            if ($teacherRecord) {
+                $recentSubmissions = GradeSubmission::where('teacher_id', $teacherRecord->id)
+                    ->where('academic_year', $currentAcademicYear)
+                    ->with(['subject'])
+                    ->orderBy('created_at', 'desc')
+                    ->limit(5)
+                    ->get();
+            }
+                
+            // Calculate statistics
+            $stats = [
+                'total_classes' => $assignments->count(),
+                'total_students' => $assignments->sum('student_count') ?: 0,
+                'grade_submissions' => $recentSubmissions->count(),
+                'weekly_hours' => $assignments->sum('weekly_hours') ?: 0,
+            ];
+        } catch (\Exception $e) {
+            // Handle case where tables don't exist yet
+            $assignments = collect();
+            $recentSubmissions = collect();
+            $stats = [
+                'total_classes' => 0,
+                'total_students' => 0,
+                'grade_submissions' => 0,
+                'weekly_hours' => 0,
+            ];
+        }
+        
+        // Get grade submission status
+        $gradeSubmissionActive = \App\Models\Setting::get('grade_submission_active', false);
+        $quarterSettings = [
+            'q1_active' => \App\Models\Setting::get('grade_submission_q1_active', false),
+            'q2_active' => \App\Models\Setting::get('grade_submission_q2_active', false),
+            'q3_active' => \App\Models\Setting::get('grade_submission_q3_active', false),
+            'q4_active' => \App\Models\Setting::get('grade_submission_q4_active', false),
+        ];
+        
+        return view('teacher.index', compact(
+            'assignments',
+            'stats',
+            'recentSubmissions',
+            'currentAcademicYear',
+            'gradeSubmissionActive',
+            'quarterSettings'
+        ));
+    }
+
+    /**
+     * Check grade submission status for AJAX requests
+     */
+    public function checkSubmissionStatus()
+    {
+        $isActive = \App\Models\Setting::get('grade_submission_active', false);
+        $quarterSettings = [
+            'q1_active' => \App\Models\Setting::get('grade_submission_q1_active', false),
+            'q2_active' => \App\Models\Setting::get('grade_submission_q2_active', false),
+            'q3_active' => \App\Models\Setting::get('grade_submission_q3_active', false),
+            'q4_active' => \App\Models\Setting::get('grade_submission_q4_active', false),
+        ];
+
+        // Get list of active quarters for JavaScript
+        $activeQuarters = [];
+        if ($quarterSettings['q1_active']) $activeQuarters[] = '1st';
+        if ($quarterSettings['q2_active']) $activeQuarters[] = '2nd';
+        if ($quarterSettings['q3_active']) $activeQuarters[] = '3rd';
+        if ($quarterSettings['q4_active']) $activeQuarters[] = '4th';
+
+        return response()->json([
+            'active' => $isActive,
+            'quarters' => $quarterSettings,
+            'active_quarters' => $activeQuarters
+        ]);
+    }
+
+    /**
+     * Get dashboard statistics for AJAX requests
+     */
+    public function getDashboardStats()
+    {
+        $user = Auth::user();
+        $currentAcademicYear = date('Y') . '-' . (date('Y') + 1);
+        
+        // Check if user has teacher profile
+        if (!$user->teacher) {
+            return response()->json([
+                'total_classes' => 0,
+                'total_students' => 0,
+                'grade_submissions' => 0,
+                'weekly_hours' => 0,
+            ]);
+        }
+        
+        $teacherId = $user->teacher->id;
+        
+        // Get teacher's assignments
+        $assignments = FacultyAssignment::where('teacher_id', $teacherId)
+            ->where('academic_year', $currentAcademicYear)
+            ->where('status', 'active')
+            ->get();
+        
+        // Calculate real-time statistics
+        $stats = [
+            'total_classes' => $assignments->count(),
+            'total_students' => $assignments->sum('student_count') ?: 0,
+            'grade_submissions' => GradeSubmission::where('teacher_id', $teacherId)
+                ->where('academic_year', $currentAcademicYear)
+                ->count(),
+            'weekly_hours' => $assignments->sum('weekly_hours') ?: 0,
+        ];
+        
+        return response()->json($stats);
     }
 
     // REMOVED: generateTeacher() method
@@ -109,21 +241,72 @@ class TeacherController extends Controller
     {
         $validatedData = $request->validate([
             'student_id' => 'required|exists:students,id',
-            'reason' => 'required|string',
-            'notes' => 'nullable|string',
+            'referral_academic' => 'nullable|array',
+            'referral_academic_other' => 'nullable|string',
+            'referral_social' => 'nullable|array',
+            'referral_social_other' => 'nullable|string',
+            'incident_description' => 'nullable|string',
         ]);
 
-        // Create a counseling session recommendation
         CounselingSession::create([
             'student_id' => $validatedData['student_id'],
             'recommended_by' => Auth::id(),
-            'reason' => $validatedData['reason'],
-            'notes' => $validatedData['notes'],
-            'status' => 'recommended', // New status for recommendations
-            'session_type' => 'individual', // Default
+            'referral_academic' => isset($validatedData['referral_academic']) ? json_encode($validatedData['referral_academic']) : null,
+            'referral_academic_other' => $validatedData['referral_academic_other'] ?? null,
+            'referral_social' => isset($validatedData['referral_social']) ? json_encode($validatedData['referral_social']) : null,
+            'referral_social_other' => $validatedData['referral_social_other'] ?? null,
+            'incident_description' => $validatedData['incident_description'] ?? null,
+            'status' => 'recommended',
         ]);
 
         return redirect()->route('teacher.dashboard')
             ->with('success', 'Student has been recommended for counseling. Guidance will review the recommendation.');
+    }
+
+    /**
+     * Show the Observation Report page.
+     * Route: teacher.observationreport
+     */
+    public function showObservationReport()
+    {
+        // Fetch scheduled case meetings with student and violation info
+        $reports = \App\Models\CaseMeeting::with(['student', 'violation', 'counselor'])
+            ->where('status', 'scheduled')
+            ->orderByDesc('scheduled_date')
+            ->get();
+
+        return view('teacher.observationreport', compact('reports'));
+    }
+
+        /**
+     * Serve the Teacher Observation Report PDF
+     */
+    public function serveObservationReportPdf()
+    {
+        $path = storage_path('app/public/Teacher-Report/Teacher-Observation-Report.pdf');
+        if (!file_exists($path)) {
+            abort(404, 'PDF not found');
+        }
+        return response()->file($path, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="Teacher-Observation-Report.pdf"',
+        ]);
+    }
+        /**
+     * Handle teacher reply for observation report (update case meeting)
+     */
+    public function submitObservationReply(Request $request, $caseMeetingId)
+    {
+        $request->validate([
+            'teacher_statement' => 'required|string',
+            'action_plan' => 'required|string',
+        ]);
+
+        $caseMeeting = \App\Models\CaseMeeting::findOrFail($caseMeetingId);
+        $caseMeeting->teacher_statement = $request->teacher_statement;
+        $caseMeeting->action_plan = $request->action_plan;
+        $caseMeeting->save();
+
+        return redirect()->back()->with('success', 'Your reply has been submitted.');
     }
 }

@@ -91,8 +91,10 @@ class DisciplineController extends Controller
         $totalViolations = Violation::count();
         $pendingViolations = Violation::where('status', 'pending')->count();
         $violationsToday = Violation::whereDate('violation_date', now()->toDateString())->count();
-        $majorViolations = Violation::where('severity', 'major')->count();
-        $severeViolations = Violation::where('severity', 'severe')->count();
+
+    $majorViolations = Violation::where('severity', 'major')->count();
+    $minorViolations = Violation::where('severity', 'minor')->count();
+    $severeViolations = Violation::where('severity', 'severe')->count();
 
         // Get weekly violations (last 7 days)
         $weeklyViolations = Violation::with(['student', 'reportedBy'])
@@ -109,6 +111,7 @@ class DisciplineController extends Controller
             'pending_violations' => $pendingViolations,
             'violations_today' => $violationsToday,
             'major_violations' => $majorViolations,
+            'minor_violations' => $minorViolations,
             'severe_violations' => $severeViolations,
             'weekly_violations' => $weeklyViolations->count(),
         ];
@@ -235,6 +238,7 @@ class DisciplineController extends Controller
      */
     public function storeViolation(Request $request)
     {
+
         // Check if user is authenticated
         if (!Auth::check()) {
             if ($request->wantsJson() || $request->ajax()) {
@@ -246,17 +250,95 @@ class DisciplineController extends Controller
             return redirect()->route('discipline.login');
         }
 
-        $validatedData = $request->validate([
-            'student_id' => 'required|exists:students,id',
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'severity' => 'required|in:minor,major,severe',
-            'major_category' => 'nullable|string|required_if:severity,major',
-            'violation_date' => 'required|date',
-            'violation_time' => 'nullable',
-            'status' => 'nullable|in:pending,investigating,in_progress,resolved,dismissed',
-            'urgency_level' => 'nullable|in:low,medium,high,urgent',
+        try {
+            $validatedData = $request->validate([
+                'student_id' => 'required|exists:students,id',
+                'title' => 'required|string|max:255',
+                'description' => 'nullable|string',
+                'severity' => 'required|in:minor,major,severe',
+                'major_category' => 'nullable|string',
+                'violation_date' => 'required|date',
+                'violation_time' => 'nullable|string',
+                'status' => 'nullable|in:pending,investigating,in_progress,resolved,dismissed',
+                'urgency_level' => 'nullable|in:low,medium,high,urgent',
+                'force_duplicate' => 'nullable',
+                'location' => 'nullable|string',
+                'witnesses' => 'nullable|string',
+                'evidence' => 'nullable|string',
+                'notes' => 'nullable|string',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Validation failed:', [
+                'errors' => $e->errors(),
+                'request_data' => $request->all()
+            ]);
+            
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed: ' . implode(', ', array_flatten($e->errors())),
+                    'errors' => $e->errors()
+                ], 422); // Use 422 for validation errors, not 409
+            }
+            throw $e;
+        }
+
+        // Log request data for debugging
+        \Log::info('Violation submission request data:', [
+            'force_duplicate' => $request->input('force_duplicate'),
+            'force_duplicate_type' => gettype($request->input('force_duplicate')),
+            'all_request_data' => $request->all()
         ]);
+
+        // Check for duplicate violation unless force_duplicate is true
+        $forceDuplicate = $request->input('force_duplicate', false);
+        
+        // Handle string 'true' as boolean
+        if ($forceDuplicate === 'true') {
+            $forceDuplicate = true;
+        }
+        
+        \Log::info('Force duplicate check:', [
+            'force_duplicate_raw' => $request->input('force_duplicate'),
+            'force_duplicate_processed' => $forceDuplicate,
+            'will_check_duplicates' => !$forceDuplicate
+        ]);
+        
+        if (!$forceDuplicate) {
+            $exists = Violation::where('student_id', $validatedData['student_id'])
+                ->where('title', $validatedData['title'])
+                ->whereDate('violation_date', $validatedData['violation_date'])
+                ->exists();
+                
+            \Log::info('Duplicate check result:', [
+                'exists' => $exists,
+                'student_id' => $validatedData['student_id'],
+                'title' => $validatedData['title'],
+                'violation_date' => $validatedData['violation_date']
+            ]);
+                
+            if ($exists) {
+                if ($request->wantsJson() || $request->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'A violation with the same title already exists for this student on this date.',
+                        'is_duplicate' => true
+                    ], 409);
+                }
+                return back()->withErrors(['error' => 'A violation with the same title already exists for this student on this date.']);
+            }
+        }
+
+        // Map major_category numeric values to ENUM strings and handle 'null' string
+        if (isset($validatedData['major_category'])) {
+            if ($validatedData['major_category'] == '3' || $validatedData['major_category'] === 3) {
+                $validatedData['major_category'] = 'major';
+            } elseif ($validatedData['major_category'] == '2' || $validatedData['major_category'] === 2) {
+                $validatedData['major_category'] = 'minor';
+            } elseif ($validatedData['major_category'] === 'null' || $validatedData['major_category'] === null) {
+                $validatedData['major_category'] = null;
+            }
+        }
 
         // Set default urgency_level if not provided
         if (!isset($validatedData['urgency_level']) || $validatedData['urgency_level'] === null) {
@@ -293,6 +375,9 @@ class DisciplineController extends Controller
         }
 
         $validatedData['reported_by'] = $disciplineRecord->id;
+
+        // Remove force_duplicate from data before creating violation
+        unset($validatedData['force_duplicate']);
 
         try {
             \Log::info('Starting violation creation', [
@@ -422,6 +507,7 @@ class DisciplineController extends Controller
 
             return back()->withErrors(['error' => 'Failed to create violation: ' . $e->getMessage()]);
         }
+
     }
 
     /**
@@ -603,6 +689,7 @@ class DisciplineController extends Controller
         // Create case meeting with violation data
         $caseMeeting = CaseMeeting::create([
             'student_id' => $violation->student_id,
+            'violation_id' => $violation->id, // <-- link the violation
             'counselor_id' => $guidanceCounselor ? $guidanceCounselor->id : null,
             'meeting_type' => 'case_meeting',
             'location' => 'Guidance Office',
@@ -772,4 +859,62 @@ class DisciplineController extends Controller
 
         return null;
     }
-}
+
+        /**
+     * Return minor and major violation counts as JSON for dashboard pie chart
+     */
+    public function getMinorMajorViolationStats()
+    {
+        $minor = \App\Models\Violation::where('severity', 'minor')->count();
+        $major = \App\Models\Violation::where('severity', 'major')->count();
+        return response()->json([
+            'minor' => $minor,
+            'major' => $major,
+        ]);
+    }
+
+
+
+        /**
+     * Return monthly minor and major violation counts for bar chart
+     */
+    public function getViolationBarStats()
+    {
+        $months = [];
+        $minorCounts = [];
+        $majorCounts = [];
+        // Get the last 12 months
+        for ($i = 11; $i >= 0; $i--) {
+            $date = now()->subMonths($i);
+            $label = $date->format('M Y');
+            $months[] = $label;
+            $minorCounts[] = \App\Models\Violation::where('severity', 'minor')
+                ->whereYear('violation_date', $date->year)
+                ->whereMonth('violation_date', $date->month)
+                ->count();
+            $majorCounts[] = \App\Models\Violation::where('severity', 'major')
+                ->whereYear('violation_date', $date->year)
+                ->whereMonth('violation_date', $date->month)
+                ->count();
+        }
+        return response()->json([
+            'labels' => $months,
+            'minor' => $minorCounts,
+            'major' => $majorCounts,
+        ]);
+    }
+            /**
+         * Return pending, ongoing, and completed case counts for dashboard pie chart
+         */
+        public function getCaseStatusStats()
+        {
+            $caseClosed = \App\Models\CaseMeeting::where('status', 'case_closed')->count();
+            $inProgress = \App\Models\CaseMeeting::where('status', 'in_progress')->count();
+            $preCompleted = \App\Models\CaseMeeting::where('status', 'pre_completed')->count();
+            return response()->json([
+                'case_closed' => $caseClosed,
+                'in_progress' => $inProgress,
+                'pre_completed' => $preCompleted,
+            ]);
+        }
+    }

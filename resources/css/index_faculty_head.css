@@ -1,0 +1,851 @@
+ /* Clean Color Palette - Faculty Head Theme */
+  :root {
+    --primary-color: #2B7A3B;      /* Rich green from logo shield */
+    --secondary-color: #4CAF50;     /* Lighter green from logo text */
+    --accent-color: #1B5E20;       /* Darker green for emphasis */
+    --light-green: #E8F5E9;        /* Very light green for subtle backgrounds */
+    --dark-green: #0D4F14;         /* Deep green for text */
+    --white: #FFFFFF;              /* Pure white for clean backgrounds */
+    --light-gray: #F8F9FA;         /* Light gray for subtle sections */
+    --border-gray: #E0E0E0;        /* Light border color */
+    --text-gray: #424242;          /* Professional gray for text */
+    --faculty-accent: #2B7A3B;     /* Primary color for faculty head theme */
+  }
+  
+  body {
+    font-family: 'Nunito', sans-serif;
+    background-color: var(--white);
+    color: var(--text-gray);
+    line-height: 1.6;
+  }
+  
+  /* Sidebar */
+  .sidebar {
+    background-color: var(--white);
+    border-right: 1px solid var(--border-gray);
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
+    min-height: 100vh;
+  }
+
+  /* Sidebar Logo */
+  .sidebar-logo {
+    width: 160px;
+    height: auto;
+    max-width: 100%;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+  }
+
+  .sidebar-logo:hover {
+    transform: scale(1.01);
+  }
+
+  /* User Info Section */
+  .user-info {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    box-shadow: 0 4px 8px rgba(1, 68, 33, 0.2);
+    transition: all 0.3s ease;
+  }
+
+  .user-info:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(1, 68, 33, 0.3);
+  }
+
+  .user-name {
+    color: #fff;
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+
+  .user-role {
+    color: var(--light-green);
+    font-weight: 500;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    opacity: 0.9;
+  }
+
+  .sidebar .nav-link {
+    color: var(--primary-color);
+    font-weight: 600;
+    padding: 0.75rem 1rem;
+    border-radius: 0.25rem;
+    transition: all 0.3s ease;
+    margin-bottom: 0.25rem;
+  }
+  
+  .sidebar .nav-link:hover {
+    background-color: var(--light-green);
+    color: var(--dark-green);
+    transform: translateX(5px);
+  }
+  
+  .sidebar .nav-link.active {
+    background-color: var(--faculty-accent);
+    color: #fff;
+    box-shadow: 0 2px 4px rgba(1, 68, 33, 0.2);
+  }
+  
+  .sidebar .nav-link.active:hover {
+    background-color: var(--primary-color);
+    color: #fff;
+    transform: translateX(5px);
+  }
+  
+  /* Section Titles */
+  .section-title {
+    color: var(--primary-color);
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+  
+  /* Summary Cards - Faculty Head specific */
+  .card-summary { 
+    color: #fff; 
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+  .card-application { background-color: var(--primary-color); }
+  .card-status { background-color: var(--faculty-accent); }
+  .card-payment { background-color: var(--accent-color); }
+  .card-schedule { background-color: var(--dark-green); }
+  .card-info { background-color: var(--secondary-color); color: var(--dark-green); }
+  
+  /* Card hover effects */
+  .card {
+    transition: all 0.3s ease;
+  }
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(1, 68, 33, 0.1);
+  }
+  
+  .card-summary:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+  }
+  
+  /* Table Head */
+  .table thead {
+    background-color: var(--primary-color);
+    color: #fff;
+  }
+  .table thead th {
+    border-bottom: 2px solid var(--accent-color);
+    font-weight: 600;
+    border-top: none;
+    font-size: 0.875rem;
+    color: #495057;
+    vertical-align: middle;
+    padding: 1rem 0.75rem;
+  }
+  
+  /* Table body styling */
+  .table td {
+    vertical-align: middle;
+    padding: 1rem 0.75rem;
+    border-color: #e9ecef;
+  }
+  
+  /* Table row hover */
+  .table-hover tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+    color: var(--dark-green);
+  }
+  
+  /* Table responsive container */
+  .table-responsive {
+    border-radius: 0.375rem;
+    min-width: 100%;
+    overflow-x: auto;
+  }
+  
+  /* Faculty assignment grid layout - No more table squeezing! */
+  .faculty-assignment-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    margin-top: 1rem;
+  }
+  
+  .assignment-grid-card {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+    position: relative;
+  }
+  
+  .assignment-grid-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    border-color: var(--primary-color);
+  }
+  
+  .assignment-grid-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #f8f9fa;
+  }
+  
+  .assignment-teacher-info {
+    flex: 1;
+  }
+  
+  .assignment-teacher-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 0.25rem;
+  }
+  
+  .assignment-subject-name {
+    font-size: 0.95rem;
+    color: #495057;
+    font-weight: 500;
+  }
+  
+  .assignment-subject-code {
+    font-size: 0.8rem;
+    color: #6c757d;
+  }
+  
+  .assignment-status-badge {
+    flex-shrink: 0;
+  }
+  
+  .assignment-grid-body {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: 1fr 1fr;
+  }
+  
+  .assignment-info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .assignment-info-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .assignment-info-value {
+    font-size: 0.9rem;
+    color: #495057;
+    font-weight: 500;
+  }
+  
+  .assignment-schedule-full {
+    grid-column: 1 / -1;
+    background: #f8f9fa;
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    border-left: 3px solid var(--primary-color);
+  }
+  
+  .assignment-schedule-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+  }
+  
+  .assignment-schedule-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+  }
+  
+  .assignment-schedule-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+  }
+  
+  .assignment-schedule-day {
+    background: var(--primary-color);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-weight: 600;
+    font-size: 0.8rem;
+  }
+  
+  .assignment-schedule-time {
+    color: #495057;
+    font-weight: 500;
+  }
+  
+  .assignment-schedule-room {
+    color: var(--secondary-color);
+    font-weight: 500;
+  }
+  
+  .assignment-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 0.5rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #e9ecef;
+  }
+  
+  /* Legacy table - hide by default, show only when needed */
+  .faculty-assignment-table {
+    display: none;
+  }
+  
+  .show-table-view .faculty-assignment-table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .show-table-view .faculty-assignment-grid {
+    display: none;
+  }
+  
+  .faculty-assignment-table .table {
+    width: 100%;
+    min-width: 1400px;
+    table-layout: auto;
+    margin-bottom: 0;
+  }
+  
+  /* Column-specific responsive widths */
+  .faculty-assignment-table .col-teacher {
+    min-width: 180px;
+    width: 15%;
+  }
+  
+  .faculty-assignment-table .col-subject {
+    min-width: 200px;
+    width: 20%;
+  }
+  
+  .faculty-assignment-table .col-class {
+    min-width: 120px;
+    width: 10%;
+  }
+  
+  .faculty-assignment-table .col-date {
+    min-width: 120px;
+    width: 10%;
+  }
+  
+  .faculty-assignment-table .col-schedule {
+    min-width: 280px;
+    width: 30%;
+  }
+  
+  .faculty-assignment-table .col-status {
+    min-width: 80px;
+    width: 8%;
+  }
+  
+  .faculty-assignment-table .col-actions {
+    min-width: 100px;
+    width: 7%;
+  }
+  
+  /* Schedule information styling - responsive */
+  .schedule-info {
+    min-width: 260px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .schedule-info .d-flex {
+    align-items: center;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+  }
+  
+  .schedule-info .schedule-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.25rem;
+  }
+  
+  .schedule-info .schedule-item:last-child {
+    margin-bottom: 0;
+  }
+  
+  /* Badge improvements */
+  .badge {
+    font-size: 0.75rem;
+    padding: 0.375rem 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  
+  /* Button improvements */
+  .btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    white-space: nowrap;
+  }
+  
+  /* Font weight utility */
+  .fw-medium {
+    font-weight: 500;
+  }
+  
+  /* Table light header override for faculty tables */
+  .table-light th {
+    background-color: #f8f9fa;
+    color: #495057;
+    border-color: #dee2e6;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  
+  /* Faculty assignment form improvements */
+  .faculty-assignment-form {
+    min-width: 100%;
+  }
+  
+  .faculty-assignment-form .card {
+    margin-bottom: 2rem;
+  }
+  
+  .faculty-assignment-form .form-control,
+  .faculty-assignment-form .form-select {
+    min-width: 150px;
+  }
+  
+  /* Schedule information section */
+  .schedule-section {
+    background-color: #f8f9fa;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin: 1rem 0;
+    border-left: 4px solid var(--primary-color);
+  }
+  
+  .schedule-section h6 {
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+  }
+  
+  /* Responsive breakpoints for grid layout */
+  
+  /* Large screens (1200px and up) - 3 columns */
+  @media (min-width: 1200px) {
+    .faculty-assignment-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+    
+    .assignment-grid-card {
+      min-width: 350px;
+    }
+  }
+  
+  /* Medium screens (992px to 1199px) - 2 columns */
+  @media (max-width: 1199px) and (min-width: 992px) {
+    .faculty-assignment-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.25rem;
+    }
+    
+    .assignment-grid-card {
+      min-width: 300px;
+    }
+  }
+  
+  /* Small screens (768px to 991px) - 2 columns, smaller cards */
+  @media (max-width: 991px) and (min-width: 768px) {
+    .faculty-assignment-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+    
+    .assignment-grid-card {
+      padding: 1rem;
+      min-width: 280px;
+    }
+    
+    .assignment-teacher-name {
+      font-size: 1rem;
+    }
+    
+    .assignment-subject-name {
+      font-size: 0.875rem;
+    }
+  }
+  
+  /* Mobile screens (767px and below) - 1 column */
+  @media (max-width: 767px) {
+    .faculty-assignment-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+    
+    .assignment-grid-card {
+      padding: 1rem;
+      min-width: auto;
+    }
+    
+    .assignment-grid-body {
+      grid-template-columns: 1fr;
+      gap: 0.5rem;
+    }
+    
+    .assignment-schedule-details {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+  }
+  
+  /* Medium screens (992px to 1199px) - Slightly compressed */
+  @media (max-width: 1199px) and (min-width: 992px) {
+    .faculty-assignment-table .table {
+      min-width: 1200px;
+    }
+    
+    .faculty-assignment-table .col-schedule {
+      min-width: 250px;
+    }
+  }
+  
+  /* Small screens (768px to 991px) - More compressed */
+  @media (max-width: 991px) and (min-width: 768px) {
+    .faculty-assignment-table .table {
+      min-width: 1000px;
+    }
+    
+    .faculty-assignment-table .col-teacher {
+      min-width: 150px;
+    }
+    
+    .faculty-assignment-table .col-subject {
+      min-width: 170px;
+    }
+    
+    .faculty-assignment-table .col-schedule {
+      min-width: 220px;
+    }
+    
+    .schedule-info {
+      min-width: 200px;
+    }
+    
+    .schedule-info .d-flex {
+      font-size: 0.875rem;
+    }
+  }
+  
+  /* Mobile screens (767px and below) - Card layout */
+  @media (max-width: 767px) {
+    .faculty-assignment-table {
+      display: none; /* Hide table on mobile */
+    }
+    
+    .mobile-assignment-cards {
+      display: block;
+    }
+    
+    .assignment-card {
+      background: #fff;
+      border: 1px solid #dee2e6;
+      border-radius: 0.5rem;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .assignment-card-header {
+      display: flex;
+      justify-content: between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid #e9ecef;
+    }
+    
+    .assignment-card-body {
+      display: grid;
+      gap: 0.5rem;
+    }
+    
+    .assignment-field {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.25rem 0;
+    }
+    
+    .assignment-field-label {
+      font-weight: 600;
+      color: #495057;
+      font-size: 0.875rem;
+    }
+    
+    .assignment-field-value {
+      text-align: right;
+      font-size: 0.875rem;
+    }
+    
+    .faculty-assignment-form .form-control,
+    .faculty-assignment-form .form-select {
+      min-width: 100px;
+    }
+    
+    .schedule-section {
+      padding: 1rem;
+    }
+  }
+  
+  /* Extra small screens (480px and below) - Ultra compact */
+  @media (max-width: 480px) {
+    .assignment-card {
+      padding: 0.75rem;
+    }
+    
+    .assignment-field {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.25rem;
+    }
+    
+    .assignment-field-value {
+      text-align: left;
+      width: 100%;
+    }
+    
+    .schedule-section {
+      padding: 0.75rem;
+      margin: 0.5rem 0;
+    }
+    
+    .faculty-assignment-form .row.g-3 {
+      --bs-gutter-x: 0.75rem;
+    }
+  }
+  
+  /* Zoom level adaptations */
+  @media (min-resolution: 1.25dppx) {
+    .faculty-assignment-table .table {
+      font-size: 0.875rem;
+    }
+    
+    .schedule-info {
+      min-width: 240px;
+    }
+  }
+  
+  @media (min-resolution: 1.5dppx) {
+    .faculty-assignment-table .table {
+      font-size: 0.8125rem;
+    }
+    
+    .schedule-info {
+      min-width: 220px;
+    }
+  }
+  
+  /* Buttons */
+  .btn-outline-primary {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+    transition: all 0.3s ease;
+  }
+  .btn-outline-primary:hover {
+    background-color: var(--primary-color);
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(1, 68, 33, 0.2);
+  }
+  .btn-outline-primary:active {
+    transform: translateY(0);
+  }
+
+  /* Logout Button */
+  .btn-logout {
+    background-color: var(--accent-color);
+    color: #fff;
+    border: none;
+    transition: all 0.3s ease;
+  }
+  
+  .btn-logout:hover {
+    background-color: var(--dark-green);
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(1, 68, 33, 0.2);
+  }
+  
+  /* Status Badges */
+  .badge-status {
+    font-size: 0.85rem;
+    padding: 0.5em 1em;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+  }
+  .badge-status:hover {
+    transform: scale(1.05);
+  }
+  
+  .status-pending { 
+    background-color: #ffc107; 
+    color: #000; 
+  }
+  .status-approved { 
+    background-color: #28a745; 
+    color: #fff; 
+  }
+  .status-rejected { 
+    background-color: #dc3545; 
+    color: #fff; 
+  }
+  .status-active { 
+    background-color: var(--primary-color); 
+    color: #fff; 
+  }
+  .status-inactive { 
+    background-color: #6c757d; 
+    color: #fff; 
+  }
+  
+  /* Form Enhancements */
+  .form-control:focus {
+    border-color: var(--faculty-accent);
+    box-shadow: 0 0 0 0.2rem rgba(43, 122, 59, 0.25);
+  }
+
+  .form-select:focus {
+    border-color: var(--faculty-accent);
+    box-shadow: 0 0 0 0.2rem rgba(43, 122, 59, 0.25);
+  }
+
+  /* Loading States */
+  .loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(1, 68, 33, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+  }
+  
+  .loading-spinner {
+    width: 3rem;
+    height: 3rem;
+    border: 0.3rem solid rgba(255, 255, 255, 0.3);
+    border-top: 0.3rem solid #fff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  /* Modal Enhancements */
+  .modal-content {
+    border: none;
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 30px rgba(1, 68, 33, 0.2);
+  }
+
+  .modal-header {
+    border-bottom: 1px solid var(--border-gray);
+    background-color: var(--light-gray);
+  }
+
+  /* Progress Bars */
+  .progress {
+    background-color: var(--light-gray);
+    border-radius: 0.5rem;
+  }
+
+  .progress-bar {
+    background-color: var(--primary-color);
+    border-radius: 0.5rem;
+  }
+
+  /* Alert Customizations */
+  .alert-faculty {
+    background-color: rgba(43, 122, 59, 0.1);
+    border-color: var(--faculty-accent);
+    color: var(--dark-green);
+  }
+  
+  .alert-sm {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    border-radius: 0.375rem;
+  }
+  
+  .alert-info {
+    background-color: rgba(13, 110, 253, 0.1);
+    border-color: rgba(13, 110, 253, 0.2);
+    color: #084298;
+  }
+
+  /* ============================================
+     ACCORDION STYLING - Faculty Assignment (Simple Colors Only)
+     ============================================ */
+  
+  /* Grade Level Accordion - Just Colors */
+  .accordion-button:not(.collapsed) {
+    background-color: var(--primary-color);
+    color: #fff;
+  }
+
+  /* Strand & Track Badges - Green Color */
+  .strand-badge {
+    background-color: var(--secondary-color) !important;
+  }
+
+  .track-badge {
+    background-color: var(--secondary-color) !important;
+  }
+
+  /* Section Badge - Green Color */
+  .section-badge {
+    background-color: var(--secondary-color) !important;
+  }
+
+  /* Assignment Table Headers - Green Gradient */
+  .card-header {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    color: #fff;
+  }
+
+  .card-header h5 {
+    color: #fff;
+  }

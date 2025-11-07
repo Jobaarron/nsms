@@ -20,21 +20,45 @@ class RedirectIfAuthenticated
 
         foreach ($guards as $guard) {
             if (Auth::guard($guard)->check()) {
-                // Redirect based on guard type
-                switch ($guard) {
-                    case 'registrar':
-                        return redirect()->route('registrar.dashboard');
-                    case 'student':
-                        return redirect()->route('student.dashboard');
-                    case 'enrollee':
-                        return redirect()->route('enrollee.dashboard');
-                    case 'web':
-                    default:
-                        return redirect('/home');
+                // Only redirect if the current guard matches the authenticated guard
+                // This prevents cross-guard session conflicts
+                $authenticatedGuard = $this->getAuthenticatedGuard();
+                
+                if ($authenticatedGuard === $guard) {
+                    // Redirect based on guard type
+                    switch ($guard) {
+                        case 'registrar':
+                            return redirect()->route('registrar.dashboard');
+                        case 'student':
+                            return redirect()->route('student.dashboard');
+                        case 'enrollee':
+                            return redirect()->route('enrollee.dashboard');
+                        case 'cashier':
+                            return redirect()->route('cashier.dashboard');
+                        case 'web':
+                        default:
+                            return redirect('/home');
+                    }
                 }
             }
         }
 
         return $next($request);
+    }
+    
+    /**
+     * Get the currently authenticated guard
+     */
+    private function getAuthenticatedGuard(): ?string
+    {
+        $guards = ['web', 'registrar', 'enrollee', 'student', 'discipline', 'guidance', 'cashier', 'faculty_head'];
+        
+        foreach ($guards as $guard) {
+            if (Auth::guard($guard)->check()) {
+                return $guard;
+            }
+        }
+        
+        return null;
     }
 }

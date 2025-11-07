@@ -39,6 +39,8 @@ class Violation extends Model
         'resolved_by',
         'resolved_at',
         'student_statement',
+         'incident_feelings',
+        'action_plan',
         'disciplinary_action',
         'parent_notified',
         'parent_notification_date',
@@ -56,6 +58,8 @@ class Violation extends Model
         'resolved_at' => 'date',
         'parent_notification_date' => 'date',
         'parent_notified' => 'boolean',
+        'incident_feelings' => 'string',
+        'action_plan' => 'string',
     ];
 
     /**
@@ -141,4 +145,24 @@ class Violation extends Model
     {
         return $this->disciplinary_action ?: $this->resolution ?: 'No action recorded';
     }
+        /**
+         * Get the teacher associated with this violation.
+         */
+        public function teacher()
+        {
+            // Assumes there is a teacher_id field in the violations table, or you want to use another field
+            // If you want to use a different field, adjust the second and third arguments accordingly
+            // If you want to use the teacher's id, and the violations table has a field like 'reported_by' or similar, use that
+            // Example: return $this->belongsTo(Teacher::class, 'reported_by', 'user_id');
+            // But if you want to use the teacher's id, you need a teacher_id field in violations table
+            // For now, fallback to reported_by as a demonstration (if reported_by is a teacher's id)
+            return $this->belongsTo(Teacher::class, 'reported_by', 'id');
+        }
+        /**
+     * Get the teacher associated with this violation (by users_id).
+     */
+    // public function teacher()
+    // {
+    //     return $this->belongsTo(\App\Models\Teacher::class, 'users_id', 'users_id');
+    // }
 }

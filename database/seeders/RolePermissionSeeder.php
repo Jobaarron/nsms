@@ -8,9 +8,10 @@ use Spatie\Permission\Models\Permission;
 use App\Models\User;
 use App\Models\Admin;
 use App\Models\Teacher;
-use App\Models\GuidanceDiscipline;
+use App\Models\Cashier;
 use App\Models\Discipline;
 use App\Models\Guidance;
+use Illuminate\Support\Facades\Hash;
 
 class RolePermissionSeeder extends Seeder
 {
@@ -76,19 +77,27 @@ class RolePermissionSeeder extends Seeder
             'Approved',
             'Reports',
             
-            // CASHIER LAYOUT PERMISSIONS (cashier-layout.blade.php)
-            'Cashier Dashboard',
-            'Pending Payments',
-            'Due Payments',
-            'Completed Payments',
-            'Payment History',
-            'Payment Reports',
-            'Confirm Payments',
-            'Reject Payments',
-            'View Payment Details',
-            'Process Payments',
-            'Generate Payment Reports',
-            'Export Payment Data',
+            // CASHIER LAYOUT PERMISSIONS - Handled separately with cashier guard
+            // 'Cashier Dashboard',
+            // 'Pending Payments',
+            // 'Due Payments',
+            // 'Completed Payments',
+            // 'Payment History',
+            // 'Payment Reports',
+            // 'Confirm Payments',
+            // 'Reject Payments',
+            // 'View Payment Details',
+            // 'Process Payments',
+            // 'Generate Payment Reports',
+            // 'Export Payment Data',
+            
+            // FACULTY HEAD LAYOUT PERMISSIONS (faculty-head-layout.blade.php)
+            'Faculty Head Dashboard',
+            'Assign Adviser per Class',
+            'Assign Teacher per Subject/Section',
+            'View Submitted Grades from Teachers',
+            'Approve/Reject Submitted Grades from Teachers',
+            'Activate Grade Submission',
             
             // CORE SYSTEM PERMISSIONS (for AdminController compatibility)
             'View Reports',
@@ -107,6 +116,9 @@ class RolePermissionSeeder extends Seeder
                 'guard_name' => 'web'
             ]);
         }
+
+        // Faculty Head permissions are already created above with 'web' guard
+        // No need to create separate permissions with different guard
 
 
         // Create roles and assign permissions
@@ -205,9 +217,8 @@ class RolePermissionSeeder extends Seeder
             'Violations Management',
         ]);
 
-        // CASHIER ROLE - Financial transactions and payment management
-        $cashier = Role::firstOrCreate(['name' => 'cashier', 'guard_name' => 'web']);
-        $cashier->syncPermissions([
+        // CASHIER ROLE - Financial transactions and payment management (using web guard)
+        $cashierPermissions = [
             'Cashier Dashboard',
             'Pending Payments',
             'Due Payments', 
@@ -221,18 +232,29 @@ class RolePermissionSeeder extends Seeder
             'Generate Payment Reports',
             'Export Payment Data',
             'View Reports',
-        ]);
+        ];
 
-        // FACULTY HEAD ROLE - Academic leadership
+        // Create cashier permissions with web guard
+        foreach ($cashierPermissions as $permission) {
+            Permission::firstOrCreate([
+                'name' => $permission,
+                'guard_name' => 'web'
+            ]);
+        }
+
+        // Create cashier role with web guard
+        $cashier = Role::firstOrCreate(['name' => 'cashier', 'guard_name' => 'web']);
+        $cashier->syncPermissions($cashierPermissions);
+
+        // FACULTY HEAD ROLE - Based on faculty-head-layout.blade.php sidebar navigation (using web guard)
         $facultyHead = Role::firstOrCreate(['name' => 'faculty_head', 'guard_name' => 'web']);
         $facultyHead->syncPermissions([
-            'Teacher Dashboard',
-            'My Classes',
-            'View Students',
-            'Grade Book',
-            'Attendance Management',
-            'Teacher Messages',
-            'Guidance Analytics',
+            'Faculty Head Dashboard',
+            'Assign Adviser per Class',
+            'Assign Teacher per Subject/Section', 
+            'View Submitted Grades from Teachers',
+            'Approve/Reject Submitted Grades from Teachers',
+            'Activate Grade Submission',
         ]);
 
         // REGISTRAR ROLE - Based on registrar-layout.blade.php sidebar navigation
@@ -315,7 +337,9 @@ class RolePermissionSeeder extends Seeder
         // Assign both admin and super_admin roles
         $adminUser->assignRole(['super_admin', 'admin']);
 
-        // 2. Create Guidance Counselor User
+        // 2. Create Guidance Counselor User - OLD ACCOUNT (COMMENTED OUT)
+        // This was using the old GuidanceDiscipline model before separation
+        /*
         $guidanceUser = User::firstOrCreate(
             ['email' => 'guidance@nicolites.edu'],
             [
@@ -324,8 +348,8 @@ class RolePermissionSeeder extends Seeder
             ]
         );
         
-        // Create GuidanceDiscipline record for Guidance Counselor
-        GuidanceDiscipline::firstOrCreate(
+        // Create Guidance record for Guidance Counselor (new separate system)
+        Guidance::firstOrCreate(
             ['user_id' => $guidanceUser->id],
             [
                 'employee_id' => 'GDC001',
@@ -334,22 +358,24 @@ class RolePermissionSeeder extends Seeder
                 'phone_number' => '09123456789',
                 'address' => '123 Guidance Street, Quezon City',
                 'position' => 'Guidance Counselor',
-                'specialization' => 'Educational Psychology',
-                'type' => 'guidance',
+                'specialization' => 'guidance_counselor',
                 'hire_date' => '2023-01-15',
                 'qualifications' => 'Master of Arts in Guidance and Counseling',
                 'emergency_contact_name' => 'Juan Santos',
                 'emergency_contact_phone' => '09987654321',
                 'emergency_contact_relationship' => 'spouse',
                 'notes' => 'Specializes in academic and career counseling',
-                'department' => 'guidance',
+                'is_active' => true,
             ]
         );
         
         // Assign guidance counselor role
         $guidanceUser->assignRole('guidance_counselor');
+        */
 
-        // 3. Create Discipline Head User
+        // 3. Create Discipline Head User - OLD ACCOUNT (COMMENTED OUT)
+        // This was using the old GuidanceDiscipline model before separation
+        /*
         $disciplineHeadUser = User::firstOrCreate(
             ['email' => 'discipline.head@nicolites.edu'],
             [
@@ -358,8 +384,8 @@ class RolePermissionSeeder extends Seeder
             ]
         );
         
-        // Create GuidanceDiscipline record for Discipline Head
-        GuidanceDiscipline::firstOrCreate(
+        // Create Discipline record for Discipline Head (new separate system)
+        Discipline::firstOrCreate(
             ['user_id' => $disciplineHeadUser->id],
             [
                 'employee_id' => 'DH001',
@@ -368,22 +394,24 @@ class RolePermissionSeeder extends Seeder
                 'phone_number' => '09234567890',
                 'address' => '456 Discipline Avenue, Manila',
                 'position' => 'Discipline Head',
-                'specialization' => 'Student Discipline Management',
-                'type' => 'discipline',
+                'specialization' => 'discipline_head',
                 'hire_date' => '2022-06-01',
                 'qualifications' => 'Bachelor of Science in Education, Discipline Management Certificate',
                 'emergency_contact_name' => 'Ana Cruz',
                 'emergency_contact_phone' => '09876543210',
                 'emergency_contact_relationship' => 'spouse',
                 'notes' => 'Head of Student Discipline Department',
-                'department' => 'discipline',
+                'is_active' => true,
             ]
         );
         
         // Assign discipline head role
         $disciplineHeadUser->assignRole('discipline_head');
+        */
 
-        // 4. Create Discipline Officer User
+        // 4. Create Discipline Officer User - OLD ACCOUNT (COMMENTED OUT)
+        // This was using the old GuidanceDiscipline model before separation
+        /*
         $disciplineOfficerUser = User::firstOrCreate(
             ['email' => 'discipline.officer@nicolites.edu'],
             [
@@ -392,8 +420,8 @@ class RolePermissionSeeder extends Seeder
             ]
         );
         
-        // Create GuidanceDiscipline record for Discipline Officer
-        GuidanceDiscipline::firstOrCreate(
+        // Create Discipline record for Discipline Officer (new separate system)
+        Discipline::firstOrCreate(
             ['user_id' => $disciplineOfficerUser->id],
             [
                 'employee_id' => 'DO001',
@@ -402,22 +430,22 @@ class RolePermissionSeeder extends Seeder
                 'phone_number' => '09345678901',
                 'address' => '789 Officer Lane, Pasig City',
                 'position' => 'Discipline Officer',
-                'specialization' => 'Student Behavior Management',
-                'type' => 'discipline',
+                'specialization' => 'discipline_officer',
                 'hire_date' => '2023-08-15',
                 'qualifications' => 'Bachelor of Arts in Psychology',
                 'emergency_contact_name' => 'Lisa Mendoza',
                 'emergency_contact_phone' => '09765432109',
                 'emergency_contact_relationship' => 'sibling',
                 'notes' => 'Handles student violations and disciplinary actions',
-                'department' => 'discipline',
+                'is_active' => true,
             ]
         );
         
         // Assign discipline officer role
         $disciplineOfficerUser->assignRole('discipline_officer');
+        */
 
-        // 5. Create Teacher User
+        // 3. Create Teacher User
         $teacherUser = User::firstOrCreate(
             ['email' => 'teacher@nicolites.edu'],
             [
@@ -444,6 +472,230 @@ class RolePermissionSeeder extends Seeder
         
         // Assign teacher role
         $teacherUser->assignRole('teacher');
+
+        // 4. Create Teacher User 2
+        $teacherUser2 = User::firstOrCreate(
+            ['email' => 'teacher2@nicolites.edu'],
+            [
+                'name' => 'Maria Santos',
+                'password' => bcrypt('teacher123'),
+            ]
+        );
+        
+        // Create Teacher record
+        Teacher::firstOrCreate(
+            ['user_id' => $teacherUser2->id],
+            [
+                'employee_id' => 'TCH002',
+                'department' => 'Science Department',
+                'position' => 'Senior High School Teacher',
+                'specialization' => 'Biology and Chemistry',
+                'hire_date' => '2020-08-15',
+                'phone_number' => '09456789013',
+                'address' => '456 Science Ave, Quezon City',
+                'qualifications' => 'Bachelor of Science in Biology, Master of Science in Chemistry',
+                'is_active' => true,
+            ]
+        );
+        
+        // Assign teacher role
+        $teacherUser2->assignRole('teacher');
+
+        // 5. Create Teacher User 3
+        $teacherUser3 = User::firstOrCreate(
+            ['email' => 'teacher3@nicolites.edu'],
+            [
+                'name' => 'Robert Cruz',
+                'password' => bcrypt('teacher123'),
+            ]
+        );
+        
+        // Create Teacher record
+        Teacher::firstOrCreate(
+            ['user_id' => $teacherUser3->id],
+            [
+                'employee_id' => 'TCH003',
+                'department' => 'English Department',
+                'position' => 'Junior High School Teacher',
+                'specialization' => 'English Literature and Communication',
+                'hire_date' => '2019-06-20',
+                'phone_number' => '09456789014',
+                'address' => '789 Literature St, Pasig City',
+                'qualifications' => 'Bachelor of Arts in English, Master of Arts in English Literature',
+                'is_active' => true,
+            ]
+        );
+        
+        // Assign teacher role
+        $teacherUser3->assignRole('teacher');
+
+        // 6. Create Teacher User 4
+        $teacherUser4 = User::firstOrCreate(
+            ['email' => 'teacher4@nicolites.edu'],
+            [
+                'name' => 'Ana Garcia',
+                'password' => bcrypt('teacher123'),
+            ]
+        );
+        
+        // Create Teacher record
+        Teacher::firstOrCreate(
+            ['user_id' => $teacherUser4->id],
+            [
+                'employee_id' => 'TCH004',
+                'department' => 'Social Studies Department',
+                'position' => 'Senior High School Teacher',
+                'specialization' => 'Philippine History and Government',
+                'hire_date' => '2022-01-12',
+                'phone_number' => '09456789015',
+                'address' => '123 History Blvd, Mandaluyong City',
+                'qualifications' => 'Bachelor of Arts in History, Master of Arts in Philippine Studies',
+                'is_active' => true,
+            ]
+        );
+        
+        // Assign teacher role
+        $teacherUser4->assignRole('teacher');
+
+        // 7. Create Teacher User 5
+        $teacherUser5 = User::firstOrCreate(
+            ['email' => 'teacher5@nicolites.edu'],
+            [
+                'name' => 'Michael Torres',
+                'password' => bcrypt('teacher123'),
+            ]
+        );
+        
+        // Create Teacher record
+        Teacher::firstOrCreate(
+            ['user_id' => $teacherUser5->id],
+            [
+                'employee_id' => 'TCH005',
+                'department' => 'Physical Education Department',
+                'position' => 'Elementary Teacher',
+                'specialization' => 'Physical Education and Health',
+                'hire_date' => '2021-09-05',
+                'phone_number' => '09456789016',
+                'address' => '567 Sports Complex, Taguig City',
+                'qualifications' => 'Bachelor of Science in Physical Education, Certificate in Sports Training',
+                'is_active' => true,
+            ]
+        );
+        
+        // Assign teacher role
+        $teacherUser5->assignRole('teacher');
+
+        // 8. Create Teacher User 6
+        $teacherUser6 = User::firstOrCreate(
+            ['email' => 'teacher6@nicolites.edu'],
+            [
+                'name' => 'Lisa Mendoza',
+                'password' => bcrypt('teacher123'),
+            ]
+        );
+        
+        // Create Teacher record
+        Teacher::firstOrCreate(
+            ['user_id' => $teacherUser6->id],
+            [
+                'employee_id' => 'TCH006',
+                'department' => 'Arts Department',
+                'position' => 'Junior High School Teacher',
+                'specialization' => 'Visual Arts and Music',
+                'hire_date' => '2020-11-18',
+                'phone_number' => '09456789017',
+                'address' => '890 Arts District, Muntinlupa City',
+                'qualifications' => 'Bachelor of Fine Arts, Certificate in Music Education',
+                'is_active' => true,
+            ]
+        );
+        
+        // Assign teacher role
+        $teacherUser6->assignRole('teacher');
+
+        // 9. Create Teacher User 7
+        $teacherUser7 = User::firstOrCreate(
+            ['email' => 'teacher7@nicolites.edu'],
+            [
+                'name' => 'David Villanueva',
+                'password' => bcrypt('teacher123'),
+            ]
+        );
+        
+        // Create Teacher record
+        Teacher::firstOrCreate(
+            ['user_id' => $teacherUser7->id],
+            [
+                'employee_id' => 'TCH007',
+                'department' => 'Technology Department',
+                'position' => 'Senior High School Teacher',
+                'specialization' => 'Information Technology and Computer Science',
+                'hire_date' => '2018-04-25',
+                'phone_number' => '09456789018',
+                'address' => '234 Tech Hub, Parañaque City',
+                'qualifications' => 'Bachelor of Science in Information Technology, Master of Science in Computer Science',
+                'is_active' => true,
+            ]
+        );
+        
+        // Assign teacher role
+        $teacherUser7->assignRole('teacher');
+
+        // 10. Create Teacher User 8
+        $teacherUser8 = User::firstOrCreate(
+            ['email' => 'teacher8@nicolites.edu'],
+            [
+                'name' => 'Carmen Flores',
+                'password' => bcrypt('teacher123'),
+            ]
+        );
+        
+        // Create Teacher record
+        Teacher::firstOrCreate(
+            ['user_id' => $teacherUser8->id],
+            [
+                'employee_id' => 'TCH008',
+                'department' => 'Home Economics Department',
+                'position' => 'Senior High School Teacher',
+                'specialization' => 'Culinary Arts and Food Technology',
+                'hire_date' => '2021-07-30',
+                'phone_number' => '09456789019',
+                'address' => '678 Culinary Street, Las Piñas City',
+                'qualifications' => 'Bachelor of Science in Food Technology, Certificate in Culinary Arts',
+                'is_active' => true,
+            ]
+        );
+        
+        // Assign teacher role
+        $teacherUser8->assignRole('teacher');
+
+        // 11. Create Teacher User 9
+        $teacherUser9 = User::firstOrCreate(
+            ['email' => 'teacher9@nicolites.edu'],
+            [
+                'name' => 'James Rodriguez',
+                'password' => bcrypt('teacher123'),
+            ]
+        );
+        
+        // Create Teacher record
+        Teacher::firstOrCreate(
+            ['user_id' => $teacherUser9->id],
+            [
+                'employee_id' => 'TCH009',
+                'department' => 'Values Education Department',
+                'position' => 'Elementary Teacher',
+                'specialization' => 'Values Education and Christian Living',
+                'hire_date' => '2019-12-02',
+                'phone_number' => '09456789020',
+                'address' => '345 Faith Avenue, Marikina City',
+                'qualifications' => 'Bachelor of Arts in Theology, Master of Arts in Religious Education',
+                'is_active' => true,
+            ]
+        );
+        
+        // Assign teacher role
+        $teacherUser9->assignRole('teacher');
 
         // 6. Create Registrar User for Testing
         $registrarUser = \App\Models\Registrar::firstOrCreate(
@@ -642,6 +894,139 @@ class RolePermissionSeeder extends Seeder
         
         // Assign head counselor role
         $headCounselorUser->assignRole('head_counselor');
+
+        // 11. Create Faculty Head User
+        $facultyHeadUser = User::firstOrCreate(
+            ['email' => 'faculty.head@nicolites.edu'],
+            [
+                'name' => 'Dr. Antonio Gonzales',
+                'password' => bcrypt('facultyhead2024'),
+            ]
+        );
+        
+        // Create Faculty Head record
+        \App\Models\FacultyHead::firstOrCreate(
+            ['user_id' => $facultyHeadUser->id],
+            [
+                'user_id' => $facultyHeadUser->id,
+                'employee_id' => 'FH001',
+                'department' => 'Academic Affairs',
+                'position' => 'Faculty Head',
+                'appointed_date' => '2023-01-15',
+                'employment_status' => 'active',
+                'phone_number' => '09567890123',
+                'address' => '654 Faculty Avenue, Quezon City',
+                'qualifications' => 'Doctor of Philosophy in Educational Leadership, Master of Arts in Teaching',
+                'permissions' => [
+                    'Faculty Head Dashboard',
+                    'Assign Adviser per Class',
+                    'Assign Teacher per Subject/Section',
+                    'View Submitted Grades from Teachers',
+                    'Approve/Reject Submitted Grades from Teachers',
+                    'Activate Grade Submission',
+                ],
+                'is_active' => true,
+                'notes' => 'Head of Faculty responsible for teacher assignments and grade oversight',
+            ]
+        );
+        
+        // Assign faculty head role
+        $facultyHeadUser->assignRole('faculty_head');
+
+        // 12. Create Cashier Users
+        $cashierUser = Cashier::firstOrCreate(
+            ['email' => 'cashier@nicolites.edu'],
+            [
+                'employee_id' => 'CASH001',
+                'first_name' => 'Maria',
+                'middle_name' => 'Santos',
+                'last_name' => 'Dela Cruz',
+                'suffix' => null,
+                'email' => 'cashier@nicolites.edu',
+                'password' => Hash::make('cashier123'),
+                'phone_number' => '09123456789',
+                'address' => '123 Finance Street, Quezon City',
+                'city' => 'Quezon City',
+                'province' => 'Metro Manila',
+                'zip_code' => '1100',
+                'date_of_birth' => '1988-04-15',
+                'gender' => 'female',
+                'position' => 'Senior Cashier',
+                'department' => 'Finance',
+                'hire_date' => '2021-02-01',
+                'salary' => 25000.00,
+                'employment_status' => 'active',
+                'emergency_contact_name' => 'Juan Dela Cruz',
+                'emergency_contact_phone' => '09987654321',
+                'emergency_contact_relationship' => 'spouse',
+                'qualifications' => 'Bachelor of Science in Accounting, Certified Bookkeeper',
+                'notes' => 'Senior cashier with 3+ years experience in school finance',
+                'is_active' => true,
+            ]
+        );
+
+        // Assign cashier role
+        $cashierUser->assignRole('cashier');
+
+        // Create assistant cashier
+        $assistantCashier = Cashier::firstOrCreate(
+            ['email' => 'assistant.cashier@nicolites.edu'],
+            [
+                'employee_id' => 'CASH002',
+                'first_name' => 'Ana',
+                'middle_name' => 'Reyes',
+                'last_name' => 'Garcia',
+                'suffix' => null,
+                'email' => 'assistant.cashier@nicolites.edu',
+                'password' => Hash::make('assistant123'),
+                'phone_number' => '09234567890',
+                'address' => '456 Payment Avenue, Manila City',
+                'city' => 'Manila',
+                'province' => 'Metro Manila',
+                'zip_code' => '1000',
+                'date_of_birth' => '1992-08-20',
+                'gender' => 'female',
+                'position' => 'Assistant Cashier',
+                'department' => 'Finance',
+                'hire_date' => '2023-06-15',
+                'salary' => 20000.00,
+                'employment_status' => 'active',
+                'emergency_contact_name' => 'Pedro Garcia',
+                'emergency_contact_phone' => '09876543210',
+                'emergency_contact_relationship' => 'father',
+                'qualifications' => 'Bachelor of Science in Business Administration',
+                'notes' => 'Assistant cashier handling daily transactions',
+                'is_active' => true,
+            ]
+        );
+
+        // Assign cashier role
+        $assistantCashier->assignRole('cashier');
+        
+        // =================================================================
+        // DEVELOPMENT LOGIN CREDENTIALS - FOR TESTING PURPOSES ONLY
+        // =================================================================
+        $this->command->info('=== DEVELOPMENT LOGIN CREDENTIALS ===');
+        $this->command->info('admin@nicolites.edu / admin123');
+        $this->command->info('registrar@nicolites.edu / registrar123');
+        $this->command->info('assistant.registrar@nicolites.edu / assistant123');
+        $this->command->info('cashier@nicolites.edu / cashier123');
+        $this->command->info('assistant.cashier@nicolites.edu / assistant123');
+        $this->command->info('teacher@nicolites.edu / teacher123');
+        $this->command->info('teacher2@nicolites.edu / teacher123');
+        $this->command->info('teacher3@nicolites.edu / teacher123');
+        $this->command->info('teacher4@nicolites.edu / teacher123');
+        $this->command->info('teacher5@nicolites.edu / teacher123');
+        $this->command->info('teacher6@nicolites.edu / teacher123');
+        $this->command->info('teacher7@nicolites.edu / teacher123');
+        $this->command->info('teacher8@nicolites.edu / teacher123');
+        $this->command->info('teacher9@nicolites.edu / teacher123');
+        $this->command->info('faculty.head@nicolites.edu / facultyhead2024');
+        $this->command->info('guidance.counselor.new@nicolites.edu / guidance2024');
+        $this->command->info('head.counselor@nicolites.edu / headcounselor2024');
+        $this->command->info('discipline.head.new@nicolites.edu / discipline2024');
+        $this->command->info('discipline.officer.new@nicolites.edu / officer2024');
+        $this->command->info('=== ALL ACCOUNTS READY FOR TESTING ===');
         
     }
 }

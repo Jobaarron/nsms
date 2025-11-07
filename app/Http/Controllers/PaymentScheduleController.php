@@ -163,6 +163,16 @@ class PaymentScheduleController extends Controller
             $query->where('payment_method', $request->payment_method);
         }
 
+        // Due status filter
+        if ($request->filled('due_status')) {
+            $today = now()->toDateString();
+            if ($request->due_status === 'due') {
+                $query->havingRaw('MIN(scheduled_date) <= ?', [$today]);
+            } elseif ($request->due_status === 'not_due') {
+                $query->havingRaw('MIN(scheduled_date) > ?', [$today]);
+            }
+        }
+
         if ($request->filled('search')) {
             $search = $request->search;
             $query->whereHasMorph('payable', ['App\\Models\\Student'], function($q) use ($search) {
@@ -172,7 +182,10 @@ class PaymentScheduleController extends Controller
             });
         }
 
-        $paymentSchedules = $query->orderBy('first_due_date')->get();
+        // Order by due status (due payments first) then by date
+        $paymentSchedules = $query->orderByRaw('CASE WHEN MIN(scheduled_date) <= ? THEN 0 ELSE 1 END', [now()->toDateString()])
+                                  ->orderBy('first_due_date')
+                                  ->get();
 
         // Transform the grouped data to include student information
         $transformedSchedules = $paymentSchedules->map(function($schedule) {
@@ -342,7 +355,8 @@ class PaymentScheduleController extends Controller
                         'amount' => $payment->amount,
                         'scheduled_date' => $payment->scheduled_date,
                         'period_name' => $payment->period_name,
-                        'status' => $payment->confirmation_status
+                        'status' => $payment->status,
+                        'confirmation_status' => $payment->confirmation_status
                     ];
                 })
             ]
@@ -447,6 +461,11 @@ class PaymentScheduleController extends Controller
                     'is_paid' => $isFullyPaid,
                     'payment_completed_at' => $isFullyPaid ? now() : null
                 ]);
+                
+                // Auto-assign section when payment is fully settled
+                if ($isFullyPaid && !$student->section) {
+                    $this->assignStudentToSection($student);
+                }
         }
 
         $message = $action === 'approve' 
@@ -561,6 +580,196 @@ class PaymentScheduleController extends Controller
                 'last_page' => $paginatedPayments->lastPage(),
                 'from' => $paginatedPayments->firstItem(),
                 'to' => $paginatedPayments->lastItem()
+            ]
+        ]);
+    }
+    
+    /**
+     * Automatically assign student to available section
+     */
+    private function assignStudentToSection(Student $student)
+    {
+        try {
+            // Get current academic year
+            $currentAcademicYear = date('Y') . '-' . (date('Y') + 1);
+            
+            // Define section priority order
+            $sectionOrder = ['A', 'B', 'C', 'D', 'E', 'F'];
+            
+            // Build query to find students in same grade/strand/track
+            $baseQuery = Student::where('grade_level', $student->grade_level)
+                               ->where('academic_year', $currentAcademicYear)
+                               ->where('is_active', true)
+                               ->where('enrollment_status', 'enrolled')
+                               ->where('is_paid', true)
+                               ->whereNotNull('section');
+            
+            // Add strand filter for SHS students
+            if (in_array($student->grade_level, ['Grade 11', 'Grade 12']) && $student->strand) {
+                $baseQuery->where('strand', $student->strand);
+                
+                // Add track filter for TVL students
+                if ($student->strand === 'TVL' && $student->track) {
+                    $baseQuery->where('track', $student->track);
+                }
+            }
+            
+            // Get section counts
+            $sectionCounts = $baseQuery->select('section', DB::raw('count(*) as count'))
+                                     ->groupBy('section')
+                                     ->pluck('count', 'section')
+                                     ->toArray();
+            
+            // Find the section with the least students, following priority order
+            $assignedSection = null;
+            $minCount = PHP_INT_MAX;
+            
+            foreach ($sectionOrder as $section) {
+                $count = $sectionCounts[$section] ?? 0;
+                
+                // Assign to first available section or section with least students
+                if ($count < $minCount) {
+                    $minCount = $count;
+                    $assignedSection = $section;
+                }
+                
+                // If we find an empty section, use it immediately
+                if ($count === 0) {
+                    break;
+                }
+            }
+            
+            // If no sections exist yet, start with section A
+            if (!$assignedSection) {
+                $assignedSection = 'A';
+            }
+            
+            // Update student with assigned section
+            $student->update(['section' => $assignedSection]);
+            
+            \Log::info('Student assigned to section', [
+                'student_id' => $student->student_id,
+                'grade_level' => $student->grade_level,
+                'strand' => $student->strand,
+                'track' => $student->track,
+                'assigned_section' => $assignedSection,
+                'section_count' => $minCount
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Failed to assign student to section', [
+                'student_id' => $student->student_id,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+    
+    /**
+     * Process individual payment installment (for partial payments)
+     */
+    public function processIndividualPayment(Request $request, $paymentId)
+    {
+        try {
+            $request->validate([
+                'action' => 'required|in:approve,reject',
+                'reason' => 'required_if:action,reject|nullable|string|max:1000'
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed: ' . implode(', ', $e->validator->errors()->all())
+            ], 422);
+        }
+
+        $cashier = Auth::guard('cashier')->user();
+        
+        if (!$cashier) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized access'
+            ], 401);
+        }
+
+        // Find the specific payment
+        $payment = Payment::with(['payable'])->find($paymentId);
+        
+        if (!$payment) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment not found'
+            ], 404);
+        }
+
+        $student = $payment->payable;
+        $action = $request->action;
+        $newStatus = $action === 'approve' ? 'confirmed' : 'rejected';
+        $statusText = $action === 'approve' ? 'paid' : 'failed';
+
+        // Update the specific payment
+        $payment->update([
+            'confirmation_status' => $newStatus,
+            'status' => $statusText,
+            'processed_by' => $cashier->id,
+            'confirmed_at' => now(),
+            'cashier_notes' => $request->reason ?? 'Individual payment ' . $action . 'd',
+            'paid_at' => $action === 'approve' ? now() : null,
+        ]);
+
+        // Check if this is the first quarter payment and if approved
+        if ($action === 'approve') {
+            // Calculate total paid amount
+            $totalPaid = Payment::where('payable_type', 'App\\Models\\Student')
+                ->where('payable_id', $student->id)
+                ->where('confirmation_status', 'confirmed')
+                ->sum('amount');
+                
+            $isFullyPaid = $totalPaid >= ($student->total_fees_due ?? 0);
+            
+            // Update student payment status
+            $student->update([
+                'total_paid' => $totalPaid,
+                'is_paid' => $isFullyPaid,
+                'payment_completed_at' => $isFullyPaid ? now() : null
+            ]);
+            
+            // Check if this is the first payment (1st quarter) and student is not yet enrolled
+            $isFirstPayment = Payment::where('payable_type', 'App\\Models\\Student')
+                ->where('payable_id', $student->id)
+                ->where('confirmation_status', 'confirmed')
+                ->count() === 1;
+                
+            if ($isFirstPayment && $student->enrollment_status !== 'enrolled') {
+                // Enroll student after first payment
+                $student->update(['enrollment_status' => 'enrolled']);
+                
+                // Auto-assign section if not already assigned
+                if (!$student->section) {
+                    $this->assignStudentToSection($student);
+                }
+            }
+        }
+
+        $message = $action === 'approve' 
+            ? 'Payment approved successfully.'
+            : 'Payment rejected. Reason: ' . $request->reason;
+
+        \Log::info('Individual payment processed successfully', [
+            'payment_id' => $paymentId,
+            'action' => $action,
+            'student_id' => $student->student_id,
+            'message' => $message
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'transaction_id' => $payment->transaction_id,
+            'payment' => [
+                'id' => $payment->id,
+                'status' => $payment->confirmation_status,
+                'student_id' => $student->student_id,
+                'amount' => $payment->amount,
+                'transaction_id' => $payment->transaction_id
             ]
         ]);
     }

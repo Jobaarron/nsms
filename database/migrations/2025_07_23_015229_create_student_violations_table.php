@@ -28,12 +28,25 @@ return new class extends Migration
             $table->json('witnesses')->nullable(); // Array of witness names
             $table->text('evidence')->nullable(); // Description of evidence
             $table->json('attachments')->nullable(); // File paths for photos/documents
-            $table->enum('status', ['pending', 'investigating', 'in_progress', 'resolved', 'dismissed', 'forwarded'])->default('pending');
+            $table->enum('status', [
+                'pending',
+                'investigating',
+                'in_progress',
+                'resolved',
+                'dismissed',
+                'forwarded',
+                'scheduled',
+                'pre_completed',
+                'case_closed',
+                'submitted'
+            ])->default('pending');
             $table->text('sanction')->nullable();
             $table->text('resolution')->nullable();
-            $table->foreignId('resolved_by')->nullable()->constrained('guidance_discipline')->onDelete('set null');
+            $table->foreignId('resolved_by')->nullable()->constrained('disciplines')->onDelete('set null');
             $table->date('resolved_at')->nullable();
             $table->text('student_statement')->nullable();
+            $table->text('incident_feelings')->nullable();
+            $table->text('action_plan')->nullable();
             $table->text('disciplinary_action')->nullable();
             $table->boolean('parent_notified')->default(false);
             $table->date('parent_notification_date')->nullable();

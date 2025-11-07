@@ -1,5 +1,13 @@
 // Global variables for DOM elements
-let uploadBtn, uploadFirstBtn, uploadModal, uploadForm;
+let uploadBtn, uploadFirstBtn, uploadModal, uploadForm, replaceDocumentModal, replaceDocumentForm;
+
+// Define routes globally
+window.enrolleeRoutes = {
+    deleteDocument: '/enrollee/documents/delete',
+    replaceDocument: '/enrollee/documents/replace',
+    viewDocument: '/enrollee/documents/view',
+    downloadDocument: '/enrollee/documents/download'
+};
         
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Document management JavaScript loaded successfully');
@@ -9,6 +17,8 @@ document.addEventListener('DOMContentLoaded', function() {
     uploadFirstBtn = document.getElementById('uploadFirstBtn');
     uploadModal = document.getElementById('uploadModal');
     uploadForm = document.getElementById('uploadForm');
+    replaceDocumentModal = document.getElementById('replaceDocumentModal');
+    replaceDocumentForm = document.getElementById('replaceDocumentForm');
     
     // Add manual click handlers if Bootstrap modal doesn't work
     if (uploadBtn && uploadModal) {
@@ -92,21 +102,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Handle document type selection
-    const documentTypeSelect = document.getElementById('document_type');
-    const otherTypeField = document.getElementById('other_type_field');
-    
-    if (documentTypeSelect && otherTypeField) {
-        documentTypeSelect.addEventListener('change', function() {
-            if (this.value === 'other') {
-                otherTypeField.style.display = 'block';
-                document.getElementById('other_document_type').required = true;
-            } else {
-                otherTypeField.style.display = 'none';
-                document.getElementById('other_document_type').required = false;
-            }
-        });
-    }
 
     // Handle upload form submission
     if (uploadForm) {
@@ -115,26 +110,14 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Upload form submitted');
             
             // Validate form before submission
-            const documentType = document.getElementById('document_type').value;
-            const documentFile = document.getElementById('document_file').files[0];
-            const otherDocumentType = document.getElementById('other_document_type').value;
+            const documentFiles = document.getElementById('document_files').files;
             
-            if (!documentType) {
-                showAlert('Please select a document type', 'error');
+            if (!documentFiles || documentFiles.length === 0) {
+                showAlert('Please select at least one file to upload', 'error');
                 return;
             }
             
-            if (documentType === 'other' && !otherDocumentType.trim()) {
-                showAlert('Please specify the document type', 'error');
-                return;
-            }
-            
-            if (!documentFile) {
-                showAlert('Please select a file to upload', 'error');
-                return;
-            }
-            
-            console.log('Form validation passed:', { documentType, otherDocumentType, fileName: documentFile.name });
+            console.log('Form validation passed:', { fileCount: documentFiles.length });
         
         const formData = new FormData(this);
         const submitBtn = this.querySelector('button[type="submit"]');
@@ -225,40 +208,58 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // File input change handler for preview
-    const fileInput = document.getElementById('document_file');
+    // File input change handler for preview (multiple files)
+    const fileInput = document.getElementById('document_files');
     const filePreview = document.getElementById('filePreview');
-    const fileName = document.getElementById('fileName');
-    const fileSize = document.getElementById('fileSize');
+    const fileCount = document.getElementById('fileCount');
+    const fileList = document.getElementById('fileList');
     
-    if (fileInput && filePreview && fileName && fileSize) {
+    if (fileInput && filePreview && fileCount && fileList) {
         fileInput.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            // Validate file size (5MB = 5 * 1024 * 1024 bytes)
-            if (file.size > 5 * 1024 * 1024) {
-                showAlert('File size must be less than 5MB', 'error');
-                this.value = '';
+            const files = e.target.files;
+            if (files && files.length > 0) {
+                let validFiles = [];
+                let totalSize = 0;
+                
+                // Validate each file
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    
+                    // Validate file size (5MB = 5 * 1024 * 1024 bytes)
+                    if (file.size > 5 * 1024 * 1024) {
+                        showAlert(`File "${file.name}" is too large. Maximum size is 5MB.`, 'error');
+                        this.value = '';
+                        filePreview.style.display = 'none';
+                        return;
+                    }
+                    
+                    // Validate file type
+                    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+                    if (!allowedTypes.includes(file.type)) {
+                        showAlert(`File "${file.name}" has invalid type. Please select PDF, JPG, or PNG files only.`, 'error');
+                        this.value = '';
+                        filePreview.style.display = 'none';
+                        return;
+                    }
+                    
+                    validFiles.push(file);
+                    totalSize += file.size;
+                }
+                
+                // Show file preview
+                fileCount.textContent = `${validFiles.length} file(s) selected (${(totalSize / 1024 / 1024).toFixed(2)} MB total)`;
+                
+                // Create file list
+                let fileListHtml = '';
+                validFiles.forEach((file, index) => {
+                    fileListHtml += `<small class="d-block text-muted">• ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)</small>`;
+                });
+                fileList.innerHTML = fileListHtml;
+                
+                filePreview.style.display = 'block';
+            } else {
                 filePreview.style.display = 'none';
-                return;
             }
-            
-            // Validate file type
-            const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-            if (!allowedTypes.includes(file.type)) {
-                showAlert('Invalid file type. Please select PDF, JPG, PNG, or DOCX files only.', 'error');
-                this.value = '';
-                filePreview.style.display = 'none';
-                return;
-            }
-            
-            // Show file preview
-            fileName.textContent = file.name;
-            fileSize.textContent = ` (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
-            filePreview.style.display = 'block';
-        } else {
-            filePreview.style.display = 'none';
-        }
         });
     }
 
@@ -285,14 +286,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 progressDiv.remove();
             }
             
-            // Hide other type field and file preview
-            const otherTypeField = document.getElementById('other_type_field');
+            // Hide file preview
             const filePreview = document.getElementById('filePreview');
             
-            if (otherTypeField) {
-                otherTypeField.style.display = 'none';
-                document.getElementById('other_document_type').required = false;
-            }
             if (filePreview) {
                 filePreview.style.display = 'none';
             }
@@ -323,7 +319,142 @@ document.addEventListener('DOMContentLoaded', function() {
             const index = btn.dataset.index;
             deleteDocument(index);
         }
+        
+        if (e.target.closest('.replace-doc-btn')) {
+            const btn = e.target.closest('.replace-doc-btn');
+            const index = btn.dataset.index;
+            openReplaceDocumentModal(index);
+        }
     });
+
+    // Initialize replace document functionality
+    if (replaceDocumentForm) {
+        // Handle replace document form submission
+        replaceDocumentForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            console.log('Replace document form submitted');
+            
+            // Validate form
+            const documentFile = document.getElementById('replace_document_file').files[0];
+            const documentIndex = document.getElementById('replace_document_index').value;
+            
+            if (!documentFile) {
+                showAlert('Please select a file to upload', 'error');
+                return;
+            }
+            
+            if (!documentIndex) {
+                showAlert('Document index not found', 'error');
+                return;
+            }
+            
+            console.log('Replace form validation passed:', { fileName: documentFile.name, documentIndex });
+            
+            const formData = new FormData(this);
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.innerHTML;
+            
+            // Show loading state
+            submitBtn.innerHTML = '<i class="ri-loader-4-line spin me-1"></i>Replacing...';
+            submitBtn.disabled = true;
+            
+            // Submit form
+            console.log('Submitting to:', this.action);
+            console.log('FormData contents:', Array.from(formData.entries()));
+            
+            fetch(this.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        console.error('Response text:', text);
+                        throw new Error(`HTTP error! status: ${response.status} - ${text}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Response data:', data);
+                
+                if (data.success) {
+                    showAlert(data.message || 'Document replaced successfully!', 'success');
+                    
+                    // Close modal and redirect to documents page
+                    setTimeout(() => {
+                        const modal = bootstrap.Modal.getInstance(replaceDocumentModal);
+                        if (modal) {
+                            modal.hide();
+                        }
+                        // Redirect to documents page instead of reloading
+                        window.location.href = '/enrollee/documents';
+                    }, 1500);
+                } else {
+                    console.error('Replace failed:', data);
+                    throw new Error(data.message || 'Replace failed');
+                }
+            })
+            .catch(error => {
+                console.error('Replace error:', error);
+                showAlert(error.message || 'Failed to replace document. Please try again.', 'error');
+                
+                // Reset button state
+                submitBtn.innerHTML = originalBtnText;
+                submitBtn.disabled = false;
+            });
+        });
+        
+        // Handle file input change for replace document
+        const replaceFileInput = document.getElementById('replace_document_file');
+        const replaceFilePreview = document.getElementById('replaceFilePreview');
+        const replaceFileName = document.getElementById('replaceFileName');
+        const replaceFileSize = document.getElementById('replaceFileSize');
+        
+        if (replaceFileInput && replaceFilePreview && replaceFileName && replaceFileSize) {
+            replaceFileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    // Validate file size (5MB = 5 * 1024 * 1024 bytes)
+                    if (file.size > 5 * 1024 * 1024) {
+                        showAlert('File size must be less than 5MB', 'error');
+                        this.value = '';
+                        replaceFilePreview.style.display = 'none';
+                        return;
+                    }
+                    
+                    // Validate file type
+                    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+                    if (!allowedTypes.includes(file.type)) {
+                        showAlert('Invalid file type. Please select PDF, JPG, or PNG files only.', 'error');
+                        this.value = '';
+                        replaceFilePreview.style.display = 'none';
+                        return;
+                    }
+                    
+                    // Show file preview
+                    replaceFileName.textContent = file.name;
+                    replaceFileSize.textContent = ` (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+                    replaceFilePreview.style.display = 'block';
+                } else {
+                    replaceFilePreview.style.display = 'none';
+                }
+            });
+        }
+        
+        // Reset form when modal is hidden
+        if (replaceDocumentModal) {
+            replaceDocumentModal.addEventListener('hidden.bs.modal', function() {
+                resetReplaceDocumentForm();
+            });
+        }
+    }
 });
 
 // Global variables for document handling
@@ -548,4 +679,43 @@ function showAlert(message, type = 'info') {
             alert.remove();
         }
     }, 5000);
+}
+
+// Replace document functionality
+function openReplaceDocumentModal(index) {
+    console.log('openReplaceDocumentModal called:', { index });
+    
+    // Get document data from the table row
+    const row = document.querySelector(`button[data-index="${index}"].replace-doc-btn`).closest('tr');
+    const docType = row.cells[0].textContent.trim();
+    const docFilename = row.cells[1].textContent.trim();
+    
+    // Populate current document info
+    document.getElementById('current-doc-type').textContent = docType;
+    document.getElementById('current-doc-filename').textContent = docFilename;
+    document.getElementById('replace_document_index').value = index;
+    
+    // Reset form
+    resetReplaceDocumentForm();
+    
+    // Show modal
+    const modal = new bootstrap.Modal(replaceDocumentModal);
+    modal.show();
+}
+
+function resetReplaceDocumentForm() {
+    if (replaceDocumentForm) {
+        replaceDocumentForm.reset();
+        const submitBtn = replaceDocumentForm.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.innerHTML = '<i class="ri-edit-line me-1"></i>Replace Document';
+            submitBtn.disabled = false;
+        }
+        
+        // Hide file preview
+        const filePreview = document.getElementById('replaceFilePreview');
+        if (filePreview) {
+            filePreview.style.display = 'none';
+        }
+    }
 }

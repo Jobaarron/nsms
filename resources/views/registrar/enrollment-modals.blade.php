@@ -248,52 +248,6 @@
     </div>
 </div>
 
-<!-- Appointment Scheduling Modal -->
-<div class="modal fade" id="appointmentModal" tabindex="-1" aria-labelledby="appointmentModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header" style="background-color: var(--accent-color); color: white;">
-                <h5 class="modal-title" id="appointmentModalLabel">
-                    <i class="ri-calendar-line me-2"></i>Schedule Appointment
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="appointment-form">
-                    <div class="mb-3">
-                        <label for="appointment-date" class="form-label">Appointment Date</label>
-                        <input type="date" class="form-control" id="appointment-date" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="appointment-time" class="form-label">Appointment Time</label>
-                        <input type="time" class="form-control" id="appointment-time" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="appointment-purpose" class="form-label">Purpose</label>
-                        <select class="form-select" id="appointment-purpose" required>
-                            <option value="">Select Purpose</option>
-                            <option value="document_verification">Document Verification</option>
-                            <option value="interview">Interview</option>
-                            <option value="enrollment_completion">Enrollment Completion</option>
-                            <option value="payment_discussion">Payment Discussion</option>
-                            <option value="other">Other</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="appointment-notes" class="form-label">Notes</label>
-                        <textarea class="form-control" id="appointment-notes" rows="3" placeholder="Additional notes or instructions..."></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-registrar" onclick="saveAppointment()">
-                    <i class="ri-save-line me-1"></i>Schedule Appointment
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
 
 <!-- Decline Application Modal -->
 <div class="modal fade" id="declineModal" tabindex="-1" aria-labelledby="declineModalLabel" aria-hidden="true">

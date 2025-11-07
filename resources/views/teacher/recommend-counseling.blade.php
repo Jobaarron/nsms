@@ -1,9 +1,16 @@
 <x-teacher-layout>
   <!-- MAIN CONTENT -->
   <main class="col-12 col-md-10 px-4 py-4">
+    <!-- Header Section -->
     <div class="d-flex justify-content-between align-items-center mb-4">
-      <h1 class="section-title mb-0">Recommend Student for Counseling</h1>
-      <a href="{{ route('teacher.dashboard') }}" class="btn btn-outline-secondary">
+      <div>
+        <h1 class="section-title mb-1">
+          <i class="ri-user-heart-line me-2 text-success"></i>
+          Recommend Student for Counseling
+        </h1>
+        <p class="text-muted mb-0">Submit a counseling recommendation for student support</p>
+      </div>
+      <a href="{{ route('teacher.dashboard') }}" class="btn btn-outline-success">
         <i class="ri-arrow-left-line me-2"></i>Back to Dashboard
       </a>
     </div>
@@ -26,74 +33,193 @@
       </div>
     @endif
 
+    <!-- Main Form Section -->
     <div class="row justify-content-center">
       <div class="col-lg-8">
-        <div class="card">
-          <div class="card-header">
-            <h5 class="mb-0">Counseling Recommendation Form</h5>
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-success text-white">
+            <div class="d-flex align-items-center">
+              <i class="ri-file-text-line me-2"></i>
+              <h5 class="mb-0">Counseling Recommendation Form</h5>
+            </div>
           </div>
-          <div class="card-body">
+          <div class="card-body p-4">
             <form action="{{ route('teacher.recommend-counseling') }}" method="POST">
               @csrf
 
-              <div class="mb-3">
-                <label for="student_id" class="form-label">Select Student <span class="text-danger">*</span></label>
-                <select class="form-select @error('student_id') is-invalid @enderror" id="student_id" name="student_id" required>
-                  <option value="">Choose a student...</option>
-                  @foreach($students as $student)
-                    <option value="{{ $student->id }}" {{ old('student_id') == $student->id ? 'selected' : '' }}>
-                      {{ $student->full_name }} ({{ $student->student_id }})
-                    </option>
-                  @endforeach
-                </select>
+              <!-- Student Search Section -->
+              <div class="mb-4">
+                <label for="studentSearch" class="form-label fw-semibold">
+                  <i class="ri-search-line me-1"></i>Search Student <span class="text-danger">*</span>
+                </label>
+                <div class="position-relative">
+                  <div class="input-group">
+                    <span class="input-group-text bg-light">
+                      <i class="ri-user-line text-muted"></i>
+                    </span>
+                    <input type="text" class="form-control @error('student_id') is-invalid @enderror" 
+                           id="studentSearch" name="studentSearch" 
+                           placeholder="Type student name or ID..." 
+                           autocomplete="off" required>
+                  </div>
+                  <input type="hidden" id="student_id" name="student_id" value="{{ old('student_id') }}">
+                  <div id="studentSuggestions" class="suggestions-list shadow-sm" 
+                       style="display: none; position: absolute; z-index: 10; width: 100%; 
+                              background: #fff; border: 1px solid #dee2e6; border-radius: 0.375rem; 
+                              max-height: 200px; overflow-y: auto; margin-top: 2px;"></div>
+                </div>
                 @error('student_id')
                   <div class="invalid-feedback">{{ $error }}</div>
                 @enderror
               </div>
-
-              <div class="mb-3">
-                <label for="reason" class="form-label">Reason for Recommendation <span class="text-danger">*</span></label>
-                <textarea
-                  class="form-control @error('reason') is-invalid @enderror"
-                  id="reason"
-                  name="reason"
-                  rows="4"
-                  placeholder="Please describe the reason for recommending this student for counseling. Include any observations, concerns, or specific issues you've noticed..."
-                  required
-                >{{ old('reason') }}</textarea>
-                @error('reason')
-                  <div class="invalid-feedback">{{ $error }}</div>
-                @enderror
-                <div class="form-text">
-                  This information will help the guidance counselor understand the student's needs and provide appropriate support.
+                <!-- Students data for JavaScript -->
+                <script>
+                window.studentsData = [
+                  @foreach($students as $student)
+                    {
+                      id: {{ $student->id }},
+                      name: "{{ addslashes($student->full_name) }}",
+                      student_id: "{{ addslashes($student->student_id) }}"
+                    },
+                  @endforeach
+                ];
+                </script>
+                <!-- Reason for referral checklist -->
+                <div class="mt-4">
+                  <label class="form-label fw-semibold">
+                    <i class="ri-checkbox-multiple-line me-1"></i>Reason for referral 
+                    <small class="text-muted">(check all that apply)</small>
+                  </label>
+                  
+                  <div class="row g-4">
+                    <div class="col-md-6">
+                      <div class="card h-100 border-success border-opacity-25">
+                        <div class="card-header bg-success bg-opacity-10 py-2">
+                          <h6 class="mb-0 text-success">
+                            <i class="ri-book-line me-1"></i>Academic
+                          </h6>
+                        </div>
+                        <div class="card-body py-3">
+                          <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="referral_academic[]" value="Attendance">
+                            <label class="form-check-label">Attendance (excessive absenteeism)</label>
+                          </div>
+                          <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="referral_academic[]" value="Activity Sheets/Assignments">
+                            <label class="form-check-label">Activity Sheets/Assignments</label>
+                          </div>
+                          <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="referral_academic[]" value="Exams">
+                            <label class="form-check-label">Exams</label>
+                          </div>
+                          <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="referral_academic[]" value="Quiz">
+                            <label class="form-check-label">Quiz</label>
+                          </div>
+                          <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="referral_academic[]" value="Others" id="referral_academic_others">
+                            <label class="form-check-label" for="referral_academic_others">Others</label>
+                          </div>
+                          <div class="ms-4">
+                            <input type="text" name="referral_academic_other" class="form-control form-control-sm" placeholder="Specify (optional)" style="max-width: 200px;">
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                      <div class="card h-100 border-info border-opacity-25">
+                        <div class="card-header bg-info bg-opacity-10 py-2">
+                          <h6 class="mb-0 text-info">
+                            <i class="ri-user-heart-line me-1"></i>Personal/Social
+                          </h6>
+                        </div>
+                        <div class="card-body py-3">
+                          <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="referral_social[]" value="Anger Management">
+                            <label class="form-check-label">Anger Management</label>
+                          </div>
+                          <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="referral_social[]" value="Bullying">
+                            <label class="form-check-label">Bullying</label>
+                          </div>
+                          <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="referral_social[]" value="Social Skills/Friends">
+                            <label class="form-check-label">Social Skills/Friends</label>
+                          </div>
+                          <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="referral_social[]" value="Negative Attitude">
+                            <label class="form-check-label">Negative Attitude</label>
+                          </div>
+                          <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="referral_social[]" value="Honesty">
+                            <label class="form-check-label">Honesty</label>
+                          </div>
+                          <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="referral_social[]" value="Self-esteem">
+                            <label class="form-check-label">Self-esteem</label>
+                          </div>
+                          <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="referral_social[]" value="Personal Hygiene">
+                            <label class="form-check-label">Personal Hygiene</label>
+                          </div>
+                          <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="referral_social[]" value="Adjustment">
+                            <label class="form-check-label">Adjustment</label>
+                          </div>
+                          <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="referral_social[]" value="Family Conflict">
+                            <label class="form-check-label">Family Conflict</label>
+                          </div>
+                          <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="referral_social[]" value="Others" id="referral_social_others">
+                            <label class="form-check-label" for="referral_social_others">Others</label>
+                          </div>
+                          <div class="ms-4">
+                            <input type="text" name="referral_social_other" class="form-control form-control-sm" placeholder="Specify (optional)" style="max-width: 200px;">
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- Incident Details Section -->
+                  <div class="mt-4">
+                    <label class="form-label fw-semibold">
+                      <i class="ri-file-text-line me-1"></i>Incident Details
+                    </label>
+                    <textarea class="form-control" id="incident_description" name="incident_description" 
+                              rows="4" placeholder="Describe the incident or concern in detail..." 
+                              style="resize: vertical;"></textarea>
+                    <div class="form-text">
+                      <i class="ri-information-line me-1"></i>
+                      Please provide specific details about the situation that led to this recommendation.
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div class="mb-3">
-                <label for="notes" class="form-label">Additional Notes (Optional)</label>
-                <textarea
-                  class="form-control @error('notes') is-invalid @enderror"
-                  id="notes"
-                  name="notes"
-                  rows="3"
-                  placeholder="Any additional observations or context that might be helpful..."
-                >{{ old('notes') }}</textarea>
-                @error('notes')
-                  <div class="invalid-feedback">{{ $error }}</div>
-                @enderror
+             
+              <!-- Information Alert -->
+              <div class="alert alert-info border-0 bg-info bg-opacity-10 mt-4">
+                <div class="d-flex align-items-start">
+                  <i class="ri-information-line me-2 text-info fs-5 mt-1"></i>
+                  <div>
+                    <strong class="text-info">Important Note:</strong>
+                    <p class="mb-0 mt-1">
+                      This recommendation will be forwarded to the guidance department for review. 
+                      A guidance counselor will assess the situation and may schedule a counseling session if appropriate.
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              <div class="alert alert-info">
-                <i class="ri-information-line me-2"></i>
-                <strong>Note:</strong> This recommendation will be forwarded to the guidance department for review.
-                A guidance counselor will assess the situation and may schedule a counseling session if appropriate.
-              </div>
+              <!-- Form Actions -->
+              <div class="d-flex justify-content-end gap-3 mt-4">
 
-              <div class="d-flex justify-content-end gap-2">
-                <a href="{{ route('teacher.dashboard') }}" class="btn btn-outline-secondary">
+                <a href="{{ route('teacher.dashboard') }}" class="btn btn-outline-secondary px-4">
                   <i class="ri-close-line me-2"></i>Cancel
                 </a>
-                <button type="submit" class="btn btn-warning">
+                <button type="submit" class="btn btn-success px-4">
                   <i class="ri-heart-pulse-line me-2"></i>Submit Recommendation
                 </button>
               </div>

@@ -7,7 +7,7 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Landing Page | Nicolites Portal</title>
     <!-- Remix Icons -->
@@ -38,7 +38,7 @@
                     {{-- Excluded Button --}}
                     
                     <li class="nav-item dropdown-elegant">
-                        <a href="#" class="btn btn-custom me-2 dropdown-toggle {{ request()->is('student/login*') || request()->is('teacher/login*') || request()->is('guidance/login*') || request()->is('discipline/login*') || request()->is('cashier/login*') || request()->is('admin/login*') || request()->is('enrollee/login*') || request()->is('registrar/login*') ? 'active' : '' }}">
+                        <a href="#" class="btn btn-custom me-2 dropdown-toggle {{ request()->is('student/login*') || request()->is('teacher/login*') || request()->is('guidance/login*') || request()->is('discipline/login*') || request()->is('cashier/login*') || request()->is('admin/login*') || request()->is('enrollee/login*') || request()->is('registrar/login*') || request()->is('faculty-head/login*') ? 'active' : '' }}">
                             Portal Login
                         </a>
                         <div class="dropdown-menu">
@@ -59,6 +59,10 @@
                             <a href="/teacher/login" class="dropdown-item {{ request()->is('teacher/login*') ? 'active' : '' }}">
                                 <i class="ri-user-3-line"></i>
                                 Teacher Portal
+                            </a>
+                            <a href="/faculty-head/login" class="dropdown-item {{ request()->is('faculty-head/login*') ? 'active' : '' }}">
+                                <i class="ri-user-star-line"></i>
+                                Faculty Head Portal
                             </a>
                             <a href="/guidance/login" class="dropdown-item {{ request()->is('guidance/login*') ? 'active' : '' }}">
                                 <i class="ri-heart-pulse-line"></i>

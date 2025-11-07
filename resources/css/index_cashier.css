@@ -1,0 +1,519 @@
+ /* Clean Color Palette - Cashier Theme */
+ :root {
+    --primary-color: #2B7A3B;      /* Rich green from logo shield */
+    --secondary-color: #4CAF50;     /* Lighter green from logo text */
+    --accent-color: #1B5E20;       /* Darker green for emphasis */
+    --light-green: #E8F5E9;        /* Very light green for subtle backgrounds */
+    --dark-green: #0D4F14;         /* Deep green for text */
+    --white: #FFFFFF;              /* Pure white for clean backgrounds */
+    --light-gray: #F8F9FA;         /* Light gray for subtle sections */
+    --border-gray: #E0E0E0;        /* Light border color */
+    --text-gray: #424242;          /* Professional gray for text */
+    --cashier-accent: #28a745;     /* Green for finance/money theme */
+    --cashier-success: #20c997;    /* Teal for success states */
+    --cashier-warning: #ffc107;    /* Amber for warnings */
+    --cashier-info: #17a2b8;       /* Blue for information */
+  }
+  
+  body {
+    font-family: 'Nunito', sans-serif;
+    background-color: var(--white);
+    color: var(--text-gray);
+    line-height: 1.6;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    background-color: var(--white);
+    border-right: 1px solid var(--border-gray);
+    min-height: 100vh;
+    padding: 1.5rem 1rem;
+    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Sidebar Logo */
+  .sidebar-logo {
+    width: 160px;
+    height: auto;
+    max-width: 100%;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+  }
+
+  .sidebar-logo:hover {
+    transform: scale(1.01);
+  }
+
+  /* User Info Section */
+  .user-info {
+    background: linear-gradient(135deg, var(--cashier-accent) 0%, var(--cashier-success) 100%);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.2);
+    transition: all 0.3s ease;
+  }
+
+  .user-info:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(40, 167, 69, 0.3);
+  }
+
+  .user-name {
+    color: #fff;
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+
+  .user-role {
+    color: var(--light-green);
+    font-weight: 500;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    opacity: 0.9;
+  }
+  
+  .sidebar .nav-link {
+    color: var(--cashier-accent);
+    font-weight: 600;
+    padding: 0.75rem 1rem;
+    border-radius: 0.25rem;
+    transition: all 0.3s ease;
+    margin-bottom: 0.25rem;
+  }
+  
+  .sidebar .nav-link:hover {
+    background-color: var(--light-green);
+    color: var(--cashier-accent);
+    transform: translateX(5px);
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.1);
+  }
+  
+  .sidebar .nav-link.active {
+    background-color: var(--cashier-accent);
+    color: var(--white);
+    box-shadow: 0 2px 4px rgba(40, 167, 69, 0.2);
+  }
+  
+  .sidebar .nav-link.active:hover {
+    background-color: var(--primary-color);
+    color: var(--white);
+    transform: translateX(5px);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+  }
+
+  /* Main Content Area */
+  .main-content {
+    min-height: 100vh;
+    background-color: var(--light-gray);
+  }
+
+  /* User Info Section */
+  .user-info {
+    border: 1px solid var(--border-gray);
+    transition: all 0.3s ease;
+  }
+
+  .user-info:hover {
+    border-color: var(--cashier-accent);
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.1);
+  }
+
+  .avatar-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--cashier-accent), var(--cashier-success));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--white);
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+  
+  /* Section Titles */
+  .section-title {
+    color: var(--cashier-accent);
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+  
+  /* Summary Cards - Cashier Theme */
+  .card-summary { color: #fff; }
+  .card-paid     { background-color: var(--cashier-accent); }
+  .card-credits  { background-color: var(--cashier-success); }
+  .card-subjects { background-color: var(--cashier-info); }
+  .card-gpa      { background-color: var(--cashier-warning); color: var(--dark-green); }
+  
+  /* Cashier specific cards */
+  .card-revenue   { background-color: var(--cashier-accent); }
+  .card-pending   { background-color: var(--cashier-warning); color: var(--dark-green); }
+  .card-completed { background-color: var(--cashier-success); }
+  .card-total     { background-color: var(--cashier-info); }
+  
+  /* Table Head */
+  .table thead {
+    background-color: var(--cashier-accent);
+    color: #fff;
+  }
+  
+  .table thead th {
+    border-bottom: 2px solid var(--accent-color);
+    font-weight: 600;
+  }
+  
+  /* Buttons */
+  .btn-outline-primary {
+    color: var(--cashier-accent);
+    border-color: var(--cashier-accent);
+    transition: all 0.3s ease;
+  }
+  
+  .btn-outline-primary:hover {
+    background-color: var(--cashier-accent);
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.2);
+  }
+  
+  .btn-outline-primary:active {
+    transform: translateY(0);
+  }
+
+  .sidebar .nav-link.disabled {
+    color: var(--secondary-color) !important;
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+    background-color: rgba(208, 216, 195, 0.3);
+  }
+  
+  .sidebar .nav-link.disabled:hover {
+    background-color: rgba(208, 216, 195, 0.3) !important;
+    color: var(--secondary-color) !important;
+    transform: none;
+  }
+  
+  .sidebar .nav-link.disabled i {
+    opacity: 0.5;
+  }
+
+  /* Payment status cards */
+  .payment-card {
+    border-left: 4px solid;
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+  
+  .payment-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(40, 167, 69, 0.15);
+    border-left-width: 6px;
+  }
+
+  .payment-pending { border-left-color: var(--cashier-warning); }
+  .payment-confirmed { border-left-color: var(--cashier-success); }
+  .payment-overdue { border-left-color: #dc3545; }
+
+  .badge-payment {
+    font-size: 0.75rem;
+    padding: 0.4em 0.8em;
+    transition: all 0.2s ease;
+  }
+  
+  .badge-payment:hover {
+    transform: scale(1.05);
+  }
+  
+  /* Card hover effects */
+  .card {
+    transition: all 0.3s ease;
+  }
+  
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.1);
+  }
+  
+  /* Summary card hover effects */
+  .card-summary {
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+  
+  .card-summary:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+  }
+  
+  /* Table row hover */
+  .table-hover tbody tr:hover {
+    background-color: var(--light-green);
+    color: var(--dark-green);
+  }
+
+  /* Chart Container Styling */
+  .chart-container {
+    position: relative;
+    padding: 10px;
+  }
+  
+  .chart-container canvas {
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  /* Progress Steps - Clear Status Indicators */
+  .progress-steps {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    margin: 2rem 0;
+  }
+
+  .progress-steps::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 30px;
+    right: 30px;
+    height: 2px;
+    background: var(--border-gray);
+    z-index: 1;
+    transform: translateY(-50%);
+  }
+
+  .progress-step {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+    border: 3px solid #dee2e6;
+    color: #adb5bd;
+    font-size: 1.5rem;
+    position: relative;
+    z-index: 2;
+    transition: all 0.3s ease;
+    opacity: 0.6;
+  }
+
+  .progress-step.completed {
+    background: var(--cashier-accent);
+    border-color: var(--cashier-accent);
+    color: var(--white);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+    opacity: 1;
+  }
+
+  .progress-step.active {
+    background: var(--cashier-success);
+    border-color: var(--cashier-success);
+    color: var(--white);
+    animation: pulse 2s infinite;
+    box-shadow: 0 4px 12px rgba(32, 201, 151, 0.3);
+    opacity: 1;
+  }
+
+  .progress-step.pending {
+    background: #fff3cd;
+    border-color: var(--cashier-warning);
+    color: #856404;
+    opacity: 0.8;
+  }
+
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+
+  /* Timeline */
+  .timeline {
+    position: relative;
+    padding-left: 2rem;
+  }
+
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 0.75rem;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: var(--cashier-success);
+  }
+
+  .timeline-item {
+    position: relative;
+    margin-bottom: 2rem;
+  }
+
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -2.25rem;
+    top: 0.5rem;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: var(--cashier-accent);
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 2px var(--cashier-accent);
+  }
+
+  .timeline-item.completed::before {
+    background-color: var(--cashier-success);
+    box-shadow: 0 0 0 2px var(--cashier-success);
+  }
+
+  .timeline-item.active::before {
+    background-color: var(--cashier-info);
+    box-shadow: 0 0 0 2px var(--cashier-info);
+    animation: pulse 2s infinite;
+  }
+
+  /* Info Cards */
+  .info-card {
+    background: linear-gradient(135deg, var(--light-green) 0%, rgba(232, 245, 233, 0.3) 100%);
+    border: 1px solid var(--cashier-success);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+  }
+
+  .info-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(40, 167, 69, 0.1);
+    border-color: var(--cashier-accent);
+  }
+
+  /* Alert Customizations */
+  .alert-cashier {
+    background-color: rgba(40, 167, 69, 0.1);
+    border-color: var(--cashier-accent);
+    color: var(--dark-green);
+  }
+
+  /* Form Enhancements */
+  .form-control:focus {
+    border-color: var(--cashier-accent);
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+  }
+
+  .form-select:focus {
+    border-color: var(--cashier-accent);
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+  }
+
+  /* Payment Option Cards */
+  .payment-option {
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+
+  .payment-option:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .payment-option.border-primary {
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
+  }
+
+  /* Loading States */
+  .loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(40, 167, 69, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+  }
+
+  .loading-spinner {
+    width: 3rem;
+    height: 3rem;
+    border: 0.3rem solid rgba(255, 255, 255, 0.3);
+    border-top: 0.3rem solid #fff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  /* Badge Enhancements */
+  .badge-status {
+    font-size: 0.85rem;
+    padding: 0.5em 1em;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+  }
+
+  .badge-status:hover {
+    transform: scale(1.05);
+  }
+
+  /* Revenue Analytics Specific Styles */
+  .revenue-card {
+    background: linear-gradient(135deg, var(--cashier-accent) 0%, var(--cashier-success) 100%);
+    color: white;
+    border: none;
+  }
+
+  .revenue-card .card-body {
+    padding: 1.5rem;
+  }
+
+  .revenue-trend {
+    background: linear-gradient(135deg, var(--cashier-info) 0%, var(--cashier-success) 100%);
+    color: white;
+  }
+
+  .payment-method-dist {
+    background: linear-gradient(135deg, var(--cashier-success) 0%, var(--secondary-color) 100%);
+    color: white;
+  }
+
+  /* Financial Summary Cards */
+  .financial-summary {
+    border-left: 4px solid var(--cashier-accent);
+    background: rgba(40, 167, 69, 0.05);
+  }
+
+  .financial-summary:hover {
+    border-left-width: 6px;
+    background: rgba(40, 167, 69, 0.1);
+  }
+
+  /* Transaction Status Indicators */
+  .status-pending {
+    color: var(--cashier-warning);
+    background-color: rgba(255, 193, 7, 0.1);
+  }
+
+  .status-confirmed {
+    color: var(--cashier-success);
+    background-color: rgba(40, 167, 69, 0.1);
+  }
+
+  .status-overdue {
+    color: #dc3545;
+    background-color: rgba(220, 53, 69, 0.1);
+  }
