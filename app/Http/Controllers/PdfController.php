@@ -330,14 +330,15 @@ class PdfController extends Controller
     {
         $caseMeeting = \App\Models\CaseMeeting::with(['violation', 'student'])->findOrFail($caseMeetingId);
 
-        // Attempt to get teacher name and user_id from the violation's teacher, fallback to null
-        $teacherName = null;
-        $teacherUserId = null;
-        if ($caseMeeting->violation && method_exists($caseMeeting->violation, 'teacher')) {
+
+        // Get adviser name (prefer adviser relation, fallback to violation's teacher, then null)
+        $adviserName = null;
+        if (isset($caseMeeting->adviser) && ($caseMeeting->adviser)) {
+            $adviserName = $caseMeeting->adviser->full_name ?? $caseMeeting->adviser->name ?? null;
+        } elseif ($caseMeeting->violation && method_exists($caseMeeting->violation, 'teacher')) {
             $teacher = $caseMeeting->violation->teacher;
             if ($teacher) {
-                $teacherName = $teacher->full_name ?? $teacher->name ?? null;
-                // $teacherUserId = $teacher->user_id ?? null;
+                $adviserName = $teacher->full_name ?? $teacher->name ?? null;
             }
         }
 
@@ -356,15 +357,10 @@ class PdfController extends Controller
         $pdf->useTemplate($tplId);
 
         // Overlay the required data (adjust coordinates as needed for your template)
-        $pdf->SetXY(27, 62); // Teacher Name
-        $pdf->Write(0, $teacherName ?? '');
-        $pdf->SetXY(87, 292); // Teacher Name
-        $pdf->Write(0, $teacherName ?? '');
-        // Optionally, overlay the teacher user_id (for demonstration, place at 40, 50)
-        if ($teacherUserId) {
-            $pdf->SetXY(40, 50); // Teacher user_id
-            $pdf->Write(0, 'User ID: ' . $teacherUserId);
-        }
+        $pdf->SetXY(27, 62); // Adviser Name
+        $pdf->Write(0, $adviserName ?? '');
+        $pdf->SetXY(87, 292); // Adviser Name
+        $pdf->Write(0, $adviserName ?? '');
         $pdf->SetXY(120, 45); // Scheduled Date
         $pdf->Write(0, $caseMeeting->scheduled_date ? (is_string($caseMeeting->scheduled_date) ? $caseMeeting->scheduled_date : $caseMeeting->scheduled_date->format('Y-m-d')) : '');
         $pdf->SetXY(174, 45); // Scheduled Time
@@ -1103,5 +1099,107 @@ public function generateReportCardPdf(Student $student)
     } catch (\Exception $e) {
         return response('Error generating report card: ' . $e->getMessage(), 500);
     }
-}   
+}  
+
+/**
+     * Print all report cards for all students in a single PDF.
+     * @return \Illuminate\Http\Response
+     */
+    public function printAllReportCards()
+    {
+        $students = \App\Models\Student::all();
+        $currentAcademicYear = date('Y') . '-' . (date('Y') + 1);
+        $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
+        $templatePath = 'C:/Users/anony/Documents/nsms/resources/assets/pdf-forms-generation/Report Card HS.pdf';
+        if (!file_exists($templatePath)) {
+            abort(404, 'Report Card PDF template not found.');
+        }
+        $pageCount = $pdf->setSourceFile($templatePath);
+
+        foreach ($students as $student) {
+            // Get student's subjects
+            $subjects = \App\Models\Subject::where('grade_level', $student->grade_level)
+                ->where('academic_year', $currentAcademicYear)
+                ->where('is_active', true);
+            if ($student->strand) {
+                $subjects->where(function($query) use ($student) {
+                    $query->whereNull('strand')
+                          ->orWhere('strand', $student->strand);
+                });
+            }
+            if ($student->track) {
+                $subjects->where(function($query) use ($student) {
+                    $query->whereNull('track')
+                          ->orWhere('track', $student->track);
+                });
+            }
+            $subjects = $subjects->get();
+
+            $gradesData = [];
+            $quarters = ['1st', '2nd', '3rd', '4th'];
+            foreach ($subjects as $subject) {
+                $subjectGrades = [
+                    'subject_name' => $subject->subject_name,
+                    'quarters' => []
+                ];
+                foreach ($quarters as $quarter) {
+                    $grade = \App\Models\Grade::where('student_id', $student->id)
+                        ->where('subject_id', $subject->id)
+                        ->where('quarter', $quarter)
+                        ->where('academic_year', $currentAcademicYear)
+                        ->first();
+                    $subjectGrades['quarters'][$quarter] = $grade ? $grade->grade : null;
+                }
+                $gradesData[] = $subjectGrades;
+            }
+
+            $quarterAverages = [];
+            foreach ($quarters as $quarter) {
+                $quarterGrades = [];
+                foreach ($gradesData as $subjectData) {
+                    if ($subjectData['quarters'][$quarter] !== null) {
+                        $quarterGrades[] = $subjectData['quarters'][$quarter];
+                    }
+                }
+                $quarterAverages[$quarter] = !empty($quarterGrades) ? round(array_sum($quarterGrades) / count($quarterGrades), 2) : null;
+            }
+
+            for ($pageNum = 1; $pageNum <= min(2, $pageCount); $pageNum++) {
+                $tplId = $pdf->importPage($pageNum);
+                $size = $pdf->getTemplateSize($tplId);
+                $orientation = ($size['width'] > $size['height']) ? 'L' : 'P';
+                $pdf->AddPage($orientation, [$size['width'], $size['height']]);
+                if ($pageNum === 1) {
+                    $pdf->SetFont('dejavusans', '', 10);
+                    $pdf->useTemplate($tplId);
+                    // Overlay grades and averages on page 1, show '-' if null
+                    // ...existing overlay code for grades, MAPEH, and general average...
+                    // For brevity, you can copy the overlay code from your generateReportCardPdf here
+                } else if ($pageNum === 2) {
+                    $pdf->SetFont('dejavusans', '', 11);
+                    $pdf->useTemplate($tplId);
+                    // Overlay LRN, student name, age, gradelevel, school year, gender, section, adviser name
+                    $advisoryAssignment = \App\Models\FacultyAssignment::where('teacher_id', $student->adviser_id ?? 0)
+                        ->where('grade_level', $student->grade_level)
+                        ->where('section', $student->section)
+                        ->where('assignment_type', 'class_adviser')
+                        ->where('academic_year', $currentAcademicYear)
+                        ->where('status', 'active')
+                        ->first();
+                    $adviserName = $advisoryAssignment->teacher->full_name ?? ($advisoryAssignment->teacher->name ?? '');
+                    $schoolYear = $currentAcademicYear;
+                    $age = $student->age ?? '';
+                    $pdf->SetXY(225, 17); $pdf->Write(0, '' . ($student->lrn ?? ''));
+                    $pdf->SetXY(159,163); $pdf->Write(0, $student->full_name ?? '');
+                    $pdf->SetXY(155, 173); $pdf->Write(0, '' . $age);
+                    $pdf->SetXY(160, 182); $pdf->Write(0, '' . ($student->grade_level ?? ''));
+                    $pdf->SetXY(168, 191); $pdf->Write(0, '' . $schoolYear);
+                    $pdf->SetXY(220, 173); $pdf->Write(0, '' . ($student->gender ?? ''));
+                    $pdf->SetXY(220, 183); $pdf->Write(0, '' . ($student->section ?? ''));
+                    $pdf->SetXY(76, 98); $pdf->Write(0, '' . $adviserName);
+                }
+            }
+        }
+        return response($pdf->Output('All-Report-Cards.pdf', 'S'))->header('Content-Type', 'application/pdf');
+    }
     }

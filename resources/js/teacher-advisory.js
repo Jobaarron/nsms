@@ -202,20 +202,24 @@ window.printReportCard = function(studentId) {
 
 /**
  * Print all report cards
+ * Improved: robust event handling and endpoint
  */
-window.printAllReportCards = function() {
+window.printAllReportCards = function(event) {
     if (!confirm('This will generate report cards for all advisory students. Continue?')) {
         return;
     }
-    
-    // Show loading state
-    const button = event.target;
-    const originalContent = button.innerHTML;
-    button.innerHTML = '<i class="ri-loader-4-line spin me-1"></i>Generating...';
-    button.disabled = true;
-    
-    // Generate all report cards
-    fetch('/teacher/advisory/all-report-cards')
+    // Support both direct and event-callback usage
+    let button = event && event.target ? event.target : document.activeElement;
+    if (!button || button.tagName !== 'BUTTON') {
+        button = document.querySelector('button[onclick*="printAllReportCards"]');
+    }
+    const originalContent = button ? button.innerHTML : '';
+    if (button) {
+        button.innerHTML = '<i class="ri-loader-4-line spin me-1"></i>Generating...';
+        button.disabled = true;
+    }
+    // Use the correct endpoint for all report cards PDF
+    fetch('/teacher/report-cards/print-all')
         .then(response => {
             if (response.ok) {
                 return response.blob();
@@ -223,20 +227,22 @@ window.printAllReportCards = function() {
             throw new Error('Failed to generate report cards');
         })
         .then(blob => {
-            // Create a URL for the PDF blob and open in new window for printing
             const url = window.URL.createObjectURL(blob);
             const printWindow = window.open(url, '_blank');
-            printWindow.onload = function() {
-                printWindow.print();
-            };
+            if (printWindow) {
+                printWindow.onload = function() {
+                    printWindow.print();
+                };
+            }
         })
         .catch(error => {
             alert('Error generating report cards. Please try again.');
         })
         .finally(() => {
-            // Restore button state
-            button.innerHTML = originalContent;
-            button.disabled = false;
+            if (button) {
+                button.innerHTML = originalContent;
+                button.disabled = false;
+            }
         });
 }
 

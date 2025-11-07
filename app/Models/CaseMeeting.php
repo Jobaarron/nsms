@@ -303,6 +303,15 @@ class CaseMeeting extends Model
         return $this->violation ? $this->violation->teacher : null;
     }
 
+      /**
+     * Get the adviser (class adviser) for this case meeting.
+     * Assumes there is an adviser_id column referencing users table.
+     */
+    public function adviser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'adviser_id');
+    }
+
     /**
      * Boot the model.
      */
