@@ -1,5 +1,6 @@
 <x-teacher-layout>
   <!-- MAIN CONTENT -->
+   <script src="{{ asset('js/teacher-advisory.js') }}"></script>
   <main class="col-12 col-md-10 px-4 py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h1 class="section-title mb-0">Advisory</h1>
@@ -7,6 +8,7 @@
         <i class="ri-calendar-line me-1"></i>{{ $currentAcademicYear }}
       </div>
     </div>
+
 
     @if(session('success'))
       <div class="alert alert-success alert-dismissible fade show" role="alert">
