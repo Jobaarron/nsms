@@ -184,31 +184,20 @@ window.printReportCard = function(studentId) {
     const originalContent = button.innerHTML;
     button.innerHTML = '<i class="ri-loader-4-line spin me-1"></i>Generating...';
     button.disabled = true;
-    
-    // Generate and print report card
-    fetch(`/teacher/advisory/student/${studentId}/report-card`)
-        .then(response => {
-            if (response.ok) {
-                return response.blob();
-            }
-            throw new Error('Failed to generate report card');
-        })
-        .then(blob => {
-            // Create a URL for the PDF blob and open in new window for printing
-            const url = window.URL.createObjectURL(blob);
-            const printWindow = window.open(url, '_blank');
-            printWindow.onload = function() {
-                printWindow.print();
-            };
-        })
-        .catch(error => {
-            alert('Error generating report card. Please try again.');
-        })
-        .finally(() => {
-            // Restore button state
-            button.innerHTML = originalContent;
-            button.disabled = false;
-        });
+
+    // Open the PDF directly in a new tab for printing (no blob)
+    const url = `/teacher/report-card/pdf/${studentId}`;
+    const printWindow = window.open(url, '_blank');
+    if (printWindow) {
+        printWindow.onload = function() {
+            printWindow.print();
+        };
+    }
+    // Restore button state after a short delay (since we don't know when print finishes)
+    setTimeout(() => {
+        button.innerHTML = originalContent;
+        button.disabled = false;
+    }, 2000);
 }
 
 /**
