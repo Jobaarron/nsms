@@ -46,6 +46,7 @@ class CaseMeeting extends Model
         'student_id',
         'violation_id',
         'counselor_id',
+        'adviser_id',
         'meeting_type',
         'scheduled_date',
         'scheduled_time',

@@ -330,26 +330,28 @@ window.submitCaseMeeting = function(event) {
 
             // Automatically forward Teacher Observation Report to adviser
             if (data.meeting_id) {
+                const forwardData = new FormData();
+                forwardData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+                
                 fetch(`/guidance/case-meetings/${data.meeting_id}/forward-observation-report`, {
                     method: 'POST',
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        'Accept': 'application/json'
                     },
-                    body: JSON.stringify({})
+                    body: forwardData
                 })
                 .then(response => response.json())
                 .then(forwardData => {
-                    if (forwardData.success) {
+                    if (forwardData && forwardData.success) {
                         showAlert('success', 'Teacher Observation Report forwarded to adviser.');
                     } else {
-                        showAlert('danger', 'Meeting scheduled, but failed to forward report to adviser.');
+                        showAlert('info', 'Meeting scheduled successfully. Note: ' + (forwardData.message || 'Could not forward report to adviser.'));
                     }
                 })
-                .catch(() => {
-                    showAlert('danger', 'Meeting scheduled, but error forwarding report to adviser.');
+                .catch((error) => {
+                    console.log('Forward error:', error);
+                    showAlert('info', 'Meeting scheduled successfully. Note: Could not forward report to adviser.');
                 });
             }
 

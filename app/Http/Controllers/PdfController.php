@@ -328,17 +328,63 @@ class PdfController extends Controller
      */
     public function teacherObservationReportPdf($caseMeetingId)
     {
-        $caseMeeting = \App\Models\CaseMeeting::with(['violation', 'student'])->findOrFail($caseMeetingId);
+        $caseMeeting = \App\Models\CaseMeeting::with(['violation', 'student', 'adviser'])->findOrFail($caseMeetingId);
+        
+        // Check authorization - only guidance staff or the assigned adviser can access this PDF
+        $currentUser = \Illuminate\Support\Facades\Auth::user();
+        $canAccess = false;
+        
+        // Check if user is guidance staff
+        if ($currentUser && $currentUser->isGuidanceStaff()) {
+            $canAccess = true;
+        }
+        // Check if user is the assigned adviser
+        elseif ($currentUser && $caseMeeting->adviser_id && $caseMeeting->adviser_id === $currentUser->id) {
+            $canAccess = true;
+        }
+        // Check if user is the class adviser (fallback if adviser_id not set)
+        elseif ($currentUser && $caseMeeting->student) {
+            $student = $caseMeeting->student;
+            $teacherRecord = \App\Models\Teacher::where('user_id', $currentUser->id)->first();
+            
+            if ($teacherRecord) {
+                $advisoryAssignment = \App\Models\FacultyAssignment::where('teacher_id', $teacherRecord->id)
+                    ->where('grade_level', $student->grade_level)
+                    ->where('section', $student->section)
+                    ->where('academic_year', $student->academic_year)
+                    ->where('assignment_type', 'class_adviser')
+                    ->where('status', 'active')
+                    ->first();
+                    
+                if ($advisoryAssignment) {
+                    $canAccess = true;
+                }
+            }
+        }
+        
+        if (!$canAccess) {
+            abort(403, 'You are not authorized to access this Teacher Observation Report.');
+        }
 
-
-        // Get adviser name (prefer adviser relation, fallback to violation's teacher, then null)
+        // Get adviser name - only use the actual class adviser, not any teacher
         $adviserName = null;
-        if (isset($caseMeeting->adviser) && ($caseMeeting->adviser)) {
+        if ($caseMeeting->adviser) {
             $adviserName = $caseMeeting->adviser->full_name ?? $caseMeeting->adviser->name ?? null;
-        } elseif ($caseMeeting->violation && method_exists($caseMeeting->violation, 'teacher')) {
-            $teacher = $caseMeeting->violation->teacher;
-            if ($teacher) {
-                $adviserName = $teacher->full_name ?? $teacher->name ?? null;
+        }
+        
+        // If no adviser is set in case meeting, try to find the class adviser for this student
+        if (!$adviserName && $caseMeeting->student) {
+            $student = $caseMeeting->student;
+            $advisoryAssignment = \App\Models\FacultyAssignment::where('grade_level', $student->grade_level)
+                ->where('section', $student->section)
+                ->where('academic_year', $student->academic_year)
+                ->where('assignment_type', 'class_adviser')
+                ->where('status', 'active')
+                ->with(['teacher.user'])
+                ->first();
+            
+            if ($advisoryAssignment && $advisoryAssignment->teacher && $advisoryAssignment->teacher->user) {
+                $adviserName = $advisoryAssignment->teacher->user->full_name ?? $advisoryAssignment->teacher->user->name ?? null;
             }
         }
 

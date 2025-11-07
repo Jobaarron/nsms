@@ -474,6 +474,8 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
             Route::post('/{caseMeeting}/forward', [App\Http\Controllers\GuidanceController::class, 'forwardToPresident'])
                 ->name('forward');
 
+            Route::post('/{caseMeeting}/forward-observation-report', [App\Http\Controllers\GuidanceController::class, 'forwardObservationReportToAdviser'])
+                ->name('forward-observation-report');
                 
         });
         // API route to fetch all unique sanctions for dropdown (Guidance)
