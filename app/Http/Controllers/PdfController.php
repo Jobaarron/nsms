@@ -31,7 +31,7 @@ class PdfController extends Controller
     \Log::info('Session data for PDF:', ['session' => $session]);
 
     $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
-    $templatePath = storage_path('app/public/counseling-form/SEWO-CRFS-010 Counselling-Request-Forms.pdf');
+   $templatePath = 'C:\\Users\\anony\\Documents\\nsms\\resources\\assets\\pdf-forms-generation\\SEWO-CRFS-010 Counselling-Request-Forms.pdf';
     $pdf->setSourceFile($templatePath);
     $tplId = $pdf->importPage(1);
     $size = $pdf->getTemplateSize($tplId);
@@ -202,7 +202,7 @@ class PdfController extends Controller
             $student = \App\Models\Student::findOrFail($studentId);
             $violation = $student->violations()->findOrFail($violationId);
             $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
-            $templatePath = storage_path('app/public/Student-narrative-report/Student.pdf');
+           $templatePath = 'C:/Users/anony/Documents/nsms/resources/assets/pdf-forms-generation/Student.pdf';
             $pdf->setSourceFile($templatePath);
             $tplId = $pdf->importPage(1);
             $size = $pdf->getTemplateSize($tplId);
@@ -264,7 +264,7 @@ class PdfController extends Controller
         $student = $caseMeeting->student ?? ($caseMeeting->violation->student ?? null);
         $violation = $caseMeeting->violation ?? null;
         $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
-        $templatePath = storage_path('app/public/Case-Meeting-Report/CaseMeeting.pdf');
+        $templatePath = 'C:/Users/anony/Documents/nsms/resources/assets/pdf-forms-generation/CaseMeeting.pdf';
         if (!file_exists($templatePath)) {
             abort(404, 'Case Meeting PDF template not found.');
         }
@@ -342,7 +342,7 @@ class PdfController extends Controller
         }
 
         $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
-        $templatePath = storage_path('app/public/Teacher-Report/Teacher-Observation-Report.pdf');
+        $templatePath = 'C:/Users/anony/Documents/nsms/resources/assets/pdf-forms-generation/Teacher-Observation-Report.pdf';
         if (!file_exists($templatePath)) {
             abort(404, 'Teacher Observation Report PDF template not found.');
         }
@@ -395,7 +395,7 @@ class PdfController extends Controller
     {
         $students = \App\Models\Student::all();
         $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
-        $templatePath = storage_path('app/public/Discplinary-Summary-Report/Summary Report.pdf');
+        $templatePath = 'C:/Users/anony/Documents/nsms/resources/assets/pdf-forms-generation/Summary Report.pdf';
         if (!file_exists($templatePath)) {
             abort(404, 'Disciplinary Conference Summary Report PDF template not found.');
         }
@@ -707,7 +707,7 @@ class PdfController extends Controller
 
         // Load static PDF
         $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
-        $templatePath = storage_path('app/public/receipt/Receipt.pdf');
+       $templatePath = 'C:/Users/anony/Documents/nsms/resources/assets/pdf-forms-generation/Receipt.pdf';
         if (!file_exists($templatePath)) {
             abort(404, 'Receipt PDF template not found.');
         }
@@ -853,7 +853,7 @@ class PdfController extends Controller
 
         // Load cashier receipt PDF template
         $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
-        $templatePath = storage_path('app/public/receipt/cashier_receipt.pdf');
+        $templatePath = 'C:/Users/anony/Documents/nsms/resources/assets/pdf-forms-generation/cashier_receipt.pdf';
         if (!file_exists($templatePath)) {
             abort(404, 'Cashier Receipt PDF template not found.');
         }
@@ -971,7 +971,7 @@ public function generateReportCardPdf(Student $student)
 
         // Load PDF template
         $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
-        $templatePath = storage_path('app/public/report_card/Report Card HS.pdf');
+        $templatePath = 'C:/Users/anony/Documents/nsms/resources/assets/pdf-forms-generation/Report Card HS.pdf';
         if (!file_exists($templatePath)) {
             abort(404, 'Report Card PDF template not found.');
         }
@@ -1052,7 +1052,5 @@ public function generateReportCardPdf(Student $student)
     } catch (\Exception $e) {
         return response('Error generating report card: ' . $e->getMessage(), 500);
     }
-}
-    
-    
+}   
     }
