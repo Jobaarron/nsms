@@ -13,6 +13,18 @@ function debounce(func, wait) {
   };
 }
 
+// Validate school hours (7:00 AM to 4:00 PM)
+function validateSchoolHours(timeString) {
+  if (!timeString) return true; // Allow empty time
+  
+  const [hours, minutes] = timeString.split(':').map(Number);
+  const timeInMinutes = hours * 60 + minutes;
+  const schoolStart = 7 * 60; // 7:00 AM
+  const schoolEnd = 16 * 60;   // 4:00 PM
+  
+  return timeInMinutes >= schoolStart && timeInMinutes <= schoolEnd;
+}
+
 // Global variable to store violation options fetched from the database
 window.offenseOptions = null;
 
@@ -254,6 +266,13 @@ function setupEnhancedViolationSubmission() {
 
     if (!window.selectedStudents || window.selectedStudents.length === 0) {
       alert('Please select at least one student for the violation.');
+      return;
+    }
+
+    // Validate school hours
+    const violationTime = document.getElementById('violationTime').value;
+    if (violationTime && !validateSchoolHours(violationTime)) {
+      alert('Violation time must be within school hours (7:00 AM - 4:00 PM).');
       return;
     }
 
@@ -893,6 +912,7 @@ window.editViolation = function(violationId) {
         <option value="pending" ${violation.status === 'pending' ? 'selected' : ''}>Pending</option>
                 <option value="investigating" ${violation.status === 'investigating' ? 'selected' : ''}>In Progress</option>
         <option value="resolved" ${violation.status === 'resolved' ? 'selected' : ''}>Resolved</option>
+        <option value="case_closed" ${violation.status === 'case_closed' ? 'selected' : ''}>Case Closed</option>
     </select>
     <small class="text-muted">Status cannot be changed.</small>
 </div>
@@ -913,7 +933,7 @@ window.editViolation = function(violationId) {
         <!-- Right Column: Investigation & Resolution Details -->
         <div class="col-lg-6">
             <h6 class="mt-3 mb-3">Resolution Details</h6>
-            <div class="mb-2" id="edit_resolution_wrapper" style="display: ${(violation.status === 'resolved' || violation.status === 'dismissed') ? 'block' : 'none'};">
+            <div class="mb-2" id="edit_resolution_wrapper" style="display: ${(violation.status === 'resolved' || violation.status === 'dismissed' || violation.status === 'case_closed') ? 'block' : 'none'};">
                 <label class="form-label fw-bold small">Resolution</label>
                 <textarea class="form-control form-control-sm" id="edit_resolution" name="resolution" rows="2">${violation.resolution || ''}</textarea>
             </div>
@@ -941,7 +961,7 @@ window.editViolation = function(violationId) {
             if (editStatusSelect) {
                 editStatusSelect.addEventListener('change', function() {
                     if (editResolutionWrapper) {
-                        editResolutionWrapper.style.display = (this.value === 'resolved' || this.value === 'dismissed') ? 'block' : 'none';
+                        editResolutionWrapper.style.display = (this.value === 'resolved' || this.value === 'dismissed' || this.value === 'case_closed') ? 'block' : 'none';
                     }
                 });
             }
@@ -1537,29 +1557,105 @@ window.viewViolation = function(violationId) {
     fetch(`/discipline/violations/${violationId}`, { credentials: 'include' })
       .then(response => response.json())
       .then(data => {
-        // Build the PDF URL for the narrative report - only show if student has replied
-        let narrativePdfUrl = '';
+        // Build available reports array
+        const availableReports = [];
+        
+        // Debug: Log the complete data structure
+        console.log('Complete violation data:', data);
+        console.log('Direct case_meeting_id:', data.case_meeting_id);
+        console.log('Case meeting object:', data.case_meeting);
+        
+        // Get case meeting ID from either direct field or relationship
+        const caseMeetingId = data.case_meeting_id || (data.case_meeting ? data.case_meeting.id : null);
+        console.log('Resolved case meeting ID:', caseMeetingId);
+        
+        // Student Narrative Report (for major violations with student responses)
         if (data.student && data.id && data.severity === 'major' && 
             (data.student_statement || data.incident_feelings || data.action_plan)) {
-          narrativePdfUrl = `/narrative-report/view/${data.student.id}/${data.id}`;
+          availableReports.push({
+            title: 'Student Narrative Report',
+            url: `/narrative-report/view/${data.student.id}/${data.id}`,
+            icon: 'ri-file-text-line',
+            color: 'primary',
+            description: 'Student\'s written response and reflection'
+          });
         }
 
-        // Build the PDF URL for the teacher observation report (only show if teacher has replied)
-        let teacherObservationReportUrl = '';
-        if (
-          data.id && (
-            (typeof data.teacher_statement === 'string' && data.teacher_statement.trim() !== '') ||
-            (typeof data.action_plan === 'string' && data.action_plan.trim() !== '')
-          )
-        ) {
-          teacherObservationReportUrl = `/guidance/observationreport/pdf/${data.id}`;
+        // Teacher Observation Report (if case meeting exists with content)
+        if (caseMeetingId && data.case_meeting && (
+            (data.case_meeting.teacher_statement && data.case_meeting.teacher_statement.trim() !== '') ||
+            (data.case_meeting.action_plan && data.case_meeting.action_plan.trim() !== '')
+        )) {
+          availableReports.push({
+            title: 'Teacher Observation Report',
+            url: `/guidance/observationreport/pdf/${caseMeetingId}`,
+            icon: 'ri-file-paper-line',
+            color: 'success',
+            description: 'Teacher\'s observation and recommendations'
+          });
         }
+
+        // Disciplinary Conference Report (Case Meeting Summary PDF)
+        if (caseMeetingId && data.case_meeting && data.case_meeting.summary) {
+          availableReports.push({
+            title: 'Disciplinary Conference Report',
+            url: `/discipline/case-meetings/${caseMeetingId}/disciplinary-conference-report/pdf`,
+            icon: 'ri-file-list-3-line',
+            color: 'warning',
+            description: 'Complete disciplinary conference report PDF with case summary'
+          });
+        }
+
+        // Student Attachment (if available)
+        if (data.student_attachment_path) {
+          availableReports.push({
+            title: 'Student Attachment',
+            url: `/discipline/violations/${data.id}/download-student-attachment`,
+            icon: 'ri-attachment-2',
+            color: 'secondary',
+            description: data.student_attachment_description || 'Student uploaded document'
+          });
+        }
+
+        // Build reports section HTML
+        const reportsSection = availableReports.length > 0 ? `
+          <div class="col-12 mt-4">
+            <div class="card">
+              <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="ri-folder-open-line me-2"></i>Available Reports & Documents</h6>
+              </div>
+              <div class="card-body">
+                <div class="row g-2">
+                  ${availableReports.map(report => `
+                    <div class="col-md-6">
+                      <div class="d-flex align-items-center p-3 border rounded hover-shadow">
+                        <div class="flex-shrink-0 me-3">
+                          <div class="bg-${report.color} bg-opacity-10 rounded-circle p-2">
+                            <i class="${report.icon} text-${report.color}"></i>
+                          </div>
+                        </div>
+                        <div class="flex-grow-1">
+                          <h6 class="mb-1">${report.title}</h6>
+                          <p class="text-muted small mb-2">${report.description}</p>
+                          <a href="${report.url}" target="_blank" class="btn btn-outline-${report.color} btn-sm">
+                            <i class="ri-external-link-line me-1"></i>View/Download
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+                ${availableReports.length === 0 ? '<p class="text-muted mb-0">No reports or documents available for this violation.</p>' : ''}
+              </div>
+            </div>
+          </div>
+        ` : '';
 
         document.getElementById('viewViolationModalBody').innerHTML = `
           <div class="row">
             <div class="col-md-6">
               <h6>Student Information</h6>
-              <table class="table table-sm">
+              <table class="table table-sm table-bordered">
                 <tbody>
                   <tr><td><strong>Name:</strong></td><td>${data.student && data.student.first_name ? data.student.first_name : 'N/A'} ${data.student && data.student.last_name ? data.student.last_name : ''}</td></tr>
                   <tr><td><strong>Student ID:</strong></td><td>${data.student && data.student.student_id ? data.student.student_id : 'N/A'}</td></tr>
@@ -1567,49 +1663,89 @@ window.viewViolation = function(violationId) {
                   <tr><td><strong>Section:</strong></td><td>${data.student && data.student.section ? data.student.section : 'N/A'}</td></tr>
                 </tbody>
               </table>
-              <!-- Narrative PDF Attachment (if available) -->
-              ${narrativePdfUrl ? `<div class="mt-4"><label class="form-label fw-bold">Student Narrative Report (PDF):</label><div><a href="${narrativePdfUrl}" target="_blank" class="btn btn-outline-primary btn-sm"><i class="ri-attachment-2"></i> View Attachment</a></div></div>` : ''}
-              ${teacherObservationReportUrl ? `<div class=\"mt-2\"><label class=\"form-label fw-bold\">Teacher Observation Report (PDF):</label><div><a href=\"${teacherObservationReportUrl}\" target=\"_blank\" class=\"btn btn-outline-success btn-sm\"><i class=\"ri-attachment-2\"></i> View Teacher Report</a></div></div>` : ''}
+
+              <h6 class="mt-4">Violation Details</h6>
+              <table class="table table-sm table-bordered">
+                <tbody>
+                  <tr><td><strong>Title:</strong></td><td>${data.title || 'N/A'}</td></tr>
+                  <tr><td><strong>Severity:</strong></td><td><span class="badge bg-${data.severity === 'major' ? 'danger' : (data.severity === 'minor' ? 'warning' : 'info')}">${data.severity ? data.severity.charAt(0).toUpperCase() + data.severity.slice(1) : 'N/A'}</span></td></tr>
+                  <tr><td><strong>Status:</strong></td><td><span class="badge bg-${data.status === 'pending' ? 'warning' : (data.status === 'resolved' ? 'success' : (data.status === 'case_closed' ? 'dark' : 'info'))}">${data.status === 'case_closed' ? 'Case Closed' : (data.status ? data.status.charAt(0).toUpperCase() + data.status.slice(1) : 'N/A')}</span></td></tr>
+                  <tr><td><strong>Date:</strong></td><td>${data.violation_date ? new Date(data.violation_date).toLocaleDateString() : 'N/A'}</td></tr>
+                  <tr><td><strong>Time:</strong></td><td>${data.violation_time || 'N/A'}</td></tr>
+                  <tr><td><strong>Location:</strong></td><td>${data.location || 'N/A'}</td></tr>
+                </tbody>
+              </table>
             </div>
+            
             <div class="col-md-6">
+              <h6>Investigation & Resolution</h6>
+              ${data.description ? `
+                <div class="mb-3">
+                  <label class="form-label fw-bold small">Description:</label>
+                  <p class="border p-2 rounded bg-light small">${data.description}</p>
+                </div>
+              ` : ''}
+              
               ${data.resolution ? `
                 <div class="mb-3">
-                  <label class="form-label fw-bold">Resolution:</label>
-                  <p>${data.resolution}</p>
+                  <label class="form-label fw-bold small">Resolution:</label>
+                  <p class="border p-2 rounded bg-light small">${data.resolution}</p>
                 </div>
               ` : ''}
+              
               ${data.disciplinary_action ? `
                 <div class="mb-3">
-                  <label class="form-label fw-bold">Disciplinary Action:</label>
-                  <p>${data.disciplinary_action}</p>
+                  <label class="form-label fw-bold small">Disciplinary Action:</label>
+                  <p class="border p-2 rounded bg-warning-subtle small">${data.disciplinary_action}</p>
                 </div>
               ` : ''}
+              
+              ${data.witnesses ? `
+                <div class="mb-3">
+                  <label class="form-label fw-bold small">Witnesses:</label>
+                  <p class="border p-2 rounded bg-light small">${data.witnesses}</p>
+                </div>
+              ` : ''}
+              
+              ${data.evidence ? `
+                <div class="mb-3">
+                  <label class="form-label fw-bold small">Evidence:</label>
+                  <p class="border p-2 rounded bg-light small">${data.evidence}</p>
+                </div>
+              ` : ''}
+              
               ${data.notes ? `
                 <div class="mb-3">
-                  <label class="form-label fw-bold">Notes:</label>
-                  <p>${data.notes}</p>
+                  <label class="form-label fw-bold small">Additional Notes:</label>
+                  <p class="border p-2 rounded bg-light small">${data.notes}</p>
                 </div>
               ` : ''}
-              <div class="mb-3">
-                <label class="form-label fw-bold">Reported By:</label>
-                <p>${data.reported_by ? (data.reported_by.first_name + ' ' + data.reported_by.last_name) : 'N/A'}</p>
-              </div>
-              <div class="mb-3">
-                <label class="form-label fw-bold">Reported On:</label>
-                <p>${new Date(data.created_at).toLocaleDateString()} at ${new Date(data.created_at).toLocaleTimeString()}</p>
-              </div>
-              ${data.resolved_by ? `
-                <div class="mb-3">
-                  <label class="form-label fw-bold">Resolved By:</label>
-                  <p>${data.resolved_by.first_name} ${data.resolved_by.last_name}</p>
-                </div>
-                <div class="mb-3">
-                  <label class="form-label fw-bold">Resolved On:</label>
-                  <p>${new Date(data.resolved_at).toLocaleDateString()} at ${new Date(data.resolved_at).toLocaleTimeString()}</p>
-                </div>
-              ` : ''}
+
+              <h6 class="mt-4">Administrative Information</h6>
+              <table class="table table-sm table-bordered">
+                <tbody>
+                  <tr><td><strong>Reported By:</strong></td><td>${data.reported_by ? (data.reported_by.first_name + ' ' + data.reported_by.last_name) : 'N/A'}</td></tr>
+                  <tr><td><strong>Reported On:</strong></td><td>${new Date(data.created_at).toLocaleDateString()} at ${new Date(data.created_at).toLocaleTimeString()}</td></tr>
+                  ${data.resolved_by ? `
+                    <tr><td><strong>Resolved By:</strong></td><td>${data.resolved_by.first_name} ${data.resolved_by.last_name}</td></tr>
+                    <tr><td><strong>Resolved On:</strong></td><td>${new Date(data.resolved_at).toLocaleDateString()} at ${new Date(data.resolved_at).toLocaleTimeString()}</td></tr>
+                  ` : ''}
+                  ${caseMeetingId ? `<tr><td><strong>Case Meeting ID:</strong></td><td>#${caseMeetingId}</td></tr>` : ''}
+                </tbody>
+              </table>
             </div>
+            
+            ${reportsSection}
+            
+
           </div>
+          
+          <style>
+            .hover-shadow:hover {
+              box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+              transition: box-shadow 0.15s ease-in-out;
+            }
+          </style>
         `;
         showModal('viewViolationModal');
       })
@@ -1728,8 +1864,10 @@ window.updateViolationRow = function(violationId, violation) {
         // Update status
         const statusCell = row.cells[6];
         const statusClass = violation.status === 'pending' ? 'warning' : 
-                           (violation.status === 'resolved' ? 'success' : 'info');
-        statusCell.innerHTML = `<span class="badge bg-${statusClass}">${violation.status.charAt(0).toUpperCase() + violation.status.slice(1)}</span>`;
+                           (violation.status === 'resolved' ? 'success' : 
+                           (violation.status === 'case_closed' ? 'dark' : 'info'));
+        const statusText = violation.status === 'case_closed' ? 'Case Closed' : violation.status.charAt(0).toUpperCase() + violation.status.slice(1);
+        statusCell.innerHTML = `<span class="badge bg-${statusClass}">${statusText}</span>`;
         
         // Update violation info if title changed
         const violationCell = row.cells[0];
@@ -2521,6 +2659,12 @@ function showIncidentForm() {
   const date = document.getElementById('incidentDate').value;
   const time = document.getElementById('incidentTime').value;
   const details = document.getElementById('incidentDetails').value;
+
+        // Validate school hours for incident time
+        if (time && !validateSchoolHours(time)) {
+            alert('Incident time must be within school hours (7:00 AM - 4:00 PM).');
+            return;
+        }
 
         const submitBtn = document.querySelector('#incidentFormModal button[type="submit"]');
         const originalText = submitBtn.textContent;

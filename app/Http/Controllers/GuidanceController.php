@@ -13,6 +13,7 @@ use App\Models\CaseMeeting;
 use App\Models\CounselingSession;
 use App\Models\Violation;
 use App\Models\FacultyAssignment;
+use App\Models\Sanction;
 
 class GuidanceController extends Controller
 {
@@ -103,8 +104,11 @@ class GuidanceController extends Controller
      */
     public function caseMeetingsIndex()
     {
-        $caseMeetings = CaseMeeting::with(['student', 'counselor', 'sanctions'])
-            ->orderBy('scheduled_date', 'desc')
+        $caseMeetings = CaseMeeting::with(['student', 'counselor', 'sanctions', 'violation'])
+            ->leftJoin('student_violations', 'case_meetings.violation_id', '=', 'student_violations.id')
+            ->orderByRaw('CASE WHEN student_violations.reported_by IS NOT NULL THEN 0 ELSE 1 END')
+            ->orderBy('case_meetings.created_at', 'desc')
+            ->select('case_meetings.*')
             ->paginate(20);
 
         $students = Student::select('id', 'first_name', 'last_name', 'student_id')
@@ -405,6 +409,9 @@ class GuidanceController extends Controller
 
         $caseMeeting->update($updateData);
 
+        // Automatically create sanctions based on selected interventions
+        $this->createAutomaticSanctions($caseMeeting, $updateData);
+
         // Automatically update all related violations' statuses
         foreach ($caseMeeting->violations as $violation) {
             $violation->update(['status' => 'pre_completed']);
@@ -457,7 +464,7 @@ class GuidanceController extends Controller
                     'action_plan' => $caseMeeting->violation ? $caseMeeting->violation->action_plan : null,
                     // Add teacher reply fields from the case meeting itself
                     'teacher_statement' => $caseMeeting->teacher_statement,
-                    'teacher_action_plan' => $caseMeeting->action_plan,
+                    'action_plan' => $caseMeeting->action_plan,
                     'sanctions' => $caseMeeting->sanctions->map(function ($sanction) {
                         return [
                             'id' => $sanction->id,
@@ -653,12 +660,46 @@ class GuidanceController extends Controller
             'meeting_type' => $caseMeeting->meeting_type,
         ]);
 
-        // Only require summary and schedule for forwarding
+        // Basic requirements: summary and schedule
         if (empty($caseMeeting->summary) || $caseMeeting->status !== 'pre_completed') {
-            Log::warning('Forward blocked: requirements not met', ['id' => $caseMeeting->id]);
+            Log::warning('Forward blocked: basic requirements not met', ['id' => $caseMeeting->id]);
             return response()->json([
                 'success' => false,
                 'message' => 'Please add both a schedule and a summary report before forwarding.'
+            ], 400);
+        }
+
+        // Check for required attachments and replies
+        $missingItems = [];
+
+        // Check if student narrative report exists and has student reply
+        $violation = $caseMeeting->violation;
+        if ($violation && $violation->severity === 'major') {
+            // For major violations, student narrative report is required
+            if (empty($violation->student_statement) && empty($violation->incident_feelings) && empty($violation->action_plan)) {
+                $missingItems[] = 'Student Narrative Report (student reply required)';
+            }
+        }
+
+        // Check if teacher observation report exists and has teacher reply
+        if (empty($caseMeeting->teacher_statement) && empty($caseMeeting->action_plan)) {
+            $missingItems[] = 'Teacher Observation Report (teacher reply required)';
+        }
+
+        // Check if disciplinary conference report can be generated (requires summary)
+        if (empty($caseMeeting->summary)) {
+            $missingItems[] = 'Disciplinary Conference Report (summary required)';
+        }
+
+        // If there are missing attachments/replies, prevent forwarding
+        if (!empty($missingItems)) {
+            Log::warning('Forward blocked: missing attachments/replies', [
+                'id' => $caseMeeting->id,
+                'missing_items' => $missingItems
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot forward to president. Missing: ' . implode(', ', $missingItems) . '. Please ensure all required reports are completed with proper replies.'
             ], 400);
         }
 
@@ -1570,4 +1611,124 @@ public function getDisciplineVsTotalStats()
             ], 500);
         }
     }
+
+    /**
+     * Create automatic sanctions based on selected interventions
+     */
+    private function createAutomaticSanctions(CaseMeeting $caseMeeting, array $interventions)
+    {
+        // Clear existing automatic sanctions to avoid duplicates
+        $caseMeeting->sanctions()->where('is_automatic', true)->delete();
+
+        $sanctionsToCreate = [];
+
+        // Written Reflection
+        if ($interventions['written_reflection']) {
+            $sanctionsToCreate[] = [
+                'case_meeting_id' => $caseMeeting->id,
+                'violation_id' => $caseMeeting->violation_id,
+                'severity' => 'Low',
+                'category' => 'Intervention',
+                'major_category' => 'Written Reflection',
+                'sanction' => 'Student must write a one-page reflection on the importance of respect, responsibility, and self-control.',
+                'deportment_grade_action' => 'Intervention noted in record',
+                'suspension' => 0,
+                'notes' => 'Due date: ' . ($interventions['written_reflection_due'] ? date('M d, Y', strtotime($interventions['written_reflection_due'])) : date('M d, Y', strtotime('+7 days'))),
+                'is_automatic' => true,
+                'is_approved' => false,
+                'created_at' => now(),
+                'updated_at' => now()
+            ];
+        }
+
+        // Mentorship/Counseling
+        if ($interventions['mentorship_counseling']) {
+            $sanctionsToCreate[] = [
+                'case_meeting_id' => $caseMeeting->id,
+                'violation_id' => $caseMeeting->violation_id,
+                'severity' => 'Medium',
+                'category' => 'Intervention',
+                'major_category' => 'Mentorship/Counseling',
+                'sanction' => 'Weekly meetings with school counselor or mentor for behavior management and coping strategies.',
+                'deportment_grade_action' => 'Counseling intervention recorded',
+                'suspension' => 0,
+                'notes' => 'Mentor: ' . ($interventions['mentor_name'] ?? 'TBD') . ' | Duration: 4 weeks',
+                'is_automatic' => true,
+                'is_approved' => false,
+                'created_at' => now(),
+                'updated_at' => now()
+            ];
+        }
+
+        // Suspension
+        if ($interventions['suspension']) {
+            $suspensionDays = 3; // default
+            if ($interventions['suspension_3days']) {
+                $suspensionDays = 3;
+            } elseif ($interventions['suspension_5days']) {
+                $suspensionDays = 5;
+            } elseif ($interventions['suspension_other_days']) {
+                $suspensionDays = $interventions['suspension_other_days'];
+            }
+
+            $suspensionNotes = "Duration: {$suspensionDays} days";
+            if ($interventions['suspension_start']) {
+                $suspensionNotes .= " | Start: " . date('M d, Y', strtotime($interventions['suspension_start']));
+            }
+            if ($interventions['suspension_end']) {
+                $suspensionNotes .= " | End: " . date('M d, Y', strtotime($interventions['suspension_end']));
+            }
+            if ($interventions['suspension_return']) {
+                $suspensionNotes .= " | Return: " . date('M d, Y', strtotime($interventions['suspension_return']));
+            }
+
+            $sanctionsToCreate[] = [
+                'case_meeting_id' => $caseMeeting->id,
+                'violation_id' => $caseMeeting->violation_id,
+                'severity' => 'High',
+                'category' => 'Disciplinary Action',
+                'major_category' => 'Suspension',
+                'sanction' => "Student suspended from school for {$suspensionDays} days as consequence for actions. Must complete activity sheets for missed classes.",
+                'suspension' => $suspensionDays,
+                'deportment_grade_action' => 'Suspension recorded in deportment grade',
+                'notes' => $suspensionNotes,
+                'is_automatic' => true,
+                'is_approved' => false,
+                'created_at' => now(),
+                'updated_at' => now()
+            ];
+        }
+
+        // Expulsion
+        if ($interventions['expulsion']) {
+            $expulsionNotes = 'Expulsion Date: ' . ($interventions['expulsion_date'] ? date('M d, Y', strtotime($interventions['expulsion_date'])) : date('M d, Y'));
+            
+            $sanctionsToCreate[] = [
+                'case_meeting_id' => $caseMeeting->id,
+                'violation_id' => $caseMeeting->violation_id,
+                'severity' => 'Critical',
+                'category' => 'Disciplinary Action',
+                'major_category' => 'Expulsion',
+                'sanction' => 'Student expelled from school. Certificate of eligibility may not be issued at the end of school year.',
+                'deportment_grade_action' => 'Expulsion recorded in permanent record',
+                'suspension' => 0,
+                'notes' => $expulsionNotes,
+                'is_automatic' => true,
+                'is_approved' => false,
+                'created_at' => now(),
+                'updated_at' => now()
+            ];
+        }
+
+        // Insert all sanctions at once
+        if (!empty($sanctionsToCreate)) {
+            Sanction::insert($sanctionsToCreate);
+            
+            // Log the creation of automatic sanctions
+            \Log::info('Automatic sanctions created for case meeting', [
+                'case_meeting_id' => $caseMeeting->id,
+                'sanctions_created' => count($sanctionsToCreate)
+            ]);
+        }
     }
+}

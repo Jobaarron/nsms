@@ -593,7 +593,10 @@ function generateSummaryHTML(meeting) {
                     ${hasTeacherObservation
                         ? `<a href="/guidance/observationreport/pdf/${meeting.id}" target="_blank" class="btn btn-outline-success btn-sm minimalist-attachment-btn"><i class="ri-file-pdf-line"></i> Teacher Observation Report PDF</a>`
                         : ''}
-                    ${!hasNarrative && !hasTeacherObservation
+                    ${meeting.violation && meeting.violation.student_attachment_path
+                        ? `<a href="/discipline/violations/${meeting.violation_id}/download-student-attachment" target="_blank" class="btn btn-outline-info btn-sm minimalist-attachment-btn"><i class="ri-attachment-line"></i> Student Attachment</a>`
+                        : ''}
+                    ${!hasNarrative && !hasTeacherObservation && (!meeting.violation || !meeting.violation.student_attachment_path)
                         ? '<span class="text-muted small">No Attachment</span>'
                         : ''}
                 </div>

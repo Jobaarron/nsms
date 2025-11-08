@@ -593,9 +593,29 @@ public function submittedCases()
                     'status' => 'case_closed',
                     'completed_at' => now(),
                 ]);
-                // Set all related violations' statuses to 'submitted' (discipline side)
+                // Set all related violations' statuses to 'case_closed' and add disciplinary action
                 foreach ($caseMeeting->violations as $violation) {
-                    $violation->update(['status' => 'submitted']);
+                    $violation->update([
+                        'status' => 'case_closed',
+                        'disciplinary_action' => $sanction->sanction,
+                        'action_taken' => 'Approved: ' . $sanction->sanction,
+                        'resolved_by' => $user->id,
+                        'resolved_at' => now()
+                    ]);
+                }
+            }
+
+            // Also update direct violation-sanction relationship if exists
+            if ($sanction->violation_id) {
+                $directViolation = \App\Models\Violation::find($sanction->violation_id);
+                if ($directViolation) {
+                    $directViolation->update([
+                        'status' => 'case_closed',
+                        'disciplinary_action' => $sanction->sanction,
+                        'action_taken' => 'Approved: ' . $sanction->sanction,
+                        'resolved_by' => $user->id,
+                        'resolved_at' => now()
+                    ]);
                 }
             }
 
@@ -705,7 +725,7 @@ public function submittedCases()
     {
         $user = auth()->user();
 
-        if (!$user->hasRole('admin')) {
+        if (!($user->hasRole('admin') || $user->isDisciplineStaff())) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized access.'
