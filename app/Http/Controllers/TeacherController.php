@@ -280,7 +280,7 @@ class TeacherController extends Controller
         
         // Get only case meetings for students that this teacher is the class adviser of
         $reports = \App\Models\CaseMeeting::with(['student', 'violation', 'counselor'])
-            ->where('status', 'scheduled')
+            ->whereIn('status', ['scheduled', 'pre_completed'])
             ->where(function($query) use ($currentUser, $teacherRecord, $currentAcademicYear) {
                 // Case 1: Direct adviser_id match
                 $query->where('adviser_id', $currentUser->id)

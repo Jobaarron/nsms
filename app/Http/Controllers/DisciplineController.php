@@ -372,6 +372,25 @@ class DisciplineController extends Controller
             } elseif (preg_match('/^(\d{1,2}):(\d{2}):(\d{2})$/', $time)) {
                 $validatedData['violation_time'] = $time;
             }
+            
+            // Validate school hours (7:00 AM to 4:00 PM)
+            $timeForValidation = preg_replace('/:\d{2}$/', '', $validatedData['violation_time']); // Remove seconds for validation
+            if ($timeForValidation) {
+                list($hour, $minute) = explode(':', $timeForValidation);
+                $timeInMinutes = ($hour * 60) + $minute;
+                $schoolStart = 7 * 60; // 7:00 AM
+                $schoolEnd = 16 * 60;  // 4:00 PM
+                
+                if ($timeInMinutes < $schoolStart || $timeInMinutes > $schoolEnd) {
+                    if ($request->wantsJson() || $request->ajax()) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Violation time must be within school hours (7:00 AM - 4:00 PM).'
+                        ], 422);
+                    }
+                    return back()->withErrors(['violation_time' => 'Violation time must be within school hours (7:00 AM - 4:00 PM).']);
+                }
+            }
         }
 
         $validatedData['reported_by'] = $disciplineRecord->id;
@@ -511,12 +530,24 @@ class DisciplineController extends Controller
     }
 
     /**
-     * Show violation details
+     * Show violation details for AJAX
      */
     public function showViolation(Violation $violation)
     {
-        $violation->load(['student', 'reportedBy', 'resolvedBy']);
-        return response()->json($violation);
+        $violation->load(['student', 'reportedBy', 'resolvedBy', 'caseMeeting']);
+        
+        // Convert to array and add case meeting details if exists
+        $violationData = $violation->toArray();
+        
+        if ($violation->caseMeeting) {
+            $violationData['case_meeting'] = array_merge($violation->caseMeeting->toArray(), [
+                'teacher_statement' => $violation->caseMeeting->teacher_statement,
+                'action_plan' => $violation->caseMeeting->action_plan,
+                'summary' => $violation->caseMeeting->summary,
+            ]);
+        }
+        
+        return response()->json($violationData);
     }
 
     /**
@@ -572,6 +603,25 @@ class DisciplineController extends Controller
                 $validatedData['violation_time'] = $time . ':00';
             } elseif (preg_match('/^(\d{1,2}):(\d{2}):(\d{2})$/', $time)) {
                 $validatedData['violation_time'] = $time;
+            }
+            
+            // Validate school hours (7:00 AM to 4:00 PM)
+            $timeForValidation = preg_replace('/:\d{2}$/', '', $validatedData['violation_time']); // Remove seconds for validation
+            if ($timeForValidation) {
+                list($hour, $minute) = explode(':', $timeForValidation);
+                $timeInMinutes = ($hour * 60) + $minute;
+                $schoolStart = 7 * 60; // 7:00 AM
+                $schoolEnd = 16 * 60;  // 4:00 PM
+                
+                if ($timeInMinutes < $schoolStart || $timeInMinutes > $schoolEnd) {
+                    if ($request->wantsJson() || $request->ajax()) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Violation time must be within school hours (7:00 AM - 4:00 PM).'
+                        ], 422);
+                    }
+                    return back()->withErrors(['violation_time' => 'Violation time must be within school hours (7:00 AM - 4:00 PM).']);
+                }
             }
         }
 
@@ -683,6 +733,20 @@ class DisciplineController extends Controller
             ], 422);
         }
 
+        // Check if student has replied for major violations
+        if ($violation->severity === 'major') {
+            $hasStudentReply = !empty($violation->student_statement) || 
+                              !empty($violation->incident_feelings) || 
+                              !empty($violation->action_plan);
+            
+            if (!$hasStudentReply) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot forward major violation to case meeting. Student must reply to the narrative report first.'
+                ], 400);
+            }
+        }
+
         // Get an active guidance counselor to assign the case meeting
         $guidanceCounselor = Guidance::active()->counselors()->first();
 
@@ -707,10 +771,11 @@ class DisciplineController extends Controller
             'urgency_level' => $violation->urgency_level,
         ]);
 
-        // Update violation status and reported_by to ensure valid discipline id
+        // Update violation status, reported_by, and link to case meeting
         $violation->update([
             'status' => 'in_progress',
             'reported_by' => $discipline->id,
+            'case_meeting_id' => $caseMeeting->id, // Link violation to case meeting
         ]);
 
         // Create a sanction for the case meeting based on the violation
@@ -916,5 +981,18 @@ class DisciplineController extends Controller
                 'in_progress' => $inProgress,
                 'pre_completed' => $preCompleted,
             ]);
+        }
+        
+        /**
+         * Download student attachment for violations (discipline access)
+         */
+        public function downloadStudentAttachment(Violation $violation)
+        {
+            // Check if violation has student attachment
+            if (!$violation->student_attachment_path || !Storage::disk('public')->exists($violation->student_attachment_path)) {
+                abort(404, 'Student attachment not found.');
+            }
+
+            return Storage::disk('public')->download($violation->student_attachment_path);
         }
     }

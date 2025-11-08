@@ -92,6 +92,7 @@
                 <th>Date</th>
                 <th>Sanction</th>
                 <th>Status</th>
+                <th>Student Reply</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -130,6 +131,20 @@
                     @endif
                   </td>
                   <td>
+                    @php
+                      $hasStudentReply = !empty($violation->student_statement) || !empty($violation->incident_feelings) || !empty($violation->action_plan);
+                    @endphp
+                    @if($hasStudentReply)
+                      <span class="badge bg-success">
+                        <i class="ri-check-line me-1"></i>Replied
+                      </span>
+                    @else
+                      <span class="badge bg-warning text-dark">
+                        <i class="ri-time-line me-1"></i>Pending Reply
+                      </span>
+                    @endif
+                  </td>
+                  <td>
                     <div class="btn-group" role="group">
                       <button type="button" class="btn btn-sm btn-outline-primary"
                               onclick="viewViolation({{ $violation->id }})"
@@ -141,9 +156,25 @@
                               title="Edit">
                         <i class="ri-edit-line"></i>
                       </button>
-                      <button type="button" class="btn btn-sm btn-outline-info"
-                              onclick="forwardViolation({{ $violation->id }})"
-                              title="Forward to Case Meeting">
+                      @php
+                        // Check if violation can be forwarded
+                        $canForward = true;
+                        $forwardTooltip = 'Forward to Case Meeting';
+                        
+                        if ($violation->severity === 'major') {
+                            $hasStudentReply = !empty($violation->student_statement) || 
+                                              !empty($violation->incident_feelings) || 
+                                              !empty($violation->action_plan);
+                            
+                            if (!$hasStudentReply) {
+                                $canForward = false;
+                                $forwardTooltip = 'Cannot forward: Student must reply to narrative report first';
+                            }
+                        }
+                      @endphp
+                      <button type="button" class="btn btn-sm btn-outline-info {{ !$canForward ? 'disabled' : '' }}"
+                              onclick="{{ $canForward ? 'forwardViolation(' . $violation->id . ')' : '' }}"
+                              title="{{ $forwardTooltip }}">
                         <i class="ri-send-plane-line"></i>
                       </button>
                       <button type="button" class="btn btn-sm btn-outline-danger"
@@ -157,7 +188,7 @@
                 @endif
               @empty
               <tr>
-                <td colspan="6" class="text-center py-5">
+                <td colspan="7" class="text-center py-5">
                   <i class="ri-alert-line display-4 text-muted"></i>
                   <p class="text-muted mt-2">No violations found</p>
                 </td>
@@ -233,7 +264,10 @@
 
               <div class="mb-3">
                 <label class="form-label fw-bold">Violation Time</label>
-                <input type="time" class="form-control" id="violationTime" name="violation_time" value="{{ now()->format('H:i') }}">
+                <input type="time" class="form-control" id="violationTime" name="violation_time" 
+                       min="07:00" max="16:00" 
+                       value="{{ now()->between(today()->setTime(7, 0), today()->setTime(16, 0)) ? now()->format('H:i') : '07:00' }}">
+                <small class="text-muted">School hours: 7:00 AM - 4:00 PM</small>
               </div>
             </div>
           </div>

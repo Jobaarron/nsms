@@ -18,6 +18,7 @@ use App\Models\Payment;
 use App\Models\ClassSchedule;
 use App\Models\Grade;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class StudentController extends Controller
 {
@@ -843,5 +844,74 @@ class StudentController extends Controller
         $violation->save();
 
         return redirect()->route('student.violations')->with('info', 'Your reply has been submitted successfully.');
+    }
+
+    public function uploadViolationAttachment(Request $request, Violation $violation)
+    {
+        $student = Auth::guard('student')->user();
+
+        if (!$student || $violation->student_id != $student->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized access.'
+            ], 403);
+        }
+
+        // Check if violation has approved disciplinary action
+        if (!$violation->disciplinary_action) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Attachment can only be uploaded for approved disciplinary actions.'
+            ], 400);
+        }
+
+        $request->validate([
+            'attachment' => 'required|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120', // 5MB max
+            'description' => 'nullable|string|max:500'
+        ]);
+
+        try {
+            $file = $request->file('attachment');
+            $fileName = time() . '_' . $student->student_id . '_' . $file->getClientOriginalName();
+            $filePath = $file->storeAs('violation_attachments', $fileName, 'public');
+
+            $violation->update([
+                'student_attachment_path' => $filePath,
+                'student_attachment_description' => $request->description,
+                'student_attachment_uploaded_at' => now()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Attachment uploaded successfully.'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error uploading violation attachment', [
+                'violation_id' => $violation->id,
+                'student_id' => $student->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error uploading attachment: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function downloadViolationAttachment(Violation $violation)
+    {
+        $student = Auth::guard('student')->user();
+
+        if (!$student || $violation->student_id != $student->id) {
+            abort(403, 'Unauthorized access.');
+        }
+
+        if (!$violation->student_attachment_path || !Storage::disk('public')->exists($violation->student_attachment_path)) {
+            abort(404, 'Attachment not found.');
+        }
+
+        return Storage::disk('public')->download($violation->student_attachment_path);
     }
 }

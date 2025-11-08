@@ -418,7 +418,15 @@ Route::prefix('discipline')->name('discipline.')->group(function () {
         // Forward violation to case meeting
         Route::post('/{violation}/forward', [App\Http\Controllers\DisciplineController::class, 'forwardViolation'])
             ->name('forward');
+            
+        // Download student attachment for violations
+        Route::get('/{violation}/download-student-attachment', [App\Http\Controllers\DisciplineController::class, 'downloadStudentAttachment'])
+            ->name('download-student-attachment');
         });
+        
+        // Disciplinary Conference Report PDF (for discipline staff access)
+        Route::get('/case-meetings/{caseMeeting}/disciplinary-conference-report/pdf', [PdfController::class, 'DisciplinaryConReports'])
+            ->name('case-meetings.disciplinary-conference-report.pdf');
     });
 });
 
@@ -490,6 +498,9 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
     Route::get('/observationreport/pdf/{caseMeeting}', [App\Http\Controllers\PdfController::class, 'teacherObservationReportPdf']);
         // PDF route for case meeting attachment (moved outside case-meetings group)
         Route::get('/pdf/case-meeting/{caseMeetingId}', [PdfController::class, 'caseMeetingAttachmentPdf'])->name('pdf.case-meeting.attachment');
+        
+        // PDF route for disciplinary conference report
+        Route::get('/case-meetings/{caseMeeting}/disciplinary-conference-report/pdf', [PdfController::class, 'DisciplinaryConReports'])->name('case-meetings.disciplinary-conference-report.pdf');
         
         // Counseling Session Routes
     Route::prefix('counseling-sessions')->name('counseling-sessions.')->group(function () {
@@ -597,6 +608,8 @@ Route::prefix('student')->name('student.')->group(function () {
             // Violations routes (requires payment)
             Route::match(['get', 'post'], '/violations', [StudentController::class, 'violations'])->name('violations');
             Route::post('/violations/reply/{violation}', [StudentController::class, 'submitViolationReply'])->name('violations.reply');
+            Route::post('/violations/{violation}/upload-attachment', [StudentController::class, 'uploadViolationAttachment'])->name('violations.upload-attachment');
+            Route::get('/violations/{violation}/download-attachment', [StudentController::class, 'downloadViolationAttachment'])->name('violations.download-attachment');
 
             // Student Narrative Report - Reply Form (requires payment)
             Route::get('/narrative-report/reply', function() {

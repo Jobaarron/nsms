@@ -334,8 +334,8 @@ class PdfController extends Controller
         $currentUser = \Illuminate\Support\Facades\Auth::user();
         $canAccess = false;
         
-        // Check if user is guidance staff
-        if ($currentUser && $currentUser->isGuidanceStaff()) {
+        // Check if user is guidance staff or discipline staff
+        if ($currentUser && ($currentUser->isGuidanceStaff() || $currentUser->isDisciplineStaff())) {
             $canAccess = true;
         }
         // Check if user is the assigned adviser
