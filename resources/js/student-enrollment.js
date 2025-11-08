@@ -3,10 +3,32 @@
 let totalAmount = 0;
 let preferredScheduleDate = '';
 
+// Initialize enrollment data from form dataset
+document.addEventListener('DOMContentLoaded', function() {
+    const enrollmentForm = document.getElementById('enrollmentForm');
+    if (enrollmentForm) {
+        totalAmount = parseFloat(enrollmentForm.dataset.totalAmount) || 0;
+        preferredScheduleDate = enrollmentForm.dataset.scheduleDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        console.log('Enrollment data initialized:', { totalAmount, preferredScheduleDate });
+    }
+});
+
 // Define functions globally so they can be accessed by onclick handlers
 window.populatePaymentDates = function() {
     console.log('Populating payment dates with preferred schedule:', preferredScheduleDate);
-    const baseDate = new Date(preferredScheduleDate);
+    
+    // Validate and create base date
+    let baseDate;
+    if (preferredScheduleDate && preferredScheduleDate !== '') {
+        baseDate = new Date(preferredScheduleDate);
+        // Check if date is valid
+        if (isNaN(baseDate.getTime())) {
+            console.warn('Invalid preferredScheduleDate, using default');
+            baseDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days from now
+        }
+    } else {
+        baseDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days from now
+    }
     
     // Add a small delay to ensure elements are visible
     setTimeout(() => {
@@ -23,11 +45,17 @@ window.populatePaymentDates = function() {
         for (let i = 1; i <= 4; i++) {
             const quarterlyDate = document.querySelector(`input[name="quarterly_date_${i}"]`);
             if (quarterlyDate) {
-                const date = new Date(baseDate);
+                const date = new Date(baseDate.getTime()); // Create a copy
                 date.setMonth(date.getMonth() + (i - 1) * 3);
-                const formattedDate = date.toISOString().split('T')[0];
-                quarterlyDate.value = formattedDate;
-                console.log(`Set quarterly date ${i} to:`, formattedDate);
+                
+                // Validate the calculated date
+                if (!isNaN(date.getTime())) {
+                    const formattedDate = date.toISOString().split('T')[0];
+                    quarterlyDate.value = formattedDate;
+                    console.log(`Set quarterly date ${i} to:`, formattedDate);
+                } else {
+                    console.warn(`Invalid quarterly date ${i} calculated`);
+                }
             } else {
                 console.log(`Quarterly date ${i} input not found`);
             }
@@ -37,11 +65,17 @@ window.populatePaymentDates = function() {
         for (let i = 1; i <= 10; i++) {
             const monthlyDate = document.querySelector(`input[name="monthly_date_${i}"]`);
             if (monthlyDate) {
-                const date = new Date(baseDate);
+                const date = new Date(baseDate.getTime()); // Create a copy
                 date.setMonth(date.getMonth() + (i - 1));
-                const formattedDate = date.toISOString().split('T')[0];
-                monthlyDate.value = formattedDate;
-                console.log(`Set monthly date ${i} to:`, formattedDate);
+                
+                // Validate the calculated date
+                if (!isNaN(date.getTime())) {
+                    const formattedDate = date.toISOString().split('T')[0];
+                    monthlyDate.value = formattedDate;
+                    console.log(`Set monthly date ${i} to:`, formattedDate);
+                } else {
+                    console.warn(`Invalid monthly date ${i} calculated`);
+                }
             } else {
                 console.log(`Monthly date ${i} input not found`);
             }
@@ -305,3 +339,71 @@ function showAlert(message, type = 'info') {
         }
     }, 5000);
 }
+
+// Initialize enrollment data when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof window.initializeEnrollmentData === 'function') {
+        // Get data from data attributes or global variables
+        const enrollmentForm = document.getElementById('enrollmentForm');
+        if (enrollmentForm) {
+            const totalAmountValue = enrollmentForm.dataset.totalAmount || totalAmount || 0;
+            const scheduleDate = enrollmentForm.dataset.scheduleDate || preferredScheduleDate;
+            
+            window.initializeEnrollmentData(
+                parseFloat(totalAmountValue),
+                scheduleDate
+            );
+        }
+    }
+});
+
+// Custom form submission to show PDF modal after payment
+window.submitEnrollmentForm = function() {
+    const form = document.getElementById('enrollmentForm');
+    if (!form) {
+        console.error('Enrollment form not found');
+        return;
+    }
+    
+    const formData = new FormData(form);
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
+    fetch(form.action, {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': csrfToken,
+            'Accept': 'application/json',
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.transaction_id) {
+            if (window.showPDFModal) {
+                window.showPDFModal({
+                    transactionId: data.transaction_id,
+                    onClose: function() {
+                        window.location.href = data.redirect_url || '/student/dashboard';
+                    }
+                });
+            } else {
+                // Fallback if PDF modal not available
+                window.location.href = data.redirect_url || '/student/dashboard';
+            }
+        } else {
+            if (window.showAlert) {
+                window.showAlert(data.message || 'Failed to submit payment.', 'danger');
+            } else {
+                alert(data.message || 'Failed to submit payment.');
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error submitting enrollment:', error);
+        if (window.showAlert) {
+            window.showAlert('An error occurred while submitting payment.', 'danger');
+        } else {
+            alert('An error occurred while submitting payment.');
+        }
+    });
+};

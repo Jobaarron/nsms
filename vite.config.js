@@ -54,6 +54,7 @@ export default defineConfig({
                 'resources/js/student-subjects.js',
                 'resources/js/student-enrollment.js',
                 'resources/js/cashier-payment-schedules.js',
+                'resources/js/cashier-payment-archives.js',
                 'resources/js/cashier-fees.js',
                 'resources/js/enrollee-data-change-requests.js',
                 'resources/js/registrar-data-change-requests.js',

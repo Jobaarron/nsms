@@ -81,6 +81,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'guidance.discipline' => \App\Http\Middleware\GuidanceDisciplineMiddleware::class,
             'student.payment' => \App\Http\Middleware\CheckStudentPaymentStatus::class,
             'student.enrollment' => \App\Http\Middleware\CheckStudentEnrollmentStatus::class,
+            'teacher.adviser' => \App\Http\Middleware\CheckClassAdviser::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

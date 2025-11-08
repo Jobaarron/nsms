@@ -182,38 +182,42 @@ Route::middleware(['auth', 'role:teacher'])->prefix('teacher')->name('teacher.')
         ->name('recommend-counseling');
 
 
-    // Route for the Teacher Observation Report page
-    Route::get('/observationreport', [TeacherController::class, 'showObservationReport'])
-        ->name('observationreport');
+    // Class Adviser Only Routes - Protected by teacher.adviser middleware
+    Route::middleware(['teacher.adviser'])->group(function () {
+        // Route for the Teacher Observation Report page
+        Route::get('/observationreport', [TeacherController::class, 'showObservationReport'])
+            ->name('observationreport');
 
-    // Route to serve the dynamic teacher observation report PDF
-    Route::get('/observationreport/pdf/{caseMeeting}', [App\Http\Controllers\PdfController::class, 'teacherObservationReportPdf'])
-        ->name('observationreport.pdf');
+        // Route to serve the dynamic teacher observation report PDF
+        Route::get('/observationreport/pdf/{caseMeeting}', [App\Http\Controllers\PdfController::class, 'teacherObservationReportPdf'])
+            ->name('observationreport.pdf');
 
-    // Teacher Observation Report: Teacher Reply (update case meeting)
-    Route::post('/observationreport/reply/{caseMeeting}', [App\Http\Controllers\TeacherController::class, 'submitObservationReply'])
-        ->name('observationreport.reply');
+        // Teacher Observation Report: Teacher Reply (update case meeting)
+        Route::post('/observationreport/reply/{caseMeeting}', [App\Http\Controllers\TeacherController::class, 'submitObservationReply'])
+            ->name('observationreport.reply');
 
-    // Teacher Advisory Routes
-    Route::get('/advisory', [App\Http\Controllers\TeacherAdvisoryController::class, 'advisory'])
-        ->name('advisory');
+        // Teacher Advisory Routes
+        Route::get('/advisory', [App\Http\Controllers\TeacherAdvisoryController::class, 'advisory'])
+            ->name('advisory');
 
-    // Report Card PDF routes
-    Route::get('/report-card/pdf/{student}', [App\Http\Controllers\PdfController::class, 'generateReportCardPdf'])
-        ->name('report-card.pdf');
-    Route::get('/report-card/elementary/pdf/{student}', [App\Http\Controllers\PdfController::class, 'generateElementaryReportCardPdf'])
-        ->name('report-card.elementary.pdf');
-    Route::get('/report-cards/print-all', [PdfController::class, 'printAllReportCards'])
-        ->name('report-cards.print-all');
-    // Teacher Advisory AJAX Routes
-    Route::get('/advisory/student/{student}/grades', [App\Http\Controllers\TeacherAdvisoryController::class, 'getStudentGrades'])
-        ->name('advisory.student.grades');
-    Route::get('/advisory/all-grades', [App\Http\Controllers\TeacherAdvisoryController::class, 'getAllAdvisoryGrades'])
-        ->name('advisory.all-grades');
-    Route::get('/advisory/student/{student}/report-card', [App\Http\Controllers\TeacherAdvisoryController::class, 'generateStudentReportCard'])
-        ->name('advisory.student.report-card');
-    Route::get('/advisory/all-report-cards', [App\Http\Controllers\TeacherAdvisoryController::class, 'generateAllReportCards'])
-        ->name('advisory.all-report-cards');
+        // Report Card PDF routes
+        Route::get('/report-card/pdf/{student}', [App\Http\Controllers\PdfController::class, 'generateReportCardPdf'])
+            ->name('report-card.pdf');
+        Route::get('/report-card/elementary/pdf/{student}', [App\Http\Controllers\PdfController::class, 'generateElementaryReportCardPdf'])
+            ->name('report-card.elementary.pdf');
+        Route::get('/report-cards/print-all', [PdfController::class, 'printAllReportCards'])
+            ->name('report-cards.print-all');
+            
+        // Teacher Advisory AJAX Routes
+        Route::get('/advisory/student/{student}/grades', [App\Http\Controllers\TeacherAdvisoryController::class, 'getStudentGrades'])
+            ->name('advisory.student.grades');
+        Route::get('/advisory/all-grades', [App\Http\Controllers\TeacherAdvisoryController::class, 'getAllAdvisoryGrades'])
+            ->name('advisory.all-grades');
+        Route::get('/advisory/student/{student}/report-card', [App\Http\Controllers\TeacherAdvisoryController::class, 'generateStudentReportCard'])
+            ->name('advisory.student.report-card');
+        Route::get('/advisory/all-report-cards', [App\Http\Controllers\TeacherAdvisoryController::class, 'generateAllReportCards'])
+            ->name('advisory.all-report-cards');
+    });
 });
 
 

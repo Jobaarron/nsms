@@ -92,4 +92,26 @@ class Teacher extends Model
     {
         return $this->hasMany(Grade::class, 'teacher_id');
     }
+
+    /**
+     * Check if teacher is assigned as a class adviser
+     */
+    public function isClassAdviser()
+    {
+        return $this->facultyAssignments()
+                    ->where('assignment_type', 'class_adviser')
+                    ->where('status', 'active')
+                    ->exists();
+    }
+
+    /**
+     * Get the class adviser assignment for this teacher
+     */
+    public function classAdviserAssignment()
+    {
+        return $this->facultyAssignments()
+                    ->where('assignment_type', 'class_adviser')
+                    ->where('status', 'active')
+                    ->first();
+    }
 }

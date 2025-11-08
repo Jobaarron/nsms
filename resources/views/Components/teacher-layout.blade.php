@@ -64,17 +64,39 @@
             </a>
           </li>
 
-          <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('teacher.observationreport*') ? 'active' : '' }}" href="{{ route('teacher.observationreport') }}">
-              <i class="ri-file-list-3-line me-2"></i>Observation Report
-            </a>
-          </li>
-          
-          <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('teacher.advisory') ? 'active' : '' }}" href="{{ route('teacher.advisory') }}">
-              <i class="ri-user-star-line me-2"></i>Advisory
-            </a>
-          </li>
+          @php
+            $currentUser = auth()->user();
+            $currentTeacher = $currentUser && $currentUser->teacher ? $currentUser->teacher : null;
+            $isClassAdviser = $currentTeacher ? $currentTeacher->isClassAdviser() : false;
+          @endphp
+
+          @if($isClassAdviser)
+            <li class="nav-item mb-2">
+              <a class="nav-link {{ request()->routeIs('teacher.observationreport*') ? 'active' : '' }}" href="{{ route('teacher.observationreport') }}">
+                <i class="ri-file-list-3-line me-2"></i>Observation Report
+              </a>
+            </li>
+            
+            <li class="nav-item mb-2">
+              <a class="nav-link {{ request()->routeIs('teacher.advisory') ? 'active' : '' }}" href="{{ route('teacher.advisory') }}">
+                <i class="ri-user-star-line me-2"></i>Advisory
+              </a>
+            </li>
+          @else
+            <li class="nav-item mb-2">
+              <span class="nav-link disabled" title="Only available for class advisers">
+                <i class="ri-file-list-3-line me-2"></i>Observation Report
+                <i class="ri-lock-line ms-auto text-muted"></i>
+              </span>
+            </li>
+            
+            <li class="nav-item mb-2">
+              <span class="nav-link disabled" title="Only available for class advisers">
+                <i class="ri-user-star-line me-2"></i>Advisory
+                <i class="ri-lock-line ms-auto text-muted"></i>
+              </span>
+            </li>
+          @endif
           
           
           <li class="nav-item mb-2">

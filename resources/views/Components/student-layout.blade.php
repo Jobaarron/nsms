@@ -31,6 +31,7 @@
   <!-- Student JavaScript - Load in HEAD for onclick handlers -->
   @vite('resources/js/student-grades.js')
   @vite(['resources/css/index_student.css'])
+  @vite('resources/js/student-enrollment.js')
 
   <style>
     .nav-link.disabled {

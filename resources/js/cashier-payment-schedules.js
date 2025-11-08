@@ -156,19 +156,9 @@ function createPaymentRow(payment) {
             </td>
             <td>${statusBadge}</td>
             <td>
-                <div class="btn-group btn-group-sm">
-                    <button class="btn btn-outline-primary" onclick="viewPaymentScheduleDetails('${studentId}', '${payment.payment_method}')" title="View Schedule">
-                        <i class="ri-eye-line"></i>
-                    </button>
-                    ${payment.confirmation_status === 'pending' ? `
-                        <button class="btn btn-outline-success" onclick="approvePaymentSchedule('${studentId}', '${payment.payment_method}')" title="Approve Schedule">
-                            <i class="ri-check-line"></i>
-                        </button>
-                        <button class="btn btn-outline-danger" onclick="rejectPaymentSchedule('${studentId}', '${payment.payment_method}')" title="Reject Schedule">
-                            <i class="ri-close-line"></i>
-                        </button>
-                    ` : ''}
-                </div>
+                <button class="btn btn-outline-primary btn-sm" onclick="viewPaymentScheduleDetails('${studentId}', '${payment.payment_method}')" title="View Schedule">
+                    <i class="ri-eye-line"></i> View Details
+                </button>
             </td>
         </tr>
     `;
@@ -280,6 +270,11 @@ function applyFilters() {
 function updateBadgeCounts(filters) {
     const pendingBadge = document.getElementById('pending-count');
     const dueBadge = document.getElementById('due-count');
+    
+    // Safety check - elements might not exist on all pages
+    if (!pendingBadge || !dueBadge) {
+        return;
+    }
     
     if (filters.due_status === 'due') {
         pendingBadge.style.display = 'none';
@@ -417,7 +412,7 @@ function processIndividualPayment(paymentId, action) {
                 loadPaymentSchedules();
                 loadPaymentStatistics();
             } else {
-                showAlert(data.message || `Failed to reject payment.`, 'danger');
+                showAlert(data.message || `Failed to process payment.`, 'danger');
             }
         })
         .catch(error => {
@@ -437,9 +432,8 @@ function updatePaymentRowStatus(paymentId, status) {
         if (statusCell) {
             if (status === 'confirmed') {
                 statusCell.innerHTML = '<span class="badge bg-success">Paid</span>';
-            } else if (status === 'rejected') {
-                statusCell.innerHTML = '<span class="badge bg-danger">Rejected</span>';
             }
+            // Rejected status removed - payments managed by due dates
         }
         
         if (actionCell && status !== 'pending') {
@@ -653,6 +647,9 @@ window.displayPaymentScheduleModal = function(schedule) {
                                 <h6>Student Information</h6>
                                 <p><strong>Name:</strong> ${schedule.student.first_name} ${schedule.student.last_name}</p>
                                 <p><strong>Student ID:</strong> ${schedule.student.student_id}</p>
+                                <p><strong>Grade Level:</strong> ${schedule.student.grade_level}</p>
+                                ${schedule.student.strand ? `<p><strong>Strand:</strong> ${schedule.student.strand}</p>` : ''}
+                                ${schedule.student.strand === 'TVL' && schedule.student.track ? `<p><strong>Track:</strong> ${schedule.student.track}</p>` : ''}
                                 <p><strong>Email:</strong> ${schedule.student.email}</p>
                             </div>
                             <div class="col-md-6">
@@ -693,15 +690,10 @@ window.displayPaymentScheduleModal = function(schedule) {
                                                 <td class="payment-actions">
                                                     ${(payment.confirmation_status === 'pending' || !payment.confirmation_status) ? `
                                                         ${index === 0 || (schedule.payments[index - 1] && schedule.payments[index - 1].confirmation_status === 'confirmed') ? `
-                                                            <button type="button" class="btn btn-success btn-sm me-1" 
+                                                            <button type="button" class="btn btn-success btn-sm" 
                                                                 onclick="processIndividualPayment(${payment.id}, 'approve')" 
                                                                 title="Approve this payment">
-                                                                <i class="ri-check-line"></i>
-                                                            </button>
-                                                            <button type="button" class="btn btn-danger btn-sm" 
-                                                                onclick="processIndividualPayment(${payment.id}, 'reject')" 
-                                                                title="Reject this payment">
-                                                                <i class="ri-close-line"></i>
+                                                                <i class="ri-check-line"></i> Approve
                                                             </button>
                                                         ` : `
                                                             <span class="text-muted small">Pay previous first</span>

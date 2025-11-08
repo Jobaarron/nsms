@@ -53,7 +53,7 @@ class Payment extends Model
      */
     public function cashier()
     {
-        return $this->belongsTo(User::class, 'processed_by');
+        return $this->belongsTo(Cashier::class, 'processed_by');
     }
 
     /**

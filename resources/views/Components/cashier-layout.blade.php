@@ -27,6 +27,7 @@
   @vite(['resources/js/app.js'])
   @vite(['resources/css/index_cashier.css'])
   @vite(['resources/js/cashier-dashboard.js'])
+  @vite(['resources/js/cashier-payment-archives.js'])
   @stack('scripts')
   @stack('styles')
 
