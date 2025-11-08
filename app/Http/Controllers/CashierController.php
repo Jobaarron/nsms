@@ -527,15 +527,42 @@ class CashierController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->search;
+            
+            // Search by transaction ID and related models
             $query->where(function ($q) use ($search) {
-                $q->where('transaction_id', 'like', "%{$search}%")
-                  ->orWhereHas('payable', function ($subQ) use ($search) {
-                      $subQ->where('first_name', 'like', "%{$search}%")
-                           ->orWhere('last_name', 'like', "%{$search}%")
-                           ->orWhere('student_id', 'like', "%{$search}%")
-                           ->orWhere('application_id', 'like', "%{$search}%");
-                  });
+                $q->where('transaction_id', 'like', "%{$search}%");
             });
+            
+            // Search in Student payments
+            $studentPaymentIds = \DB::table('payments')
+                ->join('students', 'payments.payable_id', '=', 'students.id')
+                ->where('payments.payable_type', 'App\\Models\\Student')
+                ->where(function ($q) use ($search) {
+                    $q->where('students.first_name', 'like', "%{$search}%")
+                      ->orWhere('students.last_name', 'like', "%{$search}%")
+                      ->orWhere('students.student_id', 'like', "%{$search}%");
+                })
+                ->pluck('payments.id')
+                ->toArray();
+                
+            // Search in Enrollee payments
+            $enrolleePaymentIds = \DB::table('payments')
+                ->join('enrollees', 'payments.payable_id', '=', 'enrollees.id')
+                ->where('payments.payable_type', 'App\\Models\\Enrollee')
+                ->where(function ($q) use ($search) {
+                    $q->where('enrollees.first_name', 'like', "%{$search}%")
+                      ->orWhere('enrollees.last_name', 'like', "%{$search}%")
+                      ->orWhere('enrollees.student_id', 'like', "%{$search}%");
+                })
+                ->pluck('payments.id')
+                ->toArray();
+            
+            // Combine results
+            $allMatchingIds = array_merge($studentPaymentIds, $enrolleePaymentIds);
+            
+            if (!empty($allMatchingIds)) {
+                $query->orWhereIn('id', $allMatchingIds);
+            }
         }
 
         // Get confirmed and completed payments

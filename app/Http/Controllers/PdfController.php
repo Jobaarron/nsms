@@ -723,7 +723,7 @@ class PdfController extends Controller
         // Find payment by transaction_id
         $payment = \App\Models\Payment::where('transaction_id', $transactionId)->first();
         if (!$payment) {
-            abort(404, 'Payment not found.');
+            abort(404, "Payment with transaction ID '{$transactionId}' not found. Please verify the transaction ID is correct.");
         }
 
         // Get Enrollee and Student
@@ -818,7 +818,7 @@ class PdfController extends Controller
         // Find payment by transaction_id
         $payment = \App\Models\Payment::where('transaction_id', $transactionId)->first();
         if (!$payment) {
-            abort(404, 'Payment not found.');
+            abort(404, "Payment with transaction ID '{$transactionId}' not found. Please verify the transaction ID is correct.");
         }
 
         // Get related models
