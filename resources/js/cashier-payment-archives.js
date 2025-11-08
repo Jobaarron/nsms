@@ -1,4 +1,5 @@
  let currentPaymentId = null;
+ let currentTransactionId = null;
             let currentTab = 'all';
 
             document.addEventListener('DOMContentLoaded', function() {
@@ -27,9 +28,15 @@
                 const filters = collectFilters();
                 filters.type = type;
                 
-                const endpoint = type === 'all' ? '/cashier/api/payment-archives' : 
-                               type === 'completed' ? '/cashier/api/completed-payments' : 
-                               '/cashier/api/payment-history';
+                // All endpoints use the same payment-archives API with different filters
+                let endpoint = '/cashier/api/payment-archives';
+                
+                // Add status filter based on tab
+                if (type === 'completed') {
+                    filters.status = 'confirmed';
+                } else if (type === 'history') {
+                    // History shows all payments, no additional filter needed
+                }
                 
                 const params = new URLSearchParams(filters);
                 
@@ -122,9 +129,15 @@
                         </td>
                         ${type === 'completed' ? `
                             <td>
-                                ${payment.cashier ? `
+                                ${payment.cashier && payment.cashier.full_name ? `
                                     <div class="fw-semibold">${payment.cashier.full_name}</div>
-                                    <small class="text-muted">${payment.cashier.employee_id}</small>
+                                    <small class="text-muted">${payment.cashier.employee_id || 'N/A'}</small>
+                                ` : payment.cashier && (payment.cashier.first_name || payment.cashier.last_name) ? `
+                                    <div class="fw-semibold">${(payment.cashier.first_name || '') + ' ' + (payment.cashier.last_name || '')}</div>
+                                    <small class="text-muted">${payment.cashier.employee_id || 'N/A'}</small>
+                                ` : payment.processed_by ? `
+                                    <div class="fw-semibold">Cashier</div>
+                                    <small class="text-muted">ID: ${payment.processed_by}</small>
                                 ` : '<span class="text-muted">System</span>'}
                             </td>
                         ` : `<td>${statusBadge}</td>`}
@@ -134,7 +147,7 @@
                                     <i class="ri-eye-line"></i>
                                 </button>
                                 ${payment.confirmation_status === 'confirmed' ? `
-                                    <button class="btn btn-outline-success" onclick="printReceipt(${payment.id})" title="Print Receipt">
+                                    <button class="btn btn-outline-success" onclick="printReceipt('${payment.transaction_id}')" title="Print Receipt">
                                         <i class="ri-printer-line"></i>
                                     </button>
                                 ` : ''}
@@ -220,6 +233,7 @@
                         if (data.success) {
                             displayPaymentDetails(data.payment);
                             currentPaymentId = paymentId;
+                            currentTransactionId = data.payment.transaction_id;
                             new bootstrap.Modal(document.getElementById('paymentDetailsModal')).show();
                         }
                     })
@@ -256,7 +270,12 @@
                             ${payment.payable && payment.payable.strand ? `<p><strong>Strand:</strong> ${payment.payable.strand}</p>` : ''}
                             ${payment.payable && payment.payable.track ? `<p><strong>Track:</strong> ${payment.payable.track}</p>` : ''}
                             <p><strong>Fee Type:</strong> ${payment.fee ? payment.fee.name : 'N/A'}</p>
-                            ${payment.cashier ? `<p><strong>Processed By:</strong> ${payment.cashier.full_name} (${payment.cashier.employee_id})</p>` : ''}
+                            ${payment.cashier && payment.cashier.full_name ? 
+                                `<p><strong>Processed By:</strong> ${payment.cashier.full_name} (${payment.cashier.employee_id || 'N/A'})</p>` : 
+                                payment.cashier && (payment.cashier.first_name || payment.cashier.last_name) ? 
+                                `<p><strong>Processed By:</strong> ${(payment.cashier.first_name || '') + ' ' + (payment.cashier.last_name || '')} (${payment.cashier.employee_id || 'N/A'})</p>` :
+                                payment.processed_by ? 
+                                `<p><strong>Processed By:</strong> Cashier (ID: ${payment.processed_by})</p>` : ''}
                         </div>
                     </div>
                     ${payment.cashier_notes ? `<div class="mt-3"><h6>Cashier Notes</h6><p class="bg-light p-3 rounded">${payment.cashier_notes}</p></div>` : ''}
@@ -270,14 +289,110 @@
             }
 
             function printReceiptFromModal() {
-                if (currentPaymentId) {
-                    printReceipt(currentPaymentId);
+                if (currentTransactionId) {
+                    printReceipt(currentTransactionId);
+                } else if (currentPaymentId) {
+                    // Fallback: if no transaction ID, show error
+                    alert('Cannot print receipt: Missing transaction ID. Please refresh and try again.');
                 }
             }
 
             function exportArchives() {
                 console.log('Export payment archives');
-                alert('Export functionality will be implemented');
+                
+                // Show loading state
+                const exportBtn = document.querySelector('button[onclick="exportArchives()"]');
+                const originalText = exportBtn.innerHTML;
+                exportBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Exporting...';
+                exportBtn.disabled = true;
+                
+                // Get current filters
+                const filters = {
+                    payment_method: document.querySelector('select[name="payment_method"]')?.value || '',
+                    status: document.querySelector('select[name="status"]')?.value || '',
+                    date_range: document.querySelector('select[name="date_range"]')?.value || '',
+                    search: document.querySelector('#payment-search')?.value || ''
+                };
+                
+                // Create URL with filters
+                const params = new URLSearchParams(filters);
+                
+                // Fetch all data for export
+                fetch(`/cashier/api/payment-archives?${params}&export=true&limit=all`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.payments && data.payments.data) {
+                        exportToCSV(data.payments.data);
+                    } else {
+                        showAlert('No data available for export', 'warning');
+                    }
+                })
+                .catch(error => {
+                    console.error('Export error:', error);
+                    showAlert('Failed to export payment archives', 'danger');
+                })
+                .finally(() => {
+                    // Restore button state
+                    exportBtn.innerHTML = originalText;
+                    exportBtn.disabled = false;
+                });
+            }
+            
+            function exportToCSV(payments) {
+                const headers = [
+                    'Transaction ID',
+                    'Student ID', 
+                    'Student Name',
+                    'Amount',
+                    'Payment Method',
+                    'Period',
+                    'Status',
+                    'Paid Date',
+                    'Processed By',
+                    'Notes'
+                ];
+                
+                const csvContent = [
+                    headers.join(','),
+                    ...payments.map(payment => {
+                        const student = payment.payable;
+                        const row = [
+                            `"${payment.transaction_id}"`,
+                            `"${student?.student_id || 'N/A'}"`,
+                            `"${student?.first_name || ''} ${student?.last_name || ''}"`.trim(),
+                            `"${payment.amount}"`,
+                            `"${payment.payment_method.charAt(0).toUpperCase() + payment.payment_method.slice(1)}"`,
+                            `"${payment.period_name || 'N/A'}"`,
+                            `"${payment.confirmation_status.charAt(0).toUpperCase() + payment.confirmation_status.slice(1)}"`,
+                            `"${payment.paid_at ? new Date(payment.paid_at).toLocaleDateString() : 'N/A'}"`,
+                            `"${payment.cashier && payment.cashier.full_name ? payment.cashier.full_name : 
+                                payment.cashier && (payment.cashier.first_name || payment.cashier.last_name) ? 
+                                (payment.cashier.first_name || '') + ' ' + (payment.cashier.last_name || '') : 
+                                payment.processed_by ? 'Cashier ID: ' + payment.processed_by : 'System'}"`,
+                            `"${(payment.cashier_notes || '').replace(/"/g, '""')}"`
+                        ];
+                        return row.join(',');
+                    })
+                ].join('\n');
+                
+                // Create and download file
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', `payment_archives_${new Date().toISOString().split('T')[0]}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showAlert('Payment archives exported successfully', 'success');
             }
 
             function showAlert(message, type = 'info') {
@@ -309,3 +424,9 @@
                     }
                 }, 5000);
             }
+
+            // Export functions to global scope
+            window.exportArchives = exportArchives;
+            window.viewPaymentDetails = viewPaymentDetails;
+            window.printReceipt = printReceipt;
+            window.printReceiptFromModal = printReceiptFromModal;

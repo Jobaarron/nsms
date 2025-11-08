@@ -367,11 +367,22 @@ function processIndividualPayment(paymentId, action) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Show PDF modal after approval
-                if (typeof showPdfModal === 'function') {
-                    showPdfModal(data.transaction_id || paymentId);
-                } else if (window.showPdfModal) {
-                    window.showPdfModal(data.transaction_id || paymentId);
+                // Debug: Log the response data
+                console.log('processIndividualPayment response:', data);
+                
+                // Show PDF modal after approval - ensure we use transaction_id from response
+                const transactionId = data.transaction_id || (data.payment && data.payment.transaction_id);
+                console.log('Extracted transaction ID:', transactionId);
+                
+                if (transactionId) {
+                    if (typeof showPdfModal === 'function') {
+                        showPdfModal(transactionId);
+                    } else if (window.showPdfModal) {
+                        window.showPdfModal(transactionId);
+                    }
+                } else {
+                    console.error('No transaction_id returned from server:', data);
+                    showAlert('Payment approved but receipt cannot be generated. Missing transaction ID.', 'warning');
                 }
                 showAlert(data.message, 'success');
                 updatePaymentRowStatus(paymentId, data.payment.status);
@@ -834,7 +845,31 @@ function showPdfModal(paymentId) {
     var existingModal = document.getElementById('pdfReceiptModal');
     if (existingModal) existingModal.remove();
 
-    let pdfUrl = `/cashier/api/pdf/cashier-receipt?transaction_id=${paymentId}`;
+    // Debug: Log the received paymentId
+    console.log('showPdfModal called with paymentId:', paymentId, 'Type:', typeof paymentId);
+
+    // Validate transaction ID format - ensure it's a proper transaction ID
+    if (!paymentId || paymentId === 'undefined' || paymentId === 'null') {
+        console.error('Invalid payment ID:', paymentId);
+        showAlert('Invalid transaction ID. Cannot generate receipt.', 'danger');
+        return;
+    }
+
+    // If paymentId is just a number, we need to fetch the actual transaction_id
+    if (/^\d+$/.test(paymentId)) {
+        console.error('Payment ID appears to be a database ID instead of transaction_id:', paymentId);
+        showAlert('Invalid transaction ID format. Please use the full transaction ID.', 'danger');
+        return;
+    }
+
+    // Check for invalid formats like "28:1"
+    if (paymentId.includes(':')) {
+        console.error('Invalid transaction ID format (contains colon):', paymentId);
+        showAlert('Invalid transaction ID format. Expected format: TXN-NS-XXXXX-XXXXXXXXX-XXX', 'danger');
+        return;
+    }
+
+    let pdfUrl = `/pdf/receipt?transaction_id=${encodeURIComponent(paymentId)}`;
     const modalHtml = `
         <div class="modal fade" id="pdfReceiptModal" tabindex="-1">
             <div class="modal-dialog modal-xl">
@@ -863,13 +898,39 @@ function showPdfModal(paymentId) {
     const errorDiv = document.getElementById('pdf-error');
     if (iframe) {
         iframe.onload = function() {
-            iframe.style.display = 'block';
-            if (errorDiv) errorDiv.style.display = 'none';
+            // Check if the iframe loaded successfully by checking its content
+            try {
+                const doc = iframe.contentDocument || iframe.contentWindow.document;
+                if (doc && doc.title.includes('404') || doc.body.innerText.includes('404')) {
+                    throw new Error('PDF not found');
+                }
+                iframe.style.display = 'block';
+                if (errorDiv) errorDiv.style.display = 'none';
+            } catch (e) {
+                iframe.style.display = 'none';
+                if (errorDiv) {
+                    errorDiv.innerHTML = `
+                        <strong>Receipt Not Found (404)</strong><br>
+                        <small>Transaction ID: <code>${paymentId}</code></small><br>
+                        <small>This usually means:</small>
+                        <ul class="mb-0 mt-1">
+                            <li>The transaction ID format is incorrect</li>
+                            <li>The payment record doesn't exist in the database</li>
+                            <li>The PDF generation failed</li>
+                        </ul>
+                    `;
+                    errorDiv.style.display = 'block';
+                }
+            }
         };
         iframe.onerror = function() {
             iframe.style.display = 'none';
             if (errorDiv) {
-                errorDiv.textContent = '404 PDF Not Found. Please check if the payment is approved and the transaction ID is valid.';
+                errorDiv.innerHTML = `
+                    <strong>Receipt Not Found (404)</strong><br>
+                    <small>Transaction ID: <code>${paymentId}</code></small><br>
+                    <small>Please verify the transaction ID format and try again.</small>
+                `;
                 errorDiv.style.display = 'block';
             }
         };
@@ -950,19 +1011,21 @@ function rejectPayment(paymentId) {
 }
 
 function printReceipt(paymentId) {
-    // Open cashier receipt PDF in a new tab using transaction_id
-    if (!paymentId) {
+    // Open receipt PDF in a new tab using transaction_id
+    if (!paymentId || paymentId === 'undefined' || paymentId === 'null') {
         alert('Invalid transaction ID');
         return;
     }
-    // Try /cashier/api/pdf/cashier-receipt, fallback to /pdf/cashier-receipt if 404
-    const url = `/cashier/api/pdf/cashier-receipt?transaction_id=${paymentId}`;
-    const win = window.open(url, '_blank');
-    if (win) {
-        win.onerror = function() {
-            win.location.href = `/pdf/cashier-receipt?transaction_id=${paymentId}`;
-        };
+    
+    // If paymentId is just a number, show error
+    if (/^\d+$/.test(paymentId)) {
+        alert('Invalid transaction ID format. Please use the full transaction ID (TXN-NS-...).');
+        return;
     }
+    
+    // Use the public receipt endpoint
+    const url = `/pdf/receipt?transaction_id=${encodeURIComponent(paymentId)}`;
+    window.open(url, '_blank');
 }
 
 // Modal-based confirmation functions

@@ -17,6 +17,11 @@ class Payment extends Model
         'payable_id',
         'payable_type',
         'amount',
+        'entrance_fee',
+        'miscellaneous_fee',
+        'tuition_fee',
+        'others_fee',
+        'total_fee',
         'status',
         'payment_method', // Now stores payment schedule: full, quarterly, monthly
         'reference_number',
@@ -63,6 +68,12 @@ class Payment extends Model
         'paid_at' => 'datetime',
         'confirmed_at' => 'datetime',
         'scheduled_date' => 'date',
+        'amount' => 'decimal:2',
+        'entrance_fee' => 'decimal:2',
+        'miscellaneous_fee' => 'decimal:2',
+        'tuition_fee' => 'decimal:2',
+        'others_fee' => 'decimal:2',
+        'total_fee' => 'decimal:2',
         'amount_received' => 'decimal:2',
     ];
 
