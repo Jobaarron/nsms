@@ -514,15 +514,71 @@ class CashierController extends Controller
      */
     public function getPaymentArchivesData(Request $request)
     {
+        try {
+            $query = Payment::with(['payable', 'fee']);
+
+            // Apply filters
+            if ($request->filled('payment_method')) {
+                $query->where('payment_method', $request->payment_method);
+            }
+
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->where(function ($q) use ($search) {
+                    $q->where('transaction_id', 'like', "%{$search}%")
+                      ->orWhere('reference_number', 'like', "%{$search}%")
+                      ->orWhereHas('payable', function ($subQ) use ($search) {
+                          $subQ->where('first_name', 'like', "%{$search}%")
+                               ->orWhere('last_name', 'like', "%{$search}%")
+                               ->orWhere('student_id', 'like', "%{$search}%")
+                               ->orWhere('application_id', 'like', "%{$search}%");
+                      });
+                });
+            }
+
+            // Get confirmed and completed payments
+            $query->whereIn('confirmation_status', ['confirmed', 'completed']);
+
+            $payments = $query->orderBy('confirmed_at', 'desc')->paginate(20);
+
+            // Add cashier information manually to avoid relationship issues
+            foreach ($payments as $payment) {
+                if ($payment->processed_by) {
+                    $cashier = Cashier::find($payment->processed_by);
+                    $payment->cashier = $cashier;
+                }
+            }
+
+            // Get statistics
+            $statistics = [
+                'confirmed_payments' => Payment::where('confirmation_status', 'confirmed')->count(),
+                'completed_payments' => Payment::where('confirmation_status', 'completed')->count(),
+            ];
+
+            return response()->json([
+                'success' => true,
+                'payments' => $payments,
+                'statistics' => $statistics
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Payment Archives Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error loading payment archives: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get completed payments data for AJAX requests.
+     */
+    public function getCompletedPaymentsData(Request $request)
+    {
         $query = Payment::with(['payable', 'fee', 'cashier']);
 
         // Apply filters
         if ($request->filled('payment_method')) {
             $query->where('payment_method', $request->payment_method);
-        }
-
-        if ($request->filled('status')) {
-            $query->where('confirmation_status', $request->status);
         }
 
         if ($request->filled('search')) {
@@ -538,21 +594,50 @@ class CashierController extends Controller
             });
         }
 
-        // Get confirmed and completed payments
-        $query->whereIn('confirmation_status', ['confirmed', 'completed']);
+        // Get only completed payments
+        $query->where('confirmation_status', 'completed');
 
         $payments = $query->orderBy('confirmed_at', 'desc')->paginate(20);
 
-        // Get statistics
-        $statistics = [
-            'confirmed_payments' => Payment::where('confirmation_status', 'confirmed')->count(),
-            'completed_payments' => Payment::where('confirmation_status', 'completed')->count(),
-        ];
+        return response()->json([
+            'success' => true,
+            'payments' => $payments
+        ]);
+    }
+
+    /**
+     * Get payment history data for AJAX requests.
+     */
+    public function getPaymentHistoryData(Request $request)
+    {
+        $query = Payment::with(['payable', 'fee', 'cashier']);
+
+        // Apply filters
+        if ($request->filled('payment_method')) {
+            $query->where('payment_method', $request->payment_method);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('transaction_id', 'like', "%{$search}%")
+                  ->orWhereHas('payable', function ($subQ) use ($search) {
+                      $subQ->where('first_name', 'like', "%{$search}%")
+                           ->orWhere('last_name', 'like', "%{$search}%")
+                           ->orWhere('student_id', 'like', "%{$search}%")
+                           ->orWhere('application_id', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        // Get confirmed payments (payment history)
+        $query->where('confirmation_status', 'confirmed');
+
+        $payments = $query->orderBy('confirmed_at', 'desc')->paginate(20);
 
         return response()->json([
             'success' => true,
-            'payments' => $payments,
-            'statistics' => $statistics
+            'payments' => $payments
         ]);
     }
 

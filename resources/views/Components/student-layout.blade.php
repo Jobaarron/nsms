@@ -25,31 +25,11 @@
     />
 
 
-  <!-- App CSS (includes Bootstrap 5 via Vite) -->
-  @vite('resources/sass/app.scss')
-  
-  <!-- Student JavaScript - Load in HEAD for onclick handlers -->
-  @vite('resources/js/student-grades.js')
+  @vite(['resources/sass/app.scss','resources/js/app.js'])
+  @vite(['resources/js/student-grades.js'])
   @vite(['resources/css/index_student.css'])
-  @vite('resources/js/student-enrollment.js')
-
-  <style>
-    .nav-link.disabled {
-      cursor: not-allowed !important;
-      opacity: 0.6;
-      pointer-events: none;
-    }
-    
-    .nav-link.disabled:hover {
-      background-color: transparent !important;
-      color: #6c757d !important;
-    }
-    
-    .nav-link .ri-lock-line {
-      font-size: 0.875rem;
-      opacity: 0.7;
-    }
-  </style>
+  @vite(['resources/js/student-enrollment.js'])
+  @vite(['resources/js/student-enrollment.js'])
 </head>
 <body>
   <div class="container-fluid">

@@ -121,45 +121,6 @@
     </div>
 
 
-    <!-- Quick Actions -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white border-0 pb-0">
-                    <h5 class="card-title mb-0">
-                        <i class="ri-flashlight-line me-2"></i>Quick Actions
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-3">
-                            <a href="{{ route('cashier.payments') }}" class="btn btn-warning w-100 text-white">
-                                <i class="ri-time-line me-2"></i>All Payments
-                                <div class="small">{{ $pendingPayments }} pending</div>
-                            </a>
-                        </div>
-                        <div class="col-md-3">
-                            <a href="{{ route('cashier.payments') }}?due_status=due" class="btn btn-danger w-100">
-                                <i class="ri-alarm-warning-line me-2"></i>Due Payments
-                                <div class="small">{{ $duePayments }} overdue</div>
-                            </a>
-                        </div>
-                        <div class="col-md-3">
-                            <a href="{{ route('cashier.payment-archives') }}" class="btn btn-outline-primary w-100">
-                                <i class="ri-archive-line me-2"></i>Payment Archives
-                            </a>
-                        </div>
-                        <div class="col-md-3">
-                            <a href="{{ route('cashier.fees') }}" class="btn btn-outline-info w-100">
-                                <i class="ri-money-dollar-circle-line me-2"></i>Fee Management
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Payment Analytics Dashboard -->
     <div class="row mb-3">
         <!-- Payment Method Distribution -->
@@ -247,9 +208,6 @@
                         <h5 class="card-title mb-0">
                             <i class="ri-table-line me-2"></i>Payment Methods Breakdown
                         </h5>
-                        <button class="btn btn-outline-success btn-sm" onclick="exportPaymentBreakdown()">
-                            <i class="ri-download-line me-2"></i>Export
-                        </button>
                     </div>
                 </div>
                 <div class="card-body">

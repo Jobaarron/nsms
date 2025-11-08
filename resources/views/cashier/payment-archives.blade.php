@@ -2,7 +2,7 @@
     @push('styles')
         @vite('resources/css/index_student.css')
     @endpush
-    @vite(['resources/js/cashier-payment-schedules.js'])
+    @vite(['resources/js/cashier-payment-archives.js'])
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <!-- Page Header -->
@@ -20,33 +20,19 @@
         </div>
     </div>
 
-    <!-- Filter Tabs -->
+    <!-- Unified Payment Archives -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white border-0 pb-0">
-                    <ul class="nav nav-tabs card-header-tabs" id="archiveTabs" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all-payments" type="button" role="tab">
-                                <i class="ri-file-list-line me-2"></i>All Payments
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="completed-tab" data-bs-toggle="tab" data-bs-target="#completed-payments" type="button" role="tab">
-                                <i class="ri-check-double-line me-2"></i>Completed
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#payment-history" type="button" role="tab">
-                                <i class="ri-history-line me-2"></i>History
-                            </button>
-                        </li>
-                    </ul>
+                <div class="card-header bg-white border-0">
+                    <h5 class="card-title mb-0">
+                        <i class="ri-archive-line me-2"></i>All Payment Archives
+                    </h5>
                 </div>
                 <div class="card-body">
                     <!-- Filters Row -->
                     <div class="row mb-3">
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <select class="form-select payment-filter" name="payment_method">
                                 <option value="">All Payment Methods</option>
                                 <option value="full">Full Payment</option>
@@ -54,97 +40,36 @@
                                 <option value="monthly">Monthly</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
-                            <select class="form-select payment-filter" name="status">
-                                <option value="">All Status</option>
-                                <option value="confirmed">Confirmed</option>
-                                <option value="completed">Completed</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <input type="text" class="form-control" id="payment-search" placeholder="Search by Student ID, Name, Transaction ID...">
-                        </div>
-                        <div class="col-md-2">
-                            <button class="btn btn-outline-success w-100" onclick="exportArchives()">
-                                <i class="ri-download-line me-2"></i>Export
-                            </button>
                         </div>
                     </div>
 
-                    <!-- Tab Content -->
-                    <div class="tab-content" id="archiveTabContent">
-                        <!-- All Payments Tab -->
-                        <div class="tab-pane fade show active" id="all-payments" role="tabpanel">
-                            <div class="table-responsive">
-                                <table class="table table-hover" id="all-payments-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Priority</th>
-                                            <th>Transaction ID</th>
-                                            <th>Student Info</th>
-                                            <th>Amount</th>
-                                            <th>Date</th>
-                                            <th>Status</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td colspan="7" class="text-center py-4">
-                                                <div class="spinner-border text-primary" role="status">
-                                                    <span class="visually-hidden">Loading...</span>
-                                                </div>
-                                                <p class="text-muted mt-2">Loading payment archives...</p>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        <!-- Completed Payments Tab -->
-                        <div class="tab-pane fade" id="completed-payments" role="tabpanel">
-                            <div class="table-responsive">
-                                <table class="table table-hover" id="completed-payments-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Priority</th>
-                                            <th>Transaction ID</th>
-                                            <th>Student Info</th>
-                                            <th>Amount</th>
-                                            <th>Confirmed Date</th>
-                                            <th>Processed By</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <!-- Content loaded via JavaScript -->
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        <!-- Payment History Tab -->
-                        <div class="tab-pane fade" id="payment-history" role="tabpanel">
-                            <div class="table-responsive">
-                                <table class="table table-hover" id="payment-history-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Priority</th>
-                                            <th>Transaction ID</th>
-                                            <th>Student Info</th>
-                                            <th>Amount</th>
-                                            <th>Confirmed Date</th>
-                                            <th>Status</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <!-- Content loaded via JavaScript -->
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                    <!-- Unified Payment Table -->
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="payment-archives-table">
+                            <thead>
+                                <tr>
+                                    <th>Priority</th>
+                                    <th>Transaction ID</th>
+                                    <th>Student Info</th>
+                                    <th>Amount</th>
+                                    <th>Date Confirmed</th>
+                                    <th>Processed By</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="7" class="text-center py-4">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                        <p class="text-muted mt-2">Loading payment archives...</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
 
                     <!-- Pagination -->

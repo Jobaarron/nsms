@@ -1,39 +1,20 @@
- let currentPaymentId = null;
-            let currentTab = 'all';
+let currentPaymentId = null;
 
             document.addEventListener('DOMContentLoaded', function() {
                 initializePaymentArchives();
-                setupTabHandlers();
                 setupFiltersAndSearch();
             });
 
             function initializePaymentArchives() {
                 console.log('Payment Archives initialized');
-                loadPaymentData('all');
+                loadPaymentData();
             }
 
-            function setupTabHandlers() {
-                const tabButtons = document.querySelectorAll('#archiveTabs button[data-bs-toggle="tab"]');
-                tabButtons.forEach(button => {
-                    button.addEventListener('shown.bs.tab', function(event) {
-                        const target = event.target.getAttribute('data-bs-target');
-                        currentTab = target.replace('#', '').replace('-payments', '').replace('-', '');
-                        loadPaymentData(currentTab);
-                    });
-                });
-            }
-
-            function loadPaymentData(type) {
+            function loadPaymentData() {
                 const filters = collectFilters();
-                filters.type = type;
-                
-                const endpoint = type === 'all' ? '/cashier/api/payment-archives' : 
-                               type === 'completed' ? '/cashier/api/completed-payments' : 
-                               '/cashier/api/payment-history';
-                
                 const params = new URLSearchParams(filters);
                 
-                fetch(`${endpoint}?${params}`, {
+                fetch(`/cashier/api/payment-archives?${params}`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
@@ -46,7 +27,7 @@
                 .then(data => {
                     if (data.success) {
                         const payments = data.payments && data.payments.data ? data.payments.data : data.payments || [];
-                        updateTable(type, payments);
+                        updateTable(payments);
                         updateStatistics(data.statistics);
                     }
                 })
@@ -73,16 +54,12 @@
                 return filters;
             }
 
-            function updateTable(type, payments) {
-                const tableId = type === 'all' ? 'all-payments-table' : 
-                               type === 'completed' ? 'completed-payments-table' : 
-                               'payment-history-table';
-                
-                const tableBody = document.querySelector(`#${tableId} tbody`);
+            function updateTable(payments) {
+                const tableBody = document.querySelector('#payment-archives-table tbody');
                 if (!tableBody) return;
                 
                 if (payments && payments.length > 0) {
-                    tableBody.innerHTML = payments.map((payment, index) => createPaymentRow(payment, index, type)).join('');
+                    tableBody.innerHTML = payments.map((payment, index) => createPaymentRow(payment, index)).join('');
                 } else {
                     tableBody.innerHTML = `
                         <tr>
@@ -97,10 +74,19 @@
                 }
             }
 
-            function createPaymentRow(payment, index, type) {
+            function createPaymentRow(payment, index) {
                 const student = payment.payable || payment.student;
                 const priorityBadge = getPriorityBadge(index + 1);
-                const statusBadge = getStatusBadge(payment.confirmation_status);
+                
+                // Get cashier name (first_name + last_name)
+                let processedBy = '<span class="text-muted">System</span>';
+                if (payment.cashier) {
+                    const cashierName = `${payment.cashier.first_name || ''} ${payment.cashier.last_name || ''}`.trim();
+                    processedBy = `
+                        <div class="fw-semibold">${cashierName || payment.cashier.full_name || 'Unknown Cashier'}</div>
+                        <small class="text-muted">${payment.cashier.employee_id || 'N/A'}</small>
+                    `;
+                }
                 
                 return `
                     <tr>
@@ -120,14 +106,7 @@
                             <div class="fw-semibold">${formatDate(payment.confirmed_at || payment.created_at)}</div>
                             <small class="text-muted">${formatTime(payment.confirmed_at || payment.created_at)}</small>
                         </td>
-                        ${type === 'completed' ? `
-                            <td>
-                                ${payment.cashier ? `
-                                    <div class="fw-semibold">${payment.cashier.full_name}</div>
-                                    <small class="text-muted">${payment.cashier.employee_id}</small>
-                                ` : '<span class="text-muted">System</span>'}
-                            </td>
-                        ` : `<td>${statusBadge}</td>`}
+                        <td>${processedBy}</td>
                         <td>
                             <div class="btn-group btn-group-sm">
                                 <button class="btn btn-outline-primary" onclick="viewPaymentDetails(${payment.id})" title="View Details">
@@ -146,7 +125,7 @@
 
             function setupFiltersAndSearch() {
                 document.querySelectorAll('.payment-filter').forEach(element => {
-                    element.addEventListener('change', () => loadPaymentData(currentTab));
+                    element.addEventListener('change', () => loadPaymentData());
                 });
                 
                 const searchInput = document.getElementById('payment-search');
@@ -154,7 +133,7 @@
                     let searchTimeout;
                     searchInput.addEventListener('input', function() {
                         clearTimeout(searchTimeout);
-                        searchTimeout = setTimeout(() => loadPaymentData(currentTab), 500);
+                        searchTimeout = setTimeout(() => loadPaymentData(), 500);
                     });
                 }
             }
@@ -214,19 +193,50 @@
             }
 
             function viewPaymentDetails(paymentId) {
-                fetch(`/cashier/payments/${paymentId}/details`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            displayPaymentDetails(data.payment);
-                            currentPaymentId = paymentId;
-                            new bootstrap.Modal(document.getElementById('paymentDetailsModal')).show();
+                fetch(`/cashier/payments/${paymentId}/details`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        displayPaymentDetails(data.payment);
+                        currentPaymentId = paymentId;
+                        const modal = document.getElementById('paymentDetailsModal');
+                        if (modal) {
+                            if (typeof bootstrap !== 'undefined') {
+                                new bootstrap.Modal(modal).show();
+                            } else {
+                                // Fallback for manual modal display
+                                modal.classList.add('show');
+                                modal.style.display = 'block';
+                                modal.setAttribute('aria-modal', 'true');
+                                modal.setAttribute('role', 'dialog');
+                                
+                                // Add backdrop
+                                const backdrop = document.createElement('div');
+                                backdrop.className = 'modal-backdrop fade show';
+                                document.body.appendChild(backdrop);
+                            }
                         }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('Failed to load payment details');
-                    });
+                    } else {
+                        showAlert('Failed to load payment details: ' + (data.message || 'Unknown error'), 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading payment details:', error);
+                    showAlert('Failed to load payment details: ' + error.message, 'danger');
+                });
             }
 
             function displayPaymentDetails(payment) {
@@ -244,7 +254,6 @@
                             <p><strong>Transaction ID:</strong> ${payment.transaction_id}</p>
                             <p><strong>Amount:</strong> ₱${parseFloat(payment.amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</p>
                             <p><strong>Payment Method:</strong> ${getPaymentMethodDisplay(payment.payment_method)}</p>
-                            <p><strong>Reference Number:</strong> ${payment.reference_number || 'N/A'}</p>
                             <p><strong>Date Submitted:</strong> ${formatDate(payment.created_at)}</p>
                             ${payment.confirmed_at ? `<p><strong>Date Confirmed:</strong> ${formatDate(payment.confirmed_at)}</p>` : ''}
                         </div>
@@ -255,8 +264,7 @@
                             ${payment.payable && payment.payable.grade_level ? `<p><strong>Grade Level:</strong> ${payment.payable.grade_level}</p>` : ''}
                             ${payment.payable && payment.payable.strand ? `<p><strong>Strand:</strong> ${payment.payable.strand}</p>` : ''}
                             ${payment.payable && payment.payable.track ? `<p><strong>Track:</strong> ${payment.payable.track}</p>` : ''}
-                            <p><strong>Fee Type:</strong> ${payment.fee ? payment.fee.name : 'N/A'}</p>
-                            ${payment.cashier ? `<p><strong>Processed By:</strong> ${payment.cashier.full_name} (${payment.cashier.employee_id})</p>` : ''}
+                            ${payment.cashier ? `<p><strong>Processed By:</strong> ${payment.cashier.first_name || ''} ${payment.cashier.last_name || ''} (${payment.cashier.employee_id || 'N/A'})</p>` : '<p><strong>Processed By:</strong> System</p>'}
                         </div>
                     </div>
                     ${payment.cashier_notes ? `<div class="mt-3"><h6>Cashier Notes</h6><p class="bg-light p-3 rounded">${payment.cashier_notes}</p></div>` : ''}
@@ -264,21 +272,25 @@
                 `;
             }
 
-            function printReceipt(paymentId) {
+            // Global functions - expose to window object for onclick handlers
+            window.printReceipt = function(paymentId) {
                 console.log('Print receipt for payment ID:', paymentId);
                 alert('Receipt printing functionality will be implemented');
-            }
+            };
 
-            function printReceiptFromModal() {
+            window.printReceiptFromModal = function() {
                 if (currentPaymentId) {
-                    printReceipt(currentPaymentId);
+                    window.printReceipt(currentPaymentId);
                 }
-            }
+            };
 
-            function exportArchives() {
+            window.exportArchives = function() {
                 console.log('Export payment archives');
                 alert('Export functionality will be implemented');
-            }
+            };
+
+            // Make viewPaymentDetails global for onclick handlers
+            window.viewPaymentDetails = viewPaymentDetails;
 
             function showAlert(message, type = 'info') {
                 const alertClass = type === 'danger' ? 'alert-danger' : 
