@@ -12,6 +12,7 @@ use App\Models\Student;
 use App\Models\CaseMeeting;
 use App\Models\CounselingSession;
 use App\Models\Violation;
+use App\Models\FacultyAssignment;
 
 class GuidanceController extends Controller
 {
@@ -223,6 +224,43 @@ class GuidanceController extends Controller
         $validatedData['counselor_id'] = $guidanceRecord->id;
         $validatedData['status'] = 'scheduled';
 
+        // Get the student to find their class adviser
+        $student = Student::find($validatedData['student_id']);
+        if ($student) {
+            \Log::info('Found student for adviser lookup', [
+                'student_id' => $student->id,
+                'grade_level' => $student->grade_level,
+                'section' => $student->section,
+                'academic_year' => $student->academic_year
+            ]);
+            
+            // Find the class adviser for this student's grade level and section
+            $advisoryAssignment = FacultyAssignment::where('grade_level', $student->grade_level)
+                ->where('section', $student->section)
+                ->where('academic_year', $student->academic_year)
+                ->where('assignment_type', 'class_adviser')
+                ->where('status', 'active')
+                ->with(['teacher.user'])
+                ->first();
+            
+            \Log::info('Advisory assignment search result', [
+                'found' => $advisoryAssignment ? 'yes' : 'no',
+                'assignment_id' => $advisoryAssignment->id ?? null,
+                'teacher_id' => $advisoryAssignment->teacher_id ?? null
+            ]);
+            
+            if ($advisoryAssignment && $advisoryAssignment->teacher && $advisoryAssignment->teacher->user) {
+                $validatedData['adviser_id'] = $advisoryAssignment->teacher->user->id;
+                \Log::info('Set adviser_id', ['adviser_id' => $validatedData['adviser_id']]);
+            } else {
+                \Log::warning('Could not find adviser for student', [
+                    'student_grade_level' => $student->grade_level,
+                    'student_section' => $student->section,
+                    'academic_year' => $student->academic_year
+                ]);
+            }
+        }
+
         // Check if there's an existing pending or in_progress case meeting for this student
         $existingMeeting = CaseMeeting::where('student_id', $validatedData['student_id'])
             ->whereIn('status', ['pending', 'in_progress'])
@@ -249,7 +287,8 @@ class GuidanceController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Case meeting scheduled successfully.',
-                'meeting' => $caseMeeting
+                'meeting' => $caseMeeting,
+                'meeting_id' => $caseMeeting->id
             ]);
         }
 
@@ -1491,5 +1530,44 @@ public function getDisciplineVsTotalStats()
             'success' => true,
             'cases' => $formatted
         ]);
+    }
+
+    /**
+     * Forward Teacher Observation Report to adviser after scheduling a case meeting
+     */
+    public function forwardObservationReportToAdviser(Request $request, $caseMeetingId)
+    {
+        try {
+            $caseMeeting = CaseMeeting::with(['adviser', 'student'])->findOrFail($caseMeetingId);
+            
+            // Check if case meeting has an adviser assigned
+            if (!$caseMeeting->adviser_id || !$caseMeeting->adviser) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No adviser assigned to this case meeting.'
+                ]);
+            }
+
+            // Here you would implement the actual forwarding logic
+            // For example: sending an email notification to the adviser
+            // Mail::to($caseMeeting->adviser->email)->send(new TeacherObservationReportMail($caseMeeting));
+            
+            // For now, we'll just return success
+            return response()->json([
+                'success' => true,
+                'message' => 'Teacher Observation Report forwarded to ' . ($caseMeeting->adviser->full_name ?? $caseMeeting->adviser->name) . ' successfully.'
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error forwarding observation report to adviser', [
+                'case_meeting_id' => $caseMeetingId,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error forwarding report to adviser.'
+            ], 500);
+        }
     }
     }

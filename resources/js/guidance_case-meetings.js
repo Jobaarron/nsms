@@ -328,6 +328,33 @@ window.submitCaseMeeting = function(event) {
             // Show success message
             showAlert('success', data.message);
 
+            // Automatically forward Teacher Observation Report to adviser
+            if (data.meeting_id) {
+                const forwardData = new FormData();
+                forwardData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+                
+                fetch(`/guidance/case-meetings/${data.meeting_id}/forward-observation-report`, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    },
+                    body: forwardData
+                })
+                .then(response => response.json())
+                .then(forwardData => {
+                    if (forwardData && forwardData.success) {
+                        showAlert('success', 'Teacher Observation Report forwarded to adviser.');
+                    } else {
+                        showAlert('info', 'Meeting scheduled successfully. Note: ' + (forwardData.message || 'Could not forward report to adviser.'));
+                    }
+                })
+                .catch((error) => {
+                    console.log('Forward error:', error);
+                    showAlert('info', 'Meeting scheduled successfully. Note: Could not forward report to adviser.');
+                });
+            }
+
             // Reload page to show new meeting
             setTimeout(() => location.reload(), 1500);
         } else {

@@ -269,9 +269,35 @@ class TeacherController extends Controller
      */
     public function showObservationReport()
     {
-        // Fetch scheduled case meetings with student and violation info
+        $currentUser = Auth::user();
+        $teacherRecord = Teacher::where('user_id', $currentUser->id)->first();
+        
+        if (!$teacherRecord) {
+            return view('teacher.observationreport', ['reports' => collect()]);
+        }
+        
+        $currentAcademicYear = date('Y') . '-' . (date('Y') + 1);
+        
+        // Get only case meetings for students that this teacher is the class adviser of
         $reports = \App\Models\CaseMeeting::with(['student', 'violation', 'counselor'])
             ->where('status', 'scheduled')
+            ->where(function($query) use ($currentUser, $teacherRecord, $currentAcademicYear) {
+                // Case 1: Direct adviser_id match
+                $query->where('adviser_id', $currentUser->id)
+                      // Case 2: OR check if teacher is class adviser for the student
+                      ->orWhereHas('student', function($studentQuery) use ($teacherRecord, $currentAcademicYear) {
+                          $studentQuery->whereExists(function($advisoryQuery) use ($teacherRecord, $currentAcademicYear) {
+                              $advisoryQuery->select(DB::raw(1))
+                                          ->from('faculty_assignments')
+                                          ->whereColumn('faculty_assignments.grade_level', 'students.grade_level')
+                                          ->whereColumn('faculty_assignments.section', 'students.section')
+                                          ->where('faculty_assignments.teacher_id', $teacherRecord->id)
+                                          ->where('faculty_assignments.academic_year', $currentAcademicYear)
+                                          ->where('faculty_assignments.assignment_type', 'class_adviser')
+                                          ->where('faculty_assignments.status', 'active');
+                          });
+                      });
+            })
             ->orderByDesc('scheduled_date')
             ->get();
 
@@ -294,6 +320,7 @@ class TeacherController extends Controller
     }
         /**
      * Handle teacher reply for observation report (update case meeting)
+     * Only allows the assigned adviser to reply
      */
     public function submitObservationReply(Request $request, $caseMeetingId)
     {
@@ -302,7 +329,36 @@ class TeacherController extends Controller
             'action_plan' => 'required|string',
         ]);
 
-        $caseMeeting = \App\Models\CaseMeeting::findOrFail($caseMeetingId);
+        $caseMeeting = \App\Models\CaseMeeting::with(['student', 'adviser'])->findOrFail($caseMeetingId);
+        $currentUser = Auth::user();
+        
+        // Check if current user is the assigned adviser for this case meeting
+        if (!$caseMeeting->adviser_id || $caseMeeting->adviser_id !== $currentUser->id) {
+            // If no adviser_id is set, check if user is the class adviser for this student
+            if ($caseMeeting->student) {
+                $student = $caseMeeting->student;
+                $teacherRecord = Teacher::where('user_id', $currentUser->id)->first();
+                
+                if (!$teacherRecord) {
+                    abort(403, 'You are not authorized to reply to this case meeting.');
+                }
+                
+                $advisoryAssignment = \App\Models\FacultyAssignment::where('teacher_id', $teacherRecord->id)
+                    ->where('grade_level', $student->grade_level)
+                    ->where('section', $student->section)
+                    ->where('academic_year', $student->academic_year)
+                    ->where('assignment_type', 'class_adviser')
+                    ->where('status', 'active')
+                    ->first();
+                    
+                if (!$advisoryAssignment) {
+                    abort(403, 'You are not the assigned adviser for this student.');
+                }
+            } else {
+                abort(403, 'You are not authorized to reply to this case meeting.');
+            }
+        }
+
         $caseMeeting->teacher_statement = $request->teacher_statement;
         $caseMeeting->action_plan = $request->action_plan;
         $caseMeeting->save();

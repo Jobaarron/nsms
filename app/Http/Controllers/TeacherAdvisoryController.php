@@ -8,6 +8,7 @@ use App\Models\FacultyAssignment;
 use App\Models\Student;
 use App\Models\Subject;
 use App\Models\Grade;
+use App\Models\Payment;
 
 class TeacherAdvisoryController extends Controller
 {
@@ -44,13 +45,12 @@ class TeacherAdvisoryController extends Controller
                 }
             }
             
-            // Get students in advisory class
+            // Get students in advisory class (include quarterly and monthly payers)
             $studentsQuery = Student::where('grade_level', $advisoryAssignment->grade_level)
                                    ->where('section', $advisoryAssignment->section)
                                    ->where('academic_year', $currentAcademicYear)
                                    ->where('is_active', true)
-                                   ->where('enrollment_status', 'enrolled')
-                                   ->where('is_paid', true);
+                                   ->where('enrollment_status', 'enrolled');
             
             // Add strand filter if assignment has strand
             if ($advisoryAssignment->strand) {
@@ -199,12 +199,11 @@ class TeacherAdvisoryController extends Controller
                 ]);
             }
             
-            // Get all students in advisory class
+            // Get all students in advisory class (include quarterly and monthly payers)
             $students = Student::where('grade_level', $advisoryAssignment->grade_level)
                 ->where('section', $advisoryAssignment->section)
                 ->where('academic_year', $currentAcademicYear)
                 ->where('enrollment_status', 'enrolled')
-                ->where('is_paid', true)
                 ->where('is_active', true)
                 ->orderBy('last_name')
                 ->orderBy('first_name')

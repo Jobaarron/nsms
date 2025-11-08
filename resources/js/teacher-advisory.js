@@ -1,6 +1,10 @@
 /**
  * Teacher Advisory JavaScript
  * Handles view grades and print report card functionality
+ * 
+ * Grade-Level Routing:
+ * - Grade 1 & Grade 2: Uses elementary route (/teacher/report-card/elementary/pdf/{student})
+ * - All other grades: Uses regular high school route (/teacher/report-card/pdf/{student})
  */
 
 
@@ -38,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Test individual student grades
         console.log('1. Testing viewStudentGrades...');
-        viewStudentGrades(1);
+        viewStudentGrades(1, 'Grade 11'); // Test with Grade 11
         
         setTimeout(() => {
             console.log('2. Testing viewAllGrades...');
@@ -51,7 +55,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const mockButton = document.createElement('button');
             mockButton.innerHTML = '<i class="ri-printer-line"></i>';
             window.event = { target: mockButton };
-            printReportCard(1);
+            printReportCard(1, 'Grade 1'); // Test with Grade 1 (elementary)
         }, 4000);
         
         setTimeout(() => {
@@ -87,12 +91,55 @@ document.addEventListener('DOMContentLoaded', function() {
         
         console.log('Debug styling applied to buttons');
     };
+
+    /**
+     * Test grade-level routing
+     */
+    window.testGradeRouting = function() {
+        console.log('=== Testing Grade-Level Routing ===');
+        
+        // Test Grade 1 (should use elementary route)
+        console.log('Testing Grade 1:', getReportCardRoute(1, 'Grade 1'));
+        
+        // Test Grade 2 (should use elementary route)
+        console.log('Testing Grade 2:', getReportCardRoute(2, 'Grade 2'));
+        
+        // Test Grade 11 (should use high school route)
+        console.log('Testing Grade 11:', getReportCardRoute(3, 'Grade 11'));
+        
+        // Test Grade 12 (should use high school route)
+        console.log('Testing Grade 12:', getReportCardRoute(4, 'Grade 12'));
+        
+        // Test Grade 7 (should use high school route)
+        console.log('Testing Grade 7:', getReportCardRoute(5, 'Grade 7'));
+        
+        console.log('Grade routing test completed. Check console for results.');
+    };
 });
+
+/**
+ * Determine the correct report card route based on grade level
+ */
+function getReportCardRoute(studentId, gradeLevel) {
+    console.log(`Determining route for Student ID: ${studentId}, Grade Level: ${gradeLevel}`);
+    
+    // Check if it's Grade 1 or Grade 2 for elementary route
+    if (gradeLevel === 'Grade 1' || gradeLevel === 'Grade 2') {
+        const route = `/teacher/report-card/elementary/pdf/${studentId}`;
+        console.log(`Using elementary route: ${route}`);
+        return route;
+    }
+    
+    // Default to high school route for all other grades
+    const route = `/teacher/report-card/pdf/${studentId}`;
+    console.log(`Using high school route: ${route}`);
+    return route;
+}
 
 /**
  * View individual student grades
  */
-window.viewStudentGrades = function(studentId) {
+window.viewStudentGrades = function(studentId, gradeLevel) {
     const modal = new bootstrap.Modal(document.getElementById('viewGradesModal'));
     const modalContent = document.getElementById('gradesModalContent');
 
@@ -108,7 +155,9 @@ window.viewStudentGrades = function(studentId) {
     modal.show();
 
     // Fetch the report card PDF as a blob and embed in modal
-    fetch(`/teacher/report-card/pdf/${studentId}`)
+    // Use the appropriate route based on grade level (fallback to high school route if no grade level)
+    const reportCardUrl = gradeLevel ? getReportCardRoute(studentId, gradeLevel) : `/teacher/report-card/pdf/${studentId}`;
+    fetch(reportCardUrl)
         .then(response => {
             if (!response.ok) throw new Error('Failed to fetch PDF');
             return response.blob();
@@ -178,7 +227,7 @@ window.viewAllGrades = function() {
 /**
  * Print individual report card
  */
-window.printReportCard = function(studentId) {
+window.printReportCard = function(studentId, gradeLevel) {
     // Show loading state
     const button = event.target.closest('button');
     const originalContent = button.innerHTML;
@@ -186,7 +235,8 @@ window.printReportCard = function(studentId) {
     button.disabled = true;
 
     // Open the PDF directly in a new tab for printing (no blob)
-    const url = `/teacher/report-card/pdf/${studentId}`;
+    // Use the appropriate route based on grade level (fallback to high school route if no grade level)
+    const url = gradeLevel ? getReportCardRoute(studentId, gradeLevel) : `/teacher/report-card/pdf/${studentId}`;
     const printWindow = window.open(url, '_blank');
     if (printWindow) {
         printWindow.onload = function() {
@@ -202,20 +252,24 @@ window.printReportCard = function(studentId) {
 
 /**
  * Print all report cards
+ * Improved: robust event handling and endpoint
  */
-window.printAllReportCards = function() {
+window.printAllReportCards = function(event) {
     if (!confirm('This will generate report cards for all advisory students. Continue?')) {
         return;
     }
-    
-    // Show loading state
-    const button = event.target;
-    const originalContent = button.innerHTML;
-    button.innerHTML = '<i class="ri-loader-4-line spin me-1"></i>Generating...';
-    button.disabled = true;
-    
-    // Generate all report cards
-    fetch('/teacher/advisory/all-report-cards')
+    // Support both direct and event-callback usage
+    let button = event && event.target ? event.target : document.activeElement;
+    if (!button || button.tagName !== 'BUTTON') {
+        button = document.querySelector('button[onclick*="printAllReportCards"]');
+    }
+    const originalContent = button ? button.innerHTML : '';
+    if (button) {
+        button.innerHTML = '<i class="ri-loader-4-line spin me-1"></i>Generating...';
+        button.disabled = true;
+    }
+    // Use the correct endpoint for all report cards PDF
+    fetch('/teacher/report-cards/print-all')
         .then(response => {
             if (response.ok) {
                 return response.blob();
@@ -223,20 +277,22 @@ window.printAllReportCards = function() {
             throw new Error('Failed to generate report cards');
         })
         .then(blob => {
-            // Create a URL for the PDF blob and open in new window for printing
             const url = window.URL.createObjectURL(blob);
             const printWindow = window.open(url, '_blank');
-            printWindow.onload = function() {
-                printWindow.print();
-            };
+            if (printWindow) {
+                printWindow.onload = function() {
+                    printWindow.print();
+                };
+            }
         })
         .catch(error => {
             alert('Error generating report cards. Please try again.');
         })
         .finally(() => {
-            // Restore button state
-            button.innerHTML = originalContent;
-            button.disabled = false;
+            if (button) {
+                button.innerHTML = originalContent;
+                button.disabled = false;
+            }
         });
 }
 

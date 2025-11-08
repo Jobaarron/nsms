@@ -46,6 +46,7 @@ class CaseMeeting extends Model
         'student_id',
         'violation_id',
         'counselor_id',
+        'adviser_id',
         'meeting_type',
         'scheduled_date',
         'scheduled_time',
@@ -301,6 +302,15 @@ class CaseMeeting extends Model
     public function getTeacherAttribute()
     {
         return $this->violation ? $this->violation->teacher : null;
+    }
+
+      /**
+     * Get the adviser (class adviser) for this case meeting.
+     * Assumes there is an adviser_id column referencing users table.
+     */
+    public function adviser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'adviser_id');
     }
 
     /**
