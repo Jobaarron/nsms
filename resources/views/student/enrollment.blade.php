@@ -1,311 +1,569 @@
- let currentPaymentId = null;
-            let currentTab = 'all';
+<x-student-layout>
+    @vite(['resources/js/student-enrollment.js'])
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <div class="container-fluid px-4 py-4">
+    @push('styles')
+        @vite('resources/css/index_student.css')
+    @endpush
 
+    <!-- Page Header -->
+    <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="section-title mb-1">Complete Enrollment</h2>
+                        <p class="text-muted mb-0">Finalize your enrollment by selecting subjects and payment method</p>
+                    </div>
+                    <div class="text-end">
+                        <small class="text-muted">Student ID: <strong>{{ $student->student_id }}</strong></small><br>
+                        <small class="text-muted">Grade Level: <strong>{{ $student->grade_level }}</strong></small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if($paymentScheduleStatus)
+            <div class="row mb-4">
+                <div class="col-12">
+                    @if($paymentScheduleStatus->confirmation_status === 'pending')
+                        <div class="alert alert-warning border-0 shadow-sm">
+                            <div class="d-flex align-items-center">
+                                <i class="ri-time-line fs-4 me-3"></i>
+                                <div>
+                                    <h6 class="alert-heading mb-1">Payment Schedule Submitted</h6>
+                                    <p class="mb-0">Your payment schedule is pending approval from the cashier's office. You will be notified once it's reviewed.</p>
+                                </div>
+                            </div>
+                        </div>
+                    @elseif($paymentScheduleStatus->confirmation_status === 'confirmed')
+                        <div class="alert alert-success border-0 shadow-sm">
+                            <div class="d-flex align-items-center">
+                                <i class="ri-check-line fs-4 me-3"></i>
+                                <div>
+                                    <h6 class="alert-heading mb-1">Payment Schedule Approved</h6>
+                                    <p class="mb-0">Your payment schedule has been approved! You are now fully enrolled and can proceed to make payments.</p>
+                                </div>
+                            </div>
+                        </div>
+                    @elseif(in_array($paymentScheduleStatus->confirmation_status, ['rejected', 'declined']))
+                        <div class="alert alert-danger border-0 shadow-sm">
+                            <div class="d-flex align-items-center">
+                                <i class="ri-close-line fs-4 me-3"></i>
+                                <div>
+                                    <h6 class="alert-heading mb-1">Payment Schedule Rejected</h6>
+                                    <p class="mb-0">Your payment schedule was rejected. Please review the feedback and submit a new schedule.</p>
+                                    @if($paymentScheduleStatus->cashier_notes)
+                                        <small class="text-muted"><strong>Reason:</strong> {{ $paymentScheduleStatus->cashier_notes }}</small>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        @endif
+
+    <form id="enrollmentForm" action="{{ route('student.enrollment.submit') }}" method="POST" onsubmit="event.preventDefault(); submitEnrollmentForm();">
+            @csrf
+            <div class="row">
+                <!-- Left Column - Subjects -->
+                <div class="col-lg-8">
+                    <!-- Subjects to Take -->
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-white border-0 pb-0">
+                            <h5 class="card-title mb-0">
+                                <i class="ri-book-open-line me-2"></i>Subjects for {{ $student->grade_level }}
+                                @if($student->strand)
+                                    - {{ $student->strand }}
+                                @endif
+                                @if($student->track)
+                                    ({{ $student->track }})
+                                @endif
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            @php
+                                // Use subjects passed from controller
+                                $subjects = $currentSubjects ?? collect();
+                            @endphp
+                            
+                            @if($subjects->count() > 0)
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Category</th>
+                                                <th>Subject Name</th>
+                                                <th>Grade Level</th>
+                                                @if($student->grade_level === 'Grade 11' || $student->grade_level === 'Grade 12')
+                                                    <th>Type</th>
+                                                @endif
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($subjects as $subject)
+                                                <tr>
+                                                    <td class="fw-semibold">
+                                                        <span class="badge bg-{{ $subject->category === 'core' ? 'secondary' : 'primary' }}">
+                                                            {{ ucfirst($subject->category) }}
+                                                        </span>
+                                                    </td>
+                                                    <td>{{ $subject->subject_name }}</td>
+                                                    <td>{{ $subject->grade_level }}</td>
+                                                    @if($student->grade_level === 'Grade 11' || $student->grade_level === 'Grade 12')
+                                                        <td>
+                                                            @if($subject->strand)
+                                                                <span class="badge bg-primary">{{ $subject->strand }}</span>
+                                                            @else
+                                                                <span class="badge bg-secondary">Core</span>
+                                                            @endif
+                                                        </td>
+                                                    @endif
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <div class="mt-3 p-3 bg-light rounded">
+                                    <div class="row text-center">
+                                        <div class="col-md-4">
+                                            <h6 class="fw-bold text-primary">{{ $subjects->count() }}</h6>
+                                            <small class="text-muted">Total Subjects</small>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <h6 class="fw-bold text-success">{{ $subjects->where('category', 'core')->count() }}</h6>
+                                            <small class="text-muted">Core Subjects</small>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <h6 class="fw-bold text-info">{{ $subjects->where('category', 'specialized')->count() }}</h6>
+                                            <small class="text-muted">Specialized</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            @else
+                                <div class="text-center py-4">
+                                    <i class="ri-book-line fs-1 text-muted mb-3"></i>
+                                    <h6 class="text-muted">No subjects found for your grade level</h6>
+                                    <p class="text-muted small">Please contact the registrar for assistance.</p>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+
+                    <!-- Payment Mode Selection -->
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-white border-0 pb-0">
+                            <h5 class="card-title mb-0">
+                                <i class="ri-money-dollar-circle-line me-2"></i>Payment Method
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="payment_method" id="full_payment" value="full" {{ old('payment_method') === 'full' ? 'checked' : '' }}>
+                                        <label class="form-check-label w-100" for="full_payment">
+                                            <div class="card border-2 h-100 payment-option" data-mode="full">
+                                                <div class="card-body text-center">
+                                                    <i class="ri-money-dollar-circle-fill fs-2 text-success mb-2"></i>
+                                                    <h6 class="fw-bold">Full Payment</h6>
+                                                    <p class="text-muted small mb-0">Pay entire amount at once</p>
+                                                </div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="payment_method" id="quarterly" value="quarterly" {{ old('payment_method') === 'quarterly' ? 'checked' : '' }}>
+                                        <label class="form-check-label w-100" for="quarterly">
+                                            <div class="card border-2 h-100 payment-option" data-mode="quarterly">
+                                                <div class="card-body text-center">
+                                                    <i class="ri-calendar-line fs-2 text-warning mb-2"></i>
+                                                    <h6 class="fw-bold">Quarterly</h6>
+                                                    <p class="text-muted small mb-0">4 payments per year</p>
+                                                </div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="payment_method" id="monthly" value="monthly" {{ old('payment_method') === 'monthly' ? 'checked' : '' }}>
+                                        <label class="form-check-label w-100" for="monthly">
+                                            <div class="card border-2 h-100 payment-option" data-mode="monthly">
+                                                <div class="card-body text-center">
+                                                    <i class="ri-calendar-2-line fs-2 text-info mb-2"></i>
+                                                    <h6 class="fw-bold">Monthly</h6>
+                                                    <p class="text-muted small mb-0">10 payments per year</p>
+                                                </div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            @error('payment_method')
+                                <div class="text-danger small mt-2">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <!-- Payment Schedule & Amount -->
+                    <div class="card border-0 shadow-sm mb-4" id="payment-schedule-card" style="display: none;">
+                        <div class="card-header bg-white border-0 pb-0">
+                            <h5 class="card-title mb-0">
+                                <i class="ri-calendar-schedule-line me-2"></i>Payment Schedule & Amount
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <!-- Payment Breakdown Display -->
+                            <div id="payment-breakdown-container">
+                                <!-- Full Payment Breakdown -->
+                                <div id="full-payment-breakdown" class="payment-breakdown" style="display: none;">
+                                    <h6 class="fw-bold text-success mb-3">
+                                        <i class="ri-money-dollar-circle-line me-2"></i>Full Payment Breakdown
+                                    </h6>
+                                    <div class="alert alert-success">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span><strong>Total Amount Due:</strong></span>
+                                            <span class="fw-bold">₱<span id="full-total-amount">0.00</span></span>
+                                        </div>
+                                        <small class="text-muted">Pay the entire amount at once with no additional fees</small>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Payment Date</label>
+                                            <input type="date" class="form-control" name="full_payment_date" min="{{ date('Y-m-d') }}" value="{{ date('Y-m-d', strtotime('+7 days')) }}">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Amount to Pay</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">₱</span>
+                                                <input type="number" class="form-control" name="full_payment_amount" step="0.01" min="0" value="{{ number_format($totalAmount, 2, '.', '') }}" placeholder="0.00" readonly>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Quarterly Payment Breakdown -->
+                                <div id="quarterly-payment-breakdown" class="payment-breakdown" style="display: none;">
+                                    <h6 class="fw-bold text-warning mb-3">
+                                        <i class="ri-calendar-line me-2"></i>Quarterly Payment Breakdown
+                                    </h6>
+                                    <div class="alert alert-warning">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span><strong>Total Amount:</strong></span>
+                                            <span class="fw-bold">₱<span id="quarterly-total-amount">0.00</span></span>
+                                        </div>
+                                        <small class="text-muted">4 payments throughout the academic year</small>
+                                    </div>
+                                    <div class="row g-3">
+                                        @php
+                                            $quarterlyAmount = $totalAmount / 4;
+                                            $quarterDates = [
+                                                date('Y-m-d', strtotime('+1 month')),
+                                                date('Y-m-d', strtotime('+4 months')),
+                                                date('Y-m-d', strtotime('+7 months')),
+                                                date('Y-m-d', strtotime('+10 months'))
+                                            ];
+                                        @endphp
+                                        <div class="col-md-6 col-lg-3">
+                                            <div class="card bg-light">
+                                                <div class="card-body p-3">
+                                                    <h6 class="card-title mb-2">1st Quarter</h6>
+                                                    <input type="date" class="form-control form-control-sm mb-2" name="quarterly_date_1" min="{{ date('Y-m-d') }}" value="{{ $quarterDates[0] }}">
+                                                    <div class="input-group input-group-sm">
+                                                        <span class="input-group-text">₱</span>
+                                                        <input type="number" class="form-control" name="quarterly_amount_1" step="0.01" min="0" value="{{ number_format($quarterlyAmount, 2, '.', '') }}" placeholder="0.00" readonly>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 col-lg-3">
+                                            <div class="card bg-light">
+                                                <div class="card-body p-3">
+                                                    <h6 class="card-title mb-2">2nd Quarter</h6>
+                                                    <input type="date" class="form-control form-control-sm mb-2" name="quarterly_date_2" min="{{ date('Y-m-d') }}" value="{{ $quarterDates[1] }}">
+                                                    <div class="input-group input-group-sm">
+                                                        <span class="input-group-text">₱</span>
+                                                        <input type="number" class="form-control" name="quarterly_amount_2" step="0.01" min="0" value="{{ number_format($quarterlyAmount, 2, '.', '') }}" placeholder="0.00" readonly>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 col-lg-3">
+                                            <div class="card bg-light">
+                                                <div class="card-body p-3">
+                                                    <h6 class="card-title mb-2">3rd Quarter</h6>
+                                                    <input type="date" class="form-control form-control-sm mb-2" name="quarterly_date_3" min="{{ date('Y-m-d') }}" value="{{ $quarterDates[2] }}">
+                                                    <div class="input-group input-group-sm">
+                                                        <span class="input-group-text">₱</span>
+                                                        <input type="number" class="form-control" name="quarterly_amount_3" step="0.01" min="0" value="{{ number_format($quarterlyAmount, 2, '.', '') }}" placeholder="0.00" readonly>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 col-lg-3">
+                                            <div class="card bg-light">
+                                                <div class="card-body p-3">
+                                                    <h6 class="card-title mb-2">4th Quarter</h6>
+                                                    <input type="date" class="form-control form-control-sm mb-2" name="quarterly_date_4" min="{{ date('Y-m-d') }}" value="{{ $quarterDates[3] }}">
+                                                    <div class="input-group input-group-sm">
+                                                        <span class="input-group-text">₱</span>
+                                                        <input type="number" class="form-control" name="quarterly_amount_4" step="0.01" min="0" value="{{ number_format($quarterlyAmount, 2, '.', '') }}" placeholder="0.00" readonly>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Monthly Payment Breakdown -->
+                                <div id="monthly-payment-breakdown" class="payment-breakdown" style="display: none;">
+                                    <h6 class="fw-bold text-info mb-3">
+                                        <i class="ri-calendar-2-line me-2"></i>Monthly Payment Breakdown
+                                    </h6>
+                                    <div class="alert alert-info">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span><strong>Total Amount:</strong></span>
+                                            <span class="fw-bold">₱<span id="monthly-total-amount">0.00</span></span>
+                                        </div>
+                                        <small class="text-muted">10 payments throughout the academic year (excluding vacation months)</small>
+                                    </div>
+                                    <div class="row g-2">
+                                        @php
+                                            $monthlyAmount = $totalAmount / 10;
+                                            $monthDates = [
+                                                date('Y-m-d', strtotime('+1 month')),
+                                                date('Y-m-d', strtotime('+2 months')),
+                                                date('Y-m-d', strtotime('+3 months')),
+                                                date('Y-m-d', strtotime('+4 months')),
+                                                date('Y-m-d', strtotime('+5 months')),
+                                                date('Y-m-d', strtotime('+6 months')),
+                                                date('Y-m-d', strtotime('+7 months')),
+                                                date('Y-m-d', strtotime('+8 months')),
+                                                date('Y-m-d', strtotime('+9 months')),
+                                                date('Y-m-d', strtotime('+10 months'))
+                                            ];
+                                        @endphp
+                                        @for($i = 1; $i <= 10; $i++)
+                                            <div class="col-md-6 col-lg-4 col-xl-3">
+                                                <div class="card bg-light">
+                                                    <div class="card-body p-2">
+                                                        <h6 class="card-title mb-1 small">Payment {{ $i }}</h6>
+                                                        <input type="date" class="form-control form-control-sm mb-1" name="monthly_date_{{ $i }}" min="{{ date('Y-m-d') }}" value="{{ $monthDates[$i-1] }}">
+                                                        <div class="input-group input-group-sm">
+                                                            <span class="input-group-text">₱</span>
+                                                            <input type="number" class="form-control" name="monthly_amount_{{ $i }}" step="0.01" min="0" value="{{ number_format($monthlyAmount, 2, '.', '') }}" placeholder="0.00" readonly>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endfor
+                                    </div>
+                                </div>
+                            </div>
+                            {{-- Payment method will be determined by cashier when processing payments --}}
+
+                            <!-- Notes Section -->
+                            <div class="mt-4">
+                                <label class="form-label">Additional Notes (Optional)</label>
+                                <textarea class="form-control" name="payment_notes" rows="3" placeholder="Any additional information about your payment schedule..."></textarea>
+                            </div>
+
+                            <!-- Debug Button (Remove in production) -->
+                           
+
+                            <!-- Action Buttons -->
+                            <div class="mt-4">
+                                @if($paymentScheduleStatus)
+                                    @if($paymentScheduleStatus->confirmation_status === 'pending')
+                                        <div class="d-grid gap-2">
+                                            <button type="button" class="btn btn-secondary btn-lg" disabled>
+                                                <i class="ri-time-line me-2"></i>Payment Schedule Pending Approval
+                                            </button>
+                                            <a href="{{ route('student.dashboard') }}" class="btn btn-outline-secondary">
+                                                <i class="ri-arrow-left-line me-2"></i>Back to Dashboard
+                                            </a>
+                                        </div>
+                                    @elseif($paymentScheduleStatus->confirmation_status === 'confirmed')
+                                        <div class="d-grid gap-2">
+                                            <a href="{{ route('student.payments') }}" class="btn btn-success btn-lg">
+                                                <i class="ri-money-dollar-circle-line me-2"></i>Proceed to Payment
+                                            </a>
+                                            <a href="{{ route('student.dashboard') }}" class="btn btn-outline-secondary">
+                                                <i class="ri-arrow-left-line me-2"></i>Back to Dashboard
+                                            </a>
+                                        </div>
+                                    @elseif(in_array($paymentScheduleStatus->confirmation_status, ['rejected', 'declined']))
+                                        <div class="d-grid gap-2">
+                                            <button type="submit" class="btn btn-primary btn-lg" id="enrollBtn">
+                                                <i class="ri-send-plane-line me-2"></i>Reconfirm Payment Schedule
+                                            </button>
+                                            <a href="{{ route('student.dashboard') }}" class="btn btn-outline-secondary">
+                                                <i class="ri-arrow-left-line me-2"></i>Back to Dashboard
+                                            </a>
+                                        </div>
+                                    @endif
+                                @else
+                                    <div class="d-grid gap-2">
+                                        <button type="submit" class="btn btn-primary btn-lg" id="enrollBtn">
+                                            <i class="ri-send-plane-line me-2"></i>Confirm Payment Schedule
+                                        </button>
+                                        <a href="{{ route('student.dashboard') }}" class="btn btn-outline-secondary">
+                                            <i class="ri-arrow-left-line me-2"></i>Back to Dashboard
+                                        </a>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column - Fee Breakdown -->
+                <div class="col-lg-4">
+                    <!-- Fee Breakdown -->
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-white border-0 pb-0">
+                            <h5 class="card-title mb-0">
+                                <i class="ri-bill-line me-2"></i>Fee Breakdown
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            @php
+                                $feeCalculation = \App\Models\Fee::calculateTotalFeesForGrade($student->grade_level);
+                                $fees = $feeCalculation['fees'];
+                                $totalAmount = $feeCalculation['total_amount'];
+                                $breakdown = $feeCalculation['breakdown'];
+                            @endphp
+                            
+                            @if(count($fees) > 0)
+                                <div class="fee-list mb-3">
+                                    @foreach($fees as $fee)
+                                        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                            <div>
+                                                <div class="fw-semibold">{{ $fee['name'] }}</div>
+                                                @if($fee['description'])
+                                                    <small class="text-muted">{{ $fee['description'] }}</small>
+                                                @endif
+                                            </div>
+                                            <div class="text-end">
+                                                <div class="fw-bold">₱{{ number_format($fee['amount'], 2) }}</div>
+                                                @if(!$fee['is_required'])
+                                                    <small class="text-muted">Optional</small>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                                
+                                <div class="border-top pt-3">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h6 class="fw-bold mb-0">Total Amount:</h6>
+                                        <h5 class="fw-bold text-primary mb-0">₱{{ number_format($totalAmount, 2) }}</h5>
+                                    </div>
+                                </div>
+                                
+                                <!-- Payment Schedule Preview -->
+                                <div id="payment-schedule" class="mt-4" style="display: none;">
+                                    <h6 class="fw-bold mb-3">Payment Schedule</h6>
+                                    <div id="schedule-content"></div>
+                                </div>
+                            @else
+                                <div class="text-center py-4">
+                                    <i class="ri-bill-line fs-1 text-muted mb-3"></i>
+                                    <h6 class="text-muted">No fees configured</h6>
+                                    <p class="text-muted small">Please contact the registrar for fee information.</p>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+
+                    <!-- Enrollment Summary -->
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-white border-0 pb-0">
+                            <h6 class="card-title mb-0">Enrollment Summary</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label text-muted small">Student Name</label>
+                                <div class="fw-semibold">{{ $student->full_name ?? ($student->first_name . ' ' . $student->last_name) }}</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-muted small">Student ID</label>
+                                <div class="fw-semibold">{{ $student->student_id }}</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-muted small">Grade Level</label>
+                                <div class="fw-semibold">{{ $student->grade_level }}</div>
+                            </div>
+                            @if($student->strand)
+                                <div class="mb-3">
+                                    <label class="form-label text-muted small">Strand</label>
+                                    <div class="fw-semibold">{{ $student->strand }}</div>
+                                </div>
+                            @endif
+                            <div class="mb-3">
+                                <label class="form-label text-muted small">Academic Year</label>
+                                <div class="fw-semibold">{{ $student->academic_year ?? '2024-2025' }}</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-muted small">Total Subjects</label>
+                                <div class="fw-semibold">{{ $subjects->count() }} subjects</div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </form>
+
+    @push('scripts')
+        @vite('resources/js/student-enrollment.js')
+        <script>
+            // Initialize enrollment data when page loads
             document.addEventListener('DOMContentLoaded', function() {
-                initializePaymentArchives();
-                setupTabHandlers();
-                setupFiltersAndSearch();
+                if (typeof window.initializeEnrollmentData === 'function') {
+                    window.initializeEnrollmentData(
+                        {{ $totalAmount ?? 0 }},
+                        '{{ now()->addDays(7)->format('Y-m-d') }}'
+                    );
+                }
             });
 
-            function initializePaymentArchives() {
-                console.log('Payment Archives initialized');
-                loadPaymentData('all');
-            }
-
-            function setupTabHandlers() {
-                const tabButtons = document.querySelectorAll('#archiveTabs button[data-bs-toggle="tab"]');
-                tabButtons.forEach(button => {
-                    button.addEventListener('shown.bs.tab', function(event) {
-                        const target = event.target.getAttribute('data-bs-target');
-                        currentTab = target.replace('#', '').replace('-payments', '').replace('-', '');
-                        loadPaymentData(currentTab);
-                    });
-                });
-            }
-
-            function loadPaymentData(type) {
-                const filters = collectFilters();
-                filters.type = type;
-                
-                const endpoint = type === 'all' ? '/cashier/api/payment-archives' : 
-                               type === 'completed' ? '/cashier/api/completed-payments' : 
-                               '/cashier/api/payment-history';
-                
-                const params = new URLSearchParams(filters);
-                
-                fetch(`${endpoint}?${params}`, {
-                    method: 'GET',
+            // Custom form submission to show PDF modal after payment
+            function submitEnrollmentForm() {
+                const form = document.getElementById('enrollmentForm');
+                const formData = new FormData(form);
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                fetch(form.action, {
+                    method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
                         'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    }
+                    },
+                    body: formData
                 })
                 .then(response => response.json())
                 .then(data => {
-                    if (data.success) {
-                        const payments = data.payments && data.payments.data ? data.payments.data : data.payments || [];
-                        updateTable(type, payments);
-                        updateStatistics(data.statistics);
+                    if (data.success && data.transaction_id) {
+                        if (window.showPDFModal) {
+                            window.showPDFModal({
+                                transactionId: data.transaction_id,
+                                onClose: function() {
+                                    window.location.href = data.redirect_url || '/student/dashboard';
+                                }
+                            });
+                        }
+                    } else {
+                        if (window.showAlert) window.showAlert(data.message || 'Failed to submit payment.', 'danger');
                     }
                 })
-                .catch(error => {
-                    console.error('Error loading payment data:', error);
-                    showAlert('Error loading payment data', 'danger');
+                .catch(() => {
+                    if (window.showAlert) window.showAlert('An error occurred while submitting payment.', 'danger');
                 });
             }
-
-            function collectFilters() {
-                const filters = {};
-                
-                document.querySelectorAll('.payment-filter').forEach(element => {
-                    if (element.value) {
-                        filters[element.name] = element.value;
-                    }
-                });
-                
-                const searchInput = document.getElementById('payment-search');
-                if (searchInput && searchInput.value) {
-                    filters.search = searchInput.value;
-                }
-                
-                return filters;
-            }
-
-            function updateTable(type, payments) {
-                const tableId = type === 'all' ? 'all-payments-table' : 
-                               type === 'completed' ? 'completed-payments-table' : 
-                               'payment-history-table';
-                
-                const tableBody = document.querySelector(`#${tableId} tbody`);
-                if (!tableBody) return;
-                
-                if (payments && payments.length > 0) {
-                    tableBody.innerHTML = payments.map((payment, index) => createPaymentRow(payment, index, type)).join('');
-                } else {
-                    tableBody.innerHTML = `
-                        <tr>
-                            <td colspan="7" class="text-center py-4">
-                                <div class="text-muted">
-                                    <i class="ri-inbox-line fs-1 mb-2"></i>
-                                    <p>No payments found</p>
-                                </div>
-                            </td>
-                        </tr>
-                    `;
-                }
-            }
-
-            function createPaymentRow(payment, index, type) {
-                const student = payment.payable || payment.student;
-                const priorityBadge = getPriorityBadge(index + 1);
-                const statusBadge = getStatusBadge(payment.confirmation_status);
-                
-                return `
-                    <tr>
-                        <td>${priorityBadge}</td>
-                        <td>
-                            <div class="fw-semibold">${payment.transaction_id}</div>
-                            <small class="text-muted">${getPaymentMethodDisplay(payment.payment_method)} - ${payment.period_name || 'Payment'}</small>
-                        </td>
-                        <td>
-                            <div class="fw-semibold">${student ? (student.first_name + ' ' + student.last_name) : 'Unknown'}</div>
-                            <small class="text-muted">${student ? (student.student_id || student.application_id) : 'N/A'}</small>
-                        </td>
-                        <td>
-                            <span class="fw-bold text-success">₱${formatNumber(payment.amount)}</span>
-                        </td>
-                        <td>
-                            <div class="fw-semibold">${formatDate(payment.confirmed_at || payment.created_at)}</div>
-                            <small class="text-muted">${formatTime(payment.confirmed_at || payment.created_at)}</small>
-                        </td>
-                        ${type === 'completed' ? `
-                            <td>
-                                ${payment.cashier ? `
-                                    <div class="fw-semibold">${payment.cashier.full_name}</div>
-                                    <small class="text-muted">${payment.cashier.employee_id}</small>
-                                ` : '<span class="text-muted">System</span>'}
-                            </td>
-                        ` : `<td>${statusBadge}</td>`}
-                        <td>
-                            <div class="btn-group btn-group-sm">
-                                <button class="btn btn-outline-primary" onclick="viewPaymentDetails(${payment.id})" title="View Details">
-                                    <i class="ri-eye-line"></i>
-                                </button>
-                                ${payment.confirmation_status === 'confirmed' ? `
-                                    <button class="btn btn-outline-success" onclick="printReceipt(${payment.id})" title="Print Receipt">
-                                        <i class="ri-printer-line"></i>
-                                    </button>
-                                ` : ''}
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }
-
-            function setupFiltersAndSearch() {
-                document.querySelectorAll('.payment-filter').forEach(element => {
-                    element.addEventListener('change', () => loadPaymentData(currentTab));
-                });
-                
-                const searchInput = document.getElementById('payment-search');
-                if (searchInput) {
-                    let searchTimeout;
-                    searchInput.addEventListener('input', function() {
-                        clearTimeout(searchTimeout);
-                        searchTimeout = setTimeout(() => loadPaymentData(currentTab), 500);
-                    });
-                }
-            }
-
-            function updateStatistics(statistics) {
-                const totalCount = document.getElementById('total-count');
-                if (totalCount && statistics) {
-                    const total = (statistics.confirmed_payments || 0) + (statistics.completed_payments || 0);
-                    totalCount.textContent = `${total} Total`;
-                }
-            }
-
-            // Utility functions
-            function getPriorityBadge(priority) {
-                if (priority <= 3) return `<span class="badge bg-danger">${priority}</span>`;
-                if (priority <= 10) return `<span class="badge bg-warning">${priority}</span>`;
-                return `<span class="badge bg-secondary">${priority}</span>`;
-            }
-
-            function getStatusBadge(status) {
-                switch(status) {
-                    case 'confirmed': return '<span class="badge bg-success">Confirmed</span>';
-                    case 'completed': return '<span class="badge bg-info">Completed</span>';
-                    default: return '<span class="badge bg-secondary">Unknown</span>';
-                }
-            }
-
-            function getPaymentMethodDisplay(method) {
-                switch(method) {
-                    case 'full': return 'Full Payment';
-                    case 'quarterly': return 'Quarterly';
-                    case 'monthly': return 'Monthly';
-                    default: return 'Full Payment';
-                }
-            }
-
-            function formatNumber(number) {
-                return new Intl.NumberFormat().format(number || 0);
-            }
-
-            function formatDate(dateString) {
-                if (!dateString) return 'N/A';
-                try {
-                    return new Date(dateString).toLocaleDateString('en-US', {
-                        year: 'numeric', month: 'short', day: 'numeric'
-                    });
-                } catch { return 'N/A'; }
-            }
-
-            function formatTime(dateString) {
-                if (!dateString) return '';
-                try {
-                    return new Date(dateString).toLocaleTimeString('en-US', {
-                        hour: '2-digit', minute: '2-digit'
-                    });
-                } catch { return ''; }
-            }
-
-            function viewPaymentDetails(paymentId) {
-                fetch(`/cashier/payments/${paymentId}/details`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            displayPaymentDetails(data.payment);
-                            currentPaymentId = paymentId;
-                            new bootstrap.Modal(document.getElementById('paymentDetailsModal')).show();
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('Failed to load payment details');
-                    });
-            }
-
-            function displayPaymentDetails(payment) {
-                const content = document.getElementById('paymentDetailsContent');
-                const statusClass = payment.confirmation_status === 'confirmed' ? 'success' : 'warning';
-                
-                content.innerHTML = `
-                    <div class="alert alert-${statusClass}">
-                        <i class="ri-information-line me-2"></i>
-                        <strong>Status:</strong> ${payment.confirmation_status === 'confirmed' ? 'Confirmed & Paid' : 'Not yet confirmed'}
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6>Payment Information</h6>
-                            <p><strong>Transaction ID:</strong> ${payment.transaction_id}</p>
-                            <p><strong>Amount:</strong> ₱${parseFloat(payment.amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</p>
-                            <p><strong>Payment Method:</strong> ${getPaymentMethodDisplay(payment.payment_method)}</p>
-                            <p><strong>Reference Number:</strong> ${payment.reference_number || 'N/A'}</p>
-                            <p><strong>Date Submitted:</strong> ${formatDate(payment.created_at)}</p>
-                            ${payment.confirmed_at ? `<p><strong>Date Confirmed:</strong> ${formatDate(payment.confirmed_at)}</p>` : ''}
-                        </div>
-                        <div class="col-md-6">
-                            <h6>Student Information</h6>
-                            <p><strong>Name:</strong> ${payment.payable ? payment.payable.first_name + ' ' + payment.payable.last_name : 'N/A'}</p>
-                            <p><strong>ID:</strong> ${payment.payable ? (payment.payable.student_id || payment.payable.application_id) : 'N/A'}</p>
-                            ${payment.payable && payment.payable.grade_level ? `<p><strong>Grade Level:</strong> ${payment.payable.grade_level}</p>` : ''}
-                            ${payment.payable && payment.payable.strand ? `<p><strong>Strand:</strong> ${payment.payable.strand}</p>` : ''}
-                            ${payment.payable && payment.payable.track ? `<p><strong>Track:</strong> ${payment.payable.track}</p>` : ''}
-                            <p><strong>Fee Type:</strong> ${payment.fee ? payment.fee.name : 'N/A'}</p>
-                            ${payment.cashier ? `<p><strong>Processed By:</strong> ${payment.cashier.full_name} (${payment.cashier.employee_id})</p>` : ''}
-                        </div>
-                    </div>
-                    ${payment.cashier_notes ? `<div class="mt-3"><h6>Cashier Notes</h6><p class="bg-light p-3 rounded">${payment.cashier_notes}</p></div>` : ''}
-                    ${payment.notes ? `<div class="mt-3"><h6>Payment Notes</h6><p>${payment.notes}</p></div>` : ''}
-                `;
-            }
-
-            function printReceipt(paymentId) {
-                console.log('Print receipt for payment ID:', paymentId);
-                alert('Receipt printing functionality will be implemented');
-            }
-
-            function printReceiptFromModal() {
-                if (currentPaymentId) {
-                    printReceipt(currentPaymentId);
-                }
-            }
-
-            function exportArchives() {
-                console.log('Export payment archives');
-                alert('Export functionality will be implemented');
-            }
-
-            function showAlert(message, type = 'info') {
-                const alertClass = type === 'danger' ? 'alert-danger' : 
-                                 type === 'success' ? 'alert-success' : 
-                                 type === 'warning' ? 'alert-warning' : 'alert-info';
-                
-                const alertHtml = `
-                    <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
-                        ${message}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                `;
-                
-                let alertContainer = document.querySelector('.alert-container');
-                if (!alertContainer) {
-                    alertContainer = document.createElement('div');
-                    alertContainer.className = 'alert-container position-fixed top-0 end-0 p-3';
-                    alertContainer.style.zIndex = '9999';
-                    document.body.appendChild(alertContainer);
-                }
-                
-                alertContainer.insertAdjacentHTML('beforeend', alertHtml);
-                
-                setTimeout(() => {
-                    const alerts = alertContainer.querySelectorAll('.alert');
-                    if (alerts.length > 0) {
-                        alerts[0].remove();
-                    }
-                }, 5000);
-            }
+        </script>
+    @endpush
+</x-student-layout>
