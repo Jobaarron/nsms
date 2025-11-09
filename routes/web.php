@@ -744,9 +744,10 @@ Route::prefix('registrar')->name('registrar.')->group(function () {
         Route::post('/applications/bulk-approve', [RegistrarController::class, 'bulkApprove'])->name('applications.bulk-approve');
         Route::post('/applications/bulk-decline', [RegistrarController::class, 'bulkDecline'])->name('applications.bulk-decline');
         
-        // Approved applications
-        Route::get('/approved', [RegistrarController::class, 'approved'])->name('approved');
+        // Applicant Archives
+        Route::get('/applicant-archives', [RegistrarController::class, 'applicantArchives'])->name('applicant-archives');
         Route::post('/applications/{id}/generate-credentials', [RegistrarController::class, 'generateStudentCredentials'])->name('applications.generate-credentials');
+        Route::post('/applications/{id}/reconsider', [RegistrarController::class, 'reconsiderApplication'])->name('applications.reconsider');
         
         // Notices and Documents data
         Route::get('/notices', [RegistrarController::class, 'getNotices'])->name('notices.get');

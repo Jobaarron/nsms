@@ -497,9 +497,7 @@
             </div>
         </form>
 
-    @push('scripts')
-        @vite('resources/js/student-enrollment.js')
-        
+    @push('scripts') 
         <script>
             document.addEventListener('DOMContentLoaded', function() {
                 const enrollmentForm = document.getElementById('enrollmentForm');

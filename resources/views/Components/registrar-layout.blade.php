@@ -31,6 +31,7 @@
   @vite(['resources/js/app.js'])
   @vite(['resources/js/registrar-class-lists.js'])
   @vite(['resources/js/registrar-dashboard.js'])
+  @vite(['resources/js/registrar-applicant-archives.js'])
 
 </head>
 <body>
@@ -67,8 +68,8 @@
             </a>
           </li>
            <li class="nav-item mb-2">
-            <a class="nav-link disabled {{ request()->routeIs('registrar.approved') ? 'active' : '' }}" href="{{ route('registrar.approved') }}">
-              <i class="ri-check-line me-2"></i>Applicant Archives (WIP)
+            <a class="nav-link {{ request()->routeIs('registrar.applicant-archives') ? 'active' : '' }}" href="{{ route('registrar.applicant-archives') }}">
+              <i class="ri-archive-line me-2"></i>Applicant Archives
             </a>
           </li> 
         </ul>

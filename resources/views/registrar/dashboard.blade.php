@@ -154,9 +154,18 @@
                                     <div class="d-flex justify-content-between align-items-start">
                                         <div class="flex-grow-1">
                                             <div class="d-flex align-items-center mb-2">
-                                                <div class="bg-{{ $application->enrollment_status === 'pending' ? 'warning' : ($application->enrollment_status === 'approved' ? 'success' : 'danger') }} bg-opacity-10 rounded-circle p-2 me-3">
-                                                    <i class="ri-user-line text-{{ $application->enrollment_status === 'pending' ? 'warning' : ($application->enrollment_status === 'approved' ? 'success' : 'danger') }}"></i>
-                                                </div>
+                                                @if($application->id_photo_data_url)
+                                                    <div class="me-3">
+                                                        <img src="{{ $application->id_photo_data_url }}" alt="{{ $application->first_name }}" 
+                                                             class="rounded-circle" 
+                                                             style="width: 40px; height: 40px; object-fit: cover; border: 2px solid {{ $application->enrollment_status === 'pending' ? '#ffc107' : ($application->enrollment_status === 'approved' ? '#198754' : '#dc3545') }};">
+                                                    </div>
+                                                @else
+                                                    <div class="bg-{{ $application->enrollment_status === 'pending' ? 'warning' : ($application->enrollment_status === 'approved' ? 'success' : 'danger') }} bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                                        <i class="ri-user-line text-{{ $application->enrollment_status === 'pending' ? 'warning' : ($application->enrollment_status === 'approved' ? 'success' : 'danger') }}"></i>
+                                                    </div>
+                                                @endif
+                                                
                                                 <div>
                                                     <h6 class="mb-0">{{ $application->first_name }} {{ $application->last_name }}</h6>
                                                     <small class="text-muted">{{ $application->grade_level_applied }}</small>

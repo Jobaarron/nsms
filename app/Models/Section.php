@@ -81,9 +81,9 @@ class Section extends Model
     /**
      * Increment current students count
      */
-    public function addStudent()
+    public function addStudent($allowOverflow = false)
     {
-        if ($this->hasAvailableSlots()) {
+        if ($this->hasAvailableSlots() || $allowOverflow) {
             $this->increment('current_students');
             return true;
         }

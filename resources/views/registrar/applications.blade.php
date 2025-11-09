@@ -77,11 +77,11 @@
                     <div class="card-body">
                         <div class="d-flex align-items-center">
                             <div class="flex-shrink-0">
-                                <i class="ri-check-line fs-2 text-success"></i>
+                                <i class="ri-close-line fs-2 text-danger"></i>
                             </div>
                             <div class="flex-grow-1 ms-3">
-                                <div class="fw-bold fs-4">{{ $approvedApplications ?? 0 }}</div>
-                                <div class="text-muted small">Approved</div>
+                                <div class="fw-bold fs-4">{{ $declinedApplications ?? 0 }}</div>
+                                <div class="text-muted small">Declined</div>
                             </div>
                         </div>
                     </div>
@@ -143,7 +143,6 @@
                                     <select class="form-select" name="status" onchange="this.form.submit()">
                                         <option value="">All Status</option>
                                         <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending</option>
-                                        <option value="approved" {{ request('status') === 'approved' ? 'selected' : '' }}>Approved</option>
                                         <option value="declined" {{ request('status') === 'declined' ? 'selected' : '' }}>Declined</option>
                                     </select>
                                 </div>

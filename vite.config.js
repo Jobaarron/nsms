@@ -77,8 +77,8 @@ export default defineConfig({
                 'resources/js/forwarded-cases.js',
                 'resources/js/guidance-dashboard.js',
                 'resources/js/cashier-dashboard.js',
-                'resources/js/registrar-class-lists.js'
-                
+                'resources/js/registrar-class-lists.js',
+                'resources/js/registrar-applicant-archives.js'
             ],
             refresh: true,
         }),

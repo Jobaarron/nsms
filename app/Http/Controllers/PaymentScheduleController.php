@@ -614,8 +614,29 @@ class PaymentScheduleController extends Controller
             // Get current academic year
             $currentAcademicYear = date('Y') . '-' . (date('Y') + 1);
             
-            // Define section priority order
-            $sectionOrder = ['A', 'B', 'C', 'D', 'E', 'F'];
+            // Define section priority order (only A, B, C as requested)
+            $sectionOrder = ['A', 'B', 'C'];
+            
+            // Get max students per section based on grade level (from seeder config)
+            $maxStudentsConfig = [
+                'Nursery' => 20,
+                'Junior Casa' => 20,
+                'Senior Casa' => 25,
+                'Kinder' => 25,
+                'Grade 1' => 40,
+                'Grade 2' => 40,
+                'Grade 3' => 40,
+                'Grade 4' => 40,
+                'Grade 5' => 40,
+                'Grade 6' => 40,
+                'Grade 7' => 40,
+                'Grade 8' => 40,
+                'Grade 9' => 40,
+                'Grade 10' => 40,
+                'Grade 11' => 40,
+                'Grade 12' => 40,
+            ];
+            $maxStudentsPerSection = $maxStudentsConfig[$student->grade_level] ?? 35;
             
             // Build query to find students in same grade/strand/track
             // Only need to be enrolled (1st quarter paid), not fully paid
@@ -641,26 +662,20 @@ class PaymentScheduleController extends Controller
                                      ->pluck('count', 'section')
                                      ->toArray();
             
-            // Find the section with the least students, following priority order
+            // Sequential filling: Fill A first (up to 40), then B (up to 40), then C (up to 40)
             $assignedSection = null;
-            $minCount = PHP_INT_MAX;
             
             foreach ($sectionOrder as $section) {
                 $count = $sectionCounts[$section] ?? 0;
                 
-                // Assign to first available section or section with least students
-                if ($count < $minCount) {
-                    $minCount = $count;
+                // If this section has space (less than 40 students), assign here
+                if ($count < $maxStudentsPerSection) {
                     $assignedSection = $section;
-                }
-                
-                // If we find an empty section, use it immediately
-                if ($count === 0) {
-                    break;
+                    break; // Stop at first available section in order
                 }
             }
             
-            // If no sections exist yet, start with section A
+            // If all sections are full or no sections exist yet, start with section A
             if (!$assignedSection) {
                 $assignedSection = 'A';
             }
@@ -674,7 +689,7 @@ class PaymentScheduleController extends Controller
                 'strand' => $student->strand,
                 'track' => $student->track,
                 'assigned_section' => $assignedSection,
-                'section_count' => $minCount
+                'section_count' => $sectionCounts[$assignedSection] ?? 0
             ]);
             
         } catch (\Exception $e) {

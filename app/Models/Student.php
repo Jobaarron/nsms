@@ -504,81 +504,106 @@ class Student extends Authenticatable
             }
         }
 
-        // Get available sections for this grade level and academic year
-        $sectionsQuery = Section::where('grade_level', $gradeLevel)
-                               ->where('academic_year', $academicYear)
-                               ->where('is_active', true)
-                               ->orderBy('section_name'); // A, B, C order
+        // Get available sections for this grade level and academic year (should be pre-seeded)
+        $sections = Section::where('grade_level', $gradeLevel)
+                          ->where('academic_year', $academicYear)
+                          ->where('is_active', true)
+                          ->orderBy('section_name') // A, B, C order
+                          ->get();
 
-        $sections = $sectionsQuery->get();
-
-        // If no sections exist, create default sections
+        // If no sections exist (shouldn't happen with seeder), create default sections
         if ($sections->isEmpty()) {
-            $defaultSections = ['A', 'B', 'C', 'D', 'E', 'F'];
+            // Get max students per section based on grade level (from seeder config)
+            $maxStudentsConfig = [
+                'Nursery' => 20,
+                'Junior Casa' => 20,
+                'Senior Casa' => 25,
+                'Kinder' => 25,
+                'Grade 1' => 40,
+                'Grade 2' => 40,
+                'Grade 3' => 40,
+                'Grade 4' => 40,
+                'Grade 5' => 40,
+                'Grade 6' => 40,
+                'Grade 7' => 40,
+                'Grade 8' => 40,
+                'Grade 9' => 40,
+                'Grade 10' => 40,
+                'Grade 11' => 40,
+                'Grade 12' => 40,
+            ];
+            $maxStudents = $maxStudentsConfig[$gradeLevel] ?? 35;
+            
+            $defaultSections = ['A', 'B', 'C'];
             foreach ($defaultSections as $sectionName) {
                 Section::create([
                     'section_name' => $sectionName,
                     'grade_level' => $gradeLevel,
                     'academic_year' => $academicYear,
-                    'max_students' => 30, // Default capacity
+                    'max_students' => $maxStudents,
                     'current_students' => 0,
                     'is_active' => true,
                     'description' => "Section {$sectionName} for {$sectionDescription}"
                 ]);
             }
-            $sections = $sectionsQuery->get();
+            $sections = Section::where('grade_level', $gradeLevel)
+                              ->where('academic_year', $academicYear)
+                              ->where('is_active', true)
+                              ->orderBy('section_name')
+                              ->get();
         }
 
-        // Find first available section
+        // Sequential filling: Fill A first (up to 40), then B (up to 40), then C (up to 40)
         foreach ($sections as $section) {
             if ($section->hasAvailableSlots()) {
-                // For Senior High, check if we should group by strand/track
-                if ($isSeniorHigh && $strand) {
-                    // Count students with same strand/track in this section
-                    $sameStrandTrackCount = self::where('grade_level', $gradeLevel)
-                        ->where('section', $section->section_name)
-                        ->where('academic_year', $academicYear)
-                        ->where('strand', $strand)
-                        ->when($track, function($query) use ($track) {
-                            return $query->where('track', $track);
-                        })
-                        ->count();
-                    
-                    // If section has mixed strands/tracks and capacity allows, prefer grouping
-                    $totalInSection = self::where('grade_level', $gradeLevel)
-                        ->where('section', $section->section_name)
-                        ->where('academic_year', $academicYear)
-                        ->count();
-                    
-                    // If section is empty or has same strand/track students, use it
-                    if ($totalInSection === 0 || $sameStrandTrackCount > 0) {
-                        $section->addStudent();
-                        return [
-                            'section' => $section->section_name,
-                            'section_id' => $section->id
-                        ];
-                    }
-                } else {
-                    // For elementary/JHS, just use first available section
-                    $section->addStudent();
-                    return [
-                        'section' => $section->section_name,
-                        'section_id' => $section->id
-                    ];
-                }
+                $section->addStudent();
+                return [
+                    'section' => $section->section_name,
+                    'section_id' => $section->id
+                ];
             }
         }
 
-        // If all sections are full or no suitable section found, create a new one
-        $nextSectionLetter = chr(ord('A') + $sections->count());
+        // If all sections are full, assign to section A (overflow handling)
+        // This should rarely happen with 40 students per section limit
+        $overflowSection = $sections->first(); // Section A
+        if ($overflowSection) {
+            $overflowSection->addStudent(true); // Allow overflow
+            return [
+                'section' => $overflowSection->section_name,
+                'section_id' => $overflowSection->id
+            ];
+        }
+
+        // Fallback: create section A if somehow no sections exist
+        $maxStudentsConfig = [
+            'Nursery' => 20,
+            'Junior Casa' => 20,
+            'Senior Casa' => 25,
+            'Kinder' => 25,
+            'Grade 1' => 40,
+            'Grade 2' => 40,
+            'Grade 3' => 40,
+            'Grade 4' => 40,
+            'Grade 5' => 40,
+            'Grade 6' => 40,
+            'Grade 7' => 40,
+            'Grade 8' => 40,
+            'Grade 9' => 40,
+            'Grade 10' => 40,
+            'Grade 11' => 40,
+            'Grade 12' => 40,
+        ];
+        $maxStudents = $maxStudentsConfig[$gradeLevel] ?? 35;
+        
         $newSection = Section::create([
-            'section_name' => $nextSectionLetter,
+            'section_name' => 'A',
             'grade_level' => $gradeLevel,
             'academic_year' => $academicYear,
-            'max_students' => 30,
+            'max_students' => $maxStudents,
             'current_students' => 1, // This student will be the first
             'is_active' => true,
-            'description' => "Section {$nextSectionLetter} for {$sectionDescription}"
+            'description' => "Section A for {$sectionDescription}"
         ]);
 
         return [
