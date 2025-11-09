@@ -1075,7 +1075,7 @@ function showTVLTracks(grade, strand, container) {
     let html = `
         <div class="p-3">
             <div class="d-flex align-items-center mb-3">
-                <button class="btn btn-sm btn-light me-3" onclick="location.reload()" title="Back">
+                <button class="btn btn-sm btn-light me-3" onclick="loadSeniorHighStrandsForAssignment('${grade}', document.getElementById('sections${grade.replace(' ', '')}'), document.getElementById('badge${grade.replace(' ', '')}'))" title="Back to strands">
                     <i class="ri-arrow-left-line"></i>
                 </button>
                 <h6 class="text-primary mb-0"><i class="ri-settings-line me-2"></i>Select Track for ${grade} - ${strand}</h6>
@@ -1106,10 +1106,23 @@ function showSectionsForStrand(grade, strand, track, container, allSections = nu
     // Get sections for this strand/track from window.facultyData
     const sections = allSections || window.facultyData.sections.filter(s => s.grade_level === grade);
     
+    // Determine correct back function based on strand/track
+    let backFunction;
+    if (strand === 'TVL' && track) {
+        // Back to track selection for TVL
+        backFunction = `showTVLTracks('${grade}', '${strand}', document.getElementById('sections${grade.replace(' ', '')}'))`;
+    } else if (strand) {
+        // Back to strand selection for non-TVL strands
+        backFunction = `loadSeniorHighStrandsForAssignment('${grade}', document.getElementById('sections${grade.replace(' ', '')}'), document.getElementById('badge${grade.replace(' ', '')}'))`;
+    } else {
+        // Back to grade level for elementary/junior high
+        backFunction = `loadGradeSectionsForAssignment('${grade}')`;
+    }
+    
     let html = `
         <div class="p-3">
             <div class="d-flex align-items-center mb-3">
-                <button class="btn btn-sm btn-light me-3" onclick="loadGradeSectionsForAssignment('${grade}')" title="Back to strands">
+                <button class="btn btn-sm btn-light me-3" onclick="${backFunction}" title="Back">
                     <i class="ri-arrow-left-line"></i>
                 </button>
                 <h6 class="text-primary mb-0"><i class="ri-grid-line me-2"></i>Sections for ${grade} - ${strand}${track ? ' - ' + track : ''}</h6>
@@ -1181,10 +1194,23 @@ function showSectionDetailsAccordion(sectionId, grade, section, strand, track) {
         a.track === track
     );
     
+    // Determine correct back function based on strand/track
+    let backFunction;
+    if (strand === 'TVL' && track) {
+        // Back to sections for TVL track
+        backFunction = `showSectionsForStrand('${grade}', '${strand}', '${track}', document.getElementById('sections${grade.replace(' ', '')}'))`;
+    } else if (strand) {
+        // Back to sections for non-TVL strands
+        backFunction = `showSectionsForStrand('${grade}', '${strand}', null, document.getElementById('sections${grade.replace(' ', '')}'))`;
+    } else {
+        // Back to sections for elementary/junior high
+        backFunction = `loadElementaryJuniorSectionsForAssignment('${grade}', document.getElementById('sections${grade.replace(' ', '')}'), document.getElementById('badge${grade.replace(' ', '')}'))`;
+    }
+    
     // Build HTML with nested accordions
     let html = `
         <div class="p-4 bg-light border-top">
-            <button class="btn btn-sm btn-light mb-3" onclick="location.reload()">
+            <button class="btn btn-sm btn-light mb-3" onclick="${backFunction}">
                 <i class="ri-arrow-left-line me-1"></i> Back
             </button>
             
@@ -1414,11 +1440,11 @@ function loadStudentsForSection(sectionId, grade, section, strand, track) {
 // Load sections for assignment (handles both regular grades and SHS with strands)
 let loadedGradesForAssignment = {};
 function loadGradeSectionsForAssignment(grade) {
-    // Only load once
-    if (loadedGradesForAssignment[grade]) return;
-    
     const sectionsContainer = document.getElementById(`sections${grade.replace(' ', '')}`);
     const badge = document.getElementById(`badge${grade.replace(' ', '')}`);
+    
+    // Reset loaded state to allow refresh/back navigation
+    loadedGradesForAssignment[grade] = false;
     
     // For Grade 11 & 12, show strands first
     if (grade === 'Grade 11' || grade === 'Grade 12') {
@@ -1444,7 +1470,7 @@ function loadSeniorHighStrandsForAssignment(grade, container, badge) {
     let html = `
         <div class="p-3">
             <div class="d-flex align-items-center mb-3">
-                <button class="btn btn-sm btn-light me-3" onclick="location.reload()" title="Back">
+                <button class="btn btn-sm btn-light me-3" onclick="resetAccordionToInitialState('${grade}')" title="Back to grade levels">
                     <i class="ri-arrow-left-line"></i>
                 </button>
                 <h6 class="text-primary mb-0">
@@ -1507,11 +1533,56 @@ function loadElementaryJuniorSectionsForAssignment(grade, container, badge) {
     html += '</div>';
     container.innerHTML = html;
     badge.textContent = `${sections.length} sections`;
+    badge.className = 'badge bg-primary rounded-pill ms-auto me-3';
 }
 
-// Make new functions globally available
+// Reset accordion to initial state (collapse and show loading)
+function resetAccordionToInitialState(grade) {
+    const sectionsContainer = document.getElementById(`sections${grade.replace(' ', '')}`);
+    const badge = document.getElementById(`badge${grade.replace(' ', '')}`);
+    
+    // Reset to loading state
+    sectionsContainer.innerHTML = `
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading sections...</span>
+            </div>
+            <p class="text-muted mt-2">Loading sections for ${grade}...</p>
+        </div>
+    `;
+    
+    // Reset badge
+    const sectionCount = window.facultyData?.sections?.filter(s => s.grade_level === grade)?.length || 0;
+    badge.textContent = `${sectionCount} sections`;
+    badge.className = 'badge bg-secondary rounded-pill ms-auto me-3';
+    
+    // Reset loaded state
+    loadedGradesForAssignment[grade] = false;
+    
+    // Collapse the accordion
+    const accordionButton = document.querySelector(`[data-bs-target="#collapse${grade.replace(' ', '')}"]`);
+    const accordionCollapse = document.getElementById(`collapse${grade.replace(' ', '')}`);
+    
+    if (accordionButton && accordionCollapse) {
+        // Use Bootstrap's collapse API to hide the accordion
+        const bsCollapse = new bootstrap.Collapse(accordionCollapse, {
+            toggle: false
+        });
+        bsCollapse.hide();
+        
+        // Update button state
+        accordionButton.classList.add('collapsed');
+        accordionButton.setAttribute('aria-expanded', 'false');
+    }
+}
+
+// Make functions globally available
 window.showStrandSections = showStrandSections;
+window.showTVLTracks = showTVLTracks;
 window.showSectionsForStrand = showSectionsForStrand;
 window.showSectionDetailsAccordion = showSectionDetailsAccordion;
 window.loadStudentsForSection = loadStudentsForSection;
 window.loadGradeSectionsForAssignment = loadGradeSectionsForAssignment;
+window.loadSeniorHighStrandsForAssignment = loadSeniorHighStrandsForAssignment;
+window.loadElementaryJuniorSectionsForAssignment = loadElementaryJuniorSectionsForAssignment;
+window.resetAccordionToInitialState = resetAccordionToInitialState;
