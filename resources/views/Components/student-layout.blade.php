@@ -29,7 +29,6 @@
   @vite(['resources/js/student-grades.js'])
   @vite(['resources/css/index_student.css'])
   @vite(['resources/js/student-enrollment.js'])
-  @vite(['resources/js/student-enrollment.js'])
 </head>
 <body>
   <div class="container-fluid">
