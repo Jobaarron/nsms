@@ -92,9 +92,9 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-success" id="printReceiptBtn" onclick="printReceiptFromModal()">
+                    <!-- <button type="button" class="btn btn-success" id="printReceiptBtn" onclick="printReceiptFromModal()">
                         <i class="ri-printer-line me-2"></i>Print Receipt
-                    </button>
+                    </button> -->
                 </div>
             </div>
         </div>
