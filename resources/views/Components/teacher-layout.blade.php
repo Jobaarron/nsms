@@ -22,6 +22,7 @@
   @vite('resources/js/teacher-dashboard.js')
   @vite('resources/js/teacher-recommend-counseling.js')
   @vite('resources/js/teacher-advisory.js')
+  @vite('resources/js/teacher-grades.js')
 
   <style>
     .spin {

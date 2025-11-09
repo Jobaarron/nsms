@@ -472,4 +472,28 @@ class TeacherGradeController extends Controller
             ]);
         }
     }
+
+    /**
+     * Finalize approved grades (makes them visible to students)
+     */
+    public function finalizeGrades(GradeSubmission $submission)
+    {
+        $teacher = Auth::user();
+        $teacherRecord = \App\Models\Teacher::where('user_id', $teacher->id)->first();
+
+        if (!$teacherRecord || $submission->teacher_id !== $teacherRecord->id) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        if ($submission->status !== 'approved') {
+            return response()->json(['error' => 'Only approved grades can be finalized'], 400);
+        }
+
+        try {
+            $submission->finalizeByTeacher();
+            return response()->json(['success' => true, 'message' => 'Grades finalized and visible to students']);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
 }

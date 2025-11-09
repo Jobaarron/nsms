@@ -20,6 +20,7 @@ class GradeSubmission extends Model
         'submitted_at',
         'reviewed_at',
         'reviewed_by',
+        'finalized_at',
         'grades_data',
         'total_students',
         'grades_entered',
@@ -31,6 +32,7 @@ class GradeSubmission extends Model
     protected $casts = [
         'submitted_at' => 'datetime',
         'reviewed_at' => 'datetime',
+        'finalized_at' => 'datetime',
         'grades_data' => 'array',
         'grades_finalized' => 'boolean'
     ];
@@ -172,7 +174,7 @@ class GradeSubmission extends Model
         ]);
     }
 
-    // Approve grades and finalize to grades table
+    // Approve grades (does NOT finalize to grades table yet)
     public function approve($reviewerId, $notes = null)
     {
         $this->update([
@@ -181,9 +183,26 @@ class GradeSubmission extends Model
             'reviewed_by' => $reviewerId,
             'review_notes' => $notes
         ]);
+        
+        // NOTE: Grades are NOT finalized to main table yet
+        // Teacher must call finalizeByTeacher() to make grades visible to students
+    }
+
+    // Teacher finalizes approved grades (makes them visible to students)
+    public function finalizeByTeacher()
+    {
+        if ($this->status !== 'approved') {
+            throw new \Exception('Only approved grades can be finalized');
+        }
 
         // Copy grades to the main grades table
         $this->finalizeGrades();
+        
+        // Update submission status
+        $this->update([
+            'status' => 'finalized',
+            'finalized_at' => now()
+        ]);
     }
 
     // Reject grades

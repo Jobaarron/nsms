@@ -628,6 +628,58 @@ window.handleCreateSubmissionForm = function() {
     }
 };
 
+// Grade finalization function - Define immediately for onclick access
+window.finalizeGrades = function(submissionId) {
+    console.log('finalizeGrades called with ID:', submissionId);
+    if (!confirm('Are you sure you want to finalize these grades? Once finalized, grades will be visible to students.')) {
+        return;
+    }
+
+    const button = event.target;
+    const originalContent = button.innerHTML;
+    
+    // Show loading state
+    button.disabled = true;
+    button.innerHTML = '<i class="ri-loader-4-line me-1"></i>Finalizing...';
+
+    // Get CSRF token
+    const csrfToken = document.querySelector('meta[name="csrf-token"]');
+    if (!csrfToken) {
+        window.showErrorMessage('CSRF token not found. Please refresh the page.');
+        button.disabled = false;
+        button.innerHTML = originalContent;
+        return;
+    }
+
+    fetch(`/teacher/grades/${submissionId}/finalize`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken.getAttribute('content')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.showSuccessMessage(data.message);
+            // Reload page after short delay
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } else {
+            throw new Error(data.error || 'Failed to finalize grades');
+        }
+    })
+    .catch(error => {
+        console.error('Finalization error:', error);
+        window.showErrorMessage('Error: ' + error.message);
+        
+        // Restore button state
+        button.disabled = false;
+        button.innerHTML = originalContent;
+    });
+};
+
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
     try {
@@ -650,7 +702,16 @@ document.addEventListener('DOMContentLoaded', function() {
         if (typeof window.handleCreateSubmissionForm === 'function') {
             window.handleCreateSubmissionForm();
         }
+        
+        console.log('Teacher Grades JavaScript loaded with finalization support');
+        console.log('finalizeGrades function available:', typeof window.finalizeGrades);
     } catch (error) {
         console.log('Teacher Grades initialization error:', error);
     }
 });
+
+// Test function to verify script loading
+window.testFinalization = function() {
+    console.log('Test function called - script is loaded');
+    return 'Script loaded successfully';
+};

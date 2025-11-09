@@ -247,6 +247,10 @@ Route::middleware(['auth', 'role:teacher|faculty_head'])->prefix('teacher')->nam
         ->name('grades.data');
     Route::get('/grades/stats', [App\Http\Controllers\TeacherGradeController::class, 'getSubmissionStats'])
         ->name('grades.stats');
+    
+    // Grade finalization route
+    Route::post('/grades/{submission}/finalize', [App\Http\Controllers\TeacherGradeController::class, 'finalizeGrades'])
+        ->name('grades.finalize');
 });
 
 // Student Schedule Routes (requires payment)

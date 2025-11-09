@@ -364,9 +364,9 @@ class Student extends Authenticatable
                           ->with(['subject', 'teacher.user'])
                           ->get();
 
-        // If no final grades, check for approved grade submissions
+        // If no final grades, check for finalized grade submissions only
         if ($finalGrades->isEmpty()) {
-            $approvedSubmissions = \App\Models\GradeSubmission::where('status', 'approved')
+            $finalizedSubmissions = \App\Models\GradeSubmission::where('status', 'finalized')
                 ->where('academic_year', $academicYear)
                 ->where('quarter', $quarter)
                 ->whereHas('teacher', function($query) {
@@ -389,9 +389,9 @@ class Student extends Authenticatable
                 ->with(['subject', 'teacher.user'])
                 ->get();
 
-            // Convert approved submissions to grade format
+            // Convert finalized submissions to grade format
             $gradesFromSubmissions = collect();
-            foreach ($approvedSubmissions as $submission) {
+            foreach ($finalizedSubmissions as $submission) {
                 $gradesData = $submission->grades_data;
                 foreach ($gradesData as $gradeData) {
                     if ($gradeData['student_id'] == $this->id) {

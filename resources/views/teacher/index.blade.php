@@ -66,29 +66,11 @@
         </div>
       </div>
       <div class="col-6 col-lg-3">
-        <div class="card card-summary card-status h-100">
-          <div class="card-body text-center">
-            <i class="ri-group-line display-6 mb-2"></i>
-            <div>Total Students</div>
-            <h3>{{ $stats['total_students'] ?? 0 }}</h3>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-lg-3">
         <div class="card card-summary card-payment h-100">
           <div class="card-body text-center">
             <i class="ri-file-list-3-line display-6 mb-2"></i>
             <div>Grade Submissions</div>
             <h3>{{ $stats['grade_submissions'] ?? 0 }}</h3>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-lg-3">
-        <div class="card card-summary card-schedule h-100">
-          <div class="card-body text-center">
-            <i class="ri-time-line display-6 mb-2"></i>
-            <div>Weekly Hours</div>
-            <h3>{{ $stats['weekly_hours'] ?? 0 }}</h3>
           </div>
         </div>
       </div>
