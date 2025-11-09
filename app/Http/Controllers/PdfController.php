@@ -31,7 +31,7 @@ class PdfController extends Controller
     \Log::info('Session data for PDF:', ['session' => $session]);
 
     $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
-   $templatePath = 'C:\\Users\\anony\\Documents\\nsms\\resources\\assets\\pdf-forms-generation\\SEWO-CRFS-010 Counselling-Request-Forms.pdf';
+    $templatePath = resource_path('assets/pdf-forms-generation/SEWO-CRFS-010 Counselling-Request-Forms.pdf');
     $pdf->setSourceFile($templatePath);
     $tplId = $pdf->importPage(1);
     $size = $pdf->getTemplateSize($tplId);
@@ -202,7 +202,7 @@ class PdfController extends Controller
             $student = \App\Models\Student::findOrFail($studentId);
             $violation = $student->violations()->findOrFail($violationId);
             $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
-           $templatePath = 'C:/Users/anony/Documents/nsms/resources/assets/pdf-forms-generation/Student.pdf';
+            $templatePath = resource_path('assets/pdf-forms-generation/Student.pdf');
             $pdf->setSourceFile($templatePath);
             $tplId = $pdf->importPage(1);
             $size = $pdf->getTemplateSize($tplId);
@@ -264,7 +264,7 @@ class PdfController extends Controller
         $student = $caseMeeting->student ?? ($caseMeeting->violation->student ?? null);
         $violation = $caseMeeting->violation ?? null;
         $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
-        $templatePath = 'C:/Users/anony/Documents/nsms/resources/assets/pdf-forms-generation/CaseMeeting.pdf';
+        $templatePath = resource_path('assets/pdf-forms-generation/CaseMeeting.pdf');
         if (!file_exists($templatePath)) {
             abort(404, 'Case Meeting PDF template not found.');
         }
@@ -389,7 +389,7 @@ class PdfController extends Controller
         }
 
         $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
-        $templatePath = 'C:/Users/anony/Documents/nsms/resources/assets/pdf-forms-generation/Teacher-Observation-Report.pdf';
+        $templatePath = resource_path('assets/pdf-forms-generation/Teacher-Observation-Report.pdf');
         if (!file_exists($templatePath)) {
             abort(404, 'Teacher Observation Report PDF template not found.');
         }
@@ -437,7 +437,7 @@ class PdfController extends Controller
     {
         $students = \App\Models\Student::all();
         $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
-        $templatePath = 'C:/Users/anony/Documents/nsms/resources/assets/pdf-forms-generation/Summary Report.pdf';
+        $templatePath = resource_path('assets/pdf-forms-generation/Summary Report.pdf');
         if (!file_exists($templatePath)) {
             abort(404, 'Disciplinary Conference Summary Report PDF template not found.');
         }
@@ -518,7 +518,7 @@ class PdfController extends Controller
         }
 
         $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
-        $templatePath = 'C:/Users/anony/Documents/nsms/storage/app/public/Disciplinary-Con-Report/Disciplinary-Con-Report.pdf';
+        $templatePath = storage_path('app/public/Disciplinary-Con-Report/Disciplinary-Con-Report.pdf');
         if (!file_exists($templatePath)) {
             abort(404, 'Disciplinary Conference Summary Report PDF template not found.');
         }
@@ -723,7 +723,7 @@ class PdfController extends Controller
         // Find payment by transaction_id
         $payment = \App\Models\Payment::where('transaction_id', $transactionId)->first();
         if (!$payment) {
-            abort(404, 'Payment not found.');
+            abort(404, "Payment with transaction ID '{$transactionId}' not found. Please verify the transaction ID is correct.");
         }
 
         // Get Enrollee and Student
@@ -748,7 +748,7 @@ class PdfController extends Controller
 
         // Load static PDF
         $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
-       $templatePath = 'C:/Users/anony/Documents/nsms/resources/assets/pdf-forms-generation/Receipt.pdf';
+        $templatePath = resource_path('assets/pdf-forms-generation/Receipt.pdf');
         if (!file_exists($templatePath)) {
             abort(404, 'Receipt PDF template not found.');
         }
@@ -818,7 +818,7 @@ class PdfController extends Controller
         // Find payment by transaction_id
         $payment = \App\Models\Payment::where('transaction_id', $transactionId)->first();
         if (!$payment) {
-            abort(404, 'Payment not found.');
+            abort(404, "Payment with transaction ID '{$transactionId}' not found. Please verify the transaction ID is correct.");
         }
 
         // Get related models
@@ -894,7 +894,7 @@ class PdfController extends Controller
 
         // Load cashier receipt PDF template
         $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
-        $templatePath = 'C:/Users/anony/Documents/nsms/resources/assets/pdf-forms-generation/cashier_receipt.pdf';
+        $templatePath = resource_path('assets/pdf-forms-generation/cashier_receipt.pdf');
         if (!file_exists($templatePath)) {
             abort(404, 'Cashier Receipt PDF template not found.');
         }
@@ -1012,7 +1012,7 @@ public function generateReportCardPdf(Student $student)
 
         // Load PDF template
         $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
-        $templatePath = 'C:/Users/anony/Documents/nsms/resources/assets/pdf-forms-generation/Report Card HS.pdf';
+        $templatePath = resource_path('assets/pdf-forms-generation/Report Card HS.pdf');
         if (!file_exists($templatePath)) {
             abort(404, 'Report Card PDF template not found.');
         }
@@ -1220,7 +1220,7 @@ public function generateElementaryReportCardPdf(Student $student)
 
         // Load Elementary PDF template for Grade 1-2
         $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
-        $templatePath = 'C:/Users/anony/Documents/nsms/resources/assets/pdf-forms-generation/Report-Card- Gr.  1-2 NEW.pdf';
+        $templatePath = resource_path('assets/pdf-forms-generation/Report-Card- Gr.  1-2 NEW.pdf');
         if (!file_exists($templatePath)) {
             abort(404, 'Elementary Report Card PDF template not found.');
         }
@@ -1346,7 +1346,7 @@ public function generateElementaryReportCardPdf(Student $student)
         $students = \App\Models\Student::all();
         $currentAcademicYear = date('Y') . '-' . (date('Y') + 1);
         $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
-        $templatePath = 'C:/Users/anony/Documents/nsms/resources/assets/pdf-forms-generation/Report Card HS.pdf';
+        $templatePath = resource_path('assets/pdf-forms-generation/Report Card HS.pdf');
         if (!file_exists($templatePath)) {
             abort(404, 'Report Card PDF template not found.');
         }

@@ -216,6 +216,14 @@ class Student extends Authenticatable
         return $this->belongsTo(Section::class, 'section_id');
     }
 
+    /**
+     * Get all payments for this student
+     */
+    public function payments()
+    {
+        return $this->morphMany(Payment::class, 'payable');
+    }
+
     public function getFullNameAttribute()
     {
         $name = $this->first_name;

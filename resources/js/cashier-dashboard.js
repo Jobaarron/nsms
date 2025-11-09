@@ -317,7 +317,99 @@ function setDateRange(range) {
  */
 function exportPaymentBreakdown() {
     console.log('Export payment breakdown');
-    alert('Export functionality will be implemented');
+    
+    // Show loading state
+    const exportBtn = document.querySelector('button[onclick="exportPaymentBreakdown()"]');
+    if (exportBtn) {
+        const originalText = exportBtn.innerHTML;
+        exportBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Exporting...';
+        exportBtn.disabled = true;
+        
+        // Restore button after export
+        setTimeout(() => {
+            exportBtn.innerHTML = originalText;
+            exportBtn.disabled = false;
+        }, 2000);
+    }
+    
+    // Get current dashboard data
+    const dashboardData = window.cashierDashboardData || {};
+    
+    // Create payment breakdown CSV
+    const headers = ['Payment Method', 'Total Payments', 'Total Amount', 'Percentage'];
+    const csvContent = [
+        headers.join(','),
+        // Add payment method breakdown
+        `"Full Payment","${dashboardData.full_payments || 0}","₱${formatCurrency(dashboardData.full_amount || 0)}","${((dashboardData.full_amount || 0) / (dashboardData.total_amount || 1) * 100).toFixed(1)}%"`,
+        `"Quarterly Payment","${dashboardData.quarterly_payments || 0}","₱${formatCurrency(dashboardData.quarterly_amount || 0)}","${((dashboardData.quarterly_amount || 0) / (dashboardData.total_amount || 1) * 100).toFixed(1)}%"`,
+        `"Monthly Payment","${dashboardData.monthly_payments || 0}","₱${formatCurrency(dashboardData.monthly_amount || 0)}","${((dashboardData.monthly_amount || 0) / (dashboardData.total_amount || 1) * 100).toFixed(1)}%"`,
+        '',
+        'Status Breakdown',
+        `"Confirmed Payments","${dashboardData.confirmed_payments || 0}","₱${formatCurrency(dashboardData.confirmed_amount || 0)}",""`,
+        `"Pending Payments","${dashboardData.pending_payments || 0}","₱${formatCurrency(dashboardData.pending_amount || 0)}",""`,
+        '',
+        'Summary',
+        `"Total Payments","${dashboardData.total_payments || 0}","₱${formatCurrency(dashboardData.total_amount || 0)}","100%"`,
+        `"Export Date","${new Date().toLocaleDateString()}","",""`
+    ].join('\n');
+    
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `payment_breakdown_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Show success message
+    showAlert('Payment breakdown exported successfully', 'success');
+}
+
+/**
+ * Format currency for display
+ */
+function formatCurrency(amount) {
+    return new Intl.NumberFormat('en-PH', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }).format(amount || 0);
+}
+
+/**
+ * Show alert message
+ */
+function showAlert(message, type = 'info') {
+    // Create alert container if it doesn't exist
+    let alertContainer = document.getElementById('alert-container');
+    if (!alertContainer) {
+        alertContainer = document.createElement('div');
+        alertContainer.id = 'alert-container';
+        alertContainer.className = 'position-fixed top-0 end-0 p-3';
+        alertContainer.style.zIndex = '9999';
+        document.body.appendChild(alertContainer);
+    }
+    
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type} alert-dismissible fade show`;
+    alert.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="ri-information-line me-2"></i>
+            <div>${message}</div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    alertContainer.appendChild(alert);
+    
+    // Auto dismiss after 5 seconds
+    setTimeout(() => {
+        if (alert.parentNode) {
+            alert.remove();
+        }
+    }, 5000);
 }
 
 /**
