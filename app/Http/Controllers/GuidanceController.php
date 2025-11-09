@@ -651,59 +651,13 @@ class GuidanceController extends Controller
  public function forwardToPresident(CaseMeeting $caseMeeting)
 {
     try {
-        // Debug logs
+        // Log the forward attempt
         Log::info('Forward attempt for CaseMeeting', [
             'id' => $caseMeeting->id,
             'status' => $caseMeeting->status,
-            'summary_exists' => !empty($caseMeeting->summary),
-            'sanctions_exist' => $caseMeeting->sanctions()->exists(),
-            'meeting_type' => $caseMeeting->meeting_type,
         ]);
 
-        // Basic requirements: summary and schedule
-        if (empty($caseMeeting->summary) || $caseMeeting->status !== 'pre_completed') {
-            Log::warning('Forward blocked: basic requirements not met', ['id' => $caseMeeting->id]);
-            return response()->json([
-                'success' => false,
-                'message' => 'Please add both a schedule and a summary report before forwarding.'
-            ], 400);
-        }
-
-        // Check for required attachments and replies
-        $missingItems = [];
-
-        // Check if student narrative report exists and has student reply
-        $violation = $caseMeeting->violation;
-        if ($violation && $violation->severity === 'major') {
-            // For major violations, student narrative report is required
-            if (empty($violation->student_statement) && empty($violation->incident_feelings) && empty($violation->action_plan)) {
-                $missingItems[] = 'Student Narrative Report (student reply required)';
-            }
-        }
-
-        // Check if teacher observation report exists and has teacher reply
-        if (empty($caseMeeting->teacher_statement) && empty($caseMeeting->action_plan)) {
-            $missingItems[] = 'Teacher Observation Report (teacher reply required)';
-        }
-
-        // Check if disciplinary conference report can be generated (requires summary)
-        if (empty($caseMeeting->summary)) {
-            $missingItems[] = 'Disciplinary Conference Report (summary required)';
-        }
-
-        // If there are missing attachments/replies, prevent forwarding
-        if (!empty($missingItems)) {
-            Log::warning('Forward blocked: missing attachments/replies', [
-                'id' => $caseMeeting->id,
-                'missing_items' => $missingItems
-            ]);
-            return response()->json([
-                'success' => false,
-                'message' => 'Cannot forward to president. Missing: ' . implode(', ', $missingItems) . '. Please ensure all required reports are completed with proper replies.'
-            ], 400);
-        }
-
-
+        // Update case meeting status to submitted
         $caseMeeting->update([
             'status' => 'submitted',
             'forwarded_to_president' => true,
@@ -1730,5 +1684,42 @@ public function getDisciplineVsTotalStats()
                 'sanctions_created' => count($sanctionsToCreate)
             ]);
         }
+    }
+
+    /**
+     * Check if the case meeting has any interventions selected.
+     *
+     * @param CaseMeeting $caseMeeting
+     * @return bool
+     */
+    private function hasAnyInterventions(CaseMeeting $caseMeeting): bool
+    {
+        // Check if any intervention/sanction fields are set to true
+        $interventionFields = [
+            'written_reflection',
+            'mentorship_counseling', 
+            'parent_teacher_communication',
+            'restorative_justice_activity',
+            'follow_up_meeting',
+            'community_service',
+            'suspension',
+            'suspension_3days',
+            'suspension_5days',
+            'expulsion'
+        ];
+
+        foreach ($interventionFields as $field) {
+            if ($caseMeeting->{$field}) {
+                return true;
+            }
+        }
+
+        // Also check if suspension_other_days has a value greater than 0
+        if ($caseMeeting->suspension_other_days && $caseMeeting->suspension_other_days > 0) {
+            return true;
+        }
+
+        // Check if there are any sanctions in the sanctions table as well (for backward compatibility)
+        return $caseMeeting->sanctions()->exists();
     }
 }

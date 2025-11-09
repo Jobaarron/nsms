@@ -114,21 +114,43 @@
                                     </td>
                                     <!-- Offense cell: Title (bold), desc (muted, small, below) -->
                                     <td style="min-width:150px; padding-top:0.5rem; padding-bottom:0.5rem;">
-                                        @if($meeting->sanctions->count() > 0 && $meeting->sanctions->first()->violation)
+                                        @if($meeting->violation)
+                                            <div>{{ $meeting->violation->title }}</div>
+                                        @elseif($meeting->sanctions->count() > 0 && $meeting->sanctions->first()->violation)
                                             <div>{{ $meeting->sanctions->first()->violation->title }}</div>
                                         @else
                                             <span class="text-muted">-</span>
                                         @endif
                                     </td>
-                                    <!-- Sanction cell: Main sanction (bold), others (muted, small, below) -->
+                                    <!-- Sanction cell: Show sanctions from case meeting fields -->
                                     <td style="min-width:150px; padding-top:0.5rem; padding-bottom:0.5rem;">
-                                        @if($meeting->sanctions->count() > 0)
-                                            <di>{{ $meeting->sanctions->first()->sanction }}</div>
-                                            @if($meeting->sanctions->count() > 1)
+                                        @php
+                                            $sanctions = [];
+                                            if ($meeting->written_reflection) $sanctions[] = 'Written Reflection' . ($meeting->written_reflection_due ? ' (Due: ' . $meeting->written_reflection_due->format('M d') . ')' : '');
+                                            if ($meeting->mentorship_counseling) $sanctions[] = 'Mentorship/Counseling' . ($meeting->mentor_name ? ' (' . $meeting->mentor_name . ')' : '');
+                                            if ($meeting->parent_teacher_communication) $sanctions[] = 'Parent-Teacher Communication' . ($meeting->parent_teacher_date ? ' (' . $meeting->parent_teacher_date->format('M d') . ')' : '');
+                                            if ($meeting->restorative_justice_activity) $sanctions[] = 'Restorative Justice' . ($meeting->restorative_justice_date ? ' (' . $meeting->restorative_justice_date->format('M d') . ')' : '');
+                                            if ($meeting->follow_up_meeting) $sanctions[] = 'Follow-up Meeting' . ($meeting->follow_up_meeting_date ? ' (' . $meeting->follow_up_meeting_date->format('M d') . ')' : '');
+                                            if ($meeting->community_service) $sanctions[] = 'Community Service' . ($meeting->community_service_area ? ' (' . $meeting->community_service_area . ')' : '') . ($meeting->community_service_date ? ' - ' . $meeting->community_service_date->format('M d') : '');
+                                            if ($meeting->suspension) {
+                                                $suspensionText = 'Suspension';
+                                                if ($meeting->suspension_3days) $suspensionText .= ' (3 days)';
+                                                elseif ($meeting->suspension_5days) $suspensionText .= ' (5 days)';
+                                                elseif ($meeting->suspension_other_days) $suspensionText .= ' (' . $meeting->suspension_other_days . ' days)';
+                                                if ($meeting->suspension_start && $meeting->suspension_end) {
+                                                    $suspensionText .= ' (' . $meeting->suspension_start->format('M d') . ' - ' . $meeting->suspension_end->format('M d') . ')';
+                                                }
+                                                $sanctions[] = $suspensionText;
+                                            }
+                                            if ($meeting->expulsion) $sanctions[] = 'Expulsion' . ($meeting->expulsion_date ? ' (' . $meeting->expulsion_date->format('M d, Y') . ')' : '');
+                                        @endphp
+                                        @if(count($sanctions) > 0)
+                                            <div>{{ $sanctions[0] }}</div>
+                                            @if(count($sanctions) > 1)
                                                 <div class="text-muted small">
-                                                    @foreach($meeting->sanctions->slice(1) as $sanction)
-                                                        {{ $sanction->sanction }}@if(!$loop->last), @endif
-                                                    @endforeach
+                                                    @for($i = 1; $i < count($sanctions); $i++)
+                                                        {{ $sanctions[$i] }}@if($i < count($sanctions) - 1), @endif
+                                                    @endfor
                                                 </div>
                                             @endif
                                         @else
@@ -140,21 +162,24 @@
                                         <span class="badge bg-warning text-white" style="font-weight:600;">{{ $meeting->status === 'forwarded' ? 'Submitted' : ucfirst($meeting->status) }}</span>
                                     </td>
                                     <!-- Actions cell: icon buttons, horizontally aligned -->
-                                    <td style="min-width:110px; padding-top:0.5rem; padding-bottom:0.5rem;">
+                                    <td style="min-width:150px; padding-top:0.5rem; padding-bottom:0.5rem;">
                                         <div class="d-flex gap-2 align-items-center">
+                                            <!-- View Summary Report Button -->
                                             <button class="btn btn-outline-info btn-sm view-summary-btn" data-meeting-id="{{ $meeting->id }}" title="View Summary Report" data-bs-toggle="modal" data-bs-target="#viewSummaryModal">
                                                 <i class="ri-file-text-line"></i>
                                             </button>
-                                            @foreach($meeting->sanctions as $sanction)
-                                                @if(!$sanction->is_approved)
-                                                    <button class="btn btn-outline-success btn-sm approve-sanction-btn" data-sanction-id="{{ $sanction->sanction_id }}" title="Approve Sanction">
-                                                        <i class="ri-check-line"></i>
-                                                    </button>
-                                                    <button class="btn btn-outline-warning btn-sm revise-sanction-btn" data-sanction-id="{{ $sanction->sanction_id }}" title="Revise Sanction" data-bs-toggle="modal" data-bs-target="#reviseSanctionModal" data-sanction="{{ $sanction->sanction }}" data-notes="{{ $sanction->notes }}">
-                                                        <i class="ri-edit-line"></i>
-                                                    </button>
-                                                @endif
-                                            @endforeach
+                                            
+                                            @if($meeting->status === 'submitted')
+                                                <!-- Approve Button (for case meeting) -->
+                                                <button class="btn btn-outline-success btn-sm approve-case-meeting-btn" data-meeting-id="{{ $meeting->id }}" title="Approve Case">
+                                                    <i class="ri-check-line"></i>
+                                                </button>
+                                                
+                                                <!-- Edit Sanction Button -->
+                                                <button class="btn btn-outline-warning btn-sm revise-sanction-btn" data-meeting-id="{{ $meeting->id }}" title="Edit Sanction" data-bs-toggle="modal" data-bs-target="#reviseSanctionModal">
+                                                    <i class="ri-edit-line"></i>
+                                                </button>
+                                            @endif
                                         </div>
                                     </td>
                                 </tr>
@@ -176,10 +201,7 @@
                     <span>Case Meeting History</span>
                 </div>
                 <div class="p-0" style="padding-bottom:0;">
-                    @php
-                        $historyMeetings = $caseMeetings->filter(function($meeting) { return $meeting->status === 'case_closed'; });
-                    @endphp
-                    @if($historyMeetings->count() > 0)
+                    @if(isset($archivedMeetings) && $archivedMeetings->count() > 0)
                     <div class="table-responsive">
                         <table class="table case-table table-sm align-middle mb-0">
                             <thead>
@@ -193,12 +215,12 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($historyMeetings as $meeting)
+                                @foreach($archivedMeetings as $meeting)
                                 <tr style="background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(67,179,106,0.07);">
-                                    <!-- Date cell: Date (bold), time (muted, small, below) -->
+                                    <!-- Date cell: Date (bold), archived date (muted, small, below) -->
                                     <td style="min-width:100px; padding-top:0.5rem; padding-bottom:0.5rem;">
-                                        <div>{{ $meeting->scheduled_date->format('M d, Y') }}</div>
-                                        <div class="text-muted small">{{ $meeting->scheduled_time ? $meeting->scheduled_time->format('h:i A') : '' }}</div>
+                                        <div>{{ $meeting->scheduled_date ? $meeting->scheduled_date->format('M d, Y') : 'N/A' }}</div>
+                                        <div class="text-muted small">Archived: {{ $meeting->archived_at->format('M d, Y') }}</div>
                                     </td>
                                     <!-- Student cell: Name (bold), ID (muted, small, below) -->
                                     <td style="min-width:120px; padding-top:0.5rem; padding-bottom:0.5rem;">
@@ -207,21 +229,43 @@
                                     </td>
                                     <!-- Offense cell: Title (bold), desc (muted, small, below) -->
                                     <td style="min-width:150px; padding-top:0.5rem; padding-bottom:0.5rem;">
-                                        @if($meeting->sanctions->count() > 0 && $meeting->sanctions->first()->violation)
+                                        @if($meeting->violation)
+                                            <div>{{ $meeting->violation->title }}</div>
+                                        @elseif($meeting->sanctions->count() > 0 && $meeting->sanctions->first()->violation)
                                             <div>{{ $meeting->sanctions->first()->violation->title }}</div>
                                         @else
                                             <span class="text-muted">-</span>
                                         @endif
                                     </td>
-                                    <!-- Sanction cell: Main sanction (bold), others (muted, small, below) -->
+                                    <!-- Sanction cell: Show sanctions from case meeting fields -->
                                     <td style="min-width:150px; padding-top:0.5rem; padding-bottom:0.5rem;">
-                                        @if($meeting->sanctions->count() > 0)
-                                            <di>{{ $meeting->sanctions->first()->sanction }}</div>
-                                            @if($meeting->sanctions->count() > 1)
+                                        @php
+                                            $sanctions = [];
+                                            if ($meeting->written_reflection) $sanctions[] = 'Written Reflection' . ($meeting->written_reflection_due ? ' (Due: ' . $meeting->written_reflection_due->format('M d') . ')' : '');
+                                            if ($meeting->mentorship_counseling) $sanctions[] = 'Mentorship/Counseling' . ($meeting->mentor_name ? ' (' . $meeting->mentor_name . ')' : '');
+                                            if ($meeting->parent_teacher_communication) $sanctions[] = 'Parent-Teacher Communication' . ($meeting->parent_teacher_date ? ' (' . $meeting->parent_teacher_date->format('M d') . ')' : '');
+                                            if ($meeting->restorative_justice_activity) $sanctions[] = 'Restorative Justice' . ($meeting->restorative_justice_date ? ' (' . $meeting->restorative_justice_date->format('M d') . ')' : '');
+                                            if ($meeting->follow_up_meeting) $sanctions[] = 'Follow-up Meeting' . ($meeting->follow_up_meeting_date ? ' (' . $meeting->follow_up_meeting_date->format('M d') . ')' : '');
+                                            if ($meeting->community_service) $sanctions[] = 'Community Service' . ($meeting->community_service_area ? ' (' . $meeting->community_service_area . ')' : '') . ($meeting->community_service_date ? ' - ' . $meeting->community_service_date->format('M d') : '');
+                                            if ($meeting->suspension) {
+                                                $suspensionText = 'Suspension';
+                                                if ($meeting->suspension_3days) $suspensionText .= ' (3 days)';
+                                                elseif ($meeting->suspension_5days) $suspensionText .= ' (5 days)';
+                                                elseif ($meeting->suspension_other_days) $suspensionText .= ' (' . $meeting->suspension_other_days . ' days)';
+                                                if ($meeting->suspension_start && $meeting->suspension_end) {
+                                                    $suspensionText .= ' (' . $meeting->suspension_start->format('M d') . ' - ' . $meeting->suspension_end->format('M d') . ')';
+                                                }
+                                                $sanctions[] = $suspensionText;
+                                            }
+                                            if ($meeting->expulsion) $sanctions[] = 'Expulsion' . ($meeting->expulsion_date ? ' (' . $meeting->expulsion_date->format('M d, Y') . ')' : '');
+                                        @endphp
+                                        @if(count($sanctions) > 0)
+                                            <div>{{ $sanctions[0] }}</div>
+                                            @if(count($sanctions) > 1)
                                                 <div class="text-muted small">
-                                                    @foreach($meeting->sanctions->slice(1) as $sanction)
-                                                        {{ $sanction->sanction }}@if(!$loop->last), @endif
-                                                    @endforeach
+                                                    @for($i = 1; $i < count($sanctions); $i++)
+                                                        {{ $sanctions[$i] }}@if($i < count($sanctions) - 1), @endif
+                                                    @endfor
                                                 </div>
                                             @endif
                                         @else
@@ -230,7 +274,15 @@
                                     </td>
                                     <!-- Status cell -->
                                     <td style="min-width:90px; padding-top:0.5rem; padding-bottom:0.5rem;">
-                                        <span class="badge bg-success text-white" style="font-weight:600;">Closed</span>
+                                        @if($meeting->archive_reason === 'approved')
+                                            <span class="badge bg-success text-white" style="font-weight:600;">Approved</span>
+                                        @elseif($meeting->archive_reason === 'closed')
+                                            <span class="badge bg-secondary text-white" style="font-weight:600;">Closed</span>
+                                        @elseif($meeting->archive_reason === 'completed')
+                                            <span class="badge bg-primary text-white" style="font-weight:600;">Completed</span>
+                                        @else
+                                            <span class="badge bg-info text-white" style="font-weight:600;">{{ ucfirst($meeting->archive_reason) }}</span>
+                                        @endif
                                     </td>
                                     <!-- Actions cell: icon buttons, horizontally aligned -->
                                     <td style="min-width:110px; padding-top:0.5rem; padding-bottom:0.5rem;">
@@ -245,8 +297,14 @@
                             </tbody>
                         </table>
                     </div>
+                    <!-- Pagination for archived meetings -->
+                    @if(isset($archivedMeetings) && $archivedMeetings->hasPages())
+                        <div class="d-flex justify-content-center mt-3 mb-3">
+                            {{ $archivedMeetings->appends(request()->query())->links() }}
+                        </div>
+                    @endif
                     @else
-                    <p class="text-center text-muted my-4 mb-0" style="margin-bottom:0;">No case meeting history found.</p>
+                    <p class="text-center text-muted my-4 mb-0" style="margin-bottom:0;">No archived case meetings found.</p>
                     @endif
                 </div>
             </div>
@@ -311,12 +369,61 @@
                 <form id="reviseSanctionForm">
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label for="revise-sanction-text" class="form-label">Sanction <span class="text-danger">*</span></label>
-                            <textarea class="form-control" id="revise-sanction-text" name="sanction" rows="4" required placeholder="Enter the revised sanction..."></textarea>
+                            <label class="form-label">Current Sanctions from Guidance</label>
+                            <div id="current-sanctions-display" class="alert alert-info">
+                                <!-- Current sanctions will be loaded here -->
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label for="revise-sanction-notes" class="form-label">Additional Notes</label>
-                            <textarea class="form-control" id="revise-sanction-notes" name="notes" rows="3" placeholder="Any additional notes for this revision..."></textarea>
+                        
+                        <div class="row">
+                            <!-- Intervention Options -->
+                            <div class="col-md-6">
+                                <h6>Agreed Actions/Interventions</h6>
+                                
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="written_reflection" name="written_reflection">
+                                    <label class="form-check-label" for="written_reflection">Written Reflection</label>
+                                </div>
+
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="mentorship_counseling" name="mentorship_counseling">
+                                    <label class="form-check-label" for="mentorship_counseling">Mentorship/Counseling</label>
+                                </div>
+
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="parent_teacher_communication" name="parent_teacher_communication">
+                                    <label class="form-check-label" for="parent_teacher_communication">Parent-Teacher Communication</label>
+                                </div>
+
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="restorative_justice_activity" name="restorative_justice_activity">
+                                    <label class="form-check-label" for="restorative_justice_activity">Restorative Justice Activity</label>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <h6>Additional Interventions</h6>
+                                
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="follow_up_meeting" name="follow_up_meeting">
+                                    <label class="form-check-label" for="follow_up_meeting">Follow-up Meeting</label>
+                                </div>
+
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="community_service" name="community_service">
+                                    <label class="form-check-label" for="community_service">Community Service</label>
+                                </div>
+
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="suspension" name="suspension">
+                                    <label class="form-check-label" for="suspension">Suspension</label>
+                                </div>
+
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="expulsion" name="expulsion">
+                                    <label class="form-check-label" for="expulsion">Expulsion</label>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -408,9 +515,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 .then(data => {
                     alert(data.message);
                     if (data.success) {
-                        // Remove the row from the table
-                        const row = button.closest('tr');
-                        if (row) row.remove();
+                        // Reload page to update button states
+                        location.reload();
                     }
                 })
                 .catch(error => {
@@ -454,16 +560,16 @@ document.addEventListener('DOMContentLoaded', function () {
     const reviseButtons = document.querySelectorAll('.revise-sanction-btn');
     reviseButtons.forEach(button => {
         button.addEventListener('click', function () {
-            const sanctionId = this.getAttribute('data-sanction-id');
-            const sanctionText = this.getAttribute('data-sanction');
-            const notesText = this.getAttribute('data-notes');
+            const meetingId = this.getAttribute('data-meeting-id');
 
-            // Populate modal with existing data
-            document.getElementById('revise-sanction-text').value = sanctionText || '';
-            document.getElementById('revise-sanction-notes').value = notesText || '';
+            // Reset modal
+            resetReviseSanctionModal();
+            
+            // Load current sanctions
+            loadCurrentSanctions(meetingId);
 
-            // Store sanction ID for form submission
-            document.getElementById('reviseSanctionForm').setAttribute('data-sanction-id', sanctionId);
+            // Store meeting ID for form submission
+            document.getElementById('reviseSanctionForm').setAttribute('data-meeting-id', meetingId);
         });
     });
 
@@ -471,10 +577,10 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('reviseSanctionForm').addEventListener('submit', function (e) {
         e.preventDefault();
 
-        const sanctionId = this.getAttribute('data-sanction-id');
+        const meetingId = this.getAttribute('data-meeting-id');
         const formData = new FormData(this);
 
-        fetch(`/admin/sanctions/${sanctionId}/revise`, {
+        fetch(`/admin/case-meetings/${meetingId}/sanctions`, {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': '{{ csrf_token() }}',
@@ -498,6 +604,20 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 });
+
+// Function to reset the revise sanction modal
+function resetReviseSanctionModal() {
+    const dropdown = document.getElementById('revise-sanction-dropdown');
+    const customField = document.getElementById('custom-sanction-field');
+    const customTextarea = document.getElementById('revise-sanction-custom');
+    
+    dropdown.value = '';
+    customField.style.display = 'none';
+    customTextarea.removeAttribute('required');
+    customTextarea.value = '';
+}
+
+
 
 // Function to load summary report
 function loadSummaryReport(meetingId) {
@@ -700,5 +820,139 @@ function generateSummaryHTML(meeting) {
 
     return html;
 }
+
+// Load current sanctions for a case meeting
+function loadCurrentSanctions(meetingId) {
+    fetch(`/admin/case-meetings/${meetingId}/sanctions`, {
+        method: 'GET',
+        headers: {
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Display current sanctions
+            const sanctionsDisplay = document.getElementById('current-sanctions-display');
+            let currentSanctions = [];
+            if (data.sanctions.written_reflection) currentSanctions.push('Written Reflection');
+            if (data.sanctions.mentorship_counseling) currentSanctions.push('Mentorship/Counseling');
+            if (data.sanctions.parent_teacher_communication) currentSanctions.push('Parent-Teacher Communication');
+            if (data.sanctions.restorative_justice_activity) currentSanctions.push('Restorative Justice Activity');
+            if (data.sanctions.follow_up_meeting) currentSanctions.push('Follow-up Meeting');
+            if (data.sanctions.community_service) currentSanctions.push('Community Service');
+            if (data.sanctions.suspension) currentSanctions.push('Suspension');
+            if (data.sanctions.expulsion) currentSanctions.push('Expulsion');
+            
+            sanctionsDisplay.innerHTML = currentSanctions.length > 0 ? 
+                currentSanctions.join(', ') : 'No sanctions currently set';
+            
+            // Set checkboxes based on current values
+            document.getElementById('written_reflection').checked = data.sanctions.written_reflection;
+            document.getElementById('mentorship_counseling').checked = data.sanctions.mentorship_counseling;
+            document.getElementById('parent_teacher_communication').checked = data.sanctions.parent_teacher_communication;
+            document.getElementById('restorative_justice_activity').checked = data.sanctions.restorative_justice_activity;
+            document.getElementById('follow_up_meeting').checked = data.sanctions.follow_up_meeting;
+            document.getElementById('community_service').checked = data.sanctions.community_service;
+            document.getElementById('suspension').checked = data.sanctions.suspension;
+            document.getElementById('expulsion').checked = data.sanctions.expulsion;
+        }
+    })
+    .catch(error => {
+        console.error('Error loading sanctions:', error);
+        document.getElementById('current-sanctions-display').innerHTML = 'Error loading current sanctions';
+    });
+}
+
+// Reset the revise sanction modal
+function resetReviseSanctionModal() {
+    // Uncheck all checkboxes
+    const checkboxes = document.querySelectorAll('#reviseSanctionModal input[type="checkbox"]');
+    checkboxes.forEach(checkbox => checkbox.checked = false);
+    
+    // Clear the sanctions display
+    const sanctionsDisplay = document.getElementById('current-sanctions-display');
+    if (sanctionsDisplay) {
+        sanctionsDisplay.innerHTML = 'Loading...';
+    }
+}
+
+// Approve case meeting buttons
+document.addEventListener('DOMContentLoaded', function() {
+    const approveButtons = document.querySelectorAll('.approve-case-meeting-btn');
+    console.log('Found approve buttons:', approveButtons.length);
+    
+    approveButtons.forEach(button => {
+        button.addEventListener('click', function () {
+            const meetingId = this.getAttribute('data-meeting-id');
+            console.log('Approve button clicked for meeting:', meetingId);
+            
+            if (confirm('Are you sure you want to approve this case? It will be archived after approval.')) {
+                console.log('Sending approve request to:', `/admin/case-meetings/${meetingId}/approve`);
+                
+                fetch(`/admin/case-meetings/${meetingId}/approve`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => {
+                    console.log('Response status:', response.status);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Response data:', data);
+                    alert(data.message);
+                    if (data.success) {
+                        // Reload page to update view
+                        location.reload();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error details:', error);
+                    alert('An error occurred while approving the case.');
+                });
+            }
+        });
+    });
+
+    // Close case buttons
+    const closeButtons = document.querySelectorAll('.close-case-btn');
+    closeButtons.forEach(button => {
+        button.addEventListener('click', function () {
+            const meetingId = this.getAttribute('data-meeting-id');
+            const notes = prompt('Add president notes (optional):');
+            
+            if (confirm('Are you sure you want to close this case? It will be archived after closure.')) {
+                fetch(`/admin/cases/${meetingId}/close`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        president_notes: notes
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message);
+                    if (data.success) {
+                        // Remove the row from the table or reload page
+                        location.reload();
+                    }
+                })
+                .catch(error => {
+                    alert('An error occurred while closing the case.');
+                    console.error(error);
+                });
+            }
+        });
+    });
+});
 </script>
 </x-admin-layout>
