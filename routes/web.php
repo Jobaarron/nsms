@@ -771,6 +771,10 @@ Route::prefix('registrar')->name('registrar.')->group(function () {
         Route::get('/recipients/preview', [RegistrarController::class, 'previewRecipients'])->name('recipients.preview');
         
         
+        // Applicant Archives
+        Route::get('/applicant-archives', [RegistrarController::class, 'applicantArchives'])->name('applicant-archives');
+        Route::post('/applicant-archives/{id}/reconsider', [RegistrarController::class, 'reconsiderApplication'])->name('applicant-archives.reconsider');
+        
         // Class Lists Management
         Route::get('/class-lists', [RegistrarController::class, 'classLists'])->name('class-lists');
         Route::get('/class-lists/get-strands', [RegistrarController::class, 'getClassListStrands'])->name('class-lists.get-strands');
