@@ -378,6 +378,12 @@ Route::prefix('discipline')->name('discipline.')->group(function () {
     Route::get('/violation-bar-stats', [App\Http\Controllers\DisciplineController::class, 'getViolationBarStats'])->name('violation-bar-stats');
     // AJAX: Case status pie chart (pending, ongoing, completed)
     Route::get('/case-status-stats', [App\Http\Controllers\DisciplineController::class, 'getCaseStatusStats'])->name('case-status-stats');
+    // AJAX: Resolution trend stats for line chart
+    Route::get('/resolution-trend-stats', [App\Http\Controllers\DisciplineController::class, 'getResolutionTrendStats'])->name('resolution-trend-stats');
+    // AJAX: Dashboard insights
+    Route::get('/dashboard-insights', [App\Http\Controllers\DisciplineController::class, 'getDashboardInsights'])->name('dashboard-insights');
+    // AJAX: Dashboard statistics
+    Route::get('/dashboard-stats', [App\Http\Controllers\DisciplineController::class, 'getDashboardStats'])->name('dashboard-stats');
 
     // Protected routes
     Route::middleware(['web'])->group(function () {
@@ -464,7 +470,17 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
             // API: Weekly violation list for dashboard
             Route::get('/weekly-violations', [App\Http\Controllers\GuidanceController::class, 'getWeeklyViolations'])->name('weekly-violations');
 
-            Route::get('/top-cases', [App\Http\Controllers\GuidanceController::class, 'getTopCases']);        // Logout
+            Route::get('/top-cases', [App\Http\Controllers\GuidanceController::class, 'getTopCases']);
+            
+            // New Analytics Routes
+            Route::get('/violation-trends', [App\Http\Controllers\GuidanceController::class, 'getViolationTrends'])->name('violation-trends');
+            Route::get('/violation-severity', [App\Http\Controllers\GuidanceController::class, 'getViolationSeverity'])->name('violation-severity');
+            Route::get('/counseling-effectiveness', [App\Http\Controllers\GuidanceController::class, 'getCounselingEffectiveness'])->name('counseling-effectiveness');
+            Route::get('/recent-activities', [App\Http\Controllers\GuidanceController::class, 'getRecentActivities'])->name('recent-activities');
+            Route::get('/upcoming-tasks', [App\Http\Controllers\GuidanceController::class, 'getUpcomingTasks'])->name('upcoming-tasks');
+            Route::get('/counselor-performance', [App\Http\Controllers\GuidanceController::class, 'getCounselorPerformance'])->name('counselor-performance');
+            
+        // Logout
         Route::post('/logout', [App\Http\Controllers\GuidanceController::class, 'logout'])->name('logout');
         
         // Case Meeting Routes
@@ -770,10 +786,6 @@ Route::prefix('registrar')->name('registrar.')->group(function () {
         Route::get('/notices/{id}', [RegistrarController::class, 'getNotice'])->name('notices.get.single');
         Route::get('/recipients/preview', [RegistrarController::class, 'previewRecipients'])->name('recipients.preview');
         
-        
-        // Applicant Archives
-        Route::get('/applicant-archives', [RegistrarController::class, 'applicantArchives'])->name('applicant-archives');
-        Route::post('/applicant-archives/{id}/reconsider', [RegistrarController::class, 'reconsiderApplication'])->name('applicant-archives.reconsider');
         
         // Class Lists Management
         Route::get('/class-lists', [RegistrarController::class, 'classLists'])->name('class-lists');
