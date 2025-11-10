@@ -343,4 +343,12 @@
     </div>
   </div>
 
+<script>
+  // Make current user data available to JavaScript
+  window.currentUser = {
+    id: {{ auth()->id() }},
+    name: "{{ auth()->user()->name }}",
+  };
+</script>
+
 </x-discipline-layout>

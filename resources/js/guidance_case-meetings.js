@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Add CSS styles for disabled intervention checkboxes
+    // Add CSS styles for disabled intervention checkboxes and enhanced UI
     const style = document.createElement('style');
     style.textContent = `
         .form-check:has(input.form-check-input:disabled) {
@@ -9,6 +9,75 @@ document.addEventListener('DOMContentLoaded', function() {
         .form-check input.form-check-input:disabled + .form-check-label {
             color: #6c757d !important;
             cursor: not-allowed;
+        }
+        
+        /* Enhanced case meeting styles */
+        .meeting-summary {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #198754;
+        }
+        
+        .meeting-summary .row {
+            margin-bottom: 0.5rem;
+        }
+        
+        .alert-success.position-fixed {
+            animation: slideInRight 0.3s ease-out;
+        }
+        
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .progress-bar-animated {
+            animation: progress-bar-stripes 1s linear infinite;
+        }
+        
+        @keyframes progress-bar-stripes {
+            0% { background-position: 1rem 0; }
+            100% { background-position: 0 0; }
+        }
+        
+        .notification-status .small {
+            font-size: 0.825rem;
+        }
+        
+        .modal-content {
+            border: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .modal-header.bg-success {
+            border-top-left-radius: 0.375rem;
+            border-top-right-radius: 0.375rem;
+        }
+        
+        /* Custom color scheme - black, white, yellow, green */
+        .btn-primary {
+            background-color: #198754 !important;
+            border-color: #198754 !important;
+        }
+        
+        .btn-primary:hover {
+            background-color: #146c43 !important;
+            border-color: #146c43 !important;
+        }
+        
+        .text-primary {
+            color: #198754 !important;
+        }
+        
+        .border-primary {
+            border-color: #198754 !important;
         }
     `;
     document.head.appendChild(style);
@@ -458,14 +527,212 @@ window.submitCaseMeeting = function(event) {
 
     const form = event.target;
     const formData = new FormData(form);
+    
+    // Enhanced pre-submission validation
+    const validationResult = validateCaseMeetingForm(form);
+    if (!validationResult.isValid) {
+        showValidationErrors(validationResult.errors);
+        return;
+    }
+    
+    // Show confirmation modal with meeting details
+    showCaseMeetingConfirmation(formData, form);
+};
+
+// Enhanced validation function
+function validateCaseMeetingForm(form) {
+    const errors = [];
+    const studentId = form.querySelector('[name="student_id"]').value;
+    const meetingType = form.querySelector('[name="meeting_type"]').value;
+    const scheduledDate = form.querySelector('[name="scheduled_date"]').value;
+    const scheduledTime = form.querySelector('[name="scheduled_time"]').value;
+    const reason = form.querySelector('[name="reason"]').value.trim();
+    
+    // Basic field validation
+    if (!studentId) errors.push('Please select a student');
+    if (!meetingType) errors.push('Please select a meeting type');
+    if (!scheduledDate) errors.push('Please select a date');
+    if (!scheduledTime) errors.push('Please select a time');
+    if (!reason) errors.push('Please provide a reason for the meeting');
+    
+    // Date validation
+    if (scheduledDate) {
+        const selectedDate = new Date(scheduledDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        if (selectedDate <= today) {
+            errors.push('Meeting date must be in the future');
+        }
+        
+        const dayOfWeek = selectedDate.getDay();
+        if (dayOfWeek === 0 || dayOfWeek === 6) {
+            errors.push('Meetings cannot be scheduled on weekends');
+        }
+    }
+    
+    // Time validation (school hours)
+    if (scheduledTime) {
+        const [hours, minutes] = scheduledTime.split(':').map(Number);
+        const timeInMinutes = hours * 60 + minutes;
+        const schoolStart = 7 * 60; // 7:00 AM
+        const schoolEnd = 16 * 60; // 4:00 PM
+        
+        if (timeInMinutes < schoolStart || timeInMinutes > schoolEnd) {
+            errors.push('Meeting time must be within school hours (7:00 AM - 4:00 PM)');
+        }
+    }
+    
+    return {
+        isValid: errors.length === 0,
+        errors: errors
+    };
+}
+
+// Show validation errors
+function showValidationErrors(errors) {
+    const errorHtml = `
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <h6><i class="ri-error-warning-line me-2"></i>Please correct the following errors:</h6>
+            <ul class="mb-0">
+                ${errors.map(error => `<li>${error}</li>`).join('')}
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    // Insert error at the top of the modal body
+    const modalBody = document.querySelector('#scheduleCaseMeetingModal .modal-body');
+    const existingAlert = modalBody.querySelector('.alert');
+    if (existingAlert) {
+        existingAlert.remove();
+    }
+    modalBody.insertAdjacentHTML('afterbegin', errorHtml);
+}
+
+// Confirmation modal for case meeting
+function showCaseMeetingConfirmation(formData, form) {
+    // Hide the schedule case meeting modal first
+    const scheduleModal = document.getElementById('scheduleCaseMeetingModal');
+    if (scheduleModal) {
+        const bootstrapScheduleModal = bootstrap.Modal.getInstance(scheduleModal);
+        if (bootstrapScheduleModal) {
+            bootstrapScheduleModal.hide();
+        }
+    }
+    
+    const studentSelect = form.querySelector('[name="student_id"]');
+    const studentName = studentSelect.options[studentSelect.selectedIndex].text;
+    const meetingType = form.querySelector('[name="meeting_type"]').value;
+    const scheduledDate = form.querySelector('[name="scheduled_date"]').value;
+    const scheduledTime = form.querySelector('[name="scheduled_time"]').value;
+    const reason = form.querySelector('[name="reason"]').value;
+    
+    const confirmationHtml = `
+        <div class="modal fade" id="caseMeetingConfirmationModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title">
+                            <i class="ri-calendar-check-line me-2"></i>Confirm Case Meeting
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-info">
+                            <i class="ri-information-line me-2"></i>
+                            <strong>Please review the meeting details below:</strong>
+                        </div>
+                        
+                        <div class="meeting-summary">
+                            <div class="row mb-3">
+                                <div class="col-4 fw-bold text-muted">Student:</div>
+                                <div class="col-8">${studentName}</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-4 fw-bold text-muted">Type:</div>
+                                <div class="col-8">${meetingType.replace('_', ' ').toUpperCase()}</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-4 fw-bold text-muted">Date:</div>
+                                <div class="col-8">${new Date(scheduledDate).toLocaleDateString('en-US', { 
+                                    weekday: 'long', 
+                                    year: 'numeric', 
+                                    month: 'long', 
+                                    day: 'numeric' 
+                                })}</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-4 fw-bold text-muted">Time:</div>
+                                <div class="col-8">${formatTime12Hour(scheduledTime)}</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-4 fw-bold text-muted">Reason:</div>
+                                <div class="col-8">${reason}</div>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="alert alert-warning">
+                            <i class="ri-mail-send-line me-2"></i>
+                            <strong>Automatic Notifications:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li>The student's class adviser will be automatically notified</li>
+                                <li>A Teacher Observation Report will be forwarded to the adviser</li>
+                                <li>Meeting details will be recorded in the system</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="ri-close-line me-1"></i>Cancel
+                        </button>
+                        <button type="button" class="btn btn-success" onclick="confirmCaseMeetingScheduling()">
+                            <i class="ri-check-line me-1"></i>Schedule Meeting
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing confirmation modal if any
+    const existingModal = document.getElementById('caseMeetingConfirmationModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add new modal to body
+    document.body.insertAdjacentHTML('beforeend', confirmationHtml);
+    
+    // Store form data for later use
+    window.pendingCaseMeetingData = formData;
+    window.pendingCaseMeetingForm = form;
+    
+    // Show confirmation modal
+    const confirmModal = new bootstrap.Modal(document.getElementById('caseMeetingConfirmationModal'));
+    confirmModal.show();
+}
+
+// Confirm and proceed with scheduling
+window.confirmCaseMeetingScheduling = function() {
+    const confirmModal = bootstrap.Modal.getInstance(document.getElementById('caseMeetingConfirmationModal'));
+    confirmModal.hide();
+    
+    const form = window.pendingCaseMeetingForm;
+    const formData = window.pendingCaseMeetingData;
     const submitBtn = form.querySelector('button[type="submit"]');
     const originalText = submitBtn.innerHTML;
-
+    
     // Add CSRF token
     formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
 
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<i class="ri-loader-line me-2 spinner-border spinner-border-sm"></i>Scheduling...';
+    
+    // Show progress indicator
+    showSchedulingProgress();
 
     fetch('/guidance/case-meetings', {
         method: 'POST',
@@ -493,17 +760,22 @@ window.submitCaseMeeting = function(event) {
     })
     .then(data => {
         if (data.success) {
-            // Close modal
+            hideSchedulingProgress();
+            
+            // Close modals
             const modal = bootstrap.Modal.getInstance(document.getElementById('scheduleCaseMeetingModal'));
-            modal.hide();
-
-            // Show success message
-            showAlert('success', data.message);
+            if (modal) modal.hide();
+            
+            // Show enhanced success message with meeting details
+            showEnhancedSuccessMessage(data.meeting || data);
 
             // Automatically forward Teacher Observation Report to adviser
             if (data.meeting_id) {
                 const forwardData = new FormData();
                 forwardData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+                
+                // Show forwarding progress
+                showForwardingProgress();
                 
                 fetch(`/guidance/case-meetings/${data.meeting_id}/forward-observation-report`, {
                     method: 'POST',
@@ -515,21 +787,24 @@ window.submitCaseMeeting = function(event) {
                 })
                 .then(response => response.json())
                 .then(forwardData => {
+                    hideForwardingProgress();
                     if (forwardData && forwardData.success) {
-                        showAlert('success', 'Teacher Observation Report forwarded to adviser.');
+                        updateSuccessMessage('Teacher Observation Report successfully forwarded to class adviser.');
                     } else {
-                        showAlert('info', 'Meeting scheduled successfully. Note: ' + (forwardData.message || 'Could not forward report to adviser.'));
+                        updateSuccessMessage('Meeting scheduled successfully. Note: ' + (forwardData.message || 'Could not forward report to adviser.'));
                     }
                 })
                 .catch((error) => {
                     console.log('Forward error:', error);
-                    showAlert('info', 'Meeting scheduled successfully. Note: Could not forward report to adviser.');
+                    hideForwardingProgress();
+                    updateSuccessMessage('Meeting scheduled successfully. Note: Could not forward report to adviser.');
                 });
             }
 
             // Reload page to show new meeting
-            setTimeout(() => location.reload(), 1500);
+            setTimeout(() => location.reload(), 3000);
         } else {
+            hideSchedulingProgress();
             throw new Error(data.message || 'Failed to schedule meeting');
         }
     })
@@ -694,60 +969,89 @@ window.completeCaseMeeting = function(meetingId) {
     }
 };
 
-window.forwardToPresident = function(meetingId, warningMessage = '') {
-    let confirmationMessage = 'Are you sure you want to forward this case to the president?';
-    
-    if (warningMessage) {
-        confirmationMessage = ` WARNING: ${warningMessage}\n\nDo you still want to proceed with forwarding this case to the president?\n\nNote: The system will validate all requirements and may prevent forwarding if critical items are missing.`;
-    }
-    
-    if (confirm(confirmationMessage)) {
-        // Show loading state
-        const loadingAlert = document.createElement('div');
-        loadingAlert.className = 'alert alert-info';
-        loadingAlert.innerHTML = '<i class="ri-loader-line spinner-border spinner-border-sm me-2"></i>Processing forward request...';
-        document.body.insertBefore(loadingAlert, document.body.firstChild);
-        
-        const formData = new FormData();
-        formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+window.forwardToPresident = function(meetingId) {
+    // First, fetch meeting details to perform client-side validation
+    fetch(`/guidance/case-meetings/${meetingId}`, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (!data.success) {    
+            showAlert('danger', 'Failed to load meeting details for validation');
+            return;
+        }
 
-        fetch(`/guidance/case-meetings/${meetingId}/forward`, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'Accept': 'application/json'
+        const meeting = data.meeting;
+        const validationErrors = [];
+
+        // Check basic requirements
+        if (!meeting.summary || meeting.summary.trim() === '') {
+            validationErrors.push('Case summary is required');
+        }
+
+        if (meeting.status !== 'pre_completed') {
+            validationErrors.push('Meeting must be completed before forwarding');
+        }
+
+        // Check for required attachments based on violation severity
+        if (meeting.violation && meeting.violation.severity === 'major') {
+            // For major violations, check if student narrative report has replies
+            if (!meeting.student_statement && !meeting.incident_feelings && !meeting.action_plan) {
+                validationErrors.push('Student Narrative Report requires student replies');
             }
-        })
-        .then(response => response.json())
-        .then(data => {
-            // Remove loading alert
-            if (loadingAlert.parentNode) {
-                loadingAlert.remove();
-            }
-            
-            if (data.success) {
-                showAlert('success', data.message);
-                setTimeout(() => location.reload(), 1500);
-            } else {
-                // Show detailed requirements if available
-                let errorMessage = data.message || 'Failed to forward case';
-                if (data.requirements && data.requirements.length > 0) {
-                    errorMessage += '\n\nRequired actions:\n' + data.requirements.join('\n');
+        }
+
+        // Check if teacher observation report has teacher replies
+        if (!meeting.teacher_statement && !meeting.action_plan) {
+            validationErrors.push('Teacher Observation Report requires teacher replies');
+        }
+
+        // If validation fails, show errors and don't proceed
+        if (validationErrors.length > 0) {
+            const errorMessage = 'Cannot forward to president:\n\n• ' + validationErrors.join('\n• ') + '\n\nPlease complete all required reports and ensure proper replies are provided.';
+            showAlert('warning', errorMessage);
+            return;
+        }
+
+        // If validation passes, show confirmation and proceed
+        if (confirm('Are you sure you want to forward this case to the president?\n\nThis action will submit the case for final review and cannot be undone.')) {
+            const formData = new FormData();
+            formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+
+            // Show loading state
+            showAlert('info', 'Forwarding case to president...');
+
+            fetch(`/guidance/case-meetings/${meetingId}/forward`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'Accept': 'application/json'
                 }
-                
-                showAlert('danger', errorMessage);
-            }
-        })
-        .catch(error => {
-            // Remove loading alert
-            if (loadingAlert.parentNode) {
-                loadingAlert.remove();
-            }
-            console.error('Error:', error);
-            showAlert('danger', 'Error forwarding case to president');
-        });
-    }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('success', data.message);
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showAlert('danger', data.message || 'Failed to forward case');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('danger', 'Error forwarding case to president');
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching meeting details:', error);
+        showAlert('danger', 'Error validating meeting details');
+    });
 };
+
 
 window.openCreateSummaryModal = function(meetingId) {
     // Set form action
@@ -873,4 +1177,150 @@ function showAlert(type, message) {
             alertDiv.remove();
         }
     }, 5000);
+}
+
+// Utility Functions for Enhanced Case Meeting Scheduling
+
+// Format time to 12-hour format
+function formatTime12Hour(time24) {
+    const [hours, minutes] = time24.split(':');
+    const hour12 = hours % 12 || 12;
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    return `${hour12}:${minutes} ${ampm}`;
+}
+
+// Show scheduling progress indicator
+function showSchedulingProgress() {
+    const progressHtml = `
+        <div class="modal fade show" id="schedulingProgressModal" style="display: block; background: rgba(0,0,0,0.5);" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered modal-sm">
+                <div class="modal-content">
+                    <div class="modal-body text-center py-4">
+                        <div class="spinner-border text-primary mb-3" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <h6 class="mb-2">Scheduling Case Meeting</h6>
+                        <p class="text-muted mb-0 small">Please wait while we process your request...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', progressHtml);
+}
+
+// Hide scheduling progress
+function hideSchedulingProgress() {
+    const progressModal = document.getElementById('schedulingProgressModal');
+    if (progressModal) {
+        progressModal.remove();
+    }
+}
+
+// Show forwarding progress
+function showForwardingProgress() {
+    const progressHtml = `
+        <div class="modal fade show" id="forwardingProgressModal" style="display: block; background: rgba(0,0,0,0.5);" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered modal-sm">
+                <div class="modal-content">
+                    <div class="modal-body text-center py-4">
+                        <div class="spinner-border text-success mb-3" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <h6 class="mb-2">Forwarding to Adviser</h6>
+                        <p class="text-muted mb-0 small">Sending observation report to class adviser...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', progressHtml);
+}
+
+// Hide forwarding progress
+function hideForwardingProgress() {
+    const progressModal = document.getElementById('forwardingProgressModal');
+    if (progressModal) {
+        progressModal.remove();
+    }
+}
+
+// Show enhanced success message with meeting details
+function showEnhancedSuccessMessage(meetingData) {
+    const student = meetingData.student || {};
+    const scheduledDate = meetingData.scheduled_date;
+    const scheduledTime = meetingData.scheduled_time;
+    
+    const successHtml = `
+        <div class="alert alert-success alert-dismissible fade show shadow-sm position-fixed" 
+             style="top: 20px; right: 20px; z-index: 9999; min-width: 350px; max-width: 500px;" 
+             id="enhancedSuccessAlert" role="alert">
+            <div class="d-flex align-items-start">
+                <div class="flex-shrink-0">
+                    <i class="ri-calendar-check-fill fs-4 text-success"></i>
+                </div>
+                <div class="flex-grow-1 ms-3">
+                    <h6 class="alert-heading mb-2">
+                        <i class="ri-check-circle-line me-1"></i>Case Meeting Scheduled Successfully!
+                    </h6>
+                    
+                    <div class="meeting-info">
+                        <p class="mb-2"><strong>Student:</strong> ${student.first_name || ''} ${student.last_name || ''}</p>
+                        ${scheduledDate ? `<p class="mb-2"><strong>Date:</strong> ${new Date(scheduledDate).toLocaleDateString('en-US', { 
+                            weekday: 'long', 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                        })}</p>` : ''}
+                        ${scheduledTime ? `<p class="mb-2"><strong>Time:</strong> ${formatTime12Hour(scheduledTime)}</p>` : ''}
+                    </div>
+                    
+                    <div class="progress mb-2" style="height: 4px;">
+                        <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" 
+                             role="progressbar" style="width: 100%"></div>
+                    </div>
+                    
+                    <div class="notification-status">
+                        <p class="mb-1 small text-success">
+                            <i class="ri-check-line me-1"></i>Meeting created and saved
+                        </p>
+                        <p class="mb-0 small text-muted" id="forwardingStatus">
+                            <i class="ri-loader-4-line spinner-border spinner-border-sm me-1"></i>
+                            Forwarding to class adviser...
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    // Remove any existing success alerts
+    const existingAlerts = document.querySelectorAll('#enhancedSuccessAlert');
+    existingAlerts.forEach(alert => alert.remove());
+    
+    document.body.insertAdjacentHTML('beforeend', successHtml);
+    
+    // Auto-dismiss after 8 seconds
+    setTimeout(() => {
+        const alert = document.getElementById('enhancedSuccessAlert');
+        if (alert) {
+            alert.remove();
+        }
+    }, 8000);
+}
+
+// Update the success message with forwarding status
+function updateSuccessMessage(message) {
+    const forwardingStatus = document.getElementById('forwardingStatus');
+    if (forwardingStatus) {
+        const isSuccess = message.includes('successfully');
+        forwardingStatus.innerHTML = `
+            <i class="ri-${isSuccess ? 'check' : 'information'}-line me-1"></i>
+            ${message}
+        `;
+        forwardingStatus.className = `mb-0 small text-${isSuccess ? 'success' : 'warning'}`;
+    }
 }

@@ -528,7 +528,6 @@ class DisciplineController extends Controller
         }
 
     }
-
     /**
      * Show violation details for AJAX
      */

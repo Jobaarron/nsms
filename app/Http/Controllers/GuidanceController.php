@@ -648,16 +648,63 @@ class GuidanceController extends Controller
     /**
      * Forward case to president
      */
+
  public function forwardToPresident(CaseMeeting $caseMeeting)
 {
     try {
-        // Log the forward attempt
+        // Debug logs
         Log::info('Forward attempt for CaseMeeting', [
             'id' => $caseMeeting->id,
             'status' => $caseMeeting->status,
+            'summary_exists' => !empty($caseMeeting->summary),
+            'sanctions_exist' => $caseMeeting->sanctions()->exists(),
+            'meeting_type' => $caseMeeting->meeting_type,
         ]);
 
-        // Update case meeting status to submitted
+        // Basic requirements: summary and schedule
+        if (empty($caseMeeting->summary) || $caseMeeting->status !== 'pre_completed') {
+            Log::warning('Forward blocked: basic requirements not met', ['id' => $caseMeeting->id]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Please add both a schedule and a summary report before forwarding.'
+            ], 400);
+        }
+
+        // Check for required attachments and replies
+        $missingItems = [];
+
+        // Check if student narrative report exists and has student reply
+        $violation = $caseMeeting->violation;
+        if ($violation && $violation->severity === 'major') {
+            // For major violations, student narrative report is required
+            if (empty($violation->student_statement) && empty($violation->incident_feelings) && empty($violation->action_plan)) {
+                $missingItems[] = 'Student Narrative Report (student reply required)';
+            }
+        }
+
+        // Check if teacher observation report exists and has teacher reply
+        if (empty($caseMeeting->teacher_statement) && empty($caseMeeting->action_plan)) {
+            $missingItems[] = 'Teacher Observation Report (teacher reply required)';
+        }
+
+        // Check if disciplinary conference report can be generated (requires summary)
+        if (empty($caseMeeting->summary)) {
+            $missingItems[] = 'Disciplinary Conference Report (summary required)';
+        }
+
+        // If there are missing attachments/replies, prevent forwarding
+        if (!empty($missingItems)) {
+            Log::warning('Forward blocked: missing attachments/replies', [
+                'id' => $caseMeeting->id,
+                'missing_items' => $missingItems
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot forward to president. Missing: ' . implode(', ', $missingItems) . '. Please ensure all required reports are completed with proper replies.'
+            ], 400);
+        }
+
+
         $caseMeeting->update([
             'status' => 'submitted',
             'forwarded_to_president' => true,
@@ -688,6 +735,7 @@ class GuidanceController extends Controller
         ], 500);
     }
 }
+
 
 
     // COUNSELING SESSION METHODS
