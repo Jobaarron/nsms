@@ -79,39 +79,14 @@
                             <i class="ri-file-text-line me-2"></i>Add Summary
                         </button>
                     @endif
-                    @php
-                        // Check all forwarding requirements
-                        $hasBasicReqs = $caseMeeting->summary && $caseMeeting->status === 'pre_completed' && !$caseMeeting->forwarded_to_president;
-                        
-                        // Check for student reply (for major violations)
-                        $hasStudentReply = true; // Default to true for non-major violations
-                        if ($caseMeeting->violation && $caseMeeting->violation->severity === 'major') {
-                            $hasStudentReply = !empty($caseMeeting->violation->student_statement) || 
-                                              !empty($caseMeeting->violation->incident_feelings) || 
-                                              !empty($caseMeeting->violation->action_plan);
-                        }
-                        
-                        // Check for teacher reply
-                        $hasTeacherReply = !empty($caseMeeting->teacher_statement) || !empty($caseMeeting->action_plan);
-                        
-                        // Check for disciplinary conference report (requires summary)
-                        $hasDisciplinaryReport = !empty($caseMeeting->summary);
-                        
-                        $canForwardToPresident = $hasBasicReqs && $hasStudentReply && $hasTeacherReply && $hasDisciplinaryReport;
-                        
-                        $missingForForward = [];
-                        if (!$caseMeeting->summary) $missingForForward[] = 'summary';
-                        if (!$hasStudentReply && $caseMeeting->violation && $caseMeeting->violation->severity === 'major') $missingForForward[] = 'student narrative reply';
-                        if (!$hasTeacherReply) $missingForForward[] = 'teacher observation reply';
-                        if (!$hasDisciplinaryReport) $missingForForward[] = 'disciplinary conference report';
-                    @endphp
-                    @if($canForwardToPresident)
-                        <button class="btn btn-warning" onclick="forwardToPresident({{ $caseMeeting->id }})">
+                    @if(!$caseMeeting->forwarded_to_president)
+                        <button class="btn btn-warning" onclick="forwardToPresident({{ $caseMeeting->id }}, '')" 
+                                title="Forward to President">
                             <i class="ri-send-plane-line me-2"></i>Forward to President
                         </button>
-                    @elseif($hasBasicReqs)
-                        <button class="btn btn-warning" disabled title="Missing: {{ implode(', ', $missingForForward) }}">
-                            <i class="ri-send-plane-line me-2"></i>Forward to President (Missing Requirements)
+                    @else
+                        <button class="btn btn-secondary" disabled>
+                            <i class="ri-check-line me-2"></i>Already Forwarded
                         </button>
                     @endif
                     @if(!in_array($caseMeeting->status, ['in_progress','scheduled','pre_completed','submitted','completed']))
@@ -544,44 +519,15 @@
                                                 <i class="ri-edit-line"></i>
                                             </button>
 
-                                            <!-- Forward Button - Check all requirements including attachments and replies -->
-                                            @php
-                                                $hasSchedule = !empty($meeting->scheduled_date);
-                                                $hasSummary = !empty($meeting->summary);
-                                                $hasSanctions = $meeting->sanctions->isNotEmpty();
-                                                $isNotSubmitted = $meeting->status !== 'submitted';
-                                                
-                                                // Check for student reply (for major violations)
-                                                $hasStudentReply = true; // Default to true for non-major violations
-                                                if ($meeting->violation && $meeting->violation->severity === 'major') {
-                                                    $hasStudentReply = !empty($meeting->violation->student_statement) || 
-                                                                      !empty($meeting->violation->incident_feelings) || 
-                                                                      !empty($meeting->violation->action_plan);
-                                                }
-                                                
-                                                // Check for teacher reply
-                                                $hasTeacherReply = !empty($meeting->teacher_statement) || !empty($meeting->action_plan);
-                                                
-                                                // Check for disciplinary conference report (requires summary)
-                                                $hasDisciplinaryReport = !empty($meeting->summary);
-                                                
-                                                $canForward = $hasSchedule && $hasSummary && $hasSanctions && $isNotSubmitted && $hasStudentReply && $hasTeacherReply && $hasDisciplinaryReport;
-                                                
-                                                $missingItems = [];
-                                                if (!$hasSchedule) $missingItems[] = 'schedule';
-                                                if (!$hasSummary) $missingItems[] = 'summary';
-                                                if (!$hasSanctions) $missingItems[] = 'interventions';
-                                                if (!$hasStudentReply && $meeting->violation && $meeting->violation->severity === 'major') $missingItems[] = 'student narrative reply';
-                                                if (!$hasTeacherReply) $missingItems[] = 'teacher observation reply';
-                                                if (!$hasDisciplinaryReport) $missingItems[] = 'disciplinary conference report';
-                                                
-                                                $tooltipMessage = $meeting->status === 'submitted' ? 'Already submitted' : 
-                                                                ($canForward ? 'Forward to President' : 
-                                                                'Missing: ' . implode(', ', $missingItems));
-                                            @endphp
-                                            <button class="btn btn-outline-warning {{ !$canForward ? 'disabled' : '' }}"
-                                                onclick="{{ $canForward ? 'forwardToPresident(' . $meeting->id . ')' : '' }}"
-                                                title="{{ $tooltipMessage }}">
+                                            <!-- Forward Button -->
+                                            @if($meeting->status !== 'submitted')
+                                                <button class="btn btn-outline-warning"
+                                                    onclick="forwardToPresident({{ $meeting->id }}, '')"
+                                                    title="Forward to President">
+                                            @else
+                                                <button class="btn btn-outline-secondary" disabled
+                                                    title="Already submitted">
+                                            @endif
                                                 <i class="ri-send-plane-line"></i>
                                             </button>
                                         </div>

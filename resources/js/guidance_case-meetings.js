@@ -694,8 +694,20 @@ window.completeCaseMeeting = function(meetingId) {
     }
 };
 
-window.forwardToPresident = function(meetingId) {
-    if (confirm('Are you sure you want to forward this case to the president?')) {
+window.forwardToPresident = function(meetingId, warningMessage = '') {
+    let confirmationMessage = 'Are you sure you want to forward this case to the president?';
+    
+    if (warningMessage) {
+        confirmationMessage = ` WARNING: ${warningMessage}\n\nDo you still want to proceed with forwarding this case to the president?\n\nNote: The system will validate all requirements and may prevent forwarding if critical items are missing.`;
+    }
+    
+    if (confirm(confirmationMessage)) {
+        // Show loading state
+        const loadingAlert = document.createElement('div');
+        loadingAlert.className = 'alert alert-info';
+        loadingAlert.innerHTML = '<i class="ri-loader-line spinner-border spinner-border-sm me-2"></i>Processing forward request...';
+        document.body.insertBefore(loadingAlert, document.body.firstChild);
+        
         const formData = new FormData();
         formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
 
@@ -708,14 +720,29 @@ window.forwardToPresident = function(meetingId) {
         })
         .then(response => response.json())
         .then(data => {
+            // Remove loading alert
+            if (loadingAlert.parentNode) {
+                loadingAlert.remove();
+            }
+            
             if (data.success) {
                 showAlert('success', data.message);
                 setTimeout(() => location.reload(), 1500);
             } else {
-                showAlert('danger', data.message || 'Failed to forward case');
+                // Show detailed requirements if available
+                let errorMessage = data.message || 'Failed to forward case';
+                if (data.requirements && data.requirements.length > 0) {
+                    errorMessage += '\n\nRequired actions:\n' + data.requirements.join('\n');
+                }
+                
+                showAlert('danger', errorMessage);
             }
         })
         .catch(error => {
+            // Remove loading alert
+            if (loadingAlert.parentNode) {
+                loadingAlert.remove();
+            }
             console.error('Error:', error);
             showAlert('danger', 'Error forwarding case to president');
         });

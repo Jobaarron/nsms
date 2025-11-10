@@ -1,4 +1,5 @@
 let currentPaymentId = null;
+let currentTransactionId = null;
 
             document.addEventListener('DOMContentLoaded', function() {
                 initializePaymentArchives();
@@ -113,7 +114,7 @@ let currentPaymentId = null;
                                     <i class="ri-eye-line"></i>
                                 </button>
                                 ${payment.confirmation_status === 'confirmed' ? `
-                                    <button class="btn btn-outline-success" onclick="printReceipt(${payment.id})" title="Print Receipt">
+                                    <button class="btn btn-outline-success" onclick="printReceipt('${payment.transaction_id}')" title="Print Receipt">
                                         <i class="ri-printer-line"></i>
                                     </button>
                                 ` : ''}
@@ -193,50 +194,20 @@ let currentPaymentId = null;
             }
 
             function viewPaymentDetails(paymentId) {
-                fetch(`/cashier/payments/${paymentId}/details`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    }
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.success) {
-                        displayPaymentDetails(data.payment);
-                        currentPaymentId = paymentId;
-                        const modal = document.getElementById('paymentDetailsModal');
-                        if (modal) {
-                            if (typeof bootstrap !== 'undefined') {
-                                new bootstrap.Modal(modal).show();
-                            } else {
-                                // Fallback for manual modal display
-                                modal.classList.add('show');
-                                modal.style.display = 'block';
-                                modal.setAttribute('aria-modal', 'true');
-                                modal.setAttribute('role', 'dialog');
-                                
-                                // Add backdrop
-                                const backdrop = document.createElement('div');
-                                backdrop.className = 'modal-backdrop fade show';
-                                document.body.appendChild(backdrop);
-                            }
+                fetch(`/cashier/payments/${paymentId}/details`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            displayPaymentDetails(data.payment);
+                            currentPaymentId = paymentId;
+                            currentTransactionId = data.payment.transaction_id;
+                            new bootstrap.Modal(document.getElementById('paymentDetailsModal')).show();
                         }
-                    } else {
-                        showAlert('Failed to load payment details: ' + (data.message || 'Unknown error'), 'danger');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error loading payment details:', error);
-                    showAlert('Failed to load payment details: ' + error.message, 'danger');
-                });
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Failed to load payment details');
+                    });
             }
 
             function displayPaymentDetails(payment) {
@@ -272,25 +243,78 @@ let currentPaymentId = null;
                 `;
             }
 
-            // Global functions - expose to window object for onclick handlers
-            window.printReceipt = function(paymentId) {
-                console.log('Print receipt for payment ID:', paymentId);
-                alert('Receipt printing functionality will be implemented');
-            };
-
-            window.printReceiptFromModal = function() {
-                if (currentPaymentId) {
-                    window.printReceipt(currentPaymentId);
+            function printReceipt(transactionId) {
+                console.log('Print receipt for transaction ID:', transactionId);
+                
+                if (!transactionId) {
+                    showAlert('Cannot print receipt: Missing transaction ID', 'danger');
+                    return;
                 }
-            };
+                
+                // First, test if the route exists by making a fetch request
+                const receiptUrl = `/pdf/receipt?transaction_id=${encodeURIComponent(transactionId)}`;
+                console.log('Attempting to access receipt at:', receiptUrl);
+                
+                // Test the route first
+                fetch(receiptUrl, {
+                    method: 'HEAD',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                })
+                .then(response => {
+                    console.log('Receipt route response status:', response.status);
+                    if (response.ok) {
+                        // Route is accessible, open in new window
+                        const width = 800;
+                        const height = 600;
+                        const left = (screen.width / 2) - (width / 2);
+                        const top = (screen.height / 2) - (height / 2);
+                        const printWindow = window.open(receiptUrl, '_blank', `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes`);
+                        if (printWindow) {
+                            showAlert('Receipt opened successfully!', 'success');
+                        } else {
+                            showAlert('Please allow pop-ups to print receipts', 'warning');
+                        }
+                    } else if (response.status === 404) {
+                        // Try the cashier-specific route as fallback
+                        console.log('Trying cashier-specific route...');
+                        const cashierReceiptUrl = `/cashier/api/pdf/cashier-receipt?transaction_id=${encodeURIComponent(transactionId)}`;
+                        const printWindow = window.open(cashierReceiptUrl, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
+                        if (!printWindow) {
+                            showAlert('Receipt not found. The transaction may not exist or may not be confirmed.', 'danger');
+                        }
+                    } else if (response.status === 403) {
+                        showAlert('Access denied. You may not have permission to view this receipt.', 'danger');
+                    } else {
+                        showAlert(`Error accessing receipt (Status: ${response.status})`, 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error accessing receipt:', error);
+                    showAlert('Network error while trying to access receipt', 'danger');
+                });
+            }
+
+            // function printReceiptFromModal() {
+            //     if (currentTransactionId) {
+            //         printReceipt(currentTransactionId);
+            //     } else if (currentPaymentId) {
+            //         // Fallback: if no transaction ID, show error
+            //         showAlert('Cannot print receipt: Missing transaction ID. Please refresh and try again.', 'warning');
+            //     }
+            // }
 
             window.exportArchives = function() {
                 console.log('Export payment archives');
                 alert('Export functionality will be implemented');
             };
 
-            // Make viewPaymentDetails global for onclick handlers
+            // Export functions to global scope
             window.viewPaymentDetails = viewPaymentDetails;
+            window.printReceipt = printReceipt;
+            // window.printReceiptFromModal = printReceiptFromModal;
 
             function showAlert(message, type = 'info') {
                 const alertClass = type === 'danger' ? 'alert-danger' : 
@@ -320,4 +344,4 @@ let currentPaymentId = null;
                         alerts[0].remove();
                     }
                 }, 5000);
-            }
+            }   

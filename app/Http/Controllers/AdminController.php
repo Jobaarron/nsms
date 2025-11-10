@@ -99,11 +99,18 @@ class AdminController extends Controller
             return $response;
         }
 
+        // Get active forwarded cases
         $caseMeetings = \App\Models\CaseMeeting::with(['student', 'sanctions.violation'])
             ->where('status', 'submitted')
             ->paginate(10);
 
-        return view('admin.forwarded-cases', compact('caseMeetings'));
+        // Get archived meetings for history tab
+        $archivedMeetings = \App\Models\ArchivedMeeting::with(['student', 'violation'])
+            ->where('status', 'case_closed')
+            ->orderBy('archived_at', 'desc')
+            ->paginate(10, ['*'], 'archived_page');
+
+        return view('admin.forwarded-cases', compact('caseMeetings', 'archivedMeetings'));
     }
     public function getStats()
     {
@@ -585,15 +592,19 @@ public function submittedCases()
                 'approved_at' => now(),
             ]);
 
-
-            // Mark the related case meeting as case_closed
+            // Get the related case meeting and archive it
             $caseMeeting = $sanction->caseMeeting;
             if ($caseMeeting) {
+                // Update case meeting status to case_closed
                 $caseMeeting->update([
                     'status' => 'case_closed',
                     'completed_at' => now(),
                 ]);
-                // Set all related violations' statuses to 'case_closed' and add disciplinary action
+                
+                // Archive the case
+                $caseMeeting->archiveCase($user->name, 'approved');
+                
+                // Update related violations status
                 foreach ($caseMeeting->violations as $violation) {
                     $violation->update([
                         'status' => 'case_closed',
@@ -621,7 +632,7 @@ public function submittedCases()
 
             return response()->json([
                 'success' => true,
-                'message' => 'Sanction approved and case meeting marked as completed.'
+                'message' => 'Sanction approved and case archived successfully.'
             ]);
         } catch (\Exception $e) {
             \Log::error('Error approving sanction: ' . $e->getMessage());
@@ -1214,6 +1225,222 @@ public function updateEnrollment(Request $request, $id)
             ->withInput();
     }
 }
+
+    /**
+     * Approve a case meeting and archive it.
+     */
+    public function approveCase(Request $request, $id)
+    {
+        if ($response = $this->checkAdminAuth()) {
+            return $response;
+        }
+
+        try {
+            $caseMeeting = \App\Models\CaseMeeting::findOrFail($id);
+            
+            // Update status to case_closed (approved)
+            $caseMeeting->update([
+                'status' => 'case_closed',
+                'president_notes' => $request->president_notes ?? $caseMeeting->president_notes,
+                'completed_at' => now(),
+            ]);
+
+            // Archive the case
+            $caseMeeting->archiveCase(auth()->user()->name, 'approved');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Case approved and archived successfully.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error approving case: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Close a case meeting and archive it.
+     */
+    public function closeCase(Request $request, $id)
+    {
+        if ($response = $this->checkAdminAuth()) {
+            return $response;
+        }
+
+        try {
+            $caseMeeting = \App\Models\CaseMeeting::findOrFail($id);
+            
+            // Update status to case_closed
+            $caseMeeting->update([
+                'status' => 'case_closed',
+                'president_notes' => $request->president_notes ?? $caseMeeting->president_notes,
+                'completed_at' => now(),
+            ]);
+
+            // Archive the case
+            $caseMeeting->archiveCase(auth()->user()->name, 'closed');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Case closed and archived successfully.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error closing case: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Complete a case meeting and archive it.
+     */
+    public function completeCase(Request $request, $id)
+    {
+        if ($response = $this->checkAdminAuth()) {
+            return $response;
+        }
+
+        try {
+            $caseMeeting = \App\Models\CaseMeeting::findOrFail($id);
+            
+            // Update status to case_closed (completed)
+            $caseMeeting->update([
+                'status' => 'case_closed',
+                'president_notes' => $request->president_notes ?? $caseMeeting->president_notes,
+                'completed_at' => now(),
+            ]);
+
+            // Archive the case
+            $caseMeeting->archiveCase(auth()->user()->name, 'completed');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Case completed and archived successfully.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error completing case: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Approve a case meeting directly and archive it.
+     */
+    public function approveCaseMeeting(Request $request, $id)
+    {
+        if ($response = $this->checkAdminAuth()) {
+            return $response;
+        }
+
+        try {
+            $caseMeeting = \App\Models\CaseMeeting::findOrFail($id);
+            $user = auth()->user();
+            
+            // Update case meeting status to case_closed
+            $caseMeeting->update([
+                'status' => 'case_closed',
+                'completed_at' => now(),
+            ]);
+            
+            // Archive the case
+            $caseMeeting->archiveCase($user->name, 'approved');
+            
+            // Update related violations status
+            foreach ($caseMeeting->violations as $violation) {
+                $violation->update([
+                    'status' => 'case_closed',
+                    'disciplinary_action' => 'Case approved by admin',
+                    'action_taken' => 'Approved by: ' . $user->name,
+                    'resolved_by' => $user->id,
+                    'resolved_at' => now()
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Case approved and archived successfully.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error approving case: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get case meeting sanctions for editing.
+     */
+    public function getCaseMeetingSanctions($id)
+    {
+        if ($response = $this->checkAdminAuth()) {
+            return $response;
+        }
+
+        try {
+            $caseMeeting = \App\Models\CaseMeeting::findOrFail($id);
+            
+            return response()->json([
+                'success' => true,
+                'sanctions' => [
+                    'written_reflection' => $caseMeeting->written_reflection,
+                    'mentorship_counseling' => $caseMeeting->mentorship_counseling,
+                    'parent_teacher_communication' => $caseMeeting->parent_teacher_communication,
+                    'restorative_justice_activity' => $caseMeeting->restorative_justice_activity,
+                    'follow_up_meeting' => $caseMeeting->follow_up_meeting,
+                    'community_service' => $caseMeeting->community_service,
+                    'suspension' => $caseMeeting->suspension,
+                    'expulsion' => $caseMeeting->expulsion,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error loading sanctions: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update case meeting sanctions.
+     */
+    public function updateCaseMeetingSanctions(Request $request, $id)
+    {
+        if ($response = $this->checkAdminAuth()) {
+            return $response;
+        }
+
+        try {
+            $caseMeeting = \App\Models\CaseMeeting::findOrFail($id);
+            
+            // Update sanctions based on checkbox values
+            $caseMeeting->update([
+                'written_reflection' => $request->has('written_reflection'),
+                'mentorship_counseling' => $request->has('mentorship_counseling'),
+                'parent_teacher_communication' => $request->has('parent_teacher_communication'),
+                'restorative_justice_activity' => $request->has('restorative_justice_activity'),
+                'follow_up_meeting' => $request->has('follow_up_meeting'),
+                'community_service' => $request->has('community_service'),
+                'suspension' => $request->has('suspension'),
+                'expulsion' => $request->has('expulsion'),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Sanctions updated successfully.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating sanctions: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 
 
 

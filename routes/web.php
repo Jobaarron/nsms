@@ -77,6 +77,16 @@ Route::prefix('admin')->group(function () {
         // Forwarded Case Meetings for President (Admin)
         Route::get('/forwarded-cases', [AdminController::class, 'forwardedCases'])->name('forwarded.cases');
 
+        // Case actions for forwarded cases
+        Route::post('/cases/{caseMeeting}/approve', [AdminController::class, 'approveCase'])->name('cases.approve');
+        Route::post('/cases/{caseMeeting}/close', [AdminController::class, 'closeCase'])->name('cases.close');
+        Route::post('/cases/{caseMeeting}/complete', [AdminController::class, 'completeCase'])->name('cases.complete');
+        
+        // Case meeting sanctions management
+        Route::post('/case-meetings/{caseMeeting}/approve', [AdminController::class, 'approveCaseMeeting'])->name('case-meetings.approve');
+        Route::get('/case-meetings/{caseMeeting}/sanctions', [AdminController::class, 'getCaseMeetingSanctions'])->name('case-meetings.sanctions');
+        Route::post('/case-meetings/{caseMeeting}/sanctions', [AdminController::class, 'updateCaseMeetingSanctions'])->name('case-meetings.sanctions.update');
+
         // Sanction actions for forwarded cases
         Route::post('/sanctions/{sanction}/approve', [AdminController::class, 'approveSanction'])->name('sanctions.approve');
         Route::post('/sanctions/{sanction}/reject', [AdminController::class, 'rejectSanction'])->name('sanctions.reject');
@@ -247,10 +257,6 @@ Route::middleware(['auth', 'role:teacher|faculty_head'])->prefix('teacher')->nam
         ->name('grades.data');
     Route::get('/grades/stats', [App\Http\Controllers\TeacherGradeController::class, 'getSubmissionStats'])
         ->name('grades.stats');
-    
-    // Grade finalization route
-    Route::post('/grades/{submission}/finalize', [App\Http\Controllers\TeacherGradeController::class, 'finalizeGrades'])
-        ->name('grades.finalize');
 });
 
 // Student Schedule Routes (requires payment)
@@ -748,10 +754,9 @@ Route::prefix('registrar')->name('registrar.')->group(function () {
         Route::post('/applications/bulk-approve', [RegistrarController::class, 'bulkApprove'])->name('applications.bulk-approve');
         Route::post('/applications/bulk-decline', [RegistrarController::class, 'bulkDecline'])->name('applications.bulk-decline');
         
-        // Applicant Archives
-        Route::get('/applicant-archives', [RegistrarController::class, 'applicantArchives'])->name('applicant-archives');
+        // Approved applications
+        Route::get('/approved', [RegistrarController::class, 'approved'])->name('approved');
         Route::post('/applications/{id}/generate-credentials', [RegistrarController::class, 'generateStudentCredentials'])->name('applications.generate-credentials');
-        Route::post('/applications/{id}/reconsider', [RegistrarController::class, 'reconsiderApplication'])->name('applications.reconsider');
         
         // Notices and Documents data
         Route::get('/notices', [RegistrarController::class, 'getNotices'])->name('notices.get');
@@ -867,8 +872,6 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::get('/payments', [CashierController::class, 'payments'])->name('payments');
         Route::get('/payment-archives', [CashierController::class, 'paymentArchives'])->name('payment-archives');
         Route::get('/api/payment-archives', [CashierController::class, 'getPaymentArchivesData'])->name('api.payment-archives');
-        Route::get('/api/completed-payments', [CashierController::class, 'getCompletedPaymentsData'])->name('api.completed-payments');
-        Route::get('/api/payment-history', [CashierController::class, 'getPaymentHistoryData'])->name('api.payment-history');
         
         // Payment Actions
         Route::post('/payments/{payment}/confirm', [CashierController::class, 'confirmPayment'])->name('payments.confirm');

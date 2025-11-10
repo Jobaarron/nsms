@@ -518,8 +518,8 @@ class PdfController extends Controller
         }
 
         $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
-        $templatePath = storage_path('app/public/Disciplinary-Con-Report/Disciplinary-Con-Report.pdf');
-        if (!file_exists($templatePath)) {
+$templatePath = resource_path('assets/pdf-forms-generation/Disciplinary-Con-Report.pdf');      
+  if (!file_exists($templatePath)) {
             abort(404, 'Disciplinary Conference Summary Report PDF template not found.');
         }
 

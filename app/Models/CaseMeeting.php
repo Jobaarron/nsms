@@ -17,17 +17,26 @@ class CaseMeeting extends Model
                 $newStatus = $caseMeeting->status;
                 $violationStatus = self::mapStatusToViolationStatus($newStatus);
                 if ($violationStatus) {
-                    // Update direct violations
-                    foreach ($caseMeeting->violations as $violation) {
-                        $violation->update(['status' => $violationStatus]);
-                    }
-                    // Update violations via sanctions (if not already updated)
-                    $caseMeeting->load('sanctions.violation');
-                    foreach ($caseMeeting->sanctions as $sanction) {
-                        $violation = $sanction->violation;
-                        if ($violation && $violation->status !== $violationStatus) {
-                            $violation->update(['status' => $violationStatus]);
+                    try {
+                        // Batch update direct violations to avoid N+1 queries
+                        $caseMeeting->violations()->update(['status' => $violationStatus]);
+                        
+                        // Update violations via sanctions - get all at once
+                        $caseMeeting->load('sanctions.violation');
+                        $violationIds = $caseMeeting->sanctions
+                            ->pluck('violation')
+                            ->filter()
+                            ->where('status', '!=', $violationStatus)
+                            ->pluck('id');
+                        
+                        if ($violationIds->isNotEmpty()) {
+                            Violation::whereIn('id', $violationIds)->update(['status' => $violationStatus]);
                         }
+                    } catch (\Exception $e) {
+                        \Log::error('CaseMeeting booted status sync error', [
+                            'case_meeting_id' => $caseMeeting->id,
+                            'error' => $e->getMessage()
+                        ]);
                     }
                 }
             }
@@ -89,6 +98,18 @@ class CaseMeeting extends Model
         'suspension_return',
         'expulsion',
         'expulsion_date',
+        // Student reply fields
+        'student_statement',
+        'incident_feelings',
+        'student_reply_incident_date',
+        'student_reply_location',
+        'student_reply_people_involved',
+        'student_reply_what_happened',
+        'student_reply_feelings',
+        'student_reply_why_happened',
+        'student_reply_what_learned',
+        'student_reply_prevent_future',
+        'student_reply_additional_comments',
     ];
     /**
      * Get the violation associated with this case meeting.
@@ -261,19 +282,23 @@ class CaseMeeting extends Model
     public function updateRelatedViolationStatuses(string $newStatus): void
     {
         try {
-            // Load sanctions with related violations
+            // Batch update violations directly related to this case meeting
+            $this->violations()->update(['status' => $newStatus]);
+            
+            // Batch update violations via sanctions
             $this->load('sanctions.violation');
-
-            foreach ($this->sanctions as $sanction) {
-                $violation = $sanction->violation;
-                if ($violation) {
-                    $violation->status = $newStatus;
-                    if ($newStatus === 'case_closed') {
-                        $violation->resolved_at = now();
-                        // Note: resolved_by might need to be set if there's a current user, but in model events, auth might not be available
-                    }
-                    $violation->save();
+            $violationIds = $this->sanctions
+                ->pluck('violation')
+                ->filter()
+                ->pluck('id');
+            
+            if ($violationIds->isNotEmpty()) {
+                $updateData = ['status' => $newStatus];
+                if ($newStatus === 'case_closed') {
+                    $updateData['resolved_at'] = now();
+                    // Note: resolved_by might need to be set if there's a current user
                 }
+                Violation::whereIn('id', $violationIds)->update($updateData);
             }
         } catch (\Exception $e) {
             \Log::error('Update Related Violation Statuses: Exception', [
@@ -314,22 +339,94 @@ class CaseMeeting extends Model
     }
 
     /**
-     * Boot the model.
+     * Archive this case meeting when it's completed or closed.
      */
-    protected static function boot()
+    public function archiveCase($archivedBy = null, $reason = 'case_closed')
     {
-        parent::boot();
+        // Create archived meeting record
+        $archivedMeeting = ArchivedMeeting::create([
+            'original_case_meeting_id' => $this->id,
+            'student_id' => $this->student_id,
+            'violation_id' => $this->violation_id,
+            'counselor_id' => $this->counselor_id,
+            'adviser_id' => $this->adviser_id,
+            'meeting_type' => $this->meeting_type,
+            'scheduled_date' => $this->scheduled_date,
+            'scheduled_time' => $this->scheduled_time,
+            'location' => $this->location,
+            'reason' => $this->reason,
+            'notes' => $this->notes,
+            'teacher_statement' => $this->teacher_statement,
+            'action_plan' => $this->action_plan,
+            'status' => $this->status,
+            'summary' => $this->summary,
+            'recommendations' => $this->recommendations,
+            'follow_up_required' => $this->follow_up_required,
+            'follow_up_date' => $this->follow_up_date,
+            'sanction_recommendation' => $this->sanction_recommendation,
+            'urgency_level' => $this->urgency_level,
+            'president_notes' => $this->president_notes,
+            'forwarded_to_president' => $this->forwarded_to_president,
+            'forwarded_at' => $this->forwarded_at,
+            'completed_at' => $this->completed_at,
+            // Agreed Actions/Interventions fields
+            'written_reflection' => $this->written_reflection,
+            'written_reflection_due' => $this->written_reflection_due,
+            'mentor_name' => $this->mentor_name,
+            'mentorship_counseling' => $this->mentorship_counseling,
+            'parent_teacher_communication' => $this->parent_teacher_communication,
+            'parent_teacher_date' => $this->parent_teacher_date,
+            'restorative_justice_activity' => $this->restorative_justice_activity,
+            'restorative_justice_date' => $this->restorative_justice_date,
+            'follow_up_meeting' => $this->follow_up_meeting,
+            'follow_up_meeting_date' => $this->follow_up_meeting_date,
+            'community_service' => $this->community_service,
+            'community_service_date' => $this->community_service_date,
+            'community_service_area' => $this->community_service_area,
+            'suspension' => $this->suspension,
+            'suspension_3days' => $this->suspension_3days,
+            'suspension_5days' => $this->suspension_5days,
+            'suspension_other_days' => $this->suspension_other_days,
+            'suspension_start' => $this->suspension_start,
+            'suspension_end' => $this->suspension_end,
+            'suspension_return' => $this->suspension_return,
+            'expulsion' => $this->expulsion,
+            'expulsion_date' => $this->expulsion_date,
+            // Student reply fields
+            'student_statement' => $this->student_statement ?? null,
+            'incident_feelings' => $this->incident_feelings ?? null,
+            'student_reply_incident_date' => $this->student_reply_incident_date ?? null,
+            'student_reply_location' => $this->student_reply_location ?? null,
+            'student_reply_people_involved' => $this->student_reply_people_involved ?? null,
+            'student_reply_what_happened' => $this->student_reply_what_happened ?? null,
+            'student_reply_feelings' => $this->student_reply_feelings ?? null,
+            'student_reply_why_happened' => $this->student_reply_why_happened ?? null,
+            'student_reply_what_learned' => $this->student_reply_what_learned ?? null,
+            'student_reply_prevent_future' => $this->student_reply_prevent_future ?? null,
+            'student_reply_additional_comments' => $this->student_reply_additional_comments ?? null,
+            // Archive metadata
+            'archived_at' => now(),
+            'archived_by' => $archivedBy,
+            'archive_reason' => $reason,
+        ]);
 
-        static::updated(function ($caseMeeting) {
-            // Check if status was changed
-            if ($caseMeeting->wasChanged('status')) {
-                $newStatus = $caseMeeting->status;
-                $violationStatus = self::mapStatusToViolationStatus($newStatus);
-                if ($violationStatus) {
-                    $caseMeeting->updateRelatedViolationStatuses($violationStatus);
-                }
-            }
-        });
+        return $archivedMeeting;
+    }
+
+    /**
+     * Check if this case meeting should be archived.
+     */
+    public function shouldBeArchived()
+    {
+        return in_array($this->status, ['case_closed']);
+    }
+
+    /**
+     * Get archived meetings relationship.
+     */
+    public function archivedMeeting()
+    {
+        return $this->hasOne(ArchivedMeeting::class, 'original_case_meeting_id');
     }
 
 }
