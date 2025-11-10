@@ -22,6 +22,22 @@ use Illuminate\Support\Facades\Storage;
 
 class StudentController extends Controller
 {
+    /**
+     * Get current academic year using Philippine academic year logic
+     */
+    private static function getCurrentAcademicYear()
+    {
+        $currentYear = date('Y');
+        $currentMonth = date('n'); // 1-12
+        
+        if ($currentMonth >= 1 && $currentMonth <= 5) {
+            // January to May - second half of academic year
+            return ($currentYear - 1) . '-' . $currentYear;
+        } else {
+            // June to December - first half of academic year
+            return $currentYear . '-' . ($currentYear + 1);
+        }
+    }
     public function index()
     {
         $student = Auth::guard('student')->user();
@@ -172,7 +188,7 @@ class StudentController extends Controller
                 'id_photo' => $request->id_photo,
                 'id_photo_mime_type' => $request->id_photo_mime_type,
                 'enrollment_status' => 'pending',
-                'academic_year' => $request->academic_year ?? '2024-2025',
+                'academic_year' => $request->academic_year ?? self::getCurrentAcademicYear(),
                 'student_type' => $request->student_type ?? 'new',
                 'password' => null, // Explicitly set to null
             ];
@@ -215,7 +231,8 @@ class StudentController extends Controller
         }
         
         // Calculate total fees for the student
-        $feeCalculation = Fee::calculateTotalFeesForGrade($student->grade_level);
+        $academicYear = $student->academic_year ?? (date('Y') . '-' . (date('Y') + 1));
+        $feeCalculation = Fee::calculateTotalFeesForGrade($student->grade_level, $academicYear);
         $totalAmount = $feeCalculation['total_amount'];
         
         // Check payment schedule status
@@ -225,7 +242,7 @@ class StudentController extends Controller
             
         // Get current subjects for the student (same logic as subjects view)
         $currentSubjects = Subject::where('grade_level', $student->grade_level)
-            ->where('academic_year', $student->academic_year ?? '2024-2025')
+            ->where('academic_year', $student->academic_year ?? self::getCurrentAcademicYear())
             ->where('is_active', true)
             ->when(in_array($student->grade_level, ['Grade 11', 'Grade 12']), function($query) use ($student) {
                 return $query->where(function($q) use ($student) {
@@ -296,7 +313,8 @@ class StudentController extends Controller
             Log::info('Preferred schedule date: ' . $preferredScheduleDate);
 
             // Calculate total fees
-            $feeCalculation = Fee::calculateTotalFeesForGrade($student->grade_level);
+            $academicYear = $student->academic_year ?? (date('Y') . '-' . (date('Y') + 1));
+            $feeCalculation = Fee::calculateTotalFeesForGrade($student->grade_level, $academicYear);
             $totalAmount = $feeCalculation['total_amount'];
             
             Log::info('Total amount calculated: ' . $totalAmount);
@@ -525,7 +543,7 @@ class StudentController extends Controller
         
         // Get subjects based on student's grade level
         $query = Subject::where('grade_level', $student->grade_level)
-            ->where('academic_year', $student->academic_year ?? '2024-2025')
+            ->where('academic_year', $student->academic_year ?? self::getCurrentAcademicYear())
             ->where('is_active', true);
             
         // Add strand and track filters for senior high school
@@ -624,7 +642,8 @@ class StudentController extends Controller
             ->get();
         
         // Calculate fee breakdown and totals
-        $feeCalculation = Fee::calculateTotalFeesForGrade($student->grade_level);
+        $academicYear = $student->academic_year ?? (date('Y') . '-' . (date('Y') + 1));
+        $feeCalculation = Fee::calculateTotalFeesForGrade($student->grade_level, $academicYear);
         $totalFeesAmount = $feeCalculation['total_amount'];
         
         // Calculate total paid (confirmed payments) - use amount_received if available
@@ -810,7 +829,8 @@ class StudentController extends Controller
         
         // Calculate total fees due if not set
         if (!$student->total_fees_due) {
-            $feeCalculation = Fee::calculateTotalFeesForGrade($student->grade_level);
+            $academicYear = $student->academic_year ?? (date('Y') . '-' . (date('Y') + 1));
+            $feeCalculation = Fee::calculateTotalFeesForGrade($student->grade_level, $academicYear);
             $totalFeesDue = $feeCalculation['total_amount'];
         } else {
             $totalFeesDue = $student->total_fees_due;

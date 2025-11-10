@@ -33,6 +33,12 @@ class Authenticate extends Middleware
                             return route('guidance.login');
                         case 'discipline':
                             return route('discipline.login');
+                        case 'cashier':
+                            return route('cashier.login');
+                        case 'teacher':
+                            return route('teacher.login');
+                        case 'faculty-head':
+                            return route('faculty-head.login');
                         case 'admin':
                         case 'web':
                         default:
@@ -62,6 +68,18 @@ class Authenticate extends Middleware
             
             if (str_starts_with($path, 'discipline')) {
                 return route('discipline.login');
+            }
+            
+            if (str_starts_with($path, 'cashier')) {
+                return route('cashier.login');
+            }
+            
+            if (str_starts_with($path, 'teacher')) {
+                return route('teacher.login');
+            }
+            
+            if (str_starts_with($path, 'faculty-head')) {
+                return route('faculty-head.login');
             }
             
             if (str_starts_with($path, 'admin')) {

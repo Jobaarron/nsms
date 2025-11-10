@@ -632,7 +632,7 @@
                             name="medical_history"
                             rows="2"
                             class="form-control form-control-lg text-uppercase @error('medical_history') is-invalid @enderror"
-                            placeholder="List if you have any allergies or medical conditions (will default to 'N/A' if left blank)"
+                            placeholder="List if you have any allergies or medical conditions"
                             oninput="this.value = this.value.toUpperCase()"
                         >{{ old('medical_history') }}</textarea>
                         @error('medical_history') <div class="invalid-feedback">{{ $message }}</div> @enderror

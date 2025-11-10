@@ -49,7 +49,19 @@ class Fee extends Model
      */
     public static function getFeesForGrade($gradeLevel, $academicYear = null)
     {
-        $academicYear = $academicYear ?: (date('Y') . '-' . (date('Y') + 1));
+        if (!$academicYear) {
+            // Use same logic as FeesTableSeeder for Philippine academic year
+            $currentYear = date('Y');
+            $currentMonth = date('n'); // 1-12
+            
+            if ($currentMonth >= 1 && $currentMonth <= 5) {
+                // January to May - second half of academic year
+                $academicYear = ($currentYear - 1) . '-' . $currentYear;
+            } else {
+                // June to December - first half of academic year
+                $academicYear = $currentYear . '-' . ($currentYear + 1);
+            }
+        }
         
         return self::where('is_active', true)
             ->where('academic_year', $academicYear)

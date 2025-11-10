@@ -1,6 +1,15 @@
 <x-student-layout>
-    @vite(['resources/js/student-enrollment.js'])
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    
+    @php
+        // Calculate total fees at the top so it's available for JavaScript
+        $academicYear = $student->academic_year ?? (date('Y') . '-' . (date('Y') + 1));
+        $feeCalculation = \App\Models\Fee::calculateTotalFeesForGrade($student->grade_level, $academicYear);
+        $fees = $feeCalculation['fees'];
+        $totalAmount = $feeCalculation['total_amount'];
+        $breakdown = $feeCalculation['breakdown'];
+    @endphp
+    
     <div class="container-fluid px-4 py-4">
     @push('styles')
         @vite('resources/css/index_student.css')
@@ -431,12 +440,7 @@
                             </h5>
                         </div>
                         <div class="card-body">
-                            @php
-                                $feeCalculation = \App\Models\Fee::calculateTotalFeesForGrade($student->grade_level);
-                                $fees = $feeCalculation['fees'];
-                                $totalAmount = $feeCalculation['total_amount'];
-                                $breakdown = $feeCalculation['breakdown'];
-                            @endphp
+                            {{-- Fee calculation is now done at the top of the view --}}
                             
                             @if(count($fees) > 0)
                                 <div class="fee-list mb-3">
@@ -522,7 +526,6 @@
     @push('scripts')
         @vite('resources/js/student-enrollment.js')
         <script>
-            // Initialize enrollment data when page loads
             document.addEventListener('DOMContentLoaded', function() {
                 if (typeof window.initializeEnrollmentData === 'function') {
                     window.initializeEnrollmentData(
@@ -531,39 +534,6 @@
                     );
                 }
             });
-
-            // Custom form submission to show PDF modal after payment
-            function submitEnrollmentForm() {
-                const form = document.getElementById('enrollmentForm');
-                const formData = new FormData(form);
-                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-                fetch(form.action, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': csrfToken,
-                        'Accept': 'application/json',
-                    },
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success && data.transaction_id) {
-                        if (window.showPDFModal) {
-                            window.showPDFModal({
-                                transactionId: data.transaction_id,
-                                onClose: function() {
-                                    window.location.href = data.redirect_url || '/student/dashboard';
-                                }
-                            });
-                        }
-                    } else {
-                        if (window.showAlert) window.showAlert(data.message || 'Failed to submit payment.', 'danger');
-                    }
-                })
-                .catch(() => {
-                    if (window.showAlert) window.showAlert('An error occurred while submitting payment.', 'danger');
-                });
-            }
         </script>
     @endpush
 </x-student-layout>

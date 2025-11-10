@@ -3,15 +3,7 @@
 let totalAmount = 0;
 let preferredScheduleDate = '';
 
-// Initialize enrollment data from form dataset
-document.addEventListener('DOMContentLoaded', function() {
-    const enrollmentForm = document.getElementById('enrollmentForm');
-    if (enrollmentForm) {
-        totalAmount = parseFloat(enrollmentForm.dataset.totalAmount) || 0;
-        preferredScheduleDate = enrollmentForm.dataset.scheduleDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-        console.log('Enrollment data initialized:', { totalAmount, preferredScheduleDate });
-    }
-});
+// Global variables will be initialized by initializeEnrollmentData() function called from PHP
 
 // Define functions globally so they can be accessed by onclick handlers
 window.populatePaymentDates = function() {
@@ -161,6 +153,11 @@ window.initializeEnrollmentData = function(amount, scheduleDate) {
     totalAmount = amount;
     preferredScheduleDate = scheduleDate;
     console.log('Enrollment data initialized:', { totalAmount, preferredScheduleDate });
+    
+    // Update amount displays immediately
+    if (typeof window.populatePaymentAmounts === 'function') {
+        window.populatePaymentAmounts();
+    }
 }
 
 // DOM Content Loaded Event Listener
@@ -245,17 +242,26 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+// Update amount displays function
+function updateAmountDisplays(totalAmount) {
+    if (typeof window.populatePaymentAmounts === 'function') {
+        window.populatePaymentAmounts();
+    }
+}
+
 // Export functions for global access
 window.showAlert = showAlert;
+window.showPaymentScheduleCard = showPaymentScheduleCard;
+window.updateAmountDisplays = updateAmountDisplays;
 
 // PDF Modal for Receipt
 function showPDFModal({ transactionId, onClose }) {
-    // Remove existing modal if present
-    let existing = document.getElementById('pdf-modal');
-    if (existing) existing.remove();
+// Remove existing modal if present
+let existing = document.getElementById('pdf-modal');
+if (existing) existing.remove();
 
-    // Build the receipt URL with transaction_id
-    let receiptUrl = '/pdf/receipt?transaction_id=' + encodeURIComponent(transactionId);
+// Build the receipt URL with transaction_id
+let receiptUrl = '/pdf/receipt?transaction_id=' + encodeURIComponent(transactionId);
 
     // Modal HTML
     const modal = document.createElement('div');
@@ -407,3 +413,40 @@ window.submitEnrollmentForm = function() {
         }
     });
 };
+
+// Form submission function for PDF modal integration
+function submitEnrollmentForm() {
+    const form = document.getElementById('enrollmentForm');
+    const formData = new FormData(form);
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
+    fetch(form.action, {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': csrfToken,
+            'Accept': 'application/json',
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.transaction_id) {
+            if (window.showPDFModal) {
+                window.showPDFModal({
+                    transactionId: data.transaction_id,
+                    onClose: function() {
+                        window.location.href = data.redirect_url || '/student/dashboard';
+                    }
+                });
+            }
+        } else {
+            if (window.showAlert) window.showAlert(data.message || 'Failed to submit payment.', 'danger');
+        }
+    })
+    .catch(() => {
+        if (window.showAlert) window.showAlert('An error occurred while submitting payment.', 'danger');
+    });
+}
+
+// Export function for global access
+window.submitEnrollmentForm = submitEnrollmentForm;
