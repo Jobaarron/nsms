@@ -632,10 +632,13 @@
                             name="medical_history"
                             rows="2"
                             class="form-control form-control-lg text-uppercase @error('medical_history') is-invalid @enderror"
-                            placeholder="List any allergies or medical conditions"
+                            placeholder="List if you have any allergies or medical conditions (will default to 'N/A' if left blank)"
                             oninput="this.value = this.value.toUpperCase()"
                         >{{ old('medical_history') }}</textarea>
                         @error('medical_history') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        <div class="form-text text-muted">
+                            <i class="ri-information-line"></i> If left blank, this field will automatically be set to "N/A"
+                        </div>
                     </div>
 
 

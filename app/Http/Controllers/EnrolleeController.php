@@ -210,11 +210,19 @@ class EnrolleeController extends Controller
         ]);
 
         try {
-            $enrollee->update($request->only([
+            // Get the data to update
+            $updateData = $request->only([
                 'first_name', 'middle_name', 'last_name', 'contact_number', 'religion',
                 'address', 'city', 'province', 'zip_code', 'guardian_name', 
                 'guardian_contact', 'medical_history'
-            ]));
+            ]);
+            
+            // Set default "N/A" for medical_history if empty
+            if (empty($updateData['medical_history']) || trim($updateData['medical_history']) === '') {
+                $updateData['medical_history'] = 'N/A';
+            }
+            
+            $enrollee->update($updateData);
             
             return redirect()->back()->with('success', 'Profile updated successfully!');
             

@@ -202,6 +202,11 @@ class EnrollmentController extends Controller
             $data['total_paid'] = 0;
         }
 
+        // 6.9) Set default "N/A" for medical_history if empty
+        if (empty($data['medical_history']) || trim($data['medical_history']) === '') {
+            $data['medical_history'] = 'N/A';
+        }
+
         // 7) Create enrollment application (Enrollee record)
         $enrollee = Enrollee::create($data);
 

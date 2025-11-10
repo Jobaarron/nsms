@@ -342,7 +342,7 @@ class StudentController extends Controller
             foreach ($schedules as $idx => $schedule) {
                 try {
                     $payment = Payment::create([
-                        'transaction_id' => 'TXN-' . $student->student_id . '-' . time() . '-' . rand(100, 999),
+                        'transaction_id' => Payment::generateTransactionId($student->student_id),
                         'payable_type' => 'App\\Models\\Student',
                         'payable_id' => $student->id,
                         'fee_id' => null,
@@ -362,7 +362,7 @@ class StudentController extends Controller
                     Log::error('Payment creation failed: ' . $e->getMessage());
                     Log::error('Payment creation stack trace: ' . $e->getTraceAsString());
                     Log::error('Payment data: ' . json_encode([
-                        'transaction_id' => 'TXN-' . $student->student_id . '-' . time() . '-' . rand(100, 999),
+                        'transaction_id' => Payment::generateTransactionId($student->student_id),
                         'payable_type' => 'App\\Models\\Student',
                         'payable_id' => $student->id,
                         'fee_id' => null,
@@ -475,7 +475,7 @@ class StudentController extends Controller
         foreach ($schedules as $schedule) {
             try {
                 Payment::create([
-                    'transaction_id' => 'TXN-' . $student->student_id . '-' . time() . '-' . rand(100, 999),
+                    'transaction_id' => Payment::generateTransactionId($student->student_id),
                     'payable_type' => 'App\\Models\\Student',
                     'payable_id' => $student->id,
                     'fee_id' => null, // Explicitly set to null since this is a payment schedule, not tied to specific fee
@@ -492,7 +492,7 @@ class StudentController extends Controller
                 Log::error('Payment creation failed: ' . $e->getMessage());
                 Log::error('Payment creation stack trace: ' . $e->getTraceAsString());
                 Log::error('Payment data: ' . json_encode([
-                    'transaction_id' => 'TXN-' . $student->student_id . '-' . time() . '-' . rand(100, 999),
+                    'transaction_id' => Payment::generateTransactionId($student->student_id),
                     'payable_type' => 'App\\Models\\Student',
                     'payable_id' => $student->id,
                     'fee_id' => null,

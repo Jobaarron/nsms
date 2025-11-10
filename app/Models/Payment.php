@@ -110,4 +110,28 @@ class Payment extends Model
         return $query->where('status', 'paid')
                     ->where('confirmation_status', 'confirmed');
     }
+
+    /**
+     * Generate a sequential transaction ID
+     */
+    public static function generateTransactionId($studentId)
+    {
+        // Get the highest sequential number used so far for this student
+        $lastPayment = self::where('transaction_id', 'LIKE', 'TXN-' . $studentId . '-%')
+            ->orderBy('id', 'desc')
+            ->first();
+        
+        $sequentialNumber = 0;
+        
+        if ($lastPayment) {
+            // Extract the last part of the transaction ID (after the last dash)
+            $parts = explode('-', $lastPayment->transaction_id);
+            $lastSequential = (int) end($parts);
+            $sequentialNumber = $lastSequential + 1;
+        }
+        
+        // Format: TXN-{student_id}-{sequential_number_padded}
+        // Pad with zeros to make it 4 digits (0000, 0001, 0002, etc.)
+        return 'TXN-' . $studentId . '-' . str_pad($sequentialNumber, 4, '0', STR_PAD_LEFT);
+    }
 }
