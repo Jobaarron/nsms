@@ -47,6 +47,9 @@ return new class extends Migration
             $table->text('student_statement')->nullable();
             $table->text('incident_feelings')->nullable();
             $table->text('action_plan')->nullable();
+            $table->string('student_attachment_path')->nullable();
+            $table->text('student_attachment_description')->nullable();
+            $table->timestamp('student_attachment_uploaded_at')->nullable();
             $table->text('disciplinary_action')->nullable();
             $table->boolean('parent_notified')->default(false);
             $table->date('parent_notification_date')->nullable();

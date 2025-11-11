@@ -26,6 +26,8 @@ return new class extends Migration
             // Class identification
             $table->string('grade_level')->comment('Grade level (e.g., Grade 7, Grade 8)');
             $table->string('section')->comment('Section name (e.g., A, B, C)');
+            $table->string('strand')->nullable()->comment('For SHS: STEM, ABM, HUMSS, TVL');
+            $table->string('track')->nullable()->comment('For TVL strand: ICT, H.E., etc.');
             $table->string('academic_year')->default(date('Y') . '-' . (date('Y') + 1))->comment('Academic year');
             
             // Assignment type and status
