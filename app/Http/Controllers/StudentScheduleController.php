@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\ClassSchedule;
 use App\Models\Student;
+use Carbon\Carbon;
 
 class StudentScheduleController extends Controller
 {
@@ -58,7 +59,8 @@ class StudentScheduleController extends Controller
         // Time slots for calendar display (7:00 AM to 6:00 PM)
         $timeSlots = [];
         for ($hour = 7; $hour <= 18; $hour++) {
-            $timeSlots[] = sprintf('%02d:00', $hour);
+            $time24 = sprintf('%02d:00', $hour);
+            $timeSlots[] = \Carbon\Carbon::createFromFormat('H:i', $time24)->format('g:i A');
         }
 
         return view('student.schedule.calendar', compact('student', 'weeklySchedule', 'timeSlots'));
@@ -87,9 +89,9 @@ class StudentScheduleController extends Controller
                     'teacher' => $schedule->teacher->name,
                     'room' => $schedule->room,
                     'day' => $day,
-                    'start_time' => $schedule->start_time->format('H:i'),
-                    'end_time' => $schedule->end_time->format('H:i'),
-                    'time_range' => $schedule->time_range,
+                    'start_time' => $schedule->start_time->format('g:i A'),
+                    'end_time' => $schedule->end_time->format('g:i A'),
+                    'time_range' => $schedule->start_time->format('g:i A') . ' - ' . $schedule->end_time->format('g:i A'),
                     'color' => $this->getSubjectColor($schedule->subject->category)
                 ];
             }

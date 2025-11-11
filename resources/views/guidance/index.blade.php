@@ -39,6 +39,22 @@
 
 
 
+        @php
+            // Ensure all required stats have default values
+            $stats = $stats ?? [];
+            $stats = array_merge([
+                'total_students' => 0,
+                'active_case_meetings' => 0,
+                'completed_case_meetings' => 0,
+                'scheduled_counseling' => 0,
+                'completed_counseling_sessions' => 0,
+                'students_with_disciplinary_record' => 0,
+                'pending_cases' => 0,
+                'student_growth' => 0,
+                'student_target' => 1000
+            ], $stats);
+        @endphp
+
         <!-- Enhanced Statistics Cards -->
         <div class="row mb-4">
             <div class="col-xl-3 col-md-6 mb-3">
@@ -55,10 +71,17 @@
                         <div class="fw-bold fs-3 text-success mb-1">{{ number_format($stats['total_students'] ?? 0) }}</div>
                         <div class="text-muted small mb-2">Total Students</div>
                         <div class="progress" style="height: 4px;">
-                            <div class="progress-bar bg-success" style="width: 85%"></div>
+                            @php
+                                $student_progress = $stats['total_students'] > 0 ? min(100, ($stats['total_students'] / ($stats['student_target'] ?? 1000)) * 100) : 0;
+                            @endphp
+                            <div class="progress-bar bg-success" style="width: {{ $student_progress }}%"></div>
                         </div>
                         <small class="text-success mt-1">
-                            <i class="ri-arrow-up-line"></i> 12% from last month
+                            @if(($stats['student_growth'] ?? 0) >= 0)
+                                <i class="ri-arrow-up-line"></i> {{ $stats['student_growth'] ?? 0 }}% from last month
+                            @else
+                                <i class="ri-arrow-down-line"></i> {{ abs($stats['student_growth'] ?? 0) }}% from last month
+                            @endif
                         </small>
                     </div>
                 </div>
@@ -78,7 +101,13 @@
                         <div class="fw-bold fs-3 text-warning mb-1">{{ $stats['active_case_meetings'] ?? 0 }}</div>
                         <div class="text-muted small mb-2">Active Case Meetings</div>
                         <div class="progress" style="height: 4px;">
-                            <div class="progress-bar bg-warning" style="width: 65%"></div>
+                            @php
+                                $active_meetings = $stats['active_case_meetings'] ?? 0;
+                                $completed_meetings = $stats['completed_case_meetings'] ?? 0;
+                                $total_meetings = $active_meetings + $completed_meetings;
+                                $case_progress = $total_meetings > 0 ? ($completed_meetings / $total_meetings) * 100 : 0;
+                            @endphp
+                            <div class="progress-bar bg-warning" style="width: {{ $case_progress }}%"></div>
                         </div>
                         <small class="text-muted mt-1">
                             <i class="ri-calendar-line"></i> {{ $stats['pending_cases'] ?? 0 }} pending cases
@@ -101,7 +130,12 @@
                         <div class="fw-bold fs-3 text-success mb-1">{{ $stats['scheduled_counseling'] ?? 0 }}</div>
                         <div class="text-muted small mb-2">Scheduled Counseling</div>
                         <div class="progress" style="height: 4px;">
-                            <div class="progress-bar bg-success" style="width: 75%"></div>
+                            @php
+                                $counseling_progress = ($stats['scheduled_counseling'] ?? 0) > 0 
+                                    ? (($stats['completed_counseling_sessions'] ?? 0) / ($stats['scheduled_counseling'] ?? 1)) * 100 
+                                    : 0;
+                            @endphp
+                            <div class="progress-bar bg-success" style="width: {{ min(100, $counseling_progress) }}%"></div>
                         </div>
                         <small class="text-info mt-1">
                             <i class="ri-calendar-check-line"></i> {{ $stats['completed_counseling_sessions'] ?? 0 }} completed
@@ -846,16 +880,68 @@
 
     @vite('resources/js/guidance-dashboard.js')
     
+    <!-- Dynamic Configuration -->
+    <script>
+        // Define API endpoints dynamically using existing routes
+        window.guidanceApiEndpoints = {
+            upcomingTasks: "{{ route('guidance.upcoming-tasks') }}",
+            recentActivities: "{{ route('guidance.recent-activities') }}",
+            caseStatusStats: "{{ route('guidance.case-status-stats') }}",
+            closedCasesStats: "{{ route('guidance.closed-cases-stats') }}",
+            counselingSessionsStats: "{{ route('guidance.counseling-sessions-stats') }}",
+            disciplineStats: "{{ route('guidance.discipline-vs-total-stats') }}",
+            topCases: "{{ url('/guidance/top-cases') }}",
+            violationTrends: "{{ route('guidance.violation-trends') }}",
+            counselingEffectiveness: "{{ route('guidance.counseling-effectiveness') }}",
+            weeklyViolations: "{{ route('guidance.weekly-violations') }}",
+            dashboardStats: "{{ route('guidance.recent-activities') }}"
+        };
+        
+        // Pass dynamic data from controller
+        window.guidanceStats = {
+            totalStudents: {{ $stats['total_students'] ?? 0 }},
+            activeCaseMeetings: {{ $stats['active_case_meetings'] ?? 0 }},
+            scheduledCounseling: {{ $stats['scheduled_counseling'] ?? 0 }},
+            studentsWithDisciplinaryRecord: {{ $stats['students_with_disciplinary_record'] ?? 0 }},
+            pendingCases: {{ $stats['pending_cases'] ?? 0 }},
+            completedCounselingSessions: {{ $stats['completed_counseling_sessions'] ?? 0 }},
+            completedCaseMeetings: {{ $stats['completed_case_meetings'] ?? 0 }},
+            studentGrowth: {{ $stats['student_growth'] ?? 0 }},
+            studentTarget: {{ $stats['student_target'] ?? 1000 }},
+            currentUser: {
+                name: "{{ Auth::user()->name ?? 'Guest' }}",
+                role: "{{ Auth::user()->getRoleNames()->first() ?? 'user' }}"
+            }
+        };
+        
+        // Dynamic refresh intervals (in milliseconds)
+        window.refreshConfig = {
+            autoRefreshInterval: {{ config('guidance.auto_refresh_interval', 30000) }},
+            chartUpdateInterval: {{ config('guidance.chart_update_interval', 60000) }},
+            notificationDuration: {{ config('guidance.notification_duration', 5000) }}
+        };
+    </script>
+    
     <!-- Initialize dashboard enhancements -->
     <script>
         // Dashboard initialization with enhanced features
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize filters with default "This Week" setting
-            applyFilters();
+            if (typeof applyFilters === 'function') {
+                applyFilters();
+            }
             
-            // Add welcome message
+            // Load all dashboard data dynamically
+            if (typeof loadAllDashboardData === 'function') {
+                loadAllDashboardData();
+            } else {
+                console.log('Enhanced dashboard functions not loaded yet');
+            }
+            
+            // Add personalized welcome message
             setTimeout(() => {
-                showAlert('Welcome to your enhanced dashboard! 🎉', 'success', 3000);
+                const userName = window.guidanceStats.currentUser.name;
+                showAlert(`Welcome back, ${userName}! 🎉`, 'success', 3000);
             }, 1000);
             
             // Check for urgent tasks on load
@@ -867,17 +953,30 @@
         
         // Check for urgent tasks and notify user
         function checkForUrgentTasks() {
-            fetch('/guidance/upcoming-tasks')
-                .then(response => response.json())
+            if (!window.guidanceApiEndpoints || !window.guidanceApiEndpoints.upcomingTasks) {
+                console.warn('Upcoming tasks API endpoint not configured');
+                return;
+            }
+            
+            fetch(window.guidanceApiEndpoints.upcomingTasks)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
-                    if (data.success && data.tasks.length > 0) {
-                        const urgentTasks = data.tasks.filter(task => task.status === 'overdue').length;
+                    if (data.success && data.tasks && data.tasks.length > 0) {
+                        const urgentTasks = data.tasks.filter(task => task.status === 'overdue' || task.priority === 'high').length;
                         if (urgentTasks > 0) {
-                            showAlert(`⚠️ You have ${urgentTasks} overdue task${urgentTasks > 1 ? 's' : ''}!`, 'warning', 8000);
+                            showAlert(`⚠️ You have ${urgentTasks} urgent task${urgentTasks > 1 ? 's' : ''} requiring attention!`, 'warning', 8000);
                         }
                     }
                 })
-                .catch(console.error);
+                .catch(error => {
+                    console.warn('Could not fetch urgent tasks:', error.message);
+                    // Fail silently for better user experience
+                });
         }
         
         // Setup keyboard shortcuts for quick navigation
@@ -905,6 +1004,80 @@
                 }
             });
         }
+        
+        // Function to update statistics cards dynamically
+        function updateStatisticsCards() {
+            const endpoint = (window.guidanceApiEndpoints && window.guidanceApiEndpoints.dashboardStats) 
+                || '/guidance/api/dashboard-stats';
+                
+            fetch(endpoint)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success && data.stats) {
+                        // Update the statistics cards with fresh data
+                        const stats = data.stats;
+                        updateProgressBars(stats);
+                        updateGrowthIndicators(stats);
+                    }
+                })
+                .catch(error => {
+                    console.warn('Could not update statistics:', error.message);
+                    // Fail silently for better user experience
+                });
+        }
+        
+        // Function to update progress bars dynamically
+        function updateProgressBars(stats) {
+            const progressBars = document.querySelectorAll('.progress-bar');
+            progressBars.forEach((bar, index) => {
+                let percentage = 0;
+                switch(index) {
+                    case 0: // Students progress
+                        percentage = stats.total_students > 0 ? Math.min(100, (stats.total_students / (stats.student_target || 1000)) * 100) : 0;
+                        break;
+                    case 1: // Case meetings progress
+                        percentage = (stats.active_case_meetings + (stats.completed_case_meetings || 0)) > 0 
+                            ? ((stats.completed_case_meetings || 0) / ((stats.active_case_meetings || 0) + (stats.completed_case_meetings || 0))) * 100 
+                            : 0;
+                        break;
+                    case 2: // Counseling progress
+                        percentage = (stats.scheduled_counseling || 0) > 0 
+                            ? ((stats.completed_counseling_sessions || 0) / (stats.scheduled_counseling || 1)) * 100 
+                            : 0;
+                        break;
+                    case 3: // Disciplinary record percentage
+                        percentage = stats.total_students > 0 ? ((stats.students_with_disciplinary_record || 0) / stats.total_students) * 100 : 0;
+                        break;
+                }
+                bar.style.width = Math.min(100, percentage) + '%';
+            });
+        }
+        
+        // Function to update growth indicators
+        function updateGrowthIndicators(stats) {
+            const growthElement = document.querySelector('.text-success.mt-1');
+            if (growthElement && stats.student_growth !== undefined) {
+                const growth = stats.student_growth;
+                const icon = growth >= 0 ? 'ri-arrow-up-line' : 'ri-arrow-down-line';
+                const color = growth >= 0 ? 'text-success' : 'text-danger';
+                
+                growthElement.className = `${color} mt-1`;
+                growthElement.innerHTML = `<i class="${icon}"></i> ${Math.abs(growth)}% from last month`;
+            }
+        }
+        
+        // Set up periodic updates for dashboard data
+        setInterval(() => {
+            updateStatisticsCards();
+            if (typeof loadAllDashboardData === 'function') {
+                loadAllDashboardData();
+            }
+        }, window.refreshConfig.chartUpdateInterval);
         
         // Add tooltip initialization for better UX
         document.addEventListener('DOMContentLoaded', function() {

@@ -215,8 +215,11 @@ Route::middleware(['auth', 'role:teacher'])->prefix('teacher')->name('teacher.')
             ->name('report-card.pdf');
         Route::get('/report-card/elementary/pdf/{student}', [App\Http\Controllers\PdfController::class, 'generateElementaryReportCardPdf'])
             ->name('report-card.elementary.pdf');
+        Route::get('/report-card/grade11stem/pdf/{student}', [App\Http\Controllers\PdfController::class, 'generateReportCardPdf'])
+            ->name('report-card.grade11stem.pdf');
         Route::get('/report-cards/print-all', [PdfController::class, 'printAllReportCards'])
             ->name('report-cards.print-all');
+        
             
         // Teacher Advisory AJAX Routes
         Route::get('/advisory/student/{student}/grades', [App\Http\Controllers\TeacherAdvisoryController::class, 'getStudentGrades'])
@@ -384,6 +387,12 @@ Route::prefix('discipline')->name('discipline.')->group(function () {
     Route::get('/dashboard-insights', [App\Http\Controllers\DisciplineController::class, 'getDashboardInsights'])->name('dashboard-insights');
     // AJAX: Dashboard statistics
     Route::get('/dashboard-stats', [App\Http\Controllers\DisciplineController::class, 'getDashboardStats'])->name('dashboard-stats');
+
+    // AJAX: Dynamic dashboard content
+    Route::get('/recent-violations', [App\Http\Controllers\DisciplineController::class, 'getRecentViolations'])->name('recent-violations');
+    Route::get('/pending-actions', [App\Http\Controllers\DisciplineController::class, 'getPendingActions'])->name('pending-actions');
+    Route::get('/critical-cases', [App\Http\Controllers\DisciplineController::class, 'getCriticalCases'])->name('critical-cases');
+    Route::get('/violation-trends', [App\Http\Controllers\DisciplineController::class, 'getViolationTrends'])->name('violation-trends');
 
     // Protected routes
     Route::middleware(['web'])->group(function () {
@@ -773,6 +782,9 @@ Route::prefix('registrar')->name('registrar.')->group(function () {
         // Approved applications
         Route::get('/approved', [RegistrarController::class, 'approved'])->name('approved');
         Route::post('/applications/{id}/generate-credentials', [RegistrarController::class, 'generateStudentCredentials'])->name('applications.generate-credentials');
+        
+        // Applicant archives
+        Route::get('/applicant-archives', [RegistrarController::class, 'applicantArchives'])->name('applicant-archives');
         
         // Notices and Documents data
         Route::get('/notices', [RegistrarController::class, 'getNotices'])->name('notices.get');

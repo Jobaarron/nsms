@@ -1,10 +1,9 @@
 <x-discipline-layout>
- @vite(['resources/js/app.js'])
-  @vite(['resources/css/index_discipline.css'])
-  @vite(['resources/js/discipline_student-profile.js'])
+    @vite(['resources/js/app.js'])
+    @vite(['resources/css/index_discipline.css'])
+    @vite(['resources/js/discipline_student-profile.js'])
 
-    <!-- MAIN CONTENT -->
-    <main class="col-12 col-md-10 px-4 py-4">
+    <div class="container-fluid">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1 class="section-title mb-0">Student Profiles</h1>
             <div class="text-muted">
@@ -132,9 +131,8 @@
                 @endif
             </div>
         </div>
-    </main>
 
-    <!-- Student Profile Modal -->
+        <!-- Student Profile Modal -->
     <div class="modal fade" id="studentModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -154,4 +152,5 @@
 
     {{-- Removed Facial Recognition Scanner Modal --}}
     {{-- Removed Face Registration Modal --}}
+    </div>
 </x-discipline-layout>

@@ -1,8 +1,7 @@
 <x-discipline-layout>
+    @vite(['resources/js/app.js', 'resources/css/index_discipline.css', 'resources/js/discipline_violations.js'])
 
-  @vite(['resources/js/app.js', 'resources/css/index_discipline.css', 'resources/js/discipline_violations.js'])
-
-  <main class="col-12 col-md-10 px-4 py-4">
+    <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h1 class="section-title mb-0">Violations Management</h1>
       <div class="d-flex align-items-center gap-3">
@@ -213,9 +212,7 @@
       </div>
     </div>
 
-  </main>
-
-  <!-- Record Violation Modal -->
+    <!-- Record Violation Modal -->
   <div class="modal fade" id="recordViolationModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
       <form id="recordViolationForm" class="modal-content">
@@ -350,5 +347,5 @@
     name: "{{ auth()->user()->name }}",
   };
 </script>
-
+    </div>
 </x-discipline-layout>

@@ -987,6 +987,12 @@ window.forwardToPresident = function(meetingId) {
         const meeting = data.meeting;
         const validationErrors = [];
 
+        // Check if already forwarded to president
+        if (meeting.status === 'forwarded_to_president' || meeting.forwarded_to_president) {
+            showAlert('warning', 'This case has already been forwarded to the president.');
+            return;
+        }
+
         // Check basic requirements
         if (!meeting.summary || meeting.summary.trim() === '') {
             validationErrors.push('Case summary is required');
@@ -1164,7 +1170,7 @@ function showAlert(type, message) {
     const alertDiv = document.createElement('div');
     alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
     alertDiv.innerHTML = `
-        <strong>${type === 'success' ? 'Success!' : 'Error!'}</strong> ${message}
+        <strong>${type === 'success' ? 'Success!' : ''}</strong> ${message}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     `;
 

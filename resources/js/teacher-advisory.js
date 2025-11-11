@@ -4,7 +4,10 @@
  * 
  * Grade-Level Routing:
  * - Grade 1 & Grade 2: Uses elementary route (/teacher/report-card/elementary/pdf/{student})
+ * - Grade 10: Uses high school route (/teacher/report-card/pdf/{student}) 
  * - All other grades: Uses regular high school route (/teacher/report-card/pdf/{student})
+ * 
+ * Print All Report Cards: Specifically configured for Grade 10 Section A students only
  */
 
 
@@ -104,14 +107,17 @@ document.addEventListener('DOMContentLoaded', function() {
         // Test Grade 2 (should use elementary route)
         console.log('Testing Grade 2:', getReportCardRoute(2, 'Grade 2'));
         
+        // Test Grade 10 (should use high school route)
+        console.log('Testing Grade 10:', getReportCardRoute(3, 'Grade 10'));
+        
         // Test Grade 11 (should use high school route)
-        console.log('Testing Grade 11:', getReportCardRoute(3, 'Grade 11'));
+        console.log('Testing Grade 11:', getReportCardRoute(4, 'Grade 11'));
         
         // Test Grade 12 (should use high school route)
-        console.log('Testing Grade 12:', getReportCardRoute(4, 'Grade 12'));
+        console.log('Testing Grade 12:', getReportCardRoute(5, 'Grade 12'));
         
         // Test Grade 7 (should use high school route)
-        console.log('Testing Grade 7:', getReportCardRoute(5, 'Grade 7'));
+        console.log('Testing Grade 7:', getReportCardRoute(6, 'Grade 7'));
         
         console.log('Grade routing test completed. Check console for results.');
     };
@@ -127,6 +133,13 @@ function getReportCardRoute(studentId, gradeLevel) {
     if (gradeLevel === 'Grade 1' || gradeLevel === 'Grade 2') {
         const route = `/teacher/report-card/elementary/pdf/${studentId}`;
         console.log(`Using elementary route: ${route}`);
+        return route;
+    }
+    
+    // Check if it's Grade 10 for high school route
+    if (gradeLevel === 'Grade 10') {
+        const route = `/teacher/report-card/pdf/${studentId}`;
+        console.log(`Using Grade 10 high school route: ${route}`);
         return route;
     }
     
@@ -234,28 +247,72 @@ window.printReportCard = function(studentId, gradeLevel) {
     button.innerHTML = '<i class="ri-loader-4-line spin me-1"></i>Generating...';
     button.disabled = true;
 
-    // Open the PDF directly in a new tab for printing (no blob)
+    // Fetch the PDF as a blob and show print dialog directly
     // Use the appropriate route based on grade level (fallback to high school route if no grade level)
     const url = gradeLevel ? getReportCardRoute(studentId, gradeLevel) : `/teacher/report-card/pdf/${studentId}`;
-    const printWindow = window.open(url, '_blank');
-    if (printWindow) {
-        printWindow.onload = function() {
-            printWindow.print();
-        };
-    }
-    // Restore button state after a short delay (since we don't know when print finishes)
-    setTimeout(() => {
-        button.innerHTML = originalContent;
-        button.disabled = false;
-    }, 2000);
+    
+    fetch(url)
+        .then(response => {
+            if (!response.ok) throw new Error('Failed to fetch PDF');
+            return response.blob();
+        })
+        .then(blob => {
+            const pdfUrl = URL.createObjectURL(blob);
+            
+            // Calculate center position for the popup window
+            const windowWidth = 900;
+            const windowHeight = 700;
+            const screenWidth = window.screen.width;
+            const screenHeight = window.screen.height;
+            const left = (screenWidth - windowWidth) / 2;
+            const top = (screenHeight - windowHeight) / 2;
+            
+            // Create a new window with the PDF for printing, centered on screen
+            const printWindow = window.open('', '_blank', `width=${windowWidth},height=${windowHeight},left=${left},top=${top},scrollbars=yes,resizable=yes`);
+            printWindow.document.write(`
+                <html>
+                    <head>
+                        <title>Report Card</title>
+                        <style>
+                            body { margin: 0; padding: 0; }
+                            iframe { width: 100%; height: 100vh; border: none; }
+                        </style>
+                    </head>
+                    <body>
+                        <iframe src="${pdfUrl}" onload="setTimeout(() => window.print(), 500);"></iframe>
+                    </body>
+                </html>
+            `);
+            printWindow.document.close();
+            
+            // Clean up when window is closed
+            const checkClosed = setInterval(() => {
+                if (printWindow.closed) {
+                    URL.revokeObjectURL(pdfUrl);
+                    clearInterval(checkClosed);
+                }
+            }, 1000);
+            
+        })
+        .catch(error => {
+            console.error('Error loading PDF for printing:', error);
+            alert('Error loading report card. Please try again.');
+        })
+        .finally(() => {
+            // Restore button state after a delay to allow PDF to load
+            setTimeout(() => {
+                button.innerHTML = originalContent;
+                button.disabled = false;
+            }, 1000);
+        });
 }
 
 /**
- * Print all report cards
+ * Print all report cards for Grade 10 Section A
  * Improved: robust event handling and endpoint
  */
 window.printAllReportCards = function(event) {
-    if (!confirm('This will generate report cards for all advisory students. Continue?')) {
+    if (!confirm('This will generate report cards for all Grade 10 Section A students. Continue?')) {
         return;
     }
     // Support both direct and event-callback usage
@@ -360,4 +417,3 @@ window.printAllGrades = function() {
     printWindow.document.close();
     printWindow.print();
 }
-
