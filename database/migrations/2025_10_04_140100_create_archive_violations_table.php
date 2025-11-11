@@ -38,6 +38,7 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->timestamp('archived_at')->nullable(); // When this violation was archived
             $table->string('archive_reason')->nullable(); // Reason for archiving (e.g., 'escalation_to_major')
+            $table->text('feedback')->nullable();
             $table->timestamps();
             
             // Indexes
