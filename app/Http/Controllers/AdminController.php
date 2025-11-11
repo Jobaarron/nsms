@@ -1328,7 +1328,7 @@ public function updateEnrollment(Request $request, $id)
         }
     }
 
-    /**
+     /**
      * Approve a case meeting directly and archive it.
      */
     public function approveCaseMeeting(Request $request, $id)
@@ -1350,12 +1350,27 @@ public function updateEnrollment(Request $request, $id)
             // Archive the case
             $caseMeeting->archiveCase($user->name, 'approved');
             
+            // Build detailed disciplinary action based on approved sanctions
+            $appliedSanctions = [];
+            if ($caseMeeting->written_reflection) $appliedSanctions[] = 'Written Reflection';
+            if ($caseMeeting->mentorship_counseling) $appliedSanctions[] = 'Mentorship/Counseling';
+            if ($caseMeeting->parent_teacher_communication) $appliedSanctions[] = 'Parent-Teacher Communication';
+            if ($caseMeeting->restorative_justice_activity) $appliedSanctions[] = 'Restorative Justice Activity';
+            if ($caseMeeting->follow_up_meeting) $appliedSanctions[] = 'Follow-up Meeting';
+            if ($caseMeeting->community_service) $appliedSanctions[] = 'Community Service';
+            if ($caseMeeting->suspension) $appliedSanctions[] = 'Suspension';
+            if ($caseMeeting->expulsion) $appliedSanctions[] = 'Expulsion';
+            
+            $disciplinaryAction = !empty($appliedSanctions) 
+                ? implode(', ', $appliedSanctions)
+                : 'Case approved - No specific sanctions applied';
+            
             // Update related violations status
             foreach ($caseMeeting->violations as $violation) {
                 $violation->update([
                     'status' => 'case_closed',
-                    'disciplinary_action' => 'Case approved by admin',
-                    'action_taken' => 'Approved by: ' . $user->name,
+                    'disciplinary_action' => $disciplinaryAction,
+                    'action_taken' => 'Case approved by: ' . $user->name,
                     'resolved_by' => $user->id,
                     'resolved_at' => now()
                 ]);

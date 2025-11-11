@@ -252,7 +252,7 @@ let currentTransactionId = null;
                 }
                 
                 // First, test if the route exists by making a fetch request
-                const receiptUrl = `/pdf/receipt?transaction_id=${encodeURIComponent(transactionId)}`;
+                const receiptUrl = `/cashier/api/pdf/cashier-receipt?transaction_id=${encodeURIComponent(transactionId)}`;
                 console.log('Attempting to access receipt at:', receiptUrl);
                 
                 // Test the route first

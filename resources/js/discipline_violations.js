@@ -2659,6 +2659,7 @@ function showIncidentForm() {
   const date = document.getElementById('incidentDate').value;
   const time = document.getElementById('incidentTime').value;
   const details = document.getElementById('incidentDetails').value;
+  const reporter = window.currentUser?.name || 'Unknown User';
 
         // Validate school hours for incident time
         if (time && !validateSchoolHours(time)) {
@@ -2695,6 +2696,7 @@ function showIncidentForm() {
                 formData.append('location', location);
                 formData.append('incident_date', date);
                 formData.append('incident_time', time);
+                formData.append('reported_by', window.currentUser?.id || null);
 
 
 
@@ -2833,7 +2835,7 @@ window.hideModal = function(modalId) {
 // Function to generate printable incident form
 window.generateIncidentForm = function() {
     // Get form data
-    const reporter = document.getElementById('incidentReporter').value;
+    const reporter = window.currentUser?.name || 'Unknown User';
     const date = document.getElementById('incidentDate').value;
     const time = document.getElementById('incidentTime').value;
     const details = document.getElementById('incidentDetails').value;

@@ -52,12 +52,12 @@ class SubjectSeeder extends Seeder
                 'English',
                 'Mathematics',
                 'Araling Panlipunan (AP)',
-                'Edukasyon sa Pagpapakatao (EsP / Values)',
+                'Science',
                 'Music',
                 'Arts',
                 'Physical Education',
                 'Health',
-                'Science',
+                'Edukasyon sa Pagpapakatao (EsP / Values)',
             ];
 
             foreach ($subjects as $subjectName) {

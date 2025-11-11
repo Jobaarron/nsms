@@ -869,7 +869,7 @@ function showPdfModal(paymentId) {
         return;
     }
 
-    let pdfUrl = `/pdf/receipt?transaction_id=${encodeURIComponent(paymentId)}`;
+    let pdfUrl = `/cashier/api/pdf/cashier-receipt?transaction_id=${encodeURIComponent(paymentId)}`;
     const modalHtml = `
         <div class="modal fade" id="pdfReceiptModal" tabindex="-1">
             <div class="modal-dialog modal-xl">

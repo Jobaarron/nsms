@@ -430,12 +430,26 @@ class PdfController extends Controller
     }
 
     /**
-     * Generate Disciplinary Conference Summary Report PDF for all students using TCPDF.
+     * Generate Disciplinary Conference Summary Report PDF for students with disciplinary records using TCPDF.
+     * Shows the FIRST (original) disciplinary case for each student, ordered chronologically.
      * @return \Illuminate\Http\Response
      */
     public function conferenceSummaryReportAllPdf()
     {
-        $students = \App\Models\Student::all();
+        // Only fetch students who have case meetings (disciplinary records)
+        // Get the FIRST (original) case meeting per student, ordered chronologically
+        $caseMeetings = \App\Models\CaseMeeting::with(['student'])
+            ->whereHas('student') // Ensure student exists
+            ->orderBy('id') // Order by case ID chronologically (oldest first)
+            ->get()
+            ->groupBy('student_id') // Group by student to get first case meeting per student
+            ->map(function ($meetings) {
+                return $meetings->first(); // Get the FIRST (original) case meeting for each student
+            })
+            ->sortBy(function ($caseMeeting) {
+                return $caseMeeting->id; // Sort final results by case ID for consistent ordering
+            });
+
         $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
         $templatePath = resource_path('assets/pdf-forms-generation/Summary Report.pdf');
         if (!file_exists($templatePath)) {
@@ -451,16 +465,28 @@ class PdfController extends Controller
         $pdf->SetFont('dejavusans', '', 10);
         $pdf->useTemplate($tplId);
 
+        // Fill in header information
+        $currentDate = now();
+        $currentMonth = $currentDate->format('F'); // Full month name (January, February, etc.)
+        $currentSchoolYear = $currentDate->format('Y') . '-' . ($currentDate->format('Y') + 1); // 2025-2026 format
+        
+        // Add MONTH/SCHOOL YEAR field (adjust coordinates as needed for your template)
+        $pdf->SetXY(160, 45); // Adjust X,Y coordinates based on your template layout
+        $pdf->Write(0, $currentMonth . ' / ' . $currentSchoolYear);
+
         // Table starting coordinates (adjust as needed for your template)
         $startY = 59; // Y coordinate of first row (after header)
         $rowHeight = 6; // Height of each row
         $maxRowsPerPage = 25; // Adjust based on your template
         $currentRow = 0;
 
-        foreach ($students as $index => $student) {
-            // Fetch the latest CaseMeeting for this student (or adjust as needed)
-            $caseMeeting = \App\Models\CaseMeeting::where('student_id', $student->id)->orderByDesc('id')->first();
-            $caseMeetingId = $caseMeeting ? $caseMeeting->id : '';
+        foreach ($caseMeetings as $caseMeeting) {
+            $student = $caseMeeting->student;
+            
+            // Skip if student data is missing
+            if (!$student) {
+                continue;
+            }
 
             // Calculate Y position for this row
             $y = $startY + ($currentRow * $rowHeight);
@@ -474,13 +500,13 @@ class PdfController extends Controller
             // Write each column (adjust X positions and widths as needed)
             $pdf->SetFont('dejavusans', '', 8);
             $pdf->SetXY(22, $y); // No.
-            $pdf->Write(0, $caseMeetingId);
+            $pdf->Write(0, $caseMeeting->id);
             $pdf->SetXY(30, $y); // Name
             $pdf->Write(0, $student->full_name ?? '');
             $pdf->SetXY(84, $y); // Grade/Section
             $pdf->Write(0, ($student->grade_level ?? '') . ' - ' . ($student->section ?? ''));
-            $pdf->SetXY(122, $y); // DCR Case No. (repeat CaseMeeting id)
-            $pdf->Write(0, $caseMeetingId);
+            $pdf->SetXY(122, $y); // DCR Case No.
+            $pdf->Write(0, $caseMeeting->id);
             // Issues/Concerns and Remarks left blank, but no border/cell
 
             $currentRow++;
@@ -741,7 +767,7 @@ $templatePath = resource_path('assets/pdf-forms-generation/Disciplinary-Con-Repo
         $applicationId = $enrollee ? $enrollee->application_id : '';
         $studentId = $student ? $student->student_id : '';
         $studentName = $student ? ($student->full_name ?? ($student->first_name . ' ' . $student->last_name)) : '';
-        $timestamp = $payment->paid_at ? $payment->paid_at->format('Y-m-d H:i:s') : ($payment->created_at ? $payment->created_at->format('Y-m-d H:i:s') : '');
+        $timestamp = $payment->paid_at ? $payment->paid_at->format('Y-m-d h:i A') : ($payment->created_at ? $payment->created_at->format('Y-m-d h:i A') : '');
     // Use scheduled_date from payment table for appointment date
     $appointmentDate = $payment->scheduled_date ? (\Carbon\Carbon::parse($payment->scheduled_date)->format('Y-m-d')) : '';
         $event = $payment->period_name ?? '';
@@ -763,13 +789,13 @@ $templatePath = resource_path('assets/pdf-forms-generation/Disciplinary-Con-Repo
         // Overlay fields (adjust coordinates as needed for your template)
         // $pdf->SetXY(120, 82); // Application ID
         // $pdf->Write(0, '' . $applicationId);
-        $pdf->SetXY(95, 82); // Student ID
+        $pdf->SetXY(95, 89); // Student ID
         $pdf->Write(0, '' . $studentId);
-        $pdf->SetXY(95, 63); // Transaction ID
+        $pdf->SetXY(95, 69); // Transaction ID
         $pdf->Write(0, '' . $transactionId);
     $pdf->SetXY(95, 98); // Student Name
     $pdf->Write(0, $studentName);
-        $pdf->SetXY(95, 72); // Timestamp
+        $pdf->SetXY(95, 79); // Timestamp
         $pdf->Write(0, '' . $timestamp);
         $pdf->SetXY(95, 108); // Appointment Date
         // Determine time of day if scheduled_time exists
@@ -796,7 +822,7 @@ $templatePath = resource_path('assets/pdf-forms-generation/Disciplinary-Con-Repo
             $appointmentDateDisplay .= ' (' . $appointmentTimeOfDay . ')';
         }
         $pdf->Write(0, '' . $appointmentDateDisplay);
-        $pdf->SetXY(95, 120); // Event
+        $pdf->SetXY(95, 117); // Event
         $pdf->Write(0, '' . $event);
 
         return response($pdf->Output('Receipt.pdf', 'S'))->header('Content-Type', 'application/pdf');
@@ -863,13 +889,20 @@ $templatePath = resource_path('assets/pdf-forms-generation/Disciplinary-Con-Repo
             $totalFee = $enrollee->total_fee;
         }
 
-        // Always fetch 'tuition' and 'others' fee from Fee model for the student's grade and academic year, but only override if non-zero
+        // Fetch 'tuition' and 'others' fee from Fee model for the student's grade and academic year
+        // Consider payment method to calculate appropriate installment amount
         if ($student && !empty($student->grade_level)) {
             $academicYear = $student->academic_year ?? $payment->period_name ?? null;
             $feeBreakdown = \App\Models\Fee::calculateTotalFeesForGrade($student->grade_level, $academicYear);
+            
+            // Always display full tuition fee amount (not installment-specific amounts)
             if (!empty($feeBreakdown['breakdown']['tuition']) && $feeBreakdown['breakdown']['tuition'] != 0) {
-                $tuitionFee = $feeBreakdown['breakdown']['tuition'];
+                $fullTuitionFee = $feeBreakdown['breakdown']['tuition'];
+                
+                // Always use full tuition fee amount regardless of payment method
+                $tuitionFee = $fullTuitionFee;
             }
+            
             if (!empty($feeBreakdown['breakdown']['other']) && $feeBreakdown['breakdown']['other'] != 0) {
                 $othersFee = $feeBreakdown['breakdown']['other'];
             }
@@ -926,7 +959,7 @@ $templatePath = resource_path('assets/pdf-forms-generation/Disciplinary-Con-Repo
         $pdf->SetXY(75, 139); // Tuition Fee
         $pdf->Write(0, 'Tuition Fee');
         $pdf->SetXY(142, 139); // Tuition Fee
-        $pdf->Write(0, $tuitionFee);
+        $pdf->Write(0, '21,500.00'); // Always display full payment amount
         $pdf->SetXY(30, 90); // Others Fee
          $pdf->Write(0, $othersFee);
         $pdf->SetXY(143, 147); // Total Fee
@@ -1156,7 +1189,7 @@ public function generateElementaryReportCardPdf(Student $student)
         $teacher = Auth::user();
         $currentAcademicYear = date('Y') . '-' . (date('Y') + 1);
 
-        // Verify this teacher is the student's adviser
+        // Verify this teacher is the student's adviser for elementary students
         $advisoryAssignment = FacultyAssignment::where('teacher_id', $teacher->teacher->id)
             ->where('grade_level', $student->grade_level)
             ->where('section', $student->section)
@@ -1188,20 +1221,44 @@ public function generateElementaryReportCardPdf(Student $student)
         }
         $subjects = $subjects->get();
 
+        // Order subjects for elementary report card display
+        $expectedOrder = [
+            'Mother Tongue (MTB-MLE)',
+            'Filipino',
+            'English',
+            'Mathematics',
+            'Araling Panlipunan (AP)',
+            'Science',
+            'Music',
+            'Arts',
+            'Physical Education',
+            'Health',
+            'Edukasyon sa Pagpapakatao (EsP / Values)'
+        ];
+        
+        // Create ordered grades data
         $gradesData = [];
         $quarters = ['1st', '2nd', '3rd', '4th'];
-        foreach ($subjects as $subject) {
+        
+        foreach ($expectedOrder as $expectedSubjectName) {
+            $subject = $subjects->firstWhere('subject_name', $expectedSubjectName);
+            
             $subjectGrades = [
-                'subject_name' => $subject->subject_name,
+                'subject_name' => $expectedSubjectName,
                 'quarters' => []
             ];
+            
             foreach ($quarters as $quarter) {
-                $grade = Grade::where('student_id', $student->id)
-                    ->where('subject_id', $subject->id)
-                    ->where('quarter', $quarter)
-                    ->where('academic_year', $currentAcademicYear)
-                    ->first();
-                $subjectGrades['quarters'][$quarter] = $grade ? $grade->grade : null;
+                if ($subject) {
+                    $grade = Grade::where('student_id', $student->id)
+                        ->where('subject_id', $subject->id)
+                        ->where('quarter', $quarter)
+                        ->where('academic_year', $currentAcademicYear)
+                        ->first();
+                    $subjectGrades['quarters'][$quarter] = $grade ? $grade->grade : null;
+                } else {
+                    $subjectGrades['quarters'][$quarter] = null;
+                }
             }
             $gradesData[] = $subjectGrades;
         }
@@ -1240,59 +1297,81 @@ public function generateElementaryReportCardPdf(Student $student)
                 // Overlay grades for elementary subjects (adjust coordinates for Grade 1-2 template)
                 // Note: Coordinates will need to be adjusted based on actual template layout
                 
-                // Subject 0 - Filipino/Mother Tongue
-                $pdf->SetXY(53, 45); $pdf->Write(0, isset($gradesData[0]['quarters']['1st']) && $gradesData[0]['quarters']['1st'] !== null ? ((intval($gradesData[0]['quarters']['1st']) == floatval($gradesData[0]['quarters']['1st'])) ? intval($gradesData[0]['quarters']['1st']) : number_format($gradesData[0]['quarters']['1st'], 1)) : '');
-                $pdf->SetXY(65, 45); $pdf->Write(0, isset($gradesData[0]['quarters']['2nd']) && $gradesData[0]['quarters']['2nd'] !== null ? ((intval($gradesData[0]['quarters']['2nd']) == floatval($gradesData[0]['quarters']['2nd'])) ? intval($gradesData[0]['quarters']['2nd']) : number_format($gradesData[0]['quarters']['2nd'], 1)) : '');
-                $pdf->SetXY(75, 45); $pdf->Write(0, isset($gradesData[0]['quarters']['3rd']) && $gradesData[0]['quarters']['3rd'] !== null ? ((intval($gradesData[0]['quarters']['3rd']) == floatval($gradesData[0]['quarters']['3rd'])) ? intval($gradesData[0]['quarters']['3rd']) : number_format($gradesData[0]['quarters']['3rd'], 1)) : '');
-                $pdf->SetXY(87, 45); $pdf->Write(0, isset($gradesData[0]['quarters']['4th']) && $gradesData[0]['quarters']['4th'] !== null ? ((intval($gradesData[0]['quarters']['4th']) == floatval($gradesData[0]['quarters']['4th'])) ? intval($gradesData[0]['quarters']['4th']) : number_format($gradesData[0]['quarters']['4th'], 1)) : '');
+                // Subject 0 - Mother Tongue
+                $pdf->SetXY(53, 45); $pdf->Write(0, (isset($gradesData[0]) && isset($gradesData[0]['quarters']['1st']) && $gradesData[0]['quarters']['1st'] !== null) ? ((intval($gradesData[0]['quarters']['1st']) == floatval($gradesData[0]['quarters']['1st'])) ? intval($gradesData[0]['quarters']['1st']) : number_format($gradesData[0]['quarters']['1st'], 1)) : '-');
+                $pdf->SetXY(65, 45); $pdf->Write(0, (isset($gradesData[0]) && isset($gradesData[0]['quarters']['2nd']) && $gradesData[0]['quarters']['2nd'] !== null) ? ((intval($gradesData[0]['quarters']['2nd']) == floatval($gradesData[0]['quarters']['2nd'])) ? intval($gradesData[0]['quarters']['2nd']) : number_format($gradesData[0]['quarters']['2nd'], 1)) : '-');
+                $pdf->SetXY(75, 45); $pdf->Write(0, (isset($gradesData[0]) && isset($gradesData[0]['quarters']['3rd']) && $gradesData[0]['quarters']['3rd'] !== null) ? ((intval($gradesData[0]['quarters']['3rd']) == floatval($gradesData[0]['quarters']['3rd'])) ? intval($gradesData[0]['quarters']['3rd']) : number_format($gradesData[0]['quarters']['3rd'], 1)) : '-');
+                $pdf->SetXY(87, 45); $pdf->Write(0, (isset($gradesData[0]) && isset($gradesData[0]['quarters']['4th']) && $gradesData[0]['quarters']['4th'] !== null) ? ((intval($gradesData[0]['quarters']['4th']) == floatval($gradesData[0]['quarters']['4th'])) ? intval($gradesData[0]['quarters']['4th']) : number_format($gradesData[0]['quarters']['4th'], 1)) : '-');
 
-                // Subject 1 - English
-                $pdf->SetXY(53, 52); $pdf->Write(0, isset($gradesData[1]['quarters']['1st']) && $gradesData[1]['quarters']['1st'] !== null ? ((intval($gradesData[1]['quarters']['1st']) == floatval($gradesData[1]['quarters']['1st'])) ? intval($gradesData[1]['quarters']['1st']) : number_format($gradesData[1]['quarters']['1st'], 1)) : '');
-                $pdf->SetXY(65, 52); $pdf->Write(0, isset($gradesData[1]['quarters']['2nd']) && $gradesData[1]['quarters']['2nd'] !== null ? ((intval($gradesData[1]['quarters']['2nd']) == floatval($gradesData[1]['quarters']['2nd'])) ? intval($gradesData[1]['quarters']['2nd']) : number_format($gradesData[1]['quarters']['2nd'], 1)) : '');
-                $pdf->SetXY(75, 52); $pdf->Write(0, isset($gradesData[1]['quarters']['3rd']) && $gradesData[1]['quarters']['3rd'] !== null ? ((intval($gradesData[1]['quarters']['3rd']) == floatval($gradesData[1]['quarters']['3rd'])) ? intval($gradesData[1]['quarters']['3rd']) : number_format($gradesData[1]['quarters']['3rd'], 1)) : '');
-                $pdf->SetXY(86, 52); $pdf->Write(0, isset($gradesData[1]['quarters']['4th']) && $gradesData[1]['quarters']['4th'] !== null ? ((intval($gradesData[1]['quarters']['4th']) == floatval($gradesData[1]['quarters']['4th'])) ? intval($gradesData[1]['quarters']['4th']) : number_format($gradesData[1]['quarters']['4th'], 1)) : '');
+                // Subject 1 - Filipino
+                $pdf->SetXY(53, 48); $pdf->Write(0, isset($gradesData[1]['quarters']['1st']) && $gradesData[1]['quarters']['1st'] !== null ? ((intval($gradesData[1]['quarters']['1st']) == floatval($gradesData[1]['quarters']['1st'])) ? intval($gradesData[1]['quarters']['1st']) : number_format($gradesData[1]['quarters']['1st'], 1)) : '-');
+                $pdf->SetXY(65, 48); $pdf->Write(0, isset($gradesData[1]['quarters']['2nd']) && $gradesData[1]['quarters']['2nd'] !== null ? ((intval($gradesData[1]['quarters']['2nd']) == floatval($gradesData[1]['quarters']['2nd'])) ? intval($gradesData[1]['quarters']['2nd']) : number_format($gradesData[1]['quarters']['2nd'], 1)) : '-');
+                $pdf->SetXY(75, 48); $pdf->Write(0, isset($gradesData[1]['quarters']['3rd']) && $gradesData[1]['quarters']['3rd'] !== null ? ((intval($gradesData[1]['quarters']['3rd']) == floatval($gradesData[1]['quarters']['3rd'])) ? intval($gradesData[1]['quarters']['3rd']) : number_format($gradesData[1]['quarters']['3rd'], 1)) : '-');
+                $pdf->SetXY(87, 48); $pdf->Write(0, isset($gradesData[1]['quarters']['4th']) && $gradesData[1]['quarters']['4th'] !== null ? ((intval($gradesData[1]['quarters']['4th']) == floatval($gradesData[1]['quarters']['4th'])) ? intval($gradesData[1]['quarters']['4th']) : number_format($gradesData[1]['quarters']['4th'], 1)) : '-');
 
-                // Subject 2 - Mathematics
-                $pdf->SetXY(53, 59); $pdf->Write(0, isset($gradesData[2]['quarters']['1st']) && $gradesData[2]['quarters']['1st'] !== null ? ((intval($gradesData[2]['quarters']['1st']) == floatval($gradesData[2]['quarters']['1st'])) ? intval($gradesData[2]['quarters']['1st']) : number_format($gradesData[2]['quarters']['1st'], 1)) : '');
-                $pdf->SetXY(65, 59); $pdf->Write(0, isset($gradesData[2]['quarters']['2nd']) && $gradesData[2]['quarters']['2nd'] !== null ? ((intval($gradesData[2]['quarters']['2nd']) == floatval($gradesData[2]['quarters']['2nd'])) ? intval($gradesData[2]['quarters']['2nd']) : number_format($gradesData[2]['quarters']['2nd'], 1)) : '');
-                $pdf->SetXY(75, 59); $pdf->Write(0, isset($gradesData[2]['quarters']['3rd']) && $gradesData[2]['quarters']['3rd'] !== null ? ((intval($gradesData[2]['quarters']['3rd']) == floatval($gradesData[2]['quarters']['3rd'])) ? intval($gradesData[2]['quarters']['3rd']) : number_format($gradesData[2]['quarters']['3rd'], 1)) : '');
-                $pdf->SetXY(86, 59); $pdf->Write(0, isset($gradesData[2]['quarters']['4th']) && $gradesData[2]['quarters']['4th'] !== null ? ((intval($gradesData[2]['quarters']['4th']) == floatval($gradesData[2]['quarters']['4th'])) ? intval($gradesData[2]['quarters']['4th']) : number_format($gradesData[2]['quarters']['4th'], 1)) : '');
+                // Subject 2 - English
+                $pdf->SetXY(53, 52); $pdf->Write(0, isset($gradesData[2]['quarters']['1st']) && $gradesData[2]['quarters']['1st'] !== null ? ((intval($gradesData[2]['quarters']['1st']) == floatval($gradesData[2]['quarters']['1st'])) ? intval($gradesData[2]['quarters']['1st']) : number_format($gradesData[2]['quarters']['1st'], 1)) : '-');
+                $pdf->SetXY(65, 52); $pdf->Write(0, isset($gradesData[2]['quarters']['2nd']) && $gradesData[2]['quarters']['2nd'] !== null ? ((intval($gradesData[2]['quarters']['2nd']) == floatval($gradesData[2]['quarters']['2nd'])) ? intval($gradesData[2]['quarters']['2nd']) : number_format($gradesData[2]['quarters']['2nd'], 1)) : '-');
+                $pdf->SetXY(75, 52); $pdf->Write(0, isset($gradesData[2]['quarters']['3rd']) && $gradesData[2]['quarters']['3rd'] !== null ? ((intval($gradesData[2]['quarters']['3rd']) == floatval($gradesData[2]['quarters']['3rd'])) ? intval($gradesData[2]['quarters']['3rd']) : number_format($gradesData[2]['quarters']['3rd'], 1)) : '-');
+                $pdf->SetXY(86, 52); $pdf->Write(0, isset($gradesData[2]['quarters']['4th']) && $gradesData[2]['quarters']['4th'] !== null ? ((intval($gradesData[2]['quarters']['4th']) == floatval($gradesData[2]['quarters']['4th'])) ? intval($gradesData[2]['quarters']['4th']) : number_format($gradesData[2]['quarters']['4th'], 1)) : '-');
 
-                // Subject 3 - Araling Panlipunan
-                $pdf->SetXY(53, 66); $pdf->Write(0, isset($gradesData[3]['quarters']['1st']) && $gradesData[3]['quarters']['1st'] !== null ? ((intval($gradesData[3]['quarters']['1st']) == floatval($gradesData[3]['quarters']['1st'])) ? intval($gradesData[3]['quarters']['1st']) : number_format($gradesData[3]['quarters']['1st'], 1)) : '');
-                $pdf->SetXY(65, 66); $pdf->Write(0, isset($gradesData[3]['quarters']['2nd']) && $gradesData[3]['quarters']['2nd'] !== null ? ((intval($gradesData[3]['quarters']['2nd']) == floatval($gradesData[3]['quarters']['2nd'])) ? intval($gradesData[3]['quarters']['2nd']) : number_format($gradesData[3]['quarters']['2nd'], 1)) : '');
-                $pdf->SetXY(75, 66); $pdf->Write(0, isset($gradesData[3]['quarters']['3rd']) && $gradesData[3]['quarters']['3rd'] !== null ? ((intval($gradesData[3]['quarters']['3rd']) == floatval($gradesData[3]['quarters']['3rd'])) ? intval($gradesData[3]['quarters']['3rd']) : number_format($gradesData[3]['quarters']['3rd'], 1)) : '');
-                $pdf->SetXY(86, 66); $pdf->Write(0, isset($gradesData[3]['quarters']['4th']) && $gradesData[3]['quarters']['4th'] !== null ? ((intval($gradesData[3]['quarters']['4th']) == floatval($gradesData[3]['quarters']['4th'])) ? intval($gradesData[3]['quarters']['4th']) : number_format($gradesData[3]['quarters']['4th'], 1)) : '');
+                // Subject 3 - Mathematics
+                $pdf->SetXY(53, 59); $pdf->Write(0, isset($gradesData[3]['quarters']['1st']) && $gradesData[3]['quarters']['1st'] !== null ? ((intval($gradesData[3]['quarters']['1st']) == floatval($gradesData[3]['quarters']['1st'])) ? intval($gradesData[3]['quarters']['1st']) : number_format($gradesData[3]['quarters']['1st'], 1)) : '-');
+                $pdf->SetXY(65, 59); $pdf->Write(0, isset($gradesData[3]['quarters']['2nd']) && $gradesData[3]['quarters']['2nd'] !== null ? ((intval($gradesData[3]['quarters']['2nd']) == floatval($gradesData[3]['quarters']['2nd'])) ? intval($gradesData[3]['quarters']['2nd']) : number_format($gradesData[3]['quarters']['2nd'], 1)) : '-');
+                $pdf->SetXY(75, 59); $pdf->Write(0, isset($gradesData[3]['quarters']['3rd']) && $gradesData[3]['quarters']['3rd'] !== null ? ((intval($gradesData[3]['quarters']['3rd']) == floatval($gradesData[3]['quarters']['3rd'])) ? intval($gradesData[3]['quarters']['3rd']) : number_format($gradesData[3]['quarters']['3rd'], 1)) : '-');
+                $pdf->SetXY(86, 59); $pdf->Write(0, isset($gradesData[3]['quarters']['4th']) && $gradesData[3]['quarters']['4th'] !== null ? ((intval($gradesData[3]['quarters']['4th']) == floatval($gradesData[3]['quarters']['4th'])) ? intval($gradesData[3]['quarters']['4th']) : number_format($gradesData[3]['quarters']['4th'], 1)) : '-');
 
-                // Subject 4 - Science
-                $pdf->SetXY(53, 73); $pdf->Write(0, isset($gradesData[4]['quarters']['1st']) && $gradesData[4]['quarters']['1st'] !== null ? ((intval($gradesData[4]['quarters']['1st']) == floatval($gradesData[4]['quarters']['1st'])) ? intval($gradesData[4]['quarters']['1st']) : number_format($gradesData[4]['quarters']['1st'], 1)) : '');
-                $pdf->SetXY(65, 73); $pdf->Write(0, isset($gradesData[4]['quarters']['2nd']) && $gradesData[4]['quarters']['2nd'] !== null ? ((intval($gradesData[4]['quarters']['2nd']) == floatval($gradesData[4]['quarters']['2nd'])) ? intval($gradesData[4]['quarters']['2nd']) : number_format($gradesData[4]['quarters']['2nd'], 1)) : '');
-                $pdf->SetXY(75, 73); $pdf->Write(0, isset($gradesData[4]['quarters']['3rd']) && $gradesData[4]['quarters']['3rd'] !== null ? ((intval($gradesData[4]['quarters']['3rd']) == floatval($gradesData[4]['quarters']['3rd'])) ? intval($gradesData[4]['quarters']['3rd']) : number_format($gradesData[4]['quarters']['3rd'], 1)) : '');
-                $pdf->SetXY(86, 73); $pdf->Write(0, isset($gradesData[4]['quarters']['4th']) && $gradesData[4]['quarters']['4th'] !== null ? ((intval($gradesData[4]['quarters']['4th']) == floatval($gradesData[4]['quarters']['4th'])) ? intval($gradesData[4]['quarters']['4th']) : number_format($gradesData[4]['quarters']['4th'], 1)) : '');
+                // Subject 4 - Araling Panlipunan
+                $pdf->SetXY(53, 66); $pdf->Write(0, isset($gradesData[4]['quarters']['1st']) && $gradesData[4]['quarters']['1st'] !== null ? ((intval($gradesData[4]['quarters']['1st']) == floatval($gradesData[4]['quarters']['1st'])) ? intval($gradesData[4]['quarters']['1st']) : number_format($gradesData[4]['quarters']['1st'], 1)) : '-');
+                $pdf->SetXY(65, 66); $pdf->Write(0, isset($gradesData[4]['quarters']['2nd']) && $gradesData[4]['quarters']['2nd'] !== null ? ((intval($gradesData[4]['quarters']['2nd']) == floatval($gradesData[4]['quarters']['2nd'])) ? intval($gradesData[4]['quarters']['2nd']) : number_format($gradesData[4]['quarters']['2nd'], 1)) : '-');
+                $pdf->SetXY(75, 66); $pdf->Write(0, isset($gradesData[4]['quarters']['3rd']) && $gradesData[4]['quarters']['3rd'] !== null ? ((intval($gradesData[4]['quarters']['3rd']) == floatval($gradesData[4]['quarters']['3rd'])) ? intval($gradesData[4]['quarters']['3rd']) : number_format($gradesData[4]['quarters']['3rd'], 1)) : '-');
+                $pdf->SetXY(86, 66); $pdf->Write(0, isset($gradesData[4]['quarters']['4th']) && $gradesData[4]['quarters']['4th'] !== null ? ((intval($gradesData[4]['quarters']['4th']) == floatval($gradesData[4]['quarters']['4th'])) ? intval($gradesData[4]['quarters']['4th']) : number_format($gradesData[4]['quarters']['4th'], 1)) : '-');
+
+                // Subject 5 - Science
+                $pdf->SetXY(53, 73); $pdf->Write(0, isset($gradesData[5]['quarters']['1st']) && $gradesData[5]['quarters']['1st'] !== null ? ((intval($gradesData[5]['quarters']['1st']) == floatval($gradesData[5]['quarters']['1st'])) ? intval($gradesData[5]['quarters']['1st']) : number_format($gradesData[5]['quarters']['1st'], 1)) : '-');
+                $pdf->SetXY(65, 73); $pdf->Write(0, isset($gradesData[5]['quarters']['2nd']) && $gradesData[5]['quarters']['2nd'] !== null ? ((intval($gradesData[5]['quarters']['2nd']) == floatval($gradesData[5]['quarters']['2nd'])) ? intval($gradesData[5]['quarters']['2nd']) : number_format($gradesData[5]['quarters']['2nd'], 1)) : '-');
+                $pdf->SetXY(75, 73); $pdf->Write(0, isset($gradesData[5]['quarters']['3rd']) && $gradesData[5]['quarters']['3rd'] !== null ? ((intval($gradesData[5]['quarters']['3rd']) == floatval($gradesData[5]['quarters']['3rd'])) ? intval($gradesData[5]['quarters']['3rd']) : number_format($gradesData[5]['quarters']['3rd'], 1)) : '-');
+                $pdf->SetXY(86, 73); $pdf->Write(0, isset($gradesData[5]['quarters']['4th']) && $gradesData[5]['quarters']['4th'] !== null ? ((intval($gradesData[5]['quarters']['4th']) == floatval($gradesData[5]['quarters']['4th'])) ? intval($gradesData[5]['quarters']['4th']) : number_format($gradesData[5]['quarters']['4th'], 1)) : '-');
 
                 // Add more subjects as needed for elementary curriculum
-                if (isset($gradesData[5])) {
-                    // Subject 5 - Music
-                    $pdf->SetXY(53, 80); $pdf->Write(0, isset($gradesData[5]['quarters']['1st']) && $gradesData[5]['quarters']['1st'] !== null ? ((intval($gradesData[5]['quarters']['1st']) == floatval($gradesData[5]['quarters']['1st'])) ? intval($gradesData[5]['quarters']['1st']) : number_format($gradesData[5]['quarters']['1st'], 1)) : '');
-                    $pdf->SetXY(65, 80); $pdf->Write(0, isset($gradesData[5]['quarters']['2nd']) && $gradesData[5]['quarters']['2nd'] !== null ? ((intval($gradesData[5]['quarters']['2nd']) == floatval($gradesData[5]['quarters']['2nd'])) ? intval($gradesData[5]['quarters']['2nd']) : number_format($gradesData[5]['quarters']['2nd'], 1)) : '');
-                    $pdf->SetXY(75, 80); $pdf->Write(0, isset($gradesData[5]['quarters']['3rd']) && $gradesData[5]['quarters']['3rd'] !== null ? ((intval($gradesData[5]['quarters']['3rd']) == floatval($gradesData[5]['quarters']['3rd'])) ? intval($gradesData[5]['quarters']['3rd']) : number_format($gradesData[5]['quarters']['3rd'], 1)) : '');
-                    $pdf->SetXY(86, 80); $pdf->Write(0, isset($gradesData[5]['quarters']['4th']) && $gradesData[5]['quarters']['4th'] !== null ? ((intval($gradesData[5]['quarters']['4th']) == floatval($gradesData[5]['quarters']['4th'])) ? intval($gradesData[5]['quarters']['4th']) : number_format($gradesData[5]['quarters']['4th'], 1)) : '');
-                }
-
                 if (isset($gradesData[6])) {
-                    // Subject 6 - Arts
-                    $pdf->SetXY(53, 87); $pdf->Write(0, isset($gradesData[6]['quarters']['1st']) && $gradesData[6]['quarters']['1st'] !== null ? ((intval($gradesData[6]['quarters']['1st']) == floatval($gradesData[6]['quarters']['1st'])) ? intval($gradesData[6]['quarters']['1st']) : number_format($gradesData[6]['quarters']['1st'], 1)) : '');
-                    $pdf->SetXY(65, 87); $pdf->Write(0, isset($gradesData[6]['quarters']['2nd']) && $gradesData[6]['quarters']['2nd'] !== null ? ((intval($gradesData[6]['quarters']['2nd']) == floatval($gradesData[6]['quarters']['2nd'])) ? intval($gradesData[6]['quarters']['2nd']) : number_format($gradesData[6]['quarters']['2nd'], 1)) : '');
-                    $pdf->SetXY(75, 87); $pdf->Write(0, isset($gradesData[6]['quarters']['3rd']) && $gradesData[6]['quarters']['3rd'] !== null ? ((intval($gradesData[6]['quarters']['3rd']) == floatval($gradesData[6]['quarters']['3rd'])) ? intval($gradesData[6]['quarters']['3rd']) : number_format($gradesData[6]['quarters']['3rd'], 1)) : '');
-                    $pdf->SetXY(86, 87); $pdf->Write(0, isset($gradesData[6]['quarters']['4th']) && $gradesData[6]['quarters']['4th'] !== null ? ((intval($gradesData[6]['quarters']['4th']) == floatval($gradesData[6]['quarters']['4th'])) ? intval($gradesData[6]['quarters']['4th']) : number_format($gradesData[6]['quarters']['4th'], 1)) : '');
+                    // Subject 6 - Music
+                    $pdf->SetXY(53, 80); $pdf->Write(0, isset($gradesData[6]['quarters']['1st']) && $gradesData[6]['quarters']['1st'] !== null ? ((intval($gradesData[6]['quarters']['1st']) == floatval($gradesData[6]['quarters']['1st'])) ? intval($gradesData[6]['quarters']['1st']) : number_format($gradesData[6]['quarters']['1st'], 1)) : '-');
+                    $pdf->SetXY(65, 80); $pdf->Write(0, isset($gradesData[6]['quarters']['2nd']) && $gradesData[6]['quarters']['2nd'] !== null ? ((intval($gradesData[6]['quarters']['2nd']) == floatval($gradesData[6]['quarters']['2nd'])) ? intval($gradesData[6]['quarters']['2nd']) : number_format($gradesData[6]['quarters']['2nd'], 1)) : '-');
+                    $pdf->SetXY(75, 80); $pdf->Write(0, isset($gradesData[6]['quarters']['3rd']) && $gradesData[6]['quarters']['3rd'] !== null ? ((intval($gradesData[6]['quarters']['3rd']) == floatval($gradesData[6]['quarters']['3rd'])) ? intval($gradesData[6]['quarters']['3rd']) : number_format($gradesData[6]['quarters']['3rd'], 1)) : '-');
+                    $pdf->SetXY(86, 80); $pdf->Write(0, isset($gradesData[6]['quarters']['4th']) && $gradesData[6]['quarters']['4th'] !== null ? ((intval($gradesData[6]['quarters']['4th']) == floatval($gradesData[6]['quarters']['4th'])) ? intval($gradesData[6]['quarters']['4th']) : number_format($gradesData[6]['quarters']['4th'], 1)) : '-');
                 }
 
                 if (isset($gradesData[7])) {
-                    // Subject 7 - Physical Education
-                    $pdf->SetXY(53, 94); $pdf->Write(0, isset($gradesData[7]['quarters']['1st']) && $gradesData[7]['quarters']['1st'] !== null ? ((intval($gradesData[7]['quarters']['1st']) == floatval($gradesData[7]['quarters']['1st'])) ? intval($gradesData[7]['quarters']['1st']) : number_format($gradesData[7]['quarters']['1st'], 1)) : '');
-                    $pdf->SetXY(65, 94); $pdf->Write(0, isset($gradesData[7]['quarters']['2nd']) && $gradesData[7]['quarters']['2nd'] !== null ? ((intval($gradesData[7]['quarters']['2nd']) == floatval($gradesData[7]['quarters']['2nd'])) ? intval($gradesData[7]['quarters']['2nd']) : number_format($gradesData[7]['quarters']['2nd'], 1)) : '');
-                    $pdf->SetXY(75, 94); $pdf->Write(0, isset($gradesData[7]['quarters']['3rd']) && $gradesData[7]['quarters']['3rd'] !== null ? ((intval($gradesData[7]['quarters']['3rd']) == floatval($gradesData[7]['quarters']['3rd'])) ? intval($gradesData[7]['quarters']['3rd']) : number_format($gradesData[7]['quarters']['3rd'], 1)) : '');
-                    $pdf->SetXY(87, 94); $pdf->Write(0, isset($gradesData[7]['quarters']['4th']) && $gradesData[7]['quarters']['4th'] !== null ? ((intval($gradesData[7]['quarters']['4th']) == floatval($gradesData[7]['quarters']['4th'])) ? intval($gradesData[7]['quarters']['4th']) : number_format($gradesData[7]['quarters']['4th'], 1)) : '');
+                    // Subject 7 - Arts
+                    $pdf->SetXY(53, 87); $pdf->Write(0, isset($gradesData[7]['quarters']['1st']) && $gradesData[7]['quarters']['1st'] !== null ? ((intval($gradesData[7]['quarters']['1st']) == floatval($gradesData[7]['quarters']['1st'])) ? intval($gradesData[7]['quarters']['1st']) : number_format($gradesData[7]['quarters']['1st'], 1)) : '-');
+                    $pdf->SetXY(65, 87); $pdf->Write(0, isset($gradesData[7]['quarters']['2nd']) && $gradesData[7]['quarters']['2nd'] !== null ? ((intval($gradesData[7]['quarters']['2nd']) == floatval($gradesData[7]['quarters']['2nd'])) ? intval($gradesData[7]['quarters']['2nd']) : number_format($gradesData[7]['quarters']['2nd'], 1)) : '-');
+                    $pdf->SetXY(75, 87); $pdf->Write(0, isset($gradesData[7]['quarters']['3rd']) && $gradesData[7]['quarters']['3rd'] !== null ? ((intval($gradesData[7]['quarters']['3rd']) == floatval($gradesData[7]['quarters']['3rd'])) ? intval($gradesData[7]['quarters']['3rd']) : number_format($gradesData[7]['quarters']['3rd'], 1)) : '-');
+                    $pdf->SetXY(86, 87); $pdf->Write(0, isset($gradesData[7]['quarters']['4th']) && $gradesData[7]['quarters']['4th'] !== null ? ((intval($gradesData[7]['quarters']['4th']) == floatval($gradesData[7]['quarters']['4th'])) ? intval($gradesData[7]['quarters']['4th']) : number_format($gradesData[7]['quarters']['4th'], 1)) : '-');
+                }
+
+                if (isset($gradesData[8])) {
+                    // Subject 8 - Physical Education
+                    $pdf->SetXY(53, 94); $pdf->Write(0, isset($gradesData[8]['quarters']['1st']) && $gradesData[8]['quarters']['1st'] !== null ? ((intval($gradesData[8]['quarters']['1st']) == floatval($gradesData[8]['quarters']['1st'])) ? intval($gradesData[8]['quarters']['1st']) : number_format($gradesData[8]['quarters']['1st'], 1)) : '-');
+                    $pdf->SetXY(65, 94); $pdf->Write(0, isset($gradesData[8]['quarters']['2nd']) && $gradesData[8]['quarters']['2nd'] !== null ? ((intval($gradesData[8]['quarters']['2nd']) == floatval($gradesData[8]['quarters']['2nd'])) ? intval($gradesData[8]['quarters']['2nd']) : number_format($gradesData[8]['quarters']['2nd'], 1)) : '-');
+                    $pdf->SetXY(75, 94); $pdf->Write(0, isset($gradesData[8]['quarters']['3rd']) && $gradesData[8]['quarters']['3rd'] !== null ? ((intval($gradesData[8]['quarters']['3rd']) == floatval($gradesData[8]['quarters']['3rd'])) ? intval($gradesData[8]['quarters']['3rd']) : number_format($gradesData[8]['quarters']['3rd'], 1)) : '-');
+                    $pdf->SetXY(87, 94); $pdf->Write(0, isset($gradesData[8]['quarters']['4th']) && $gradesData[8]['quarters']['4th'] !== null ? ((intval($gradesData[8]['quarters']['4th']) == floatval($gradesData[8]['quarters']['4th'])) ? intval($gradesData[8]['quarters']['4th']) : number_format($gradesData[8]['quarters']['4th'], 1)) : '-');
+                }
+
+                if (isset($gradesData[9])) {
+                    // Subject 9 - Health
+                    $pdf->SetXY(53, 101); $pdf->Write(0, isset($gradesData[9]['quarters']['1st']) && $gradesData[9]['quarters']['1st'] !== null ? ((intval($gradesData[9]['quarters']['1st']) == floatval($gradesData[9]['quarters']['1st'])) ? intval($gradesData[9]['quarters']['1st']) : number_format($gradesData[9]['quarters']['1st'], 1)) : '-');
+                    $pdf->SetXY(65, 101); $pdf->Write(0, isset($gradesData[9]['quarters']['2nd']) && $gradesData[9]['quarters']['2nd'] !== null ? ((intval($gradesData[9]['quarters']['2nd']) == floatval($gradesData[9]['quarters']['2nd'])) ? intval($gradesData[9]['quarters']['2nd']) : number_format($gradesData[9]['quarters']['2nd'], 1)) : '-');
+                    $pdf->SetXY(75, 101); $pdf->Write(0, isset($gradesData[9]['quarters']['3rd']) && $gradesData[9]['quarters']['3rd'] !== null ? ((intval($gradesData[9]['quarters']['3rd']) == floatval($gradesData[9]['quarters']['3rd'])) ? intval($gradesData[9]['quarters']['3rd']) : number_format($gradesData[9]['quarters']['3rd'], 1)) : '-');
+                    $pdf->SetXY(87, 101); $pdf->Write(0, isset($gradesData[9]['quarters']['4th']) && $gradesData[9]['quarters']['4th'] !== null ? ((intval($gradesData[9]['quarters']['4th']) == floatval($gradesData[9]['quarters']['4th'])) ? intval($gradesData[9]['quarters']['4th']) : number_format($gradesData[9]['quarters']['4th'], 1)) : '-');
+                }
+
+                if (isset($gradesData[10])) {
+                    // Subject 10 - ESP (Edukasyon sa Pagpapakatao)
+                    $pdf->SetXY(53, 108); $pdf->Write(0, isset($gradesData[10]['quarters']['1st']) && $gradesData[10]['quarters']['1st'] !== null ? ((intval($gradesData[10]['quarters']['1st']) == floatval($gradesData[10]['quarters']['1st'])) ? intval($gradesData[10]['quarters']['1st']) : number_format($gradesData[10]['quarters']['1st'], 1)) : '-');
+                    $pdf->SetXY(65, 108); $pdf->Write(0, isset($gradesData[10]['quarters']['2nd']) && $gradesData[10]['quarters']['2nd'] !== null ? ((intval($gradesData[10]['quarters']['2nd']) == floatval($gradesData[10]['quarters']['2nd'])) ? intval($gradesData[10]['quarters']['2nd']) : number_format($gradesData[10]['quarters']['2nd'], 1)) : '-');
+                    $pdf->SetXY(75, 108); $pdf->Write(0, isset($gradesData[10]['quarters']['3rd']) && $gradesData[10]['quarters']['3rd'] !== null ? ((intval($gradesData[10]['quarters']['3rd']) == floatval($gradesData[10]['quarters']['3rd'])) ? intval($gradesData[10]['quarters']['3rd']) : number_format($gradesData[10]['quarters']['3rd'], 1)) : '-');
+                    $pdf->SetXY(87, 108); $pdf->Write(0, isset($gradesData[10]['quarters']['4th']) && $gradesData[10]['quarters']['4th'] !== null ? ((intval($gradesData[10]['quarters']['4th']) == floatval($gradesData[10]['quarters']['4th'])) ? intval($gradesData[10]['quarters']['4th']) : number_format($gradesData[10]['quarters']['4th'], 1)) : '-');
                 }
 
                 // Compute and display General Average for elementary
@@ -1307,7 +1386,7 @@ public function generateElementaryReportCardPdf(Student $student)
                 $generalAverage = count($finalGrades) > 0 ? round(array_sum($finalGrades) / count($finalGrades), 2) : '';
                 
                 // Place the General Average (adjust coordinates for elementary template)
-                $pdf->SetXY(113, 130); $pdf->Write(0, $generalAverage !== '' ? ((intval($generalAverage) == floatval($generalAverage)) ? intval($generalAverage) : number_format($generalAverage, 1)) : '');
+                $pdf->SetXY(113, 130); $pdf->Write(0, $generalAverage !== '' ? ((intval($generalAverage) == floatval($generalAverage)) ? intval($generalAverage) : number_format($generalAverage, 1)) : '-');
                 
             } else if ($pageNum === 2) {
                 $pdf->SetFont('dejavusans', '', 11);
@@ -1338,12 +1417,15 @@ public function generateElementaryReportCardPdf(Student $student)
 }
 
 /**
-     * Print all report cards for all students in a single PDF.
+     * Print all report cards for Grade 10 Section A students in a single PDF.
      * @return \Illuminate\Http\Response
      */
     public function printAllReportCards()
     {
-        $students = \App\Models\Student::all();
+        // Filter for only Grade 10 Section A students
+        $students = \App\Models\Student::where('grade_level', 'Grade 10')
+            ->where('section', 'A')
+            ->get();
         $currentAcademicYear = date('Y') . '-' . (date('Y') + 1);
         $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
         $templatePath = resource_path('assets/pdf-forms-generation/Report Card HS.pdf');

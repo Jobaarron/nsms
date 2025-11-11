@@ -215,8 +215,11 @@ Route::middleware(['auth', 'role:teacher'])->prefix('teacher')->name('teacher.')
             ->name('report-card.pdf');
         Route::get('/report-card/elementary/pdf/{student}', [App\Http\Controllers\PdfController::class, 'generateElementaryReportCardPdf'])
             ->name('report-card.elementary.pdf');
+        Route::get('/report-card/grade11stem/pdf/{student}', [App\Http\Controllers\PdfController::class, 'generateReportCardPdf'])
+            ->name('report-card.grade11stem.pdf');
         Route::get('/report-cards/print-all', [PdfController::class, 'printAllReportCards'])
             ->name('report-cards.print-all');
+        
             
         // Teacher Advisory AJAX Routes
         Route::get('/advisory/student/{student}/grades', [App\Http\Controllers\TeacherAdvisoryController::class, 'getStudentGrades'])
@@ -378,6 +381,18 @@ Route::prefix('discipline')->name('discipline.')->group(function () {
     Route::get('/violation-bar-stats', [App\Http\Controllers\DisciplineController::class, 'getViolationBarStats'])->name('violation-bar-stats');
     // AJAX: Case status pie chart (pending, ongoing, completed)
     Route::get('/case-status-stats', [App\Http\Controllers\DisciplineController::class, 'getCaseStatusStats'])->name('case-status-stats');
+    // AJAX: Resolution trend stats for line chart
+    Route::get('/resolution-trend-stats', [App\Http\Controllers\DisciplineController::class, 'getResolutionTrendStats'])->name('resolution-trend-stats');
+    // AJAX: Dashboard insights
+    Route::get('/dashboard-insights', [App\Http\Controllers\DisciplineController::class, 'getDashboardInsights'])->name('dashboard-insights');
+    // AJAX: Dashboard statistics
+    Route::get('/dashboard-stats', [App\Http\Controllers\DisciplineController::class, 'getDashboardStats'])->name('dashboard-stats');
+
+    // AJAX: Dynamic dashboard content
+    Route::get('/recent-violations', [App\Http\Controllers\DisciplineController::class, 'getRecentViolations'])->name('recent-violations');
+    Route::get('/pending-actions', [App\Http\Controllers\DisciplineController::class, 'getPendingActions'])->name('pending-actions');
+    Route::get('/critical-cases', [App\Http\Controllers\DisciplineController::class, 'getCriticalCases'])->name('critical-cases');
+    Route::get('/violation-trends', [App\Http\Controllers\DisciplineController::class, 'getViolationTrends'])->name('violation-trends');
 
     // Protected routes
     Route::middleware(['web'])->group(function () {
@@ -464,7 +479,17 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
             // API: Weekly violation list for dashboard
             Route::get('/weekly-violations', [App\Http\Controllers\GuidanceController::class, 'getWeeklyViolations'])->name('weekly-violations');
 
-            Route::get('/top-cases', [App\Http\Controllers\GuidanceController::class, 'getTopCases']);        // Logout
+            Route::get('/top-cases', [App\Http\Controllers\GuidanceController::class, 'getTopCases']);
+            
+            // New Analytics Routes
+            Route::get('/violation-trends', [App\Http\Controllers\GuidanceController::class, 'getViolationTrends'])->name('violation-trends');
+            Route::get('/violation-severity', [App\Http\Controllers\GuidanceController::class, 'getViolationSeverity'])->name('violation-severity');
+            Route::get('/counseling-effectiveness', [App\Http\Controllers\GuidanceController::class, 'getCounselingEffectiveness'])->name('counseling-effectiveness');
+            Route::get('/recent-activities', [App\Http\Controllers\GuidanceController::class, 'getRecentActivities'])->name('recent-activities');
+            Route::get('/upcoming-tasks', [App\Http\Controllers\GuidanceController::class, 'getUpcomingTasks'])->name('upcoming-tasks');
+            Route::get('/counselor-performance', [App\Http\Controllers\GuidanceController::class, 'getCounselorPerformance'])->name('counselor-performance');
+            
+        // Logout
         Route::post('/logout', [App\Http\Controllers\GuidanceController::class, 'logout'])->name('logout');
         
         // Case Meeting Routes
@@ -758,6 +783,9 @@ Route::prefix('registrar')->name('registrar.')->group(function () {
         Route::get('/approved', [RegistrarController::class, 'approved'])->name('approved');
         Route::post('/applications/{id}/generate-credentials', [RegistrarController::class, 'generateStudentCredentials'])->name('applications.generate-credentials');
         
+        // Applicant archives
+        Route::get('/applicant-archives', [RegistrarController::class, 'applicantArchives'])->name('applicant-archives');
+        
         // Notices and Documents data
         Route::get('/notices', [RegistrarController::class, 'getNotices'])->name('notices.get');
         Route::get('/documents', [RegistrarController::class, 'getAllDocuments'])->name('documents.get');
@@ -770,10 +798,6 @@ Route::prefix('registrar')->name('registrar.')->group(function () {
         Route::get('/notices/{id}', [RegistrarController::class, 'getNotice'])->name('notices.get.single');
         Route::get('/recipients/preview', [RegistrarController::class, 'previewRecipients'])->name('recipients.preview');
         
-        
-        // Applicant Archives
-        Route::get('/applicant-archives', [RegistrarController::class, 'applicantArchives'])->name('applicant-archives');
-        Route::post('/applicant-archives/{id}/reconsider', [RegistrarController::class, 'reconsiderApplication'])->name('applicant-archives.reconsider');
         
         // Class Lists Management
         Route::get('/class-lists', [RegistrarController::class, 'classLists'])->name('class-lists');

@@ -528,7 +528,6 @@ class DisciplineController extends Controller
         }
 
     }
-
     /**
      * Show violation details for AJAX
      */
@@ -756,7 +755,7 @@ class DisciplineController extends Controller
             'violation_id' => $violation->id, // <-- link the violation
             'counselor_id' => $guidanceCounselor ? $guidanceCounselor->id : null,
             'meeting_type' => 'case_meeting',
-            'location' => 'Guidance Office',
+            'location' => $violation->location ?: 'Guidance Office', // Use violation location or default to Guidance Office
             'reason' => 'Violation: ' . $violation->title . ' - ' . $violation->description,
             'notes' => 'Submitted from Discipline Office. ' .
                       'Student Involved: ' . $violation->student->first_name . ' ' . $violation->student->last_name . ' (' . $violation->student->student_id . '). ' .
@@ -928,10 +927,32 @@ class DisciplineController extends Controller
         /**
      * Return minor and major violation counts as JSON for dashboard pie chart
      */
-    public function getMinorMajorViolationStats()
+    public function getMinorMajorViolationStats(Request $request)
     {
-        $minor = \App\Models\Violation::where('severity', 'minor')->count();
-        $major = \App\Models\Violation::where('severity', 'major')->count();
+        $period = $request->get('period', 'month');
+        
+        $query = \App\Models\Violation::query();
+        
+        switch ($period) {
+            case 'quarter':
+                $query->where('violation_date', '>=', now()->subMonths(3));
+                break;
+            case 'year':
+                $query->where('violation_date', '>=', now()->subYear());
+                break;
+            case 'month':
+                $query->whereMonth('violation_date', now()->month)
+                      ->whereYear('violation_date', now()->year);
+                break;
+            case 'all':
+            default:
+                // No date filter for 'all'
+                break;
+        }
+        
+        $minor = $query->clone()->where('severity', 'minor')->count();
+        $major = $query->clone()->where('severity', 'major')->count();
+        
         return response()->json([
             'minor' => $minor,
             'major' => $major,
@@ -943,13 +964,29 @@ class DisciplineController extends Controller
         /**
      * Return monthly minor and major violation counts for bar chart
      */
-    public function getViolationBarStats()
+    public function getViolationBarStats(Request $request)
     {
+        $period = $request->get('period', '12months');
+        
         $months = [];
         $minorCounts = [];
         $majorCounts = [];
-        // Get the last 12 months
-        for ($i = 11; $i >= 0; $i--) {
+        
+        switch ($period) {
+            case '6months':
+                $monthsCount = 6;
+                break;
+            case '24months':
+                $monthsCount = 24;
+                break;
+            case '12months':
+            default:
+                $monthsCount = 12;
+                break;
+        }
+        
+        // Get the specified number of months
+        for ($i = $monthsCount - 1; $i >= 0; $i--) {
             $date = now()->subMonths($i);
             $label = $date->format('M Y');
             $months[] = $label;
@@ -971,15 +1008,48 @@ class DisciplineController extends Controller
             /**
          * Return pending, ongoing, and completed case counts for dashboard pie chart
          */
-        public function getCaseStatusStats()
+        public function getCaseStatusStats(Request $request)
         {
-            $caseClosed = \App\Models\CaseMeeting::where('status', 'case_closed')->count();
-            $inProgress = \App\Models\CaseMeeting::where('status', 'in_progress')->count();
-            $preCompleted = \App\Models\CaseMeeting::where('status', 'pre_completed')->count();
+            $period = $request->get('period', 'month');
+            
+            // Get violation-based case status with period filtering
+            $violationQuery = Violation::query();
+            $caseMeetingQuery = CaseMeeting::query();
+            
+            switch ($period) {
+                case 'quarter':
+                    $violationQuery->where('violation_date', '>=', now()->subMonths(3));
+                    $caseMeetingQuery->where('created_at', '>=', now()->subMonths(3));
+                    break;
+                case 'year':
+                    $violationQuery->where('violation_date', '>=', now()->subYear());
+                    $caseMeetingQuery->where('created_at', '>=', now()->subYear());
+                    break;
+                case 'month':
+                    $violationQuery->whereMonth('violation_date', now()->month)
+                                  ->whereYear('violation_date', now()->year);
+                    $caseMeetingQuery->whereMonth('created_at', now()->month)
+                                    ->whereYear('created_at', now()->year);
+                    break;
+                case 'all':
+                default:
+                    // No date filter for 'all'
+                    break;
+            }
+            
+            $pending = $violationQuery->clone()->where('status', 'pending')->count();
+            $ongoing = $violationQuery->clone()->whereIn('status', ['investigating', 'in_progress'])->count();
+            $completed = $violationQuery->clone()->where('status', 'resolved')->count();
+            
+            // Also include case meeting data
+            $caseMeetingPending = $caseMeetingQuery->clone()->where('status', 'scheduled')->count();
+            $caseMeetingOngoing = $caseMeetingQuery->clone()->where('status', 'in_progress')->count();
+            $caseMeetingCompleted = $caseMeetingQuery->clone()->whereIn('status', ['case_closed', 'pre_completed'])->count();
+            
             return response()->json([
-                'case_closed' => $caseClosed,
-                'in_progress' => $inProgress,
-                'pre_completed' => $preCompleted,
+                'pending' => $pending + $caseMeetingPending,
+                'ongoing' => $ongoing + $caseMeetingOngoing,
+                'completed' => $completed + $caseMeetingCompleted,
             ]);
         }
         
@@ -995,4 +1065,218 @@ class DisciplineController extends Controller
 
             return Storage::disk('public')->download($violation->student_attachment_path);
         }
+
+        /**
+         * Get recent violations for dashboard
+         */
+        public function getRecentViolations(Request $request)
+        {
+            $filter = $request->get('filter', 'week');
+            
+            $query = Violation::with(['student', 'reportedBy']);
+            
+            switch ($filter) {
+                case 'today':
+                    $query->whereDate('violation_date', now()->toDateString());
+                    break;
+                case 'month':
+                    $query->whereMonth('violation_date', now()->month)
+                          ->whereYear('violation_date', now()->year);
+                    break;
+                case 'week':
+                default:
+                    $query->where('violation_date', '>=', now()->subDays(7));
+                    break;
+            }
+            
+            $violations = $query->orderBy('violation_date', 'desc')
+                               ->orderBy('violation_time', 'desc')
+                               ->limit(10)
+                               ->get()
+                               ->map(function ($violation) {
+                                   return [
+                                       'id' => $violation->id,
+                                       'student_name' => $violation->student->first_name . ' ' . $violation->student->last_name,
+                                       'title' => $violation->title,
+                                       'severity' => $violation->severity,
+                                       'status' => $violation->status,
+                                       'date' => $violation->violation_date->format('M d'),
+                                       'time' => $violation->violation_time ? date('h:i A', strtotime($violation->violation_time)) : null,
+                                   ];
+                               });
+            
+            return response()->json(['violations' => $violations]);
+        }
+
+        /**
+         * Get pending actions for dashboard
+         */
+        public function getPendingActions(Request $request)
+        {
+            $filter = $request->get('filter', 'all');
+            
+            $pendingViolations = Violation::with(['student'])
+                ->where('status', 'pending')
+                ->get();
+            
+            $actions = [];
+            
+            foreach ($pendingViolations as $violation) {
+                $priority = 'medium';
+                
+                // Determine priority based on severity and age
+                $daysSinceViolation = now()->diffInDays($violation->violation_date);
+                
+                if ($violation->severity === 'major' || $daysSinceViolation > 3) {
+                    $priority = 'high';
+                } elseif ($violation->severity === 'severe' || $daysSinceViolation > 7) {
+                    $priority = 'high';
+                } elseif ($daysSinceViolation <= 1) {
+                    $priority = 'low';
+                }
+                
+                if ($filter === 'all' || $filter === $priority) {
+                    $actions[] = [
+                        'id' => $violation->id,
+                        'title' => 'Review Violation: ' . $violation->title,
+                        'description' => $violation->student->first_name . ' ' . $violation->student->last_name . ' - ' . $violation->severity . ' violation',
+                        'priority' => $priority,
+                        'date' => $violation->violation_date->format('M d, Y'),
+                        'student_id' => $violation->student_id,
+                    ];
+                }
+            }
+            
+            // Add case meetings that need attention
+            $pendingCaseMeetings = CaseMeeting::with(['student'])
+                ->where('status', 'in_progress')
+                ->get();
+            
+            foreach ($pendingCaseMeetings as $meeting) {
+                $priority = 'medium';
+                
+                if ($meeting->urgency_level === 'high' || $meeting->urgency_level === 'urgent') {
+                    $priority = 'high';
+                } elseif ($meeting->urgency_level === 'low') {
+                    $priority = 'low';
+                }
+                
+                if ($filter === 'all' || $filter === $priority) {
+                    $actions[] = [
+                        'id' => $meeting->id,
+                        'title' => 'Case Meeting: ' . $meeting->reason,
+                        'description' => $meeting->student->first_name . ' ' . $meeting->student->last_name . ' - Case meeting in progress',
+                        'priority' => $priority,
+                        'date' => $meeting->created_at->format('M d, Y'),
+                        'student_id' => $meeting->student_id,
+                    ];
+                }
+            }
+            
+            // Sort by priority (high first)
+            usort($actions, function($a, $b) {
+                $priorityOrder = ['high' => 3, 'medium' => 2, 'low' => 1];
+                return $priorityOrder[$b['priority']] - $priorityOrder[$a['priority']];
+            });
+            
+            return response()->json(['actions' => array_slice($actions, 0, 10)]);
+        }
+
+        /**
+         * Get critical cases for dashboard
+         */
+        public function getCriticalCases(Request $request)
+        {
+            $limit = (int) $request->get('limit', 5);
+            
+            // Get students with multiple major violations or severe violations
+            $criticalCases = Violation::with(['student'])
+                ->where(function($query) {
+                    $query->where('severity', 'severe')
+                          ->orWhere('severity', 'major');
+                })
+                ->where('status', '!=', 'resolved')
+                ->get()
+                ->groupBy('student_id')
+                ->map(function ($violations, $studentId) {
+                    $student = $violations->first()->student;
+                    $majorCount = $violations->where('severity', 'major')->count();
+                    $severeCount = $violations->where('severity', 'severe')->count();
+                    
+                    // Determine status based on violation severity and count
+                    $status = 'active'; // Default status
+                    if ($severeCount > 2) {
+                        $status = 'critical';
+                    } elseif ($majorCount > 4) {
+                        $status = 'serious';
+                    }
+                    
+                    return [
+                        'student_id' => $studentId,
+                        'student_name' => $student->first_name . ' ' . $student->last_name,
+                        'violation_type' => $severeCount > 0 ? 'Multiple Severe Violations' : 'Multiple Major Violations',
+                        'severity' => $severeCount > 0 ? 'severe' : 'major',
+                        'violation_count' => $violations->count(),
+                        'major_count' => $majorCount,
+                        'severe_count' => $severeCount,
+                        'status' => $status,
+                        'priority_score' => ($severeCount * 3) + ($majorCount * 2), // For sorting
+                    ];
+                })
+                ->sortByDesc('priority_score')
+                ->take($limit)
+                ->values();
+            
+            return response()->json(['cases' => $criticalCases]);
+        }
+
+        /**
+         * Get violation trends data for dashboard chart
+         */
+        public function getViolationTrends(Request $request)
+        {
+            $period = $request->get('period', '12months');
+            
+            $months = [];
+            $minorData = [];
+            $majorData = [];
+            
+            switch ($period) {
+                case '3months':
+                    $monthsCount = 3;
+                    break;
+                case '6months':
+                    $monthsCount = 6;
+                    break;
+                case '12months':
+                default:
+                    $monthsCount = 12;
+                    break;
+            }
+            
+            for ($i = $monthsCount - 1; $i >= 0; $i--) {
+                $date = now()->subMonths($i);
+                $months[] = $date->format('M Y');
+                
+                $minorCount = Violation::where('severity', 'minor')
+                    ->whereYear('violation_date', $date->year)
+                    ->whereMonth('violation_date', $date->month)
+                    ->count();
+                
+                $majorCount = Violation::where('severity', 'major')
+                    ->whereYear('violation_date', $date->year)
+                    ->whereMonth('violation_date', $date->month)
+                    ->count();
+                
+                $minorData[] = $minorCount;
+                $majorData[] = $majorCount;
+            }
+            
+            return response()->json([
+                'labels' => $months,
+                'minor' => $minorData,
+                'major' => $majorData,
+            ]);
+        }
+
     }
