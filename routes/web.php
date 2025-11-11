@@ -264,6 +264,10 @@ Route::middleware(['auth', 'role:teacher|faculty_head'])->prefix('teacher')->nam
     // Finalize approved grades (make them visible to students)
     Route::post('/grades/{submission}/finalize', [App\Http\Controllers\TeacherGradeController::class, 'finalizeGrades'])
         ->name('grades.finalize');
+    
+    // Upload grades from Excel/CSV file
+    Route::post('/grades/upload', [App\Http\Controllers\TeacherGradeController::class, 'upload'])
+        ->name('grades.upload');
 });
 
 // Student Schedule Routes (requires payment)
