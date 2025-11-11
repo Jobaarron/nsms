@@ -6,7 +6,7 @@
   <!-- SUMMARY CARDS -->
   <!-- Comprehensive User Statistics -->
   <div class="row g-3 mb-5">
-    <div class="col-6 col-lg-3">
+    <div class="col-6 col-sm-6 col-lg-3">
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
           <div class="d-flex align-items-center">
@@ -21,7 +21,7 @@
         </div>
       </div>
     </div>
-    <div class="col-6 col-lg-3">
+    <div class="col-6 col-sm-6 col-lg-3">
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
           <div class="d-flex align-items-center">
@@ -36,7 +36,7 @@
         </div>
       </div>
     </div>
-    <div class="col-6 col-lg-3">
+    <div class="col-6 col-sm-6 col-lg-3">
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
           <div class="d-flex align-items-center">
@@ -51,7 +51,7 @@
         </div>
       </div>
     </div>
-    <div class="col-6 col-lg-3">
+    <div class="col-6 col-sm-6 col-lg-3">
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
           <div class="d-flex align-items-center">
@@ -70,7 +70,7 @@
 
   <!-- Detailed Statistics Row -->
   {{-- <div class="row g-3 mb-5">
-    <div class="col-6 col-lg-3">
+    <div class="col-6 col-sm-6 col-lg-3">
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
           <div class="d-flex align-items-center">
@@ -85,7 +85,7 @@
         </div>
       </div>
     </div>
-    <div class="col-6 col-lg-3">
+    <div class="col-6 col-sm-6 col-lg-3">
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
           <div class="d-flex align-items-center">
@@ -100,7 +100,7 @@
         </div>
       </div>
     </div>
-    <div class="col-6 col-lg-3">
+    <div class="col-6 col-sm-6 col-lg-3">
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
           <div class="d-flex align-items-center">
@@ -115,7 +115,7 @@
         </div>
       </div>
     </div>
-    <div class="col-6 col-lg-3">
+    <div class="col-6 col-sm-6 col-lg-3">
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
           <div class="d-flex align-items-center">
@@ -134,7 +134,7 @@
 
   <!-- Data Visualization Section -->
   <div class="row g-3 mb-5">
-    <div class="col-lg-6">
+    <div class="col-12 col-lg-6">
       <div class="card border-0 shadow-sm">
   <div class="card-header admin-card-header">
           <h5 class="card-title mb-0">
@@ -142,7 +142,9 @@
           </h5>
         </div>
         <div class="card-body">
-          <canvas id="userTypesChart" width="400" height="200"></canvas>
+          <div class="chart-container" style="position: relative; height: 250px;">
+            <canvas id="userTypesChart"></canvas>
+          </div>
         </div>
       </div>
     </div>

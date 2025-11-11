@@ -54,9 +54,9 @@
       </div>
     </div>
 
-    <!-- DASHBOARD STATISTICS -->
+    <!-- SUMMARY CARDS -->
     <div class="row g-3 mb-4">
-      <div class="col-6 col-lg-3">
+      <div class="col-6 col-sm-6 col-lg-3">
         <div class="card card-summary card-application h-100">
           <div class="card-body text-center">
             <i class="ri-book-2-line display-6 mb-2"></i>
@@ -65,7 +65,7 @@
           </div>
         </div>
       </div>
-      <div class="col-6 col-lg-3">
+      <div class="col-6 col-sm-6 col-lg-3">
         <div class="card card-summary card-payment h-100">
           <div class="card-body text-center">
             <i class="ri-file-list-3-line display-6 mb-2"></i>
@@ -77,13 +77,13 @@
     </div>
 
     <!-- MY CLASS ASSIGNMENTS -->
-    <div class="card">
+    <div class="card mb-4">
       <div class="card-header">
         <h5 class="mb-0">
           <i class="ri-book-open-line me-2"></i>My Class Assignments
         </h5>
       </div>
-      <div class="card-body">
+      <div class="card-body p-0">
         <div class="table-responsive">
           <table class="table table-hover align-middle">
             <thead class="table-light">
@@ -168,49 +168,41 @@
     </div>
 
     <!-- QUICK ACTIONS -->
-    <div class="card">
-      <div class="card-header">
-        <h5 class="mb-0">
-          <i class="ri-flashlight-line me-2"></i>Quick Actions
-        </h5>
+    <h4 class="section-title">Quick Actions</h4>
+    <div class="row g-3 mb-4">
+      <div class="col-12 col-sm-6 col-lg-4">
+        <div class="card h-100 border-0 shadow-sm">
+          <div class="card-body text-center">
+            <i class="ri-user-star-line display-4 text-primary mb-3"></i>
+            <h6>View My Advisory</h6>
+            <p class="text-muted small">View students in your advisory class</p>
+            <a href="{{ route('teacher.advisory') }}" class="btn btn-outline-primary">
+              <i class="ri-user-star-line me-2"></i>View Advisory
+            </a>
+          </div>
+        </div>
       </div>
-      <div class="card-body">
-        <div class="row g-3">
-          <div class="col-md-4">
-            <div class="card h-100 border-0 shadow-sm">
-              <div class="card-body text-center">
-                <i class="ri-user-star-line display-4 text-primary mb-3"></i>
-                <h6>View My Advisory</h6>
-                <p class="text-muted small">View students in your advisory class</p>
-                <a href="{{ route('teacher.advisory') }}" class="btn btn-outline-primary">
-                  <i class="ri-user-star-line me-2"></i>View Advisory
-                </a>
-              </div>
-            </div>
+      <div class="col-12 col-sm-6 col-lg-4">
+        <div class="card h-100 border-0 shadow-sm">
+          <div class="card-body text-center">
+            <i class="ri-file-list-3-line display-4 text-success mb-3"></i>
+            <h6>Submit Grades</h6>
+            <p class="text-muted small">Enter and submit student grades for review</p>
+            <a href="{{ route('teacher.grades') }}" class="btn btn-outline-success">
+              <i class="ri-file-list-3-line me-2"></i>Manage Grades
+            </a>
           </div>
-          <div class="col-md-4">
-            <div class="card h-100 border">
-              <div class="card-body text-center">
-                <i class="ri-file-list-3-line display-4 text-success mb-3"></i>
-                <h6>Submit Grades</h6>
-                <p class="text-muted small">Enter and submit student grades for review</p>
-                <a href="{{ route('teacher.grades') }}" class="btn btn-outline-success">
-                  <i class="ri-file-list-3-line me-2"></i>Manage Grades
-                </a>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="card h-100 border">
-              <div class="card-body text-center">
-                <i class="ri-heart-pulse-line display-4 text-warning mb-3"></i>
-                <h6>Recommend for Counseling</h6>
-                <p class="text-muted small">Refer students to guidance counseling services</p>
-                <a href="{{ route('teacher.recommend-counseling.form') }}" class="btn btn-outline-warning">
-                  <i class="ri-heart-pulse-line me-2"></i>Recommend Student
-                </a>
-              </div>
-            </div>
+        </div>
+      </div>
+      <div class="col-12 col-sm-6 col-lg-4">
+        <div class="card h-100 border-0 shadow-sm">
+          <div class="card-body text-center">
+            <i class="ri-heart-pulse-line display-4 text-warning mb-3"></i>
+            <h6>Recommend for Counseling</h6>
+            <p class="text-muted small">Refer students to guidance counseling services</p>
+            <a href="{{ route('teacher.recommend-counseling.form') }}" class="btn btn-outline-warning">
+              <i class="ri-heart-pulse-line me-2"></i>Recommend Student
+            </a>
           </div>
         </div>
       </div>

@@ -366,7 +366,13 @@ function hideLoadingToast() {
 function renderCaseStatusPieChart(onGoing, scheduled, preCompleted) {
     const ctx = document.getElementById('caseStatusPieChart');
     if (!ctx || typeof Chart === 'undefined') return;
-    new Chart(ctx.getContext('2d'), {
+    
+    // Destroy existing chart if it exists
+    if (window.caseStatusChart) {
+        window.caseStatusChart.destroy();
+    }
+    
+    window.caseStatusChart = new Chart(ctx.getContext('2d'), {
         type: 'pie',
         data: {
             labels: ['On Going Cases', 'Scheduled Meeting', 'Pre-Completed'],
@@ -458,7 +464,13 @@ function loadClosedCasesBarChart() {
 function renderClosedCasesBarChart(labels, data) {
     const ctx = document.getElementById('closedCasesBarChart');
     if (!ctx || typeof Chart === 'undefined') return;
-    new Chart(ctx.getContext('2d'), {
+    
+    // Destroy existing chart if it exists
+    if (window.closedCasesChart) {
+        window.closedCasesChart.destroy();
+    }
+    
+    window.closedCasesChart = new Chart(ctx.getContext('2d'), {
         type: 'bar',
         data: {
             labels: labels,
@@ -521,7 +533,13 @@ function loadCounselingSessionsBarChart() {
 function renderCounselingSessionsBarChart(labels, data) {
     const ctx = document.getElementById('counselingSessionsBarChart');
     if (!ctx || typeof Chart === 'undefined') return;
-    new Chart(ctx.getContext('2d'), {
+    
+    // Destroy existing chart if it exists
+    if (window.counselingSessionsChart) {
+        window.counselingSessionsChart.destroy();
+    }
+    
+    window.counselingSessionsChart = new Chart(ctx.getContext('2d'), {
         type: 'bar',
         data: {
             labels: labels,
@@ -584,9 +602,9 @@ function loadDisciplineVsTotalHistogram() {
 function renderDisciplineVsTotalHistogram(labels, data) {
     const ctx = document.getElementById('disciplineVsTotalHistogram');
     if (!ctx || typeof Chart === 'undefined') return;
-
+    
     // Destroy existing chart if it exists
-    if (window.disciplineChart && typeof window.disciplineChart.destroy === 'function') {
+    if (window.disciplineChart) {
         window.disciplineChart.destroy();
     }
 
@@ -1025,7 +1043,9 @@ function applyTasksFilter() {
     const dateRange = document.getElementById('tasksDateRange')?.value || 'week';
     const priority = document.getElementById('tasksPriority')?.value || 'all';
     
-    showLoadingToast('Filtering tasks...');
+    if (typeof showLoadingToast === 'function') {
+        showLoadingToast('Filtering tasks...');
+    }
     
     const params = new URLSearchParams({
         date_range: dateRange,
@@ -1034,8 +1054,14 @@ function applyTasksFilter() {
     });
     
     loadFilteredUpcomingTasks(params);
-    hideLoadingToast();
-    showAlert('Tasks filtered', 'success', 2000);
+    
+    if (typeof hideLoadingToast === 'function') {
+        hideLoadingToast();
+    }
+    
+    if (typeof showAlert === 'function') {
+        showAlert('Tasks filtered', 'success', 2000);
+    }
 }
 
 // Top Cases Filter
@@ -1367,6 +1393,16 @@ function loadFilteredUpcomingTasks(filterParams) {
     })
     .catch(error => {
         console.error('Error loading filtered upcoming tasks:', error);
+        const container = document.getElementById('upcoming-tasks');
+        if (container) {
+            container.innerHTML = '<div class="text-center text-danger py-4"><i class="ri-error-warning-line fs-4 d-block mb-2"></i>Error loading tasks</div>';
+        }
+        // Use fallback alert if showAlert is not available
+        if (typeof showAlert === 'function') {
+            showAlert('Error loading tasks', 'danger', 3000);
+        } else {
+            console.error('showAlert function not available');
+        }
     });
 }
 
