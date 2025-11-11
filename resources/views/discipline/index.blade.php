@@ -17,21 +17,23 @@
                         {{ now()->format('l, F j, Y g:i A') }}
                     </small>
                 </div>
-                <div class="d-flex gap-2 align-items-center">
+                <div class="d-flex flex-column flex-sm-row gap-2 align-items-start align-items-sm-center">
                     <!-- Auto-refresh toggle -->
-                    <div class="form-check form-switch me-3">
+                    <div class="form-check form-switch me-3 d-none d-sm-block">
                         <input class="form-check-input" type="checkbox" id="autoRefresh">
                         <label class="form-check-label text-muted small" for="autoRefresh">
                             Auto-refresh
                         </label>
                     </div>
                     
-                    <button class="btn btn-outline-success btn-sm" onclick="refreshDashboard()">
-                        <i class="ri-refresh-line me-1"></i>Refresh
-                    </button>
-                    <button class="btn btn-success btn-sm" onclick="openQuickActionModal()">
-                        <i class="ri-add-circle-line me-1"></i>Quick Actions
-                    </button>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-success btn-sm" onclick="refreshDashboard()">
+                            <i class="ri-refresh-line me-1 me-sm-2"></i><span class="d-none d-sm-inline">Refresh</span>
+                        </button>
+                        <button class="btn btn-success btn-sm" onclick="openQuickActionModal()">
+                            <i class="ri-add-circle-line me-1 me-sm-2"></i><span class="d-none d-sm-inline">Quick Actions</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -46,7 +48,7 @@
 
         <!-- Enhanced Statistics Cards -->
         <div class="row g-4 mb-4">
-            <div class="col-lg-3 col-md-6">
+            <div class="col-6 col-sm-6 col-md-6 col-lg-3">
                 <div class="card border border-success h-100 shadow-sm hover-card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
@@ -68,7 +70,7 @@
                 </div>
             </div>
             
-            <div class="col-lg-3 col-md-6">
+            <div class="col-6 col-sm-6 col-md-6 col-lg-3">
                 <div class="card border border-success h-100 shadow-sm hover-card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
@@ -90,7 +92,7 @@
                 </div>
             </div>
             
-            <div class="col-lg-3 col-md-6">
+            <div class="col-6 col-sm-6 col-md-6 col-lg-3">
                 <div class="card border border-success h-100 shadow-sm hover-card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
@@ -119,7 +121,7 @@
                 </div>
             </div>
             
-            <div class="col-lg-3 col-md-6">
+            <div class="col-6 col-sm-6 col-md-6 col-lg-3">
                 <div class="card border border-success h-100 shadow-sm hover-card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">

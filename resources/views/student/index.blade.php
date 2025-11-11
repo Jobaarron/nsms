@@ -124,9 +124,9 @@
             @endif
         @endif
 
-        <!-- Summary Cards -->
-        <div class="row mb-4">
-            <div class="col-lg-3 col-md-6 mb-3">
+        <!-- SUMMARY CARDS -->
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-sm-6 col-lg-4">
                 <div class="card border-0 shadow-sm card-summary card-credits h-100">
                     <div class="card-body d-flex align-items-center">
                         <div class="flex-shrink-0 me-3">
@@ -139,7 +139,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6 mb-3">
+            <div class="col-6 col-sm-6 col-lg-4">
                 <div class="card border-0 shadow-sm card-summary card-subjects h-100">
                     <div class="card-body d-flex align-items-center">
                         <div class="flex-shrink-0 me-3">
@@ -159,7 +159,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6 mb-3">
+            <div class="col-6 col-sm-6 col-lg-4">
                 <div class="card border-0 shadow-sm card-summary card-gpa h-100">
                     <div class="card-body d-flex align-items-center">
                         <div class="flex-shrink-0 me-3">
@@ -178,160 +178,91 @@
         <div class="row">
             <!-- Left Column -->
             <div class="col-lg-8">
-                <!-- Quick Actions -->
-                <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-header bg-white border-0 pb-0">
-                        <h5 class="card-title mb-0">Quick Actions</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row g-3">
-                            @if($student->enrollment_status === 'pre_registered')
-                                @php
-                                    $hasPaymentSchedule = \App\Models\Payment::where('payable_type', 'App\\Models\\Student')->where('payable_id', $student->id)->exists();
-                                @endphp
-                                @if(!$hasPaymentSchedule)
-                                    <div class="col-md-4">
-                                        <a href="{{ route('student.enrollment') }}" class="btn btn-outline-primary w-100 py-3">
-                                            <i class="ri-user-add-line fs-4 d-block mb-2"></i>
-                                            Complete Enrollment
-                                        </a>
-                                    </div>
-                                @else
-                                    <div class="col-md-4">
-                                        <div class="btn btn-outline-warning w-100 py-3 disabled">
-                                            <i class="ri-time-line fs-4 d-block mb-2"></i>
-                                            Awaiting Approval
-                                        </div>
-                                    </div>
-                                @endif
-                            @endif
-                            
+                <!-- QUICK ACTIONS -->
+                <h4 class="section-title">Quick Actions</h4>
+                <div class="row g-3 mb-4">
+                    <div class="col-12 col-sm-6 col-lg-6">
+                        @if($student->enrollment_status === 'pre_registered')
                             @php
-                                $hasNoEnrollment = !in_array($student->enrollment_status, ['enrolled', 'pre_registered']);
-                                
-                                // Check if student has at least one confirmed payment (1st quarter)
-                                $hasConfirmedPayment = \App\Models\Payment::where('payable_type', 'App\\Models\\Student')
-                                    ->where('payable_id', $student->id)
-                                    ->where('confirmation_status', 'confirmed')
-                                    ->exists();
-                                
-                                $hasNoPayment = $student->enrollment_status !== 'enrolled' || !$hasConfirmedPayment;
-                                $isEnrollmentComplete = in_array($student->enrollment_status, ['enrolled', 'pre_registered']);
-                                $isPaymentSettled = $student->enrollment_status === 'enrolled' && $hasConfirmedPayment;
+                                $hasPaymentSchedule = \App\Models\Payment::where('payable_type', 'App\\Models\\Student')->where('payable_id', $student->id)->exists();
                             @endphp
-                            
-                            <!-- View Subjects - Disabled only if payment not settled -->
-                            <div class="col-md-4">
-                                @if($hasNoPayment)
-                                    <div class="btn btn-outline-secondary w-100 py-3 disabled position-relative" title="Complete enrollment and settle payment to access this feature">
-                                        <i class="ri-book-open-line fs-4 d-block mb-2"></i>
-                                        View Subjects
-                                        <i class="ri-lock-line position-absolute top-0 end-0 m-2"></i>
-                                    </div>
-                                @else
-                                    <a href="{{ route('student.subjects') }}" class="btn btn-outline-primary w-100 py-3">
-                                        <i class="ri-book-open-line fs-4 d-block mb-2"></i>
-                                        View Subjects
-                                    </a>
-                                @endif
-                            </div>
-                            
-                            <!-- Payment History - Disabled until payment settled (same as other features) -->
-                            <div class="col-md-4">
-                                @if($hasNoPayment)
-                                    <div class="btn btn-outline-secondary w-100 py-3 disabled position-relative" title="Complete enrollment and settle payment to access this feature">
-                                        <i class="ri-bill-line fs-4 d-block mb-2"></i>
-                                        Payment History
-                                        <i class="ri-lock-line position-absolute top-0 end-0 m-2"></i>
-                                    </div>
-                                @else
-                                    <a href="{{ route('student.payments') }}" class="btn btn-outline-primary w-100 py-3">
-                                        <i class="ri-bill-line fs-4 d-block mb-2"></i>
-                                        Payment History
-                                    </a>
-                                @endif
-                            </div>
-                            
-                            <!-- Face Registration - Disabled only if payment not settled -->
-                            <div class="col-md-4">
-                                @if($hasNoPayment)
-                                    <div class="btn btn-outline-secondary w-100 py-3 disabled position-relative" title="Complete enrollment and settle payment to access this feature">
-                                        <i class="ri-camera-line fs-4 d-block mb-2"></i>
-                                        Face Registration
-                                        <i class="ri-lock-line position-absolute top-0 end-0 m-2"></i>
-                                    </div>
-                                @else
-                                    <a href="{{ route('student.face-registration') }}" class="btn btn-outline-primary w-100 py-3">
-                                        <i class="ri-camera-line fs-4 d-block mb-2"></i>
-                                        Face Registration
-                                    </a>
-                                @endif
-                            </div>
-                        </div>
+                            @if(!$hasPaymentSchedule)
+                                <a href="{{ route('student.enrollment') }}" class="btn btn-outline-primary w-100 py-3">
+                                    <i class="ri-user-add-line fs-4 d-block mb-2"></i>
+                                    Complete Enrollment
+                                </a>
+                            @else
+                                <div class="btn btn-outline-warning w-100 py-3 disabled">
+                                    <i class="ri-time-line fs-4 d-block mb-2"></i>
+                                    Awaiting Approval
+                                </div>
+                            @endif
+                        @endif
                     </div>
-                </div>
-
-                <!-- Academic Information -->
-                <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-header bg-white border-0 pb-0">
-                        <h5 class="card-title mb-0">Academic Information</h5>
+                    @php
+                        $hasNoEnrollment = !in_array($student->enrollment_status, ['enrolled', 'pre_registered']);
+                        
+                        // Check if student has at least one confirmed payment (1st quarter)
+                        $hasConfirmedPayment = \App\Models\Payment::where('payable_type', 'App\\Models\\Student')
+                            ->where('payable_id', $student->id)
+                            ->where('confirmation_status', 'confirmed')
+                            ->exists();
+                        
+                        $hasNoPayment = $student->enrollment_status !== 'enrolled' || !$hasConfirmedPayment;
+                        $isEnrollmentComplete = in_array($student->enrollment_status, ['enrolled', 'pre_registered']);
+                        $isPaymentSettled = $student->enrollment_status === 'enrolled' && $hasConfirmedPayment;
+                    @endphp
+                    
+                    <div class="col-12 col-sm-6 col-lg-6">
+                        <!-- View Subjects - Disabled only if payment not settled -->
+                        @if($hasNoPayment)
+                            <div class="btn btn-outline-secondary w-100 py-3 disabled position-relative" title="Complete enrollment and settle payment to access this feature">
+                                <i class="ri-book-open-line fs-4 d-block mb-2"></i>
+                                View Subjects
+                                <i class="ri-lock-line position-absolute top-0 end-0 m-2"></i>
+                            </div>
+                        @else
+                            <a href="{{ route('student.subjects') }}" class="btn btn-outline-primary w-100 py-3">
+                                <i class="ri-book-open-line fs-4 d-block mb-2"></i>
+                                View Subjects
+                            </a>
+                        @endif
                     </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label text-muted small">Grade Level</label>
-                                    <div class="fw-semibold">{{ $student->grade_level }}</div>
-                                </div>
-                                @if($student->strand)
-                                    <div class="mb-3">
-                                        <label class="form-label text-muted small">Strand</label>
-                                        <div class="fw-semibold">{{ $student->strand }}</div>
-                                    </div>
-                                @endif
-                                @if($student->track)
-                                    <div class="mb-3">
-                                        <label class="form-label text-muted small">Track</label>
-                                        <div class="fw-semibold">{{ $student->track }}</div>
-                                    </div>
-                                @endif
+                    <div class="col-12 col-sm-6 col-lg-6">
+                        <!-- Payment History - Disabled until payment settled (same as other features) -->
+                        @if($hasNoPayment)
+                            <div class="btn btn-outline-secondary w-100 py-3 disabled position-relative" title="Complete enrollment and settle payment to access this feature">
+                                <i class="ri-bill-line fs-4 d-block mb-2"></i>
+                                Payment History
+                                <i class="ri-lock-line position-absolute top-0 end-0 m-2"></i>
                             </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label text-muted small">Student Type</label>
-                                    <div class="fw-semibold text-capitalize">{{ $student->student_type ?? 'New' }}</div>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label text-muted small">Class</label>
-                                    <div class="fw-semibold">
-                                        @if($student->section)
-                                            @php
-                                                $dashboardClass = $student->grade_level . ' - ' . $student->section;
-                                                if ($student->strand) {
-                                                    $dashboardClass = $student->grade_level . ' - ' . $student->section . ' - ' . $student->strand;
-                                                    if ($student->track) {
-                                                        $dashboardClass = $student->grade_level . ' - ' . $student->section . ' - ' . $student->strand . ' - ' . $student->track;
-                                                    }
-                                                }
-                                            @endphp
-                                            {{ $dashboardClass }}
-                                        @else
-                                            <span class="text-muted">Processing assignment...</span>
-                                        @endif
-                                    </div>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label text-muted small">Academic Year</label>
-                                    <div class="fw-semibold">{{ $student->academic_year ?? '2024-2025' }}</div>
-                                </div>
+                        @else
+                            <a href="{{ route('student.payments') }}" class="btn btn-outline-primary w-100 py-3">
+                                <i class="ri-bill-line fs-4 d-block mb-2"></i>
+                                Payment History
+                            </a>
+                        @endif
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-6">
+                        <!-- Face Registration - Disabled only if payment not settled -->
+                        @if($hasNoPayment)
+                            <div class="btn btn-outline-secondary w-100 py-3 disabled position-relative" title="Complete enrollment and settle payment to access this feature">
+                                <i class="ri-camera-line fs-4 d-block mb-2"></i>
+                                Face Registration
+                                <i class="ri-lock-line position-absolute top-0 end-0 m-2"></i>
                             </div>
-                        </div>
+                        @else
+                            <a href="{{ route('student.face-registration') }}" class="btn btn-outline-primary w-100 py-3">
+                                <i class="ri-camera-line fs-4 d-block mb-2"></i>
+                                Face Registration
+                            </a>
+                        @endif
                     </div>
                 </div>
             </div>
 
             <!-- Right Column -->
-            <div class="col-lg-4">
+            <div class="col-6 col-sm-6 col-lg-4">
                 <!-- Student Profile Card -->
                 <div class="card border-0 shadow-sm mb-4">
                     <div class="card-body text-center">

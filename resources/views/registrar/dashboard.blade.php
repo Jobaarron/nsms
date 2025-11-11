@@ -1,21 +1,21 @@
 <x-registrar-layout>
     <div class="py-4">
         <!-- HEADER SECTION -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-4 gap-3">
             <div>
                 <h1 class="section-title mb-2">Student Applications Dashboard</h1>
                 <p class="text-muted mb-0">Review and manage student enrollment applications</p>
             </div>
             <div>
                 <a href="{{ route('registrar.applications') }}" class="btn btn-registrar btn-lg">
-                    <i class="ri-file-list-line me-2"></i>View All Applications
+                    <i class="ri-file-list-line me-2"></i><span class="d-none d-sm-inline">View All </span>Applications
                 </a>
             </div>
         </div>
         
         <!-- STATISTICS OVERVIEW -->
         <div class="row g-4 mb-5">
-            <div class="col-md-3">
+            <div class="col-6 col-sm-6 col-md-3">
                 <div class="card border-0 shadow-sm h-100 text-center">
                     <div class="card-body py-4">
                         <div class="mb-3">
@@ -28,7 +28,7 @@
                 </div>
             </div>
             
-            <div class="col-md-3">
+            <div class="col-6 col-sm-6 col-md-3">
                 <div class="card border-0 shadow-sm h-100 text-center">
                     <div class="card-body py-4">
                         <div class="mb-3">
@@ -41,7 +41,7 @@
                 </div>
             </div>
             
-            <div class="col-md-3">
+            <div class="col-6 col-sm-6 col-md-3">
                 <div class="card border-0 shadow-sm h-100 text-center">
                     <div class="card-body py-4">
                         <div class="mb-3">
@@ -54,7 +54,7 @@
                 </div>
             </div>
             
-            <div class="col-md-3">
+            <div class="col-6 col-sm-6 col-md-3">
                 <div class="card border-0 shadow-sm h-100 text-center">
                     <div class="card-body py-4">
                         <div class="mb-3">
@@ -100,7 +100,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-6 col-sm-6 col-md-3">
                                         <div class="text-center">
                                             <span class="badge bg-warning fs-6 px-3 py-2">
                                                 <i class="ri-time-line me-1"></i>Pending Review

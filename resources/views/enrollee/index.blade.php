@@ -49,7 +49,7 @@
 
         <!-- SUMMARY CARDS -->
         <div class="row g-3 mb-5">
-            <div class="col-6 col-lg-3">
+            <div class="col-6 col-sm-6 col-lg-3">
                 <div class="card card-summary card-application h-100">
                     <div class="card-body d-flex align-items-center">
                         <i class="ri-file-text-line display-6 me-3"></i>
@@ -252,12 +252,12 @@
         <!-- QUICK ACTIONS -->
         <h4 class="section-title">Quick Actions</h4>
         <div class="row g-3">
-            <div class="col-md-4">
+            <div class="col-12 col-sm-6 col-lg-6">
                 <a href="{{ route('enrollee.application') }}" class="btn btn-outline-primary w-100 py-3">
                     <i class="ri-file-text-line me-2"></i>View Application
                 </a>
             </div>
-            <div class="col-md-4">
+            <div class="col-12 col-sm-6 col-lg-6">
                 <a href="{{ route('enrollee.documents') }}" class="btn btn-outline-primary w-100 py-3">
                     <i class="ri-folder-line me-2"></i>My Documents
                 </a>

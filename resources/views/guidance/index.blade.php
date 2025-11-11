@@ -17,21 +17,23 @@
                         <i class="ri-time-line me-1"></i>{{ now()->format('g:i A') }}
                     </small>
                 </div>
-                <div class="d-flex gap-2 align-items-center">
+                <div class="d-flex flex-column flex-sm-row gap-2 align-items-start align-items-sm-center">
                     <!-- Auto-refresh toggle -->
-                    <div class="form-check form-switch me-3">
+                    <div class="form-check form-switch me-3 d-none d-sm-block">
                         <input class="form-check-input" type="checkbox" id="autoRefresh">
                         <label class="form-check-label small text-muted" for="autoRefresh">
                             Auto-refresh
                         </label>
                     </div>
                     
-                    <button class="btn btn-outline-success btn-sm" onclick="refreshDashboard()">
-                        <i class="ri-refresh-line me-2"></i>Refresh
-                    </button>
-                    <button class="btn btn-success btn-sm" onclick="openQuickActionModal()">
-                        <i class="ri-add-line me-2"></i>Quick Action
-                    </button>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-success btn-sm" onclick="refreshDashboard()">
+                            <i class="ri-refresh-line me-1 me-sm-2"></i><span class="d-none d-sm-inline">Refresh</span>
+                        </button>
+                        <button class="btn btn-success btn-sm" onclick="openQuickActionModal()">
+                            <i class="ri-add-line me-1 me-sm-2"></i><span class="d-none d-sm-inline">Quick Action</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -57,7 +59,7 @@
 
         <!-- Enhanced Statistics Cards -->
         <div class="row mb-4">
-            <div class="col-xl-3 col-md-6 mb-3">
+            <div class="col-6 col-sm-6 col-md-6 col-xl-3 mb-3">
                 <div class="card border border-success h-100 shadow-sm hover-card">
                     <div class="card-body">
                         <div class="d-flex align-items-center justify-content-between mb-2">
@@ -87,7 +89,7 @@
                 </div>
             </div>
             
-            <div class="col-xl-3 col-md-6 mb-3">
+            <div class="col-6 col-sm-6 col-md-6 col-xl-3 mb-3">
                 <div class="card border border-success h-100 shadow-sm hover-card">
                     <div class="card-body">
                         <div class="d-flex align-items-center justify-content-between mb-2">
@@ -116,7 +118,7 @@
                 </div>
             </div>
             
-            <div class="col-xl-3 col-md-6 mb-3">
+            <div class="col-6 col-sm-6 col-md-6 col-xl-3 mb-3">
                 <div class="card border border-success h-100 shadow-sm hover-card">
                     <div class="card-body">
                         <div class="d-flex align-items-center justify-content-between mb-2">
@@ -144,7 +146,7 @@
                 </div>
             </div>
             
-            <div class="col-xl-3 col-md-6 mb-3">
+            <div class="col-6 col-sm-6 col-md-6 col-xl-3 mb-3">
                 <div class="card border border-success h-100 shadow-sm hover-card">
                     <div class="card-body">
                         <div class="d-flex align-items-center justify-content-between mb-2">
@@ -588,7 +590,7 @@
 
                         <!-- Advanced Filters -->
                         <div class="row g-3">
-                            <div class="col-md-6">
+                            <div class="col-12 col-md-6">
                                 <h6 class="fw-bold mb-3">Date & Time</h6>
                                 <div class="mb-3">
                                     <label class="form-label">Date Range</label>
@@ -612,7 +614,7 @@
                                 </div>
                             </div>
                             
-                            <div class="col-md-6">
+                            <div class="col-12 col-md-6">
                                 <h6 class="fw-bold mb-3">Status & Priority</h6>
                                 <div class="mb-3">
                                     <label class="form-label">Status</label>
@@ -719,7 +721,7 @@
                     </div>
                     <div class="modal-body">
                         <div class="row g-3">
-                            <div class="col-md-6">
+                            <div class="col-12 col-md-6">
                                 <button class="btn btn-outline-primary w-100 h-100 p-4 text-start" onclick="scheduleNewCaseMeeting(); closeModal('quickActionModal')">
                                     <div class="d-flex align-items-center">
                                         <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3">
@@ -732,7 +734,7 @@
                                     </div>
                                 </button>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-12 col-md-6">
                                 <button class="btn btn-outline-success w-100 h-100 p-4 text-start" onclick="scheduleNewCounseling(); closeModal('quickActionModal')">
                                     <div class="d-flex align-items-center">
                                         <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3">
@@ -745,7 +747,7 @@
                                     </div>
                                 </button>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-12 col-md-6">
                                 <button class="btn btn-outline-info w-100 h-100 p-4 text-start" onclick="scheduleHouseVisit(); closeModal('quickActionModal')">
                                     <div class="d-flex align-items-center">
                                         <div class="rounded-circle bg-secondary bg-opacity-10 p-3 me-3">
@@ -758,7 +760,7 @@
                                     </div>
                                 </button>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-12 col-md-6">
                                 <button class="btn btn-outline-warning w-100 h-100 p-4 text-start" onclick="createCaseSummary(); closeModal('quickActionModal')">
                                     <div class="d-flex align-items-center">
                                         <div class="rounded-circle bg-warning bg-opacity-10 p-3 me-3">
@@ -941,7 +943,11 @@
             // Add personalized welcome message
             setTimeout(() => {
                 const userName = window.guidanceStats.currentUser.name;
-                showAlert(`Welcome back, ${userName}! 🎉`, 'success', 3000);
+                if (typeof showAlert === 'function') {
+                    showAlert(`Welcome back, ${userName}! 🎉`, 'success', 3000);
+                } else {
+                    console.log(`Welcome back, ${userName}! 🎉`);
+                }
             }, 1000);
             
             // Check for urgent tasks on load
@@ -969,7 +975,11 @@
                     if (data.success && data.tasks && data.tasks.length > 0) {
                         const urgentTasks = data.tasks.filter(task => task.status === 'overdue' || task.priority === 'high').length;
                         if (urgentTasks > 0) {
-                            showAlert(`⚠️ You have ${urgentTasks} urgent task${urgentTasks > 1 ? 's' : ''} requiring attention!`, 'warning', 8000);
+                            if (typeof showAlert === 'function') {
+                                showAlert(`⚠️ You have ${urgentTasks} urgent task${urgentTasks > 1 ? 's' : ''} requiring attention!`, 'warning', 8000);
+                            } else {
+                                console.warn(`⚠️ You have ${urgentTasks} urgent task${urgentTasks > 1 ? 's' : ''} requiring attention!`);
+                            }
                         }
                     }
                 })

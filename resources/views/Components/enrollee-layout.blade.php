@@ -29,6 +29,12 @@
   @vite(['resources/js/app.js'])
 
   <style>
+    /* Mobile responsive improvements */
+    @media (max-width: 767.98px) {
+      .main-content {
+        margin-top: 70px;
+      }
+    }
     /* Ensure icons are properly displayed */
     .btn i {
       font-size: 1rem;
@@ -50,6 +56,16 @@
   </style>
 </head>
 <body>
+  <!-- Mobile Navigation Toggle -->
+  <div class="d-md-none bg-white border-bottom p-3 fixed-top" style="z-index: 1030;">
+    <div class="d-flex justify-content-between align-items-center">
+      <img src="{{ Vite::asset('resources/assets/images/nms logo.png') }}" alt="Nicolites Montessori School" style="height: 30px;">
+      <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#enrolleeSidebar" aria-controls="enrolleeSidebar">
+        <i class="ri-menu-line"></i>
+      </button>
+    </div>
+  </div>
+
   <div class="container-fluid">
     <div class="row">
       
@@ -100,8 +116,53 @@
         </div>
       </nav>
 
+      <!-- MOBILE SIDEBAR (Offcanvas) -->
+      <div class="offcanvas offcanvas-start d-md-none" tabindex="-1" id="enrolleeSidebar" aria-labelledby="enrolleeSidebarLabel">
+        <div class="offcanvas-header border-bottom">
+          <div class="d-flex align-items-center">
+            <img src="{{ Vite::asset('resources/assets/images/nms logo.png') }}" alt="Nicolites Montessori School" style="height: 30px;" class="me-2">
+            <h5 class="offcanvas-title mb-0" id="enrolleeSidebarLabel">Applicant Portal</h5>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body p-0">
+          <ul class="nav flex-column">
+            <li class="nav-item mb-2">
+              <a class="nav-link {{ request()->routeIs('enrollee.dashboard') ? 'active' : '' }}" href="{{ route('enrollee.dashboard') }}">
+                <i class="ri-dashboard-line me-2"></i>Dashboard
+              </a>
+            </li>
+            <li class="nav-item mb-2">
+              <a class="nav-link {{ request()->routeIs('enrollee.application') ? 'active' : '' }}" href="{{ route('enrollee.application') }}">
+                <i class="ri-file-text-line me-2"></i>My Application
+              </a>
+            </li>
+            <li class="nav-item mb-2">
+              <a class="nav-link {{ request()->routeIs('enrollee.documents') ? 'active' : '' }}" href="{{ route('enrollee.documents') }}">
+                <i class="ri-folder-line me-2"></i>Documents
+              </a>
+            </li>
+            <li class="nav-item mb-2">
+              <a class="nav-link {{ request()->routeIs('enrollee.notices') ? 'active' : '' }}" href="{{ route('enrollee.notices') }}">
+                <i class="ri-notification-line me-2"></i>Notices
+              </a>
+            </li>
+          </ul>
+          
+          <!-- LOGOUT SECTION -->
+          <div class="mt-auto pt-3">
+            <form action="{{ route('enrollee.logout') }}" method="POST">
+              @csrf
+              <button type="submit" class="nav-link text-danger border-0 bg-transparent w-100 text-start d-flex align-items-center" style="font-weight: 600;">
+                <i class="ri-logout-circle-line me-2"></i>Logout
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
       <!-- MAIN CONTENT -->
-      <main class="col-12 col-md-10 ms-sm-auto px-md-4">
+      <main class="col-12 col-md-10 ms-sm-auto px-3 px-md-4" style="margin-top: 70px;">
         <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
           <h1 class="h2 section-title">
             <i class="ri-graduation-cap-line me-2"></i>

@@ -28,10 +28,13 @@
 </head>
 <body>
   <!-- Mobile Navigation Toggle -->
-  <div class="mobile-nav-toggle d-md-none">
-    <button class="btn btn-success" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas">
-      <i class="ri-menu-line"></i>
-    </button>
+  <div class="d-md-none bg-white border-bottom p-3 fixed-top" style="z-index: 1030;">
+    <div class="d-flex justify-content-between align-items-center">
+      <img src="{{ Vite::asset('resources/assets/images/nms logo.png') }}" alt="Nicolites Montessori School" style="height: 30px;">
+      <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#disciplineSidebar" aria-controls="disciplineSidebar">
+        <i class="ri-menu-line"></i>
+      </button>
+    </div>
   </div>
 
   <div class="container-fluid">
@@ -82,10 +85,13 @@
       </nav>
       
       <!-- MOBILE SIDEBAR (Offcanvas) -->
-      <div class="offcanvas offcanvas-start d-md-none" tabindex="-1" id="sidebarOffcanvas">
-        <div class="offcanvas-header">
-          <img src="{{ Vite::asset('resources/assets/images/nms logo.png') }}" alt="Nicolites Montessori School" class="sidebar-logo" style="width: 120px;">
-          <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+      <div class="offcanvas offcanvas-start d-md-none" tabindex="-1" id="disciplineSidebar" aria-labelledby="disciplineSidebarLabel">
+        <div class="offcanvas-header border-bottom">
+          <div class="d-flex align-items-center">
+            <img src="{{ Vite::asset('resources/assets/images/nms logo.png') }}" alt="Nicolites Montessori School" style="height: 30px;" class="me-2">
+            <h5 class="offcanvas-title mb-0" id="disciplineSidebarLabel">Discipline Portal</h5>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
         </div>
         <div class="offcanvas-body">
           <ul class="nav flex-column">

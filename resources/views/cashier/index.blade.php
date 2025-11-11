@@ -20,9 +20,9 @@
     <!-- Key Insights & Statistics Cards - Side by Side -->
     <div class="row mb-3">
         <!-- Key Insights - Left Side -->
-        <div class="col-lg-6">
+        <div class="col-12 col-lg-6">
             <div class="row">
-                <div class="col-6 mb-3">
+                <div class="col-6 col-sm-6 mb-3">
                     <div class="card border-0 shadow-sm text-center h-100">
                         <div class="card-body py-3">
                             <div class="bg-success bg-opacity-10 rounded-circle p-2 d-inline-flex mb-2">
@@ -33,7 +33,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-6 mb-3">
+                <div class="col-6 col-sm-6 mb-3">
                     <div class="card border-0 shadow-sm text-center h-100">
                         <div class="card-body py-3">
                             <div class="bg-primary bg-opacity-10 rounded-circle p-2 d-inline-flex mb-2">
@@ -44,7 +44,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-6 mb-3">
+                <div class="col-6 col-sm-6 mb-3">
                     <div class="card border-0 shadow-sm text-center h-100">
                         <div class="card-body py-3">
                             <div class="bg-info bg-opacity-10 rounded-circle p-2 d-inline-flex mb-2">
@@ -55,7 +55,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-6 mb-3">
+                <div class="col-6 col-sm-6 mb-3">
                     <div class="card border-0 shadow-sm text-center h-100">
                         <div class="card-body py-3">
                             <div class="bg-secondary bg-opacity-10 rounded-circle p-2 d-inline-flex mb-2">
@@ -70,9 +70,9 @@
         </div>
         
         <!-- Statistics Cards - Right Side -->
-        <div class="col-lg-6">
+        <div class="col-12 col-lg-6">
             <div class="row">
-                <div class="col-6 mb-3">
+                <div class="col-6 col-sm-6 mb-3">
                     <div class="card border-0 shadow-sm text-center h-100">
                         <div class="card-body py-3">
                             <div class="bg-warning bg-opacity-10 rounded-circle p-2 d-inline-flex mb-2">
@@ -83,7 +83,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-6 mb-3">
+                <div class="col-6 col-sm-6 mb-3">
                     <div class="card border-0 shadow-sm text-center h-100">
                         <div class="card-body py-3">
                             <div class="bg-danger bg-opacity-10 rounded-circle p-2 d-inline-flex mb-2">
@@ -94,7 +94,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-6 mb-3">
+                <div class="col-6 col-sm-6 mb-3">
                     <div class="card border-0 shadow-sm text-center h-100">
                         <div class="card-body py-3">
                             <div class="bg-success bg-opacity-10 rounded-circle p-2 d-inline-flex mb-2">
@@ -105,7 +105,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-6 mb-3">
+                <div class="col-6 col-sm-6 mb-3">
                     <div class="card border-0 shadow-sm text-center h-100">
                         <div class="card-body py-3">
                             <div class="bg-info bg-opacity-10 rounded-circle p-2 d-inline-flex mb-2">
@@ -124,7 +124,7 @@
     <!-- Payment Analytics Dashboard -->
     <div class="row mb-3">
         <!-- Payment Method Distribution -->
-        <div class="col-lg-6 mb-4">
+        <div class="col-12 col-lg-6 mb-4">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white border-0 pb-0">
                     <h5 class="card-title mb-0">
@@ -164,7 +164,7 @@
         </div>
 
         <!-- Revenue Trend -->
-        <div class="col-lg-6 mb-4">
+        <div class="col-12 col-lg-6 mb-4">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white border-0 pb-0">
                     <h5 class="card-title mb-0">
@@ -181,7 +181,7 @@
         </div>
 
         <!-- Daily Revenue (Current Month) -->
-        <div class="col-lg-8 mb-4">
+        <div class="col-12 col-lg-8 mb-4">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white border-0 pb-0">
                     <h5 class="card-title mb-0">
