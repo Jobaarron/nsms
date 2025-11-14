@@ -17,31 +17,16 @@
                         <i class="ri-time-line me-1"></i>{{ now()->format('g:i A') }}
                     </small>
                 </div>
-                <div class="d-flex flex-column flex-sm-row gap-2 align-items-start align-items-sm-center">
-                    <!-- Auto-refresh toggle -->
-                    <div class="form-check form-switch me-3 d-none d-sm-block">
-                        <input class="form-check-input" type="checkbox" id="autoRefresh">
-                        <label class="form-check-label small text-muted" for="autoRefresh">
-                            Auto-refresh
-                        </label>
-                    </div>
-                    
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-outline-success btn-sm" onclick="refreshDashboard()">
-                            <i class="ri-refresh-line me-1 me-sm-2"></i><span class="d-none d-sm-inline">Refresh</span>
-                        </button>
-                        <button class="btn btn-success btn-sm" onclick="openQuickActionModal()">
-                            <i class="ri-add-line me-1 me-sm-2"></i><span class="d-none d-sm-inline">Quick Action</span>
-                        </button>
-                    </div>
+                <div>
+                    <button class="btn btn-success btn-sm" onclick="openQuickActionModal()">
+                        <i class="ri-add-line me-1 me-sm-2"></i><span class="d-none d-sm-inline">Quick Action</span>
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
-
-
-        @php
+    @php
             // Ensure all required stats have default values
             $stats = $stats ?? [];
             $stats = array_merge([
@@ -916,9 +901,8 @@
             }
         };
         
-        // Dynamic refresh intervals (in milliseconds)
+        // Dynamic configuration (in milliseconds)
         window.refreshConfig = {
-            autoRefreshInterval: {{ config('guidance.auto_refresh_interval', 30000) }},
             chartUpdateInterval: {{ config('guidance.chart_update_interval', 60000) }},
             notificationDuration: {{ config('guidance.notification_duration', 5000) }}
         };
@@ -992,12 +976,6 @@
         // Setup keyboard shortcuts for quick navigation
         function setupKeyboardShortcuts() {
             document.addEventListener('keydown', function(e) {
-                // Ctrl/Cmd + R for refresh
-                if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
-                    e.preventDefault();
-                    refreshDashboard();
-                }
-                
                 // Ctrl/Cmd + N for new action
                 if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
                     e.preventDefault();

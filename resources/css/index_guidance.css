@@ -120,13 +120,20 @@
 
     /* Logout button */
     .btn-logout {
-      background-color: #dc3545;
-      border-color: #dc3545;
-      color: white;
+      background: #2b7a3b;
+      color: #fff;
+      border: none;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      box-shadow: none;
+      outline: none;
+      border-radius: 4px;
+      letter-spacing: 0.5px;
     }
 
     .btn-logout:hover {
-      background-color: #c82333;
-      border-color: #bd2130;
-      color: white;
+      background: #1e5a2b;
+      color: #fff;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(43, 122, 59, 0.15);
     }

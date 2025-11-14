@@ -105,6 +105,7 @@ class GuidanceController extends Controller
     public function caseMeetingsIndex()
     {
         $caseMeetings = CaseMeeting::with(['student', 'counselor', 'sanctions', 'violation'])
+            ->where('case_meetings.status', '!=', 'case_closed')
             ->leftJoin('student_violations', 'case_meetings.violation_id', '=', 'student_violations.id')
             ->orderByRaw('CASE WHEN student_violations.reported_by IS NOT NULL THEN 0 ELSE 1 END')
             ->orderBy('case_meetings.created_at', 'desc')

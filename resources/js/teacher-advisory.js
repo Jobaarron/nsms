@@ -8,7 +8,7 @@
  * - Grade 10: Uses high school route (/teacher/report-card/pdf/{student}) 
  * - All other grades: Uses regular high school route (/teacher/report-card/pdf/{student})
  * 
- * Print All Report Cards: Specifically configured for Grade 10 Section A students only
+ * Print All Report Cards: Works for all sections the teacher is assigned to as class adviser
  */
 
 
@@ -316,11 +316,11 @@ window.printReportCard = function(studentId, gradeLevel) {
 }
 
 /**
- * Print all report cards for Grade 10 Section A
+ * Print all report cards for teacher's assigned sections
  * Improved: robust event handling and endpoint
  */
 window.printAllReportCards = function(event) {
-    if (!confirm('This will generate report cards for all Grade 10 Section A students. Continue?')) {
+    if (!confirm('This will generate report cards for all students in your assigned sections. Continue?')) {
         return;
     }
     // Support both direct and event-callback usage
@@ -342,15 +342,44 @@ window.printAllReportCards = function(event) {
             throw new Error('Failed to generate report cards');
         })
         .then(blob => {
-            const url = window.URL.createObjectURL(blob);
-            const printWindow = window.open(url, '_blank');
-            if (printWindow) {
-                printWindow.onload = function() {
-                    printWindow.print();
-                };
-            }
+            const pdfUrl = URL.createObjectURL(blob);
+            
+            // Calculate center position for the popup window
+            const windowWidth = 900;
+            const windowHeight = 700;
+            const screenWidth = window.screen.width;
+            const screenHeight = window.screen.height;
+            const left = (screenWidth - windowWidth) / 2;
+            const top = (screenHeight - windowHeight) / 2;
+            
+            // Create a new window with the PDF for printing, centered on screen
+            const printWindow = window.open('', '_blank', `width=${windowWidth},height=${windowHeight},left=${left},top=${top},scrollbars=yes,resizable=yes`);
+            printWindow.document.write(`
+                <html>
+                    <head>
+                        <title>All Report Cards</title>
+                        <style>
+                            body { margin: 0; padding: 0; }
+                            iframe { width: 100%; height: 100vh; border: none; }
+                        </style>
+                    </head>
+                    <body>
+                        <iframe src="${pdfUrl}" onload="setTimeout(() => window.print(), 500);"></iframe>
+                    </body>
+                </html>
+            `);
+            printWindow.document.close();
+            
+            // Clean up when window is closed
+            const checkClosed = setInterval(() => {
+                if (printWindow.closed) {
+                    URL.revokeObjectURL(pdfUrl);
+                    clearInterval(checkClosed);
+                }
+            }, 1000);
         })
         .catch(error => {
+            console.error('Error generating report cards:', error);
             alert('Error generating report cards. Please try again.');
         })
         .finally(() => {

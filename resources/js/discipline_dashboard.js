@@ -8,9 +8,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load initial data
     loadAllDashboardData();
     
-    // Setup auto-refresh functionality
-    setupAutoRefresh();
-    
     // Setup real-time clock
     updateClock();
     setInterval(updateClock, 60000); // Update every minute
@@ -97,42 +94,6 @@ function loadAllDashboardData() {
     // }
 }
 
-// Enhanced refresh dashboard function
-function refreshDashboard() {
-    console.log('Refreshing discipline dashboard...');
-    
-    // Show loading states
-    showLoadingStates();
-    
-    // Refresh all data
-    loadAllDashboardData();
-    
-    showAlert('Dashboard refreshed successfully', 'success');
-}
-
-// Auto-refresh functionality
-let autoRefreshInterval = null;
-
-function setupAutoRefresh() {
-    const autoRefreshToggle = document.getElementById('autoRefresh');
-    if (autoRefreshToggle) {
-        autoRefreshToggle.addEventListener('change', function() {
-            if (this.checked) {
-                autoRefreshInterval = setInterval(() => {
-                    loadAllDashboardData();
-                    console.log('Auto-refreshing dashboard data...');
-                }, 30000); // Refresh every 30 seconds
-                showAlert('Auto-refresh enabled', 'info', 3000);
-            } else {
-                if (autoRefreshInterval) {
-                    clearInterval(autoRefreshInterval);
-                    autoRefreshInterval = null;
-                }
-                showAlert('Auto-refresh disabled', 'info', 3000);
-            }
-        });
-    }
-}
 
 // Real-time clock update
 function updateClock() {
@@ -909,11 +870,9 @@ function applyAllFilters() {
     applyCriticalCasesFilter();
     applyViolationTrendsFilter();
     // applyDisciplineEffectivenessFilter(); // Removed - endpoint not available
-    showAlert('Filters applied successfully', 'success');
 }
 
 // Expose functions to global scope for onclick handlers
-window.refreshDashboard = refreshDashboard;
 window.openQuickActionModal = openQuickActionModal;
 window.recordNewViolation = recordNewViolation;
 window.studentLookup = studentLookup;

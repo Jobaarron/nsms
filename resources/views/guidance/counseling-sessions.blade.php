@@ -3,14 +3,14 @@
 
     <!-- Flatpickr CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    
+
     <!-- Header -->
-    <div class="row mb-4">
+    <div class="row mb-3">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <h1 class="h3 mb-0 text-guidance">Counseling Sessions</h1>
-                    <p class="text-muted">Manage individual and group counseling sessions</p>
+                    <p class="text-muted mb-0">Manage individual and group counseling sessions</p>
                 </div>
                 <div class="d-flex gap-2">
                     <button class="btn btn-outline-primary" onclick="refreshCounselingSessions()">
@@ -18,15 +18,11 @@
                     </button>
                 </div>
             </div>
-
-            <!-- Counseling Schedule Table moved below -->
         </div>
     </div>
 
-    <!-- Statistics Cards -->
-
     <!-- Filters -->
-    <div class="row mb-4">
+    <div class="row mb-3">
         <div class="col-12">
             <div class="card border-0 shadow-sm">
                 <div class="card-body">
