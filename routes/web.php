@@ -600,15 +600,15 @@ Route::post('/guidance/counseling-sessions/approve', [GuidanceController::class,
 
 
 // API Routes for Violations (ViolationController - for React Native/API access)
-Route::prefix('api/violations')->name('api.violations.')->group(function () {
-    Route::get('/', [App\Http\Controllers\ViolationController::class, 'index'])->name('index');
-    Route::post('/check-duplicate', [App\Http\Controllers\ViolationController::class, 'checkDuplicate'])->name('check-duplicate');
-    Route::post('/', [App\Http\Controllers\ViolationController::class, 'store'])->name('store');
-    Route::get('/{id}', [App\Http\Controllers\ViolationController::class, 'show'])->name('show');
-    Route::put('/{id}', [App\Http\Controllers\ViolationController::class, 'update'])->name('update');
-    Route::get('/statistics/all', [App\Http\Controllers\ViolationController::class, 'statistics'])->name('statistics');
-    Route::get('/student/{studentId}', [App\Http\Controllers\ViolationController::class, 'studentViolations'])->name('student');
-});
+// Route::prefix('api/violations')->name('api.violations.')->group(function () {
+//     Route::get('/', [App\Http\Controllers\ViolationController::class, 'index'])->name('index');
+//     Route::post('/check-duplicate', [App\Http\Controllers\ViolationController::class, 'checkDuplicate'])->name('check-duplicate');
+//     Route::post('/', [App\Http\Controllers\ViolationController::class, 'store'])->name('store');
+//     Route::get('/{id}', [App\Http\Controllers\ViolationController::class, 'show'])->name('show');
+//     Route::put('/{id}', [App\Http\Controllers\ViolationController::class, 'update'])->name('update');
+//     Route::get('/statistics/all', [App\Http\Controllers\ViolationController::class, 'statistics'])->name('statistics');
+//     Route::get('/student/{studentId}', [App\Http\Controllers\ViolationController::class, 'studentViolations'])->name('student');
+// });
 
 
 // First version of routes, keep it here and do not delete. This is for early version and sentimental value purposes xD //
