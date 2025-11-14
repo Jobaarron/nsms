@@ -8,9 +8,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load initial data
     loadAllDashboardData();
     
-    // Setup auto-refresh functionality
-    setupAutoRefresh();
-    
     // Setup real-time clock
     updateClock();
     setInterval(updateClock, 60000); // Update every minute
@@ -144,41 +141,6 @@ function loadAllDashboardData() {
     }
 }
 
-// Enhanced refresh dashboard function
-function refreshDashboard() {
-    console.log('Refreshing dashboard...');
-    
-    // Show loading states
-    showLoadingStates();
-    
-    // Refresh all data
-    loadAllDashboardData();
-    
-    showAlert('Dashboard refreshed successfully', 'success');
-}
-
-// Auto-refresh functionality
-let autoRefreshInterval = null;
-
-function setupAutoRefresh() {
-    const autoRefreshToggle = document.getElementById('autoRefresh');
-    if (autoRefreshToggle) {
-        autoRefreshToggle.addEventListener('change', function() {
-            if (this.checked) {
-                // Start auto-refresh every 5 minutes
-                autoRefreshInterval = setInterval(loadAllDashboardData, 300000);
-                showAlert('Auto-refresh enabled (5 minutes)', 'info');
-            } else {
-                // Stop auto-refresh
-                if (autoRefreshInterval) {
-                    clearInterval(autoRefreshInterval);
-                    autoRefreshInterval = null;
-                }
-                showAlert('Auto-refresh disabled', 'info');
-            }
-        });
-    }
-}
 
 // Real-time clock update
 function updateClock() {
@@ -985,7 +947,6 @@ function renderCounselingEffectivenessChart(data) {
 // Individual refresh functions removed - charts update automatically with filters
 
 // Expose functions to global scope for onclick handlers
-window.refreshDashboard = refreshDashboard;
 window.openQuickActionModal = openQuickActionModal;
 window.scheduleNewCaseMeeting = scheduleNewCaseMeeting;
 window.scheduleNewCounseling = scheduleNewCounseling;
@@ -1035,7 +996,6 @@ function applyActivitiesFilter() {
     
     loadFilteredRecentActivities(params);
     hideLoadingToast();
-    showAlert('Activities filtered', 'success', 2000);
 }
 
 // Upcoming Tasks Filter
@@ -1059,9 +1019,7 @@ function applyTasksFilter() {
         hideLoadingToast();
     }
     
-    if (typeof showAlert === 'function') {
-        showAlert('Tasks filtered', 'success', 2000);
-    }
+
 }
 
 // Top Cases Filter
@@ -1082,7 +1040,6 @@ function applyTopCasesFilter() {
     .then(data => {
         renderTopCases(data.cases || []);
         hideLoadingToast();
-        showAlert('Top cases updated', 'success', 2000);
     })
     .catch(error => {
         console.error('Error loading top cases:', error);
@@ -1119,7 +1076,6 @@ function applyViolationTrendsFilter() {
             renderViolationTrendsChart(data.labels, data.data, chartType);
         }
         hideLoadingToast();
-        showAlert('Violation trends updated', 'success', 2000);
     })
     .catch(error => {
         console.error('Error loading violation trends:', error);
@@ -1158,7 +1114,6 @@ function applyCounselingEffectivenessFilter() {
             }
         }
         hideLoadingToast();
-        showAlert('Counseling data updated', 'success', 2000);
     })
     .catch(error => {
         console.error('Error loading counseling effectiveness:', error);
@@ -1189,7 +1144,6 @@ function applyCaseStatusFilter() {
             );
         }
         hideLoadingToast();
-        showAlert('Case status updated', 'success', 2000);
     })
     .catch(error => {
         console.error('Error loading case status:', error);
@@ -1222,7 +1176,6 @@ function applyClosedCasesFilter() {
             renderClosedCasesBarChart(data.labels, data.data);
         }
         hideLoadingToast();
-        showAlert('Closed cases updated', 'success', 2000);
     })
     .catch(error => {
         console.error('Error loading closed cases:', error);
@@ -1255,7 +1208,6 @@ function applyCounselingSessionsFilter() {
             renderCounselingSessionsBarChart(data.labels, data.data);
         }
         hideLoadingToast();
-        showAlert('Counseling sessions updated', 'success', 2000);
     })
     .catch(error => {
         console.error('Error loading counseling sessions:', error);
@@ -1288,7 +1240,6 @@ function applyDisciplineStatsFilter() {
             renderDisciplineVsTotalHistogram(data.labels, data.data);
         }
         hideLoadingToast();
-        showAlert('Discipline stats updated', 'success', 2000);
     })
     .catch(error => {
         console.error('Error loading discipline stats:', error);

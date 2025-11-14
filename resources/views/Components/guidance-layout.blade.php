@@ -139,8 +139,7 @@
       </div>
       
       <!-- MAIN CONTENT -->
-      <main class="col-12 col-md-10 px-3 px-md-4 py-4" style="margin-top: 70px;">
-        <div class="d-md-none mb-3"></div>
+      <main class="col-12 col-md-10 px-3 px-md-4 py-3">
         {{ $slot }}
       </main>
     </div>

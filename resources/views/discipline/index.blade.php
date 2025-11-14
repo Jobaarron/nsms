@@ -17,23 +17,10 @@
                         {{ now()->format('l, F j, Y g:i A') }}
                     </small>
                 </div>
-                <div class="d-flex flex-column flex-sm-row gap-2 align-items-start align-items-sm-center">
-                    <!-- Auto-refresh toggle -->
-                    <div class="form-check form-switch me-3 d-none d-sm-block">
-                        <input class="form-check-input" type="checkbox" id="autoRefresh">
-                        <label class="form-check-label text-muted small" for="autoRefresh">
-                            Auto-refresh
-                        </label>
-                    </div>
-                    
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-outline-success btn-sm" onclick="refreshDashboard()">
-                            <i class="ri-refresh-line me-1 me-sm-2"></i><span class="d-none d-sm-inline">Refresh</span>
-                        </button>
-                        <button class="btn btn-success btn-sm" onclick="openQuickActionModal()">
-                            <i class="ri-add-circle-line me-1 me-sm-2"></i><span class="d-none d-sm-inline">Quick Actions</span>
-                        </button>
-                    </div>
+                <div>
+                    <button class="btn btn-success btn-sm" onclick="openQuickActionModal()">
+                        <i class="ri-add-circle-line me-1 me-sm-2"></i><span class="d-none d-sm-inline">Quick Actions</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -751,37 +738,8 @@
             // Setup keyboard shortcuts
             setupKeyboardShortcuts();
 
-            // Setup auto-refresh if enabled
-            setupAutoRefresh();
         });
         
-
-
-        // Setup auto-refresh functionality
-        function setupAutoRefresh() {
-            const autoRefreshToggle = document.getElementById('autoRefresh');
-            let refreshInterval = null;
-
-            if (autoRefreshToggle) {
-                autoRefreshToggle.addEventListener('change', function() {
-                    if (this.checked) {
-                        // Start auto-refresh every 30 seconds
-                        refreshInterval = setInterval(() => {
-                            refreshDashboard();
-                        }, 30000);
-                        showNotification('Auto-refresh enabled (30s intervals)', 'info');
-                    } else {
-                        // Stop auto-refresh
-                        if (refreshInterval) {
-                            clearInterval(refreshInterval);
-                            refreshInterval = null;
-                        }
-                        showNotification('Auto-refresh disabled', 'info');
-                    }
-                });
-            }
-        }
-
         // Show notification function
         function showNotification(message, type = 'info') {
             const toastContainer = document.getElementById('toast-container');
@@ -818,12 +776,6 @@
         // Setup keyboard shortcuts for quick navigation
         function setupKeyboardShortcuts() {
             document.addEventListener('keydown', function(e) {
-                // Ctrl/Cmd + R for refresh
-                if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
-                    e.preventDefault();
-                    refreshDashboard();
-                }
-                
                 // Ctrl/Cmd + N for new action
                 if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
                     e.preventDefault();

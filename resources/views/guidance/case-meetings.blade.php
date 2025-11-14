@@ -175,9 +175,7 @@
                             <select class="form-select" id="status-filter" onchange="filterCaseMeetings()">
                                 <option value="">All Status</option>
                                 <option value="scheduled">Scheduled</option>
-                                <option value="pre_completed">Pre-Completed</option>
                                 <option value="submitted">Submitted</option>
-                                <option value="completed">Completed</option>
                                 <option value="cancelled">Cancelled</option>
                             </select>
                         </div>
@@ -290,27 +288,19 @@
 
     @else
     <!-- Header -->
-    <div class="row mb-4">
+    <div class="row mb-3">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <h1 class="h3 mb-0 text-guidance">Case Meetings</h1>
-                    <p class="text-muted">Manage case meetings and house visits</p>
-                </div>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-outline-primary" onclick="refreshCaseMeetings()">
-                        <i class="ri-refresh-line me-2"></i>Refresh
-                    </button>
-                    <!-- <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#scheduleCaseMeetingModal">
-                        <i class="ri-calendar-event-line me-2"></i>Schedule Meeting
-                    </button> -->
+                    <p class="text-muted mb-0">Manage case meetings and house visits</p>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Filters -->
-    <div class="row mb-4">
+    <div class="row mb-3">
         <div class="col-12">
             <div class="card border-0 shadow-sm">
                 <div class="card-body">
@@ -320,9 +310,7 @@
                             <select class="form-select" id="status-filter" onchange="filterCaseMeetings()">
                                 <option value="">All Status</option>
                                 <option value="scheduled">Scheduled</option>
-                                <option value="pre_completed">Pre-Completed</option>
                                 <option value="submitted">Submitted</option>
-                                <option value="completed">Completed</option>
                                 <option value="cancelled">Cancelled</option>
                             </select>
                         </div>
@@ -334,7 +322,7 @@
                                 <input type="date" class="form-control" id="date-filter-end" placeholder="To">
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label class="form-label">Search</label>
                             <div class="input-group">
                                 <input type="text" class="form-control" id="search-filter" placeholder="Search student name..." onkeyup="filterCaseMeetings()">
@@ -343,8 +331,8 @@
                                 </button>
                             </div>
                         </div>
-                        <div class="col-md-3 d-flex align-items-end">
-                            <button class="btn btn-success w-auto" type="button" onclick="window.open('/guidance/conference-summary-report/pdf', '_blank')">
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button class="btn btn-success w-100" type="button" onclick="window.open('/guidance/conference-summary-report/pdf', '_blank')">
                                 <i class="ri-file-list-3-line me-1"></i> Conference Summary Report
                             </button>
                         </div>
