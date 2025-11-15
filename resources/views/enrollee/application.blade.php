@@ -344,8 +344,8 @@
                                             <small class="text-muted">{{ Str::limit($documentData['filename'] ?? 'Document ' . ($index + 1), 20) }}</small>
                                         </div>
                                     </div>
-                                    <span class="badge bg-{{ ($documentData['status'] ?? 'pending') === 'approved' ? 'success' : (($documentData['status'] ?? 'pending') === 'rejected' ? 'danger' : 'warning') }} badge-sm">
-                                        {{ ucfirst($documentData['status'] ?? 'pending') }}
+                                    <span class="badge bg-{{ ($documentData['status'] ?? 'pending') === 'approved' ? 'success' : (($documentData['status'] ?? 'pending') === 'rejected' ? 'warning' : 'warning') }} badge-sm">
+                                        {{ ($documentData['status'] ?? 'pending') === 'rejected' ? 'Revised' : ucfirst($documentData['status'] ?? 'pending') }}
                                     </span>
                                 </div>
                                 @endforeach
@@ -406,8 +406,8 @@
 
                         @if($enrollee->rejected_at)
                         <p class="text-muted mb-2">
-                            <i class="ri-close-line text-danger me-1"></i>
-                            Rejected on {{ $enrollee->rejected_at->format('M d, Y') }}
+                            <i class="ri-edit-line text-warning me-1"></i>
+                            Revised on {{ $enrollee->rejected_at->format('M d, Y') }}
                         </p>
                         @endif
 

@@ -1,4 +1,4 @@
-<!-- Application Details Modal -->
+
 <div class="modal fade" id="applicationDetailsModal" tabindex="-1" aria-labelledby="applicationDetailsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
@@ -11,7 +11,7 @@
             <div class="modal-body">
                 <div class="row">
                     <div class="col-md-8">
-                        <!-- Application Details -->
+                        
                         <div class="card mb-3">
                             <div class="card-header" style="background-color: var(--light-green); color: var(--dark-green);">
                                 <h6 class="mb-0"><i class="ri-file-text-line me-2"></i>Application Details</h6>
@@ -433,6 +433,7 @@
                                     <option value="pending">Pending</option>
                                     <option value="approved">Approved</option>
                                     <option value="declined">Declined</option>
+                                    <option value="revised">Revised</option>
                                 </select>
                             </div>
                             <div class="col-md-4">
@@ -563,6 +564,7 @@
                                         <option value="pending">Pending Review</option>
                                         <option value="approved">Approved</option>
                                         <option value="rejected">Rejected</option>
+                                        <option value="revised">Needs Revision</option>
                                     </select>
                                 </div>
                                 <div class="mb-3">

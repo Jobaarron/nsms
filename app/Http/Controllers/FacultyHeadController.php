@@ -167,10 +167,58 @@ class FacultyHeadController extends Controller
         $advisers = FacultyAssignment::where('academic_year', $currentAcademicYear)
                                    ->where('assignment_type', 'class_adviser')
                                    ->where('status', 'active')
-                                   ->with(['teacher.user', 'subject'])
+                                   ->with(['teacher.user'])
                                    ->get();
 
         return view('faculty-head.assign-faculty', compact('teachers', 'subjects', 'sections', 'assignments', 'advisers', 'currentAcademicYear'));
+    }
+
+    /**
+     * Get fresh faculty data for AJAX updates
+     */
+    public function getFacultyData()
+    {
+        $currentAcademicYear = date('Y') . '-' . (date('Y') + 1);
+        
+        // Get all teachers
+        $teachers = User::role('teacher')->with('teacher')->get();
+        
+        // Get all subjects
+        $subjects = Subject::where('academic_year', $currentAcademicYear)
+                          ->where('is_active', true)
+                          ->orderBy('grade_level')
+                          ->orderBy('subject_name')
+                          ->get();
+        
+        // Get all sections
+        $sections = Section::where('academic_year', $currentAcademicYear)
+                          ->where('is_active', true)
+                          ->orderBy('grade_level')
+                          ->orderBy('section_name')
+                          ->get();
+        
+        // Get current subject teacher assignments
+        $assignments = FacultyAssignment::where('academic_year', $currentAcademicYear)
+                                       ->where('assignment_type', 'subject_teacher')
+                                       ->where('status', 'active')
+                                       ->with(['teacher.user', 'subject'])
+                                       ->get();
+        
+        // Get current class advisers
+        $advisers = FacultyAssignment::where('academic_year', $currentAcademicYear)
+                                   ->where('assignment_type', 'class_adviser')
+                                   ->where('status', 'active')
+                                   ->with(['teacher.user'])
+                                   ->get();
+
+        return response()->json([
+            'success' => true,
+            'teachers' => $teachers,
+            'subjects' => $subjects,
+            'sections' => $sections,
+            'assignments' => $assignments,
+            'advisers' => $advisers
+        ]);
     }
 
     /**
@@ -561,13 +609,25 @@ class FacultyHeadController extends Controller
             'strand' => 'nullable|string|in:STEM,ABM,HUMSS,TVL',
             'track' => 'nullable|string|in:ICT,H.E.',
             'effective_date' => 'required|date',
-            'notes' => 'nullable|string|max:500'
+            'notes' => 'nullable|string|max:500',
+            'replace_assignment_id' => 'nullable|exists:faculty_assignments,id'
         ]);
 
         $currentAcademicYear = date('Y') . '-' . (date('Y') + 1);
 
+        // If this is a replacement, deactivate the old assignment
+        if ($request->replace_assignment_id) {
+            $oldAssignment = FacultyAssignment::find($request->replace_assignment_id);
+            if ($oldAssignment) {
+                $oldAssignment->update([
+                    'status' => 'inactive',
+                    'end_date' => now()
+                ]);
+            }
+        }
+
         // Create class adviser assignment
-        FacultyAssignment::create([
+        $assignment = FacultyAssignment::create([
             'teacher_id' => $request->teacher_id,
             'subject_id' => null, // Class adviser doesn't need specific subject
             'assigned_by' => $currentUser->id,
@@ -582,6 +642,18 @@ class FacultyHeadController extends Controller
             'effective_date' => $request->effective_date,
             'notes' => $request->notes
         ]);
+
+        // Load relationships for response
+        $assignment->load(['teacher.user']);
+
+        // Return JSON response for AJAX requests
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Class adviser assigned successfully.',
+                'assignment' => $assignment
+            ]);
+        }
 
         return redirect()->route('faculty-head.assign-faculty')->with('success', 'Class adviser assigned successfully.');
     }
@@ -601,7 +673,8 @@ class FacultyHeadController extends Controller
             'strand' => 'nullable|string|in:STEM,ABM,HUMSS,TVL',
             'track' => 'nullable|string|in:ICT,H.E.',
             'effective_date' => 'required|date',
-            'notes' => 'nullable|string|max:500'
+            'notes' => 'nullable|string|max:500',
+            'replace_assignment_id' => 'nullable|exists:faculty_assignments,id'
         ]);
 
         // Validate strand and track requirements for Senior High School
@@ -616,6 +689,17 @@ class FacultyHeadController extends Controller
         }
 
         $currentAcademicYear = date('Y') . '-' . (date('Y') + 1);
+
+        // If this is a replacement, deactivate the old assignment
+        if ($request->replace_assignment_id) {
+            $oldAssignment = FacultyAssignment::find($request->replace_assignment_id);
+            if ($oldAssignment) {
+                $oldAssignment->update([
+                    'status' => 'inactive',
+                    'end_date' => now()
+                ]);
+            }
+        }
 
         // Use Eloquent model validation - the model will handle conflict detection
         try {
@@ -641,10 +725,26 @@ class FacultyHeadController extends Controller
             
             $successMessage = "Successfully assigned {$assignment->teacher->user->name} to teach {$assignment->subject->subject_name} for {$assignment->grade_level} - {$assignment->section}.";
             
+            // Return JSON response for AJAX requests
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $successMessage,
+                    'assignment' => $assignment
+                ]);
+            }
+            
             return redirect()->route('faculty-head.assign-faculty')->with('success', $successMessage);
             
         } catch (\Exception $e) {
             // Handle model validation errors (including schedule conflicts)
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage()
+                ], 422);
+            }
+            
             return redirect()->back()->with('error', $e->getMessage())->withInput();
         }
     }

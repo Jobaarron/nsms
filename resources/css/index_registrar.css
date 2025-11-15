@@ -481,9 +481,9 @@
   
   /* Override Bootstrap bg-warning on section badges */
   .section-badge.bg-warning {
-    background-color: var(--registrar-accent) !important;
-    color: var(--white) !important;
-    border-color: var(--registrar-accent) !important;
+    background-color: #ffc107 !important;
+    color: #000 !important;
+    border-color: #ffc107 !important;
   }
   
   /* Strand and track cards */
@@ -570,8 +570,8 @@
   }
   
   .badge.bg-warning {
-    background-color: var(--registrar-accent) !important;
-    color: var(--white) !important;
+    background-color: #ffc107 !important;
+    color: #000 !important;
   }
   
   /* Additional overrides for specific elements */
@@ -584,7 +584,7 @@
   }
   
   .bg-warning {
-    background-color: var(--registrar-accent) !important;
+    background-color: #ffc107 !important;
   }
   
   .bg-info {
@@ -685,4 +685,47 @@
   
   .text-info {
     color: var(--secondary-color, #4CAF50) !important;
+  }
+
+  /* Fix card header visibility for applications */
+  .card-header[style*="background-color: var(--primary-color)"] {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+  }
+
+  /* Ensure card headers with primary color have good contrast */
+  .card-header {
+    background-color: var(--light-green, #E8F5E9) !important;
+    color: var(--dark-green, #0D4F14) !important;
+    border-bottom: 1px solid var(--border-gray, #E0E0E0) !important;
+  }
+
+  /* Override for specific primary color headers */
+  .card-header.bg-primary,
+  .card-header[style*="primary-color"] {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+  }
+
+  /* Force correct status badge colors - highest specificity */
+  .badge.bg-warning,
+  span.badge.bg-warning,
+  .table .badge.bg-warning {
+    background-color: #ffc107 !important;
+    color: #000 !important;
+    border-color: #ffc107 !important;
+  }
+
+  .badge.bg-success,
+  span.badge.bg-success,
+  .table .badge.bg-success {
+    background-color: #28a745 !important;
+    color: #fff !important;
+  }
+
+  .badge.bg-danger,
+  span.badge.bg-danger,
+  .table .badge.bg-danger {
+    background-color: #dc3545 !important;
+    color: #fff !important;
   }

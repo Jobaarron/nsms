@@ -65,7 +65,9 @@
 
         @php
           $currentStudent = Auth::guard('student')->user();
-          $hasNoEnrollment = !$currentStudent || !in_array($currentStudent->enrollment_status, ['enrolled', 'pre_registered']);
+          // Only allow access if student is fully 'enrolled', not just 'pre_registered'
+          $hasNoEnrollment = !$currentStudent || $currentStudent->enrollment_status !== 'enrolled';
+          
           
           // Check if student has at least one confirmed payment (1st quarter)
           $hasConfirmedPayment = $currentStudent ? \App\Models\Payment::where('payable_type', 'App\\Models\\Student')
@@ -79,11 +81,18 @@
         @endphp
 
         <ul class="nav flex-column">
-          <!-- Always accessible -->
+          <!-- Dashboard (disabled until enrolled) -->
           <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('student.dashboard') ? 'active' : '' }}" href="{{ route('student.dashboard') }}">
-              <i class="ri-dashboard-line me-2"></i>Dashboard
-            </a>
+            @if($hasNoEnrollment)
+              <span class="nav-link disabled text-muted" title="Complete enrollment first to access dashboard">
+                <i class="ri-dashboard-line me-2"></i>Dashboard
+                <i class="ri-lock-line ms-auto"></i>
+              </span>
+            @else
+              <a class="nav-link {{ request()->routeIs('student.dashboard') ? 'active' : '' }}" href="{{ route('student.dashboard') }}">
+                <i class="ri-dashboard-line me-2"></i>Dashboard
+              </a>
+            @endif
           </li>
           
           <!-- Step 1: Enrollment (always accessible) -->
@@ -93,10 +102,10 @@
             </a>
           </li>
           
-          <!-- Step 2: Payments (disabled until payment settled - same as other features) -->
+          <!-- Step 2: Payments (disabled until fully enrolled) -->
           <li class="nav-item mb-2">
-            @if($hasNoPayment)
-              <span class="nav-link disabled text-muted" title="Complete enrollment and settle payment to access this feature">
+            @if($hasNoEnrollment)
+              <span class="nav-link disabled text-muted" title="Complete enrollment first to access payments">
                 <i class="ri-money-dollar-circle-line me-2"></i>Payments
                 <i class="ri-lock-line ms-auto"></i>
               </span>
@@ -185,7 +194,9 @@
         <div class="offcanvas-body p-0">
           @php
             $currentStudent = Auth::guard('student')->user();
-            $hasNoEnrollment = !$currentStudent || !in_array($currentStudent->enrollment_status, ['enrolled', 'pre_registered']);
+            // Only allow access if student is fully 'enrolled', not just 'pre_registered'
+            $hasNoEnrollment = !$currentStudent || $currentStudent->enrollment_status !== 'enrolled';
+            
             
             // Check if student has at least one confirmed payment (1st quarter)
             $hasConfirmedPayment = $currentStudent ? \App\Models\Payment::where('payable_type', 'App\\Models\\Student')
@@ -199,11 +210,18 @@
           @endphp
 
           <ul class="nav flex-column">
-            <!-- Always accessible -->
+            <!-- Dashboard (disabled until enrolled) -->
             <li class="nav-item mb-2">
-              <a class="nav-link {{ request()->routeIs('student.dashboard') ? 'active' : '' }}" href="{{ route('student.dashboard') }}">
-                <i class="ri-dashboard-line me-2"></i>Dashboard
-              </a>
+              @if($hasNoEnrollment)
+                <span class="nav-link disabled text-muted" title="Complete enrollment first to access dashboard">
+                  <i class="ri-dashboard-line me-2"></i>Dashboard
+                  <i class="ri-lock-line ms-auto"></i>
+                </span>
+              @else
+                <a class="nav-link {{ request()->routeIs('student.dashboard') ? 'active' : '' }}" href="{{ route('student.dashboard') }}">
+                  <i class="ri-dashboard-line me-2"></i>Dashboard
+                </a>
+              @endif
             </li>
             
             <!-- Step 1: Enrollment (always accessible) -->
@@ -213,19 +231,19 @@
               </a>
             </li>
             
-            <!-- Step 2: Payments (disabled until payment settled - same as other features) -->
-            <li class="nav-item mb-2">
-              @if($hasNoPayment)
-                <span class="nav-link disabled text-muted" title="Complete enrollment and settle payment to access this feature">
-                  <i class="ri-money-dollar-circle-line me-2"></i>Payments
-                  <i class="ri-lock-line ms-auto"></i>
-                </span>
-              @else
-                <a class="nav-link {{ request()->routeIs('student.payments') ? 'active' : '' }}" href="{{ route('student.payments') }}">
-                  <i class="ri-money-dollar-circle-line me-2"></i>Payments
-                </a>
-              @endif
-            </li>
+            <!-- Step 2: Payments (disabled until fully enrolled) -->
+          <li class="nav-item mb-2">
+            @if($hasNoEnrollment)
+              <span class="nav-link disabled text-muted" title="Complete enrollment first to access payments">
+                <i class="ri-money-dollar-circle-line me-2"></i>Payments
+                <i class="ri-lock-line ms-auto"></i>
+              </span>
+            @else
+              <a class="nav-link {{ request()->routeIs('student.payments') ? 'active' : '' }}" href="{{ route('student.payments') }}">
+                <i class="ri-money-dollar-circle-line me-2"></i>Payments
+              </a>
+            @endif
+          </li>
             
             <!-- Step 3: Other features (disabled only if payment not settled) -->
             <li class="nav-item mb-2">
