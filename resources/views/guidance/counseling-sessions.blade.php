@@ -124,11 +124,13 @@
                                                     <button class="btn btn-outline-info" onclick="showPdfModal({{ $session->id }})" title="View PDF">
                                                         <i class="ri-eye-line"></i>
                                                     </button>
-                                                    <button class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#approveSessionModal" onclick="setApproveSessionId({{ $session->id }})" title="Approve">
+                                                    <button class="btn btn-outline-success" 
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#approveSessionModal" 
+                                                            onclick="setApproveSessionId({{ $session->id }})" 
+                                                            title="Approve"
+                                                            @if(in_array($session->status, ['scheduled', 'completed', 'cancelled'])) disabled @endif>
                                                         <i class="ri-check-line"></i>
-                                                    </button>
-                                                    <button class="btn btn-outline-danger" onclick="rejectCounselingSession({{ $session->id }})" title="Reject">
-                                                        <i class="ri-close-line"></i>
                                                     </button>
                                                 </div>
                                             </td>
@@ -341,35 +343,12 @@
                 <div class="modal-footer">
                     <button type="button" class="btn" style="background-color:#198754;color:#fff;" data-bs-dismiss="modal">Close</button>
                     <button type="button" class="btn" style="background-color:#198754;color:#fff;" onclick="acceptPdfSession()">Accept</button>
-                    <button type="button" class="btn" style="background-color:#198754;color:#fff;" onclick="showFeedbackModal()">Reject</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Feedback Modal -->
-    <div class="modal fade" id="feedbackModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Feedback</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <form id="feedbackForm">
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label class="form-label">Please provide feedback for rejection:</label>
-                            <textarea class="form-control" name="feedback" rows="3" required></textarea>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn" style="background-color:#198754;color:#fff;" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn" style="background-color:#198754;color:#fff;">Submit Feedback</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+
 
     <!-- Counseling Summary Modal -->
     <!-- Session Detail Modal (for showSessionDetailModal) -->
@@ -451,35 +430,7 @@
             var feedbackModal = bootstrap.Modal.getOrCreateInstance(feedbackModalElem);
             feedbackModal.show();
         }
-        // Add reject counseling session function if not in main JS file
-        function rejectCounselingSession(sessionId) {
-            if (confirm('Are you sure you want to reject this counseling session?')) {
-                fetch(`/guidance/counseling-sessions/${sessionId}/reject`, {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        showAlert('Counseling session rejected successfully', 'success');
-                        setTimeout(() => {
-                            window.location.reload();
-                        }, 1500);
-                    } else {
-                        showAlert(data.message || 'Failed to reject session', 'danger');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error rejecting session:', error);
-                    showAlert('Error rejecting session', 'danger');
-                });
-            }
-        }
+
 
         let counselingSummarySessionId = null;
         function setCounselingSummarySessionId(sessionId) {

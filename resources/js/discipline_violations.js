@@ -1809,12 +1809,10 @@ window.deleteViolation = function(violationId) {
           const mainContent = document.querySelector('main');
           mainContent.insertBefore(alertDiv, mainContent.firstChild);
 
-          // Auto-dismiss after 3 seconds
+          // Refresh page after 1.5 seconds
           setTimeout(() => {
-            if (alertDiv.parentNode) {
-              alertDiv.remove();
-            }
-          }, 3000);
+            window.location.reload();
+          }, 1500);
         } else {
           throw new Error(data.message || 'Delete failed');
         }
@@ -1958,12 +1956,10 @@ window.forwardViolation = function(violationId) {
           const mainContent = document.querySelector('main');
           mainContent.insertBefore(alertDiv, mainContent.firstChild);
 
-          // Auto-dismiss after 3 seconds
+          // Refresh page after 1.5 seconds
           setTimeout(() => {
-            if (alertDiv.parentNode) {
-              alertDiv.remove();
-            }
-          }, 3000);
+            window.location.reload();
+          }, 1500);
         } else {
           throw new Error(data.message || 'Forward failed');
         }

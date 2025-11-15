@@ -142,23 +142,34 @@ class DisciplineOfficerController extends Controller
             'location' => 'nullable|string',
             'evidence' => 'nullable|string',
             'notes' => 'nullable|string',
-            'allowDuplicate' => 'nullable|boolean'
+            'allowDuplicate' => 'nullable|boolean',
+            'force_duplicate' => 'nullable|boolean'
         ]);
 
         // Use violation_type if present, otherwise use title
         $violationType = $request->input('violation_type', $request->input('title'));
 
-        // Prevent duplicate violation for same student, title, and date
-        $existing = Violation::where('student_id', $validatedData['student_id'])
-            ->where('title', $violationType)
-            ->whereDate('violation_date', $validatedData['violation_date'])
-            ->first();
-        if ($existing) {
-            return response()->json([
-                'error' => true,
-                'message' => 'Duplicate violation for this student and type on this date.',
-                'is_duplicate' => true
-            ], 409);
+        // Prevent duplicate violation for same student, title, and date unless force_duplicate or allowDuplicate is true
+        $allowDuplicate = $request->input('allowDuplicate', false) || $request->input('force_duplicate', false);
+        
+        if (!$allowDuplicate) {
+            $existing = Violation::where('student_id', $validatedData['student_id'])
+                ->where('title', $violationType)
+                ->whereDate('violation_date', $validatedData['violation_date'])
+                ->first();
+            if ($existing) {
+                return response()->json([
+                    'error' => true,
+                    'message' => 'Duplicate violation for this student and type on this date.',
+                    'is_duplicate' => true,
+                    'existing_violation' => [
+                        'id' => $existing->id,
+                        'title' => $existing->title,
+                        'violation_date' => $existing->violation_date,
+                        'violation_time' => $existing->violation_time
+                    ]
+                ], 409);
+            }
         }
 
         // Format date and time
@@ -331,13 +342,13 @@ class DisciplineOfficerController extends Controller
 
         $request->validate([
             'student_id' => 'required|exists:students,id',
-            'violation_type' => 'required|string',
+            'violation_title' => 'required|string',
             'date' => 'required|date',
             'time' => 'nullable'
         ]);
 
         $query = Violation::where('student_id', $request->student_id)
-            ->where('violation_type', $request->violation_type)
+            ->where('title', $request->violation_title)
             ->whereDate('violation_date', $request->date);
 
         if ($request->time) {

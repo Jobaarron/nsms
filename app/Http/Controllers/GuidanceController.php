@@ -14,9 +14,18 @@ use App\Models\CounselingSession;
 use App\Models\Violation;
 use App\Models\FacultyAssignment;
 use App\Models\Sanction;
+use Carbon\Carbon;
 
 class GuidanceController extends Controller
 {
+    /**
+     * Get school time (Philippine Time)
+     */
+    private function schoolNow()
+    {
+        return Carbon::now('Asia/Manila');
+    }
+
     public function __construct()
     {
         // Role and permission management is handled by RolePermissionSeeder
@@ -133,6 +142,16 @@ class GuidanceController extends Controller
             'reason' => 'required|string',
             'notes' => 'nullable|string',
         ]);
+
+        // Convert time from 12-hour format (h:i A) to 24-hour format (H:i:s) for MySQL
+        if (isset($validatedData['scheduled_time'])) {
+            try {
+                $validatedData['scheduled_time'] = \Carbon\Carbon::createFromFormat('h:i A', $validatedData['scheduled_time'])->format('H:i:s');
+            } catch (\Exception $e) {
+                // Fallback if already in 24-hour format or different format
+                $validatedData['scheduled_time'] = date('H:i:s', strtotime($validatedData['scheduled_time']));
+            }
+        }
 
         // Get current user
         $user = Auth::user();
@@ -321,7 +340,7 @@ class GuidanceController extends Controller
 
         $caseMeeting->update([
             'status' => 'completed',
-            'completed_at' => now(),
+            'completed_at' => $this->schoolNow(),
         ]);
 
         // Automatically update all related violations' statuses
@@ -558,6 +577,16 @@ class GuidanceController extends Controller
             'notes' => 'nullable|string',
         ]);
 
+        // Convert time from 12-hour format (h:i A) to 24-hour format (H:i:s) for MySQL
+        if (isset($validatedData['scheduled_time'])) {
+            try {
+                $validatedData['scheduled_time'] = \Carbon\Carbon::createFromFormat('h:i A', $validatedData['scheduled_time'])->format('H:i:s');
+            } catch (\Exception $e) {
+                // Fallback if already in 24-hour format or different format
+                $validatedData['scheduled_time'] = date('H:i:s', strtotime($validatedData['scheduled_time']));
+            }
+        }
+
         $caseMeeting->update($validatedData);
 
         if ($request->ajax()) {
@@ -600,7 +629,7 @@ class GuidanceController extends Controller
 
         $caseMeetings = $query->orderBy('scheduled_date', 'desc')->get();
 
-        $filename = 'case_meetings_' . now()->format('Y-m-d_H-i-s') . '.csv';
+        $filename = 'case_meetings_' . $this->schoolNow()->format('Y-m-d_H-i-s') . '.csv';
 
         $headers = [
             'Content-Type' => 'text/csv',
@@ -709,7 +738,7 @@ class GuidanceController extends Controller
         $caseMeeting->update([
             'status' => 'submitted',
             'forwarded_to_president' => true,
-            'forwarded_at' => now(),
+            'forwarded_at' => $this->schoolNow(),
         ]);
 
         // Automatically update all related violations' statuses
@@ -788,6 +817,16 @@ class GuidanceController extends Controller
             'incident_description' => 'nullable|string',
         ]);
 
+        // Convert time from 12-hour format (h:i A) to 24-hour format (H:i:s) for MySQL
+        if (isset($validatedData['scheduled_time'])) {
+            try {
+                $validatedData['scheduled_time'] = \Carbon\Carbon::createFromFormat('h:i A', $validatedData['scheduled_time'])->format('H:i:s');
+            } catch (\Exception $e) {
+                // Fallback if already in 24-hour format or different format
+                $validatedData['scheduled_time'] = date('H:i:s', strtotime($validatedData['scheduled_time']));
+            }
+        }
+
         // Get current user's guidance record
         $user = Auth::user();
         $guidanceRecord = $user->guidance ?? $user->guidanceDiscipline ?? null;
@@ -841,10 +880,20 @@ class GuidanceController extends Controller
         $validatedData = $request->validate([
             'counselor_id' => 'required|exists:guidances,id',
             'scheduled_date' => 'required|date|after_or_equal:today',
-            'scheduled_time' => 'required|date_format:H:i',
+            'scheduled_time' => 'required',
             'duration' => 'required|integer|min:15|max:240',
             'location' => 'nullable|string|max:255',
         ]);
+
+        // Convert time from 12-hour format (h:i A) to 24-hour format (H:i:s) for MySQL
+        if (isset($validatedData['scheduled_time'])) {
+            try {
+                $validatedData['scheduled_time'] = \Carbon\Carbon::createFromFormat('h:i A', $validatedData['scheduled_time'])->format('H:i:s');
+            } catch (\Exception $e) {
+                // Fallback if already in 24-hour format or different format
+                $validatedData['scheduled_time'] = date('H:i:s', strtotime($validatedData['scheduled_time']));
+            }
+        }
 
         $counselingSession->update([
             'counselor_id' => $validatedData['counselor_id'],
@@ -877,9 +926,18 @@ class GuidanceController extends Controller
             'notes' => 'nullable|string',
         ]);
 
+        // Convert time from 12-hour format (h:i A) to 24-hour format (H:i:s) for MySQL
+        $scheduledTime = $request->scheduled_time;
+        try {
+            $scheduledTime = \Carbon\Carbon::createFromFormat('h:i A', $scheduledTime)->format('H:i:s');
+        } catch (\Exception $e) {
+            // Fallback if already in 24-hour format or different format
+            $scheduledTime = date('H:i:s', strtotime($scheduledTime));
+        }
+
         $session->update([
             'scheduled_date' => $request->scheduled_date,
-            'scheduled_time' => $request->scheduled_time,
+            'scheduled_time' => $scheduledTime,
             'location' => $request->location,
             'notes' => $request->notes,
             'status' => 'Scheduled',
@@ -1033,6 +1091,16 @@ class GuidanceController extends Controller
             'notes' => 'nullable|string',
         ]);
 
+        // Convert time from 12-hour format (h:i A) to 24-hour format (H:i:s) for MySQL
+        if (isset($validatedData['scheduled_time'])) {
+            try {
+                $validatedData['scheduled_time'] = \Carbon\Carbon::createFromFormat('h:i A', $validatedData['scheduled_time'])->format('H:i:s');
+            } catch (\Exception $e) {
+                // Fallback if already in 24-hour format or different format
+                $validatedData['scheduled_time'] = date('H:i:s', strtotime($validatedData['scheduled_time']));
+            }
+        }
+
         $counselingSession->update($validatedData);
 
         if ($request->ajax()) {
@@ -1081,8 +1149,18 @@ class GuidanceController extends Controller
     {
         $validatedData = $request->validate([
             'scheduled_date' => 'required|date|after_or_equal:today',
-            'scheduled_time' => 'required|date_format:H:i',
+            'scheduled_time' => 'required',
         ]);
+
+        // Convert time from 12-hour format (h:i A) to 24-hour format (H:i:s) for MySQL
+        if (isset($validatedData['scheduled_time'])) {
+            try {
+                $validatedData['scheduled_time'] = \Carbon\Carbon::createFromFormat('h:i A', $validatedData['scheduled_time'])->format('H:i:s');
+            } catch (\Exception $e) {
+                // Fallback if already in 24-hour format or different format
+                $validatedData['scheduled_time'] = date('H:i:s', strtotime($validatedData['scheduled_time']));
+            }
+        }
 
         $counselingSession->update([
             'scheduled_date' => $validatedData['scheduled_date'],
@@ -1130,7 +1208,7 @@ class GuidanceController extends Controller
 
         $counselingSessions = $query->orderBy('scheduled_date', 'desc')->get();
 
-        $filename = 'counseling_sessions_' . now()->format('Y-m-d_H-i-s') . '.csv';
+        $filename = 'counseling_sessions_' . $this->schoolNow()->format('Y-m-d_H-i-s') . '.csv';
 
         $headers = [
             'Content-Type' => 'text/csv',
@@ -1308,8 +1386,8 @@ class GuidanceController extends Controller
             'description' => $session->reason ?? $session->notes ?? 'Approved counseling session',
             'reason' => $session->reason,
             'notes' => $session->notes,
-            'archived_at' => now(),
-            'violation_date' => $session->start_date ?? now(),
+            'archived_at' => $this->schoolNow(),
+            'violation_date' => $session->start_date ?? $this->schoolNow(),
             'reported_by' => $reportedBy,
             'feedback' => null,
         ];
@@ -1317,88 +1395,96 @@ class GuidanceController extends Controller
 
         return response()->json(['success' => true]);
     }
-    /**
-     * Reject counseling session with feedback and archive it
-     */
-    public function rejectCounselingSessionWithFeedback(Request $request, CounselingSession $counselingSession)
-    {   
-        $request->validate([
-            'feedback' => 'required|string',
-        ]);
 
-        // Archive the session with feedback
-        $user = Auth::user();
-        // Try to get discipline or guidance id for reported_by
-        $disciplineId = $user && $user->discipline ? $user->discipline->id : null;
-        $guidanceId = $user && $user->guidance ? $user->guidance->id : null;
-        $reportedBy = $disciplineId ?? $guidanceId;
-        if (!$reportedBy) {
-            // Fallback: use user id if neither discipline nor guidance exists
-            $reportedBy = $user ? $user->id : 1;
-        }
-        $archiveData = [
-            'counseling_session_id' => $counselingSession->id,
-            'student_id' => $counselingSession->student_id,
-            'counselor_id' => $counselingSession->counselor_id,
-            'title' => 'Counseling Session Rejection',
-            'description' => $counselingSession->reason ?? $counselingSession->notes ?? 'Rejected counseling session',
-            'reason' => $counselingSession->reason,
-            'notes' => $counselingSession->notes,
-            'feedback' => $request->feedback,
-            'archived_at' => now(),
-            'violation_date' => $counselingSession->scheduled_date ?? now(),
-            'reported_by' => $reportedBy,
-        ];
-
-        // Use ArchiveViolation model to store archive
-        \App\Models\ArchiveViolation::create($archiveData);
-
-        // Update the session status to rejected
-        $counselingSession->update([
-            'status' => 'rejected',
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Counseling session rejected and archived with feedback.'
-        ]);
-    }
         /**
      * API: Get counseling session details (for modal)
      */
     public function apiShowCounselingSession($id)
     {
-        $session = \App\Models\CounselingSession::with(['student', 'counselor'])
-            ->find($id);
-        if (!$session) {
-            return response()->json(['success' => false, 'message' => 'Session not found.']);
+        try {
+            $session = \App\Models\CounselingSession::with(['student', 'counselor'])
+                ->find($id);
+            if (!$session) {
+                return response()->json(['success' => false, 'message' => 'Session not found.']);
+            }
+            $student = $session->student;
+            $counselor = $session->counselor;
+            $documentsHtml = '';
+            
+            // Calculate all scheduled dates based on frequency
+            $scheduledDates = [];
+            if ($session->start_date && $session->end_date && $session->frequency) {
+                $currentDate = $session->start_date->copy();
+                $endDate = $session->end_date;
+                
+                // Convert frequency to number of days
+                $dayInterval = 1; // default daily
+                if (is_numeric($session->frequency)) {
+                    $dayInterval = (int)$session->frequency;
+                } else {
+                    // Handle string frequency values
+                    $frequencyMap = [
+                        'daily' => 1,
+                        'every_other_day' => 2,
+                        'once_a_week' => 7,
+                        'twice_a_week' => 3, // approximate
+                        'monthly' => 30,
+                    ];
+                    $dayInterval = $frequencyMap[$session->frequency] ?? 1;
+                }
+                
+                while ($currentDate <= $endDate) {
+                    $scheduledDates[] = $currentDate->format('Y-m-d');
+                    $currentDate->addDays($dayInterval);
+                }
+            } elseif ($session->start_date) {
+                $scheduledDates[] = $session->start_date->format('Y-m-d');
+            }
+            
+            // Build student name safely
+            $studentFullName = null;
+            if ($student) {
+                $studentFullName = trim(($student->first_name ?? '') . ' ' . ($student->last_name ?? ''));
+                if (empty($studentFullName)) {
+                    $studentFullName = $student->lrn ?? 'Unknown';
+                }
+            }
+            
+            return response()->json([
+                'success' => true,
+                'session' => [
+                    'session_no' => $session->session_no,
+                    'status_display' => ucfirst($session->status ?? 'scheduled'),
+                    'reason' => $session->reason,
+                    'notes' => $session->notes,
+                    'scheduled_date' => $session->start_date ? $session->start_date->format('Y-m-d') : null,
+                    'scheduled_dates' => $scheduledDates,
+                    'scheduled_time' => $session->time ? $session->time->format('H:i') : null,
+                    'location' => $session->location ?? null,
+                    'counselor_name' => $counselor ? trim(($counselor->first_name ?? '') . ' ' . ($counselor->last_name ?? '')) : null,
+                    'student_full_name' => $studentFullName,
+                    'student_lrn' => $student ? $student->lrn : null,
+                    'student_birthdate' => ($student && $student->date_of_birth) ? (method_exists($student->date_of_birth, 'format') ? $student->date_of_birth->format('F j, Y') : (string)$student->date_of_birth) : null,
+                    'student_gender' => $student ? $student->gender : null,
+                    'student_nationality' => $student ? $student->nationality : null,
+                    'student_religion' => $student ? $student->religion : null,
+                    'student_photo_url' => $student && $student->photo_url ? $student->photo_url : null,
+                    'student_age' => $student && $student->date_of_birth ? \Carbon\Carbon::parse($student->date_of_birth)->age : null,
+                    'student_type_badge' => 'New',
+                    'student_type_desc' => '',
+                    'documents_html' => $documentsHtml,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error in apiShowCounselingSession: ' . $e->getMessage(), [
+                'id' => $id,
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Error loading session details: ' . $e->getMessage()
+            ], 500);
         }
-        $student = $session->student;
-        $counselor = $session->counselor;
-        $documentsHtml = '';
-        // If you have documents, render them here. Otherwise, show placeholder.
-        // Example: $documentsHtml = '<a href="/path/to/doc.pdf">Document.pdf</a>';
-        return response()->json([
-            'success' => true,
-            'session' => [
-                'session_no' => $session->session_no,
-                'status_display' => ucfirst($session->status),
-                'reason' => $session->reason,
-                'notes' => $session->notes,
-                'scheduled_date' => $session->start_date ? $session->start_date->format('Y-m-d') : null,
-                'scheduled_time' => $session->time ? $session->time->format('H:i') : null,
-                'location' => $session->location,
-                'counselor_name' => $counselor ? ($counselor->first_name . ' ' . $counselor->last_name) : null,
-                'student_full_name' => $student ? ($student->full_name ?? ($student->first_name . ' ' . $student->last_name)) : null,
-                'student_lrn' => $student ? $student->lrn : null,
-                'student_birthdate' => ($student && $student->date_of_birth) ? (method_exists($student->date_of_birth, 'format') ? $student->date_of_birth->format('F j, Y') : (string)$student->date_of_birth) : null,
-                'student_gender' => $student ? $student->gender : null,
-                'student_nationality' => $student ? $student->nationality : null,
-                'student_religion' => $student ? $student->religion : null,
-                'student_photo_url' => $student && $student->photo_url ? $student->photo_url : null,
-                'documents_html' => $documentsHtml,
-            ]
-        ]);
     }
       /**
      * Store counseling summary report for a session
@@ -1417,6 +1503,7 @@ class GuidanceController extends Controller
                 'counseling_summary_report' => 'required|string',
             ]);
             $counselingSession->counseling_summary_report = $validatedData['counseling_summary_report'];
+            $counselingSession->status = 'completed';
             $counselingSession->save();
             // Always return JSON for AJAX or fetch requests
             if ($request->ajax() || $request->wantsJson()) {
@@ -1509,7 +1596,8 @@ class GuidanceController extends Controller
         $data = [];
         
         for ($i = $monthsBack - 1; $i >= 0; $i--) {
-            $month = now()->copy()->subMonths($i);
+            $now = $this->schoolNow();
+            $month = $now->copy()->subMonths($i);
             
             if ($view === 'quarterly' && $monthsBack >= 12) {
                 // Group by quarters for longer periods
@@ -1562,7 +1650,8 @@ class GuidanceController extends Controller
         $data = [];
         
         for ($i = $monthsBack - 1; $i >= 0; $i--) {
-            $month = now()->copy()->subMonths($i);
+            $now = $this->schoolNow();
+            $month = $now->copy()->subMonths($i);
             $labels[] = $month->format('M Y');
             
             $query = \App\Models\CounselingSession::whereYear('start_date', $month->year)
@@ -1597,7 +1686,8 @@ public function getDisciplineVsTotalStats(Request $request)
         default => 5
     };
     
-    $currentYear = now()->year;
+    $now = $this->schoolNow();
+    $currentYear = $now->year;
     $years = [];
     $withDiscipline = [];
     $totalStudents = [];
@@ -1720,7 +1810,8 @@ public function getDisciplineVsTotalStats(Request $request)
         
         // Get data by grouping
         for ($i = $monthsBack - 1; $i >= 0; $i--) {
-            $date = now()->subMonths($i);
+            $now = $this->schoolNow();
+            $date = $now->copy()->subMonths($i);
             
             if ($groupBy === 'quarter') {
                 // Group by quarters
@@ -1921,17 +2012,18 @@ public function getDisciplineVsTotalStats(Request $request)
         
         // Calculate date filter
         $startDate = $this->getDateRangeStart($dateRange);
-        $endDate = $dateRange === 'today' ? now()->endOfDay() : 
-                  ($dateRange === 'week' ? now()->endOfWeek() : 
-                   ($dateRange === 'month' ? now()->endOfMonth() : now()->addWeek()));
+        $now = $this->schoolNow();
+        $endDate = $dateRange === 'today' ? $now->copy()->endOfDay() : 
+                  ($dateRange === 'week' ? $now->copy()->endOfWeek() : 
+                   ($dateRange === 'month' ? $now->copy()->endOfMonth() : $now->copy()->addWeek()));
         
         $tasks = collect();
 
         // Upcoming case meetings
         $upcomingMeetings = \App\Models\CaseMeeting::with(['student'])
             ->where('status', 'scheduled')
-            ->where('scheduled_date', '>=', now())
-            ->where('scheduled_date', '<=', now()->addWeek())
+            ->where('scheduled_date', '>=', $this->schoolNow())
+            ->where('scheduled_date', '<=', $this->schoolNow()->addWeek())
             ->orderBy('scheduled_date', 'asc')
             ->get()
             ->map(function($meeting) {
@@ -1949,7 +2041,7 @@ public function getDisciplineVsTotalStats(Request $request)
         // Overdue follow-ups
         $overdueFollowups = \App\Models\CounselingSession::with(['student'])
             ->whereNotNull('follow_up_date')
-            ->where('follow_up_date', '<', now())
+            ->where('follow_up_date', '<', $this->schoolNow())
             ->where('status', '!=', 'completed')
             ->orderBy('follow_up_date', 'asc')
             ->get()
@@ -2009,15 +2101,15 @@ public function getDisciplineVsTotalStats(Request $request)
     {
         switch($dateRange) {
             case 'today':
-                return now()->startOfDay();
+                return $this->schoolNow()->startOfDay();
             case 'week':
-                return now()->startOfWeek();
+                return $this->schoolNow()->startOfWeek();
             case 'month':
-                return now()->startOfMonth();
+                return $this->schoolNow()->startOfMonth();
             case 'quarter':
-                return now()->startOfQuarter();
+                return $this->schoolNow()->startOfQuarter();
             case 'year':
-                return now()->startOfYear();
+                return $this->schoolNow()->startOfYear();
             default:
                 return null; // 'all' or any other value
         }
@@ -2105,8 +2197,8 @@ public function getDisciplineVsTotalStats(Request $request)
                 'notes' => 'Mentor: ' . ($interventions['mentor_name'] ?? 'TBD') . ' | Duration: 4 weeks',
                 'is_automatic' => true,
                 'is_approved' => false,
-                'created_at' => now(),
-                'updated_at' => now()
+                'created_at' => $this->schoolNow(),
+                'updated_at' => $this->schoolNow()
             ];
         }
 
@@ -2144,8 +2236,8 @@ public function getDisciplineVsTotalStats(Request $request)
                 'notes' => $suspensionNotes,
                 'is_automatic' => true,
                 'is_approved' => false,
-                'created_at' => now(),
-                'updated_at' => now()
+                'created_at' => $this->schoolNow(),
+                'updated_at' => $this->schoolNow()
             ];
         }
 
@@ -2165,8 +2257,8 @@ public function getDisciplineVsTotalStats(Request $request)
                 'notes' => $expulsionNotes,
                 'is_automatic' => true,
                 'is_approved' => false,
-                'created_at' => now(),
-                'updated_at' => now()
+                'created_at' => $this->schoolNow(),
+                'updated_at' => $this->schoolNow()
             ];
         }
 
