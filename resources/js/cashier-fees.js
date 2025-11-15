@@ -12,7 +12,85 @@ document.addEventListener('DOMContentLoaded', function() {
     if (csrfToken) {
         window.csrfToken = csrfToken.getAttribute('content');
     }
+    
+    // Initialize grade levels functionality for create/edit forms
+    initializeGradeLevels();
 });
+
+/**
+ * Initialize grade levels functionality for fee forms
+ */
+function initializeGradeLevels() {
+    const educationalLevelSelect = document.getElementById('educational_level');
+    const container = document.getElementById('grade-levels-container');
+    
+    // Only initialize if elements exist (on create/edit pages)
+    if (!educationalLevelSelect || !container) {
+        return;
+    }
+    
+    // Grade levels by educational level
+    const gradeLevels = {
+        'preschool': ['Toddler', 'Nursery', 'Junior Casa', 'Kindergarten'],
+        'elementary': ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
+        'junior_high': ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10'],
+        'senior_high': ['Grade 11', 'Grade 12']
+    };
+    
+    // Get current grade levels for edit form
+    let currentGradeLevels = [];
+    const currentGradeLevelsElement = document.querySelector('meta[name="current-grade-levels"]');
+    if (currentGradeLevelsElement) {
+        try {
+            currentGradeLevels = JSON.parse(currentGradeLevelsElement.getAttribute('content')) || [];
+        } catch (e) {
+            currentGradeLevels = [];
+        }
+    }
+    
+    function updateGradeLevels() {
+        const level = educationalLevelSelect.value;
+        console.log('Selected educational level:', level);
+        
+        if (level && gradeLevels[level]) {
+            let html = '<div class="row">';
+            gradeLevels[level].forEach((grade, index) => {
+                const isChecked = currentGradeLevels.includes(grade) ? 'checked' : '';
+                html += `
+                    <div class="col-md-3 mb-2">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="grade_levels[]" 
+                                   value="${grade}" id="grade_${index}" ${isChecked}>
+                            <label class="form-check-label" for="grade_${index}">
+                                ${grade}
+                            </label>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            html += '<small class="text-muted"><i class="ri-check-line me-1"></i>Select all applicable grade levels for this fee</small>';
+            container.innerHTML = html;
+            container.className = 'border rounded p-3';
+        } else {
+            container.innerHTML = `
+                <p class="text-muted mb-0">
+                    <i class="ri-information-line me-2"></i>
+                    Please select an educational level first to see available grade levels.
+                </p>
+            `;
+            container.className = 'border rounded p-3 bg-light';
+        }
+    }
+    
+    // Add event listener for educational level changes
+    educationalLevelSelect.addEventListener('change', updateGradeLevels);
+    
+    // Trigger initial update if there's already a selected value
+    if (educationalLevelSelect.value) {
+        updateGradeLevels();
+    }
+}
 
 /**
  * Toggle fee active/inactive status

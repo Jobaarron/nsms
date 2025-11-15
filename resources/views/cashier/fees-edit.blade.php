@@ -1,5 +1,12 @@
 <x-cashier-layout>
     <x-slot name="title">Edit Fee - {{ $fee->name }}</x-slot>
+    
+    @php
+        $currentGradeLevels = is_array($fee->applicable_grades) ? $fee->applicable_grades : json_decode($fee->applicable_grades, true) ?? [];
+    @endphp
+    
+    <!-- Meta tag for current grade levels -->
+    <meta name="current-grade-levels" content="{{ json_encode($currentGradeLevels) }}">
 
 <div class="container-fluid">
     <div class="row">
@@ -91,8 +98,11 @@
                         <!-- Grade Levels -->
                         <div class="mb-3">
                             <label class="form-label">Applicable Grade Levels <span class="text-danger">*</span></label>
-                            <div id="grade-levels-container">
-                                <!-- Grade levels will be populated by JavaScript -->
+                            <div id="grade-levels-container" class="border rounded p-3 bg-light">
+                                <p class="text-muted mb-0">
+                                    <i class="ri-information-line me-2"></i>
+                                    Loading grade levels for selected educational level...
+                                </p>
                             </div>
                             @error('grade_levels')
                                 <div class="text-danger small">{{ $message }}</div>
@@ -163,53 +173,6 @@
 </div>
 
 @push('scripts')
-    <script>
-        // Grade levels by educational level
-        const gradeLevels = {
-            'preschool': ['Toddler', 'Nursery', 'Junior Casa', 'Kindergarten'],
-            'elementary': ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
-            'junior_high': ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10'],
-            'senior_high': ['Grade 11', 'Grade 12']
-        };
-
-        // Current fee's grade levels
-        const currentGradeLevels = @json(is_array($fee->applicable_grades) ? $fee->applicable_grades : json_decode($fee->applicable_grades, true) ?? []);
-
-        // Update grade levels when educational level changes
-        document.getElementById('educational_level').addEventListener('change', function() {
-            const level = this.value;
-            const container = document.getElementById('grade-levels-container');
-            
-            if (level && gradeLevels[level]) {
-                let html = '<div class="row">';
-                gradeLevels[level].forEach((grade, index) => {
-                    const isChecked = currentGradeLevels.includes(grade) ? 'checked' : '';
-                    html += `
-                        <div class="col-md-3 mb-2">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="grade_levels[]" 
-                                       value="${grade}" id="grade_${index}" ${isChecked}>
-                                <label class="form-check-label" for="grade_${index}">
-                                    ${grade}
-                                </label>
-                            </div>
-                        </div>
-                    `;
-                });
-                html += '</div>';
-                container.innerHTML = html;
-            } else {
-                container.innerHTML = '<p class="text-muted">Please select an educational level first.</p>';
-            }
-        });
-
-        // Trigger change event on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            const educationalLevel = document.getElementById('educational_level');
-            if (educationalLevel.value) {
-                educationalLevel.dispatchEvent(new Event('change'));
-            }
-        });
-    </script>
+    @vite(['resources/js/cashier-fees.js'])
 @endpush
 </x-cashier-layout>
