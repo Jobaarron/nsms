@@ -1173,12 +1173,28 @@ function showSectionDetailsAccordion(sectionId, grade, section, strand, track) {
     container.style.display = 'block';
     
     // Get data for this section
-    const adviser = window.facultyData.advisers.find(a => 
-        a.grade_level === grade && 
-        a.section === section && 
-        a.strand === strand && 
-        a.track === track
-    );
+    const adviser = window.facultyData.advisers.find(a => {
+        // Match grade level and section (required)
+        if (a.grade_level !== grade || a.section !== section) {
+            return false;
+        }
+        
+        // Handle strand matching (null values should match empty/null strand)
+        const adviserStrand = a.strand || null;
+        const filterStrand = strand || null;
+        if (adviserStrand !== filterStrand) {
+            return false;
+        }
+        
+        // Handle track matching (null values should match empty/null track)
+        const adviserTrack = a.track || null;
+        const filterTrack = track || null;
+        if (adviserTrack !== filterTrack) {
+            return false;
+        }
+        
+        return true;
+    });
     
     const subjects = window.facultyData.subjects.filter(s => {
         let match = s.grade_level === grade;
@@ -1187,12 +1203,37 @@ function showSectionDetailsAccordion(sectionId, grade, section, strand, track) {
         return match;
     });
     
-    const assignments = window.facultyData.assignments.filter(a =>
-        a.grade_level === grade &&
-        a.section === section &&
-        a.strand === strand &&
-        a.track === track
-    );
+    const assignments = window.facultyData.assignments.filter(a => {
+        // Match grade level and section (required)
+        if (a.grade_level !== grade || a.section !== section) {
+            return false;
+        }
+        
+        // Handle strand matching (null values should match empty/null strand)
+        const assignmentStrand = a.strand || null;
+        const filterStrand = strand || null;
+        if (assignmentStrand !== filterStrand) {
+            return false;
+        }
+        
+        // Handle track matching (null values should match empty/null track)
+        const assignmentTrack = a.track || null;
+        const filterTrack = track || null;
+        if (assignmentTrack !== filterTrack) {
+            return false;
+        }
+        
+        return true;
+    });
+    
+    // Debug logging to help troubleshoot
+    console.log('=== SECTION DETAILS DEBUG ===');
+    console.log('Grade:', grade, 'Section:', section, 'Strand:', strand, 'Track:', track);
+    console.log('Found adviser:', adviser);
+    console.log('Found subjects:', subjects.length);
+    console.log('Found assignments:', assignments.length);
+    console.log('All assignments data:', window.facultyData.assignments);
+    console.log('Filtered assignments:', assignments);
     
     // Determine correct back function based on strand/track
     let backFunction;
@@ -1217,21 +1258,59 @@ function showSectionDetailsAccordion(sectionId, grade, section, strand, track) {
             <!-- ASSIGN ADVISER SECTION -->
             <div class="mb-4">
                 ${adviser ? `
-                    <div class="alert alert-success d-flex justify-content-between align-items-center">
-                        <div>
-                            <i class="ri-user-star-line me-2"></i>
-                            <strong>Class Adviser:</strong> ${adviser.teacher.user.name}
-                            <span class="text-muted ms-2">(Assigned: ${new Date(adviser.assigned_date).toLocaleDateString()})</span>
+                    <div class="alert alert-info">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <i class="ri-user-star-line me-2"></i>
+                                <strong>Current Class Adviser:</strong> ${adviser.teacher.user.name}
+                                <span class="text-muted ms-2">(Assigned: ${new Date(adviser.assigned_date).toLocaleDateString()})</span>
+                            </div>
+                            <button class="btn btn-sm btn-warning" onclick="showReplaceAdviserForm('${sectionId}', '${grade}', '${section}', '${strand}', '${track}', ${adviser.id})" title="Replace Adviser">
+                                <i class="ri-user-settings-line me-1"></i> Replace
+                            </button>
                         </div>
-                        <button class="btn btn-sm btn-outline-danger" onclick="removeAssignment(${adviser.id})" title="Remove Adviser">
-                            <i class="ri-user-unfollow-line"></i> Remove
-                        </button>
+                        <div id="replaceAdviserForm${sectionId}" style="display: none;">
+                            <hr>
+                            <h6 class="mb-3"><i class="ri-user-settings-line me-2"></i>Replace Class Adviser</h6>
+                            <form onsubmit="submitAdviserAssignment(event, '${sectionId}', '${grade}', '${section}', '${strand}', '${track}', ${adviser.id})" class="row g-3">
+                                <input type="hidden" name="_token" value="${document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')}">
+                                <input type="hidden" name="grade_level" value="${grade}">
+                                <input type="hidden" name="section" value="${section}">
+                                <input type="hidden" name="strand" value="${strand}">
+                                <input type="hidden" name="track" value="${track}">
+                                <input type="hidden" name="replace_assignment_id" value="${adviser.id}">
+                                <div class="col-md-6">
+                                    <label class="form-label">New Teacher</label>
+                                    <select name="teacher_id" class="form-select" required>
+                                        <option value="">Select New Teacher</option>
+                                        ${window.facultyData.teachers.map(t => `
+                                            <option value="${t.teacher?.id || ''}" ${t.teacher?.id === adviser.teacher_id ? 'disabled' : ''}>${t.name}${t.teacher?.id === adviser.teacher_id ? ' (Current)' : ''}</option>
+                                        `).join('')}
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Effective Date</label>
+                                    <input type="date" name="effective_date" class="form-control" value="${new Date().toISOString().split('T')[0]}" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">&nbsp;</label>
+                                    <button type="submit" class="btn btn-success w-100">
+                                        <i class="ri-user-settings-line me-1"></i>Replace
+                                    </button>
+                                </div>
+                                <div class="col-12">
+                                    <button type="button" class="btn btn-sm btn-secondary" onclick="hideReplaceAdviserForm('${sectionId}')">
+                                        <i class="ri-close-line me-1"></i>Cancel
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 ` : `
                     <div class="card bg-white">
                         <div class="card-body">
                             <h6 class="mb-3"><i class="ri-user-add-line me-2"></i>Assign Class Adviser</h6>
-                            <form action="/faculty-head/assign-adviser" method="POST" class="row g-3">
+                            <form onsubmit="submitAdviserAssignment(event, '${sectionId}', '${grade}', '${section}', '${strand}', '${track}', null)" class="row g-3">
                                 <input type="hidden" name="_token" value="${document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')}">
                                 <input type="hidden" name="grade_level" value="${grade}">
                                 <input type="hidden" name="section" value="${section}">
@@ -1278,23 +1357,66 @@ function showSectionDetailsAccordion(sectionId, grade, section, strand, track) {
                             ${subjects.map(subject => {
                                 const assignment = assignments.find(a => a.subject_id === subject.id);
                                 return `
-                                    <div class="d-flex justify-content-between align-items-center mb-3 p-3 border rounded bg-white">
-                                        <div>
-                                            <strong>${subject.subject_name}</strong>
-                                            ${subject.subject_code ? `<span class="text-muted ms-2">(${subject.subject_code})</span>` : ''}
-                                            ${assignment ? `<div class="text-success small mt-1"><i class="ri-user-line"></i> ${assignment.teacher.user.name}</div>` : ''}
-                                        </div>
-                                        <div>
-                                            ${assignment ? `
-                                                <button class="btn btn-sm btn-outline-danger" onclick="removeAssignment(${assignment.id})">
-                                                    <i class="ri-user-unfollow-line"></i>
+                                    <div class="mb-3 p-3 border rounded bg-white">
+                                        ${assignment ? `
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <div>
+                                                    <strong>${subject.subject_name}</strong>
+                                                    ${subject.subject_code ? `<span class="text-muted ms-2">(${subject.subject_code})</span>` : ''}
+                                                    <div class="text-success small mt-1"><i class="ri-user-line"></i> Current: ${assignment.teacher.user.name}</div>
+                                                </div>
+                                                <button class="btn btn-sm btn-warning" onclick="showReplaceTeacherForm('${sectionId}', ${subject.id}, ${assignment.id})" title="Replace Teacher">
+                                                    <i class="ri-user-settings-line me-1"></i> Replace
                                                 </button>
-                                            ` : `
+                                            </div>
+                                            <div id="replaceTeacherForm${sectionId}_${subject.id}" style="display: none;">
+                                                <hr>
+                                                <h6 class="mb-3"><i class="ri-user-settings-line me-2"></i>Replace Teacher for ${subject.subject_name}</h6>
+                                                <form onsubmit="submitTeacherAssignment(event, '${sectionId}', '${grade}', '${section}', '${strand}', '${track}', ${subject.id}, ${assignment.id})" class="row g-3">
+                                                    <input type="hidden" name="_token" value="${document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')}">
+                                                    <input type="hidden" name="grade_level" value="${grade}">
+                                                    <input type="hidden" name="section" value="${section}">
+                                                    <input type="hidden" name="strand" value="${strand}">
+                                                    <input type="hidden" name="track" value="${track}">
+                                                    <input type="hidden" name="subject_id" value="${subject.id}">
+                                                    <input type="hidden" name="replace_assignment_id" value="${assignment.id}">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">New Teacher</label>
+                                                        <select name="teacher_id" class="form-select" required>
+                                                            <option value="">Select New Teacher</option>
+                                                            ${window.facultyData.teachers.map(t => `
+                                                                <option value="${t.teacher?.id || ''}" ${t.teacher?.id === assignment.teacher_id ? 'disabled' : ''}>${t.name}${t.teacher?.id === assignment.teacher_id ? ' (Current)' : ''}</option>
+                                                            `).join('')}
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label class="form-label">Effective Date</label>
+                                                        <input type="date" name="effective_date" class="form-control" value="${new Date().toISOString().split('T')[0]}" required>
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <label class="form-label">&nbsp;</label>
+                                                        <button type="submit" class="btn btn-success w-100">
+                                                            <i class="ri-user-settings-line me-1"></i>Replace
+                                                        </button>
+                                                    </div>
+                                                    <div class="col-12">
+                                                        <button type="button" class="btn btn-sm btn-secondary" onclick="hideReplaceTeacherForm('${sectionId}', ${subject.id})">
+                                                            <i class="ri-close-line me-1"></i>Cancel
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        ` : `
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <strong>${subject.subject_name}</strong>
+                                                    ${subject.subject_code ? `<span class="text-muted ms-2">(${subject.subject_code})</span>` : ''}
+                                                </div>
                                                 <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#assignModal${sectionId}_${subject.id}">
                                                     <i class="ri-user-add-line"></i> Assign Teacher
                                                 </button>
-                                            `}
-                                        </div>
+                                            </div>
+                                        `}
                                     </div>
                                     ${!assignment ? `
                                         <div class="modal fade" id="assignModal${sectionId}_${subject.id}" tabindex="-1">
@@ -1304,7 +1426,7 @@ function showSectionDetailsAccordion(sectionId, grade, section, strand, track) {
                                                         <h5 class="modal-title">Assign Teacher</h5>
                                                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                     </div>
-                                                    <form action="/faculty-head/assign-teacher" method="POST">
+                                                    <form onsubmit="submitTeacherAssignment(event, '${sectionId}', '${grade}', '${section}', '${strand}', '${track}', ${subject.id}, null)">
                                                         <input type="hidden" name="_token" value="${document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')}">
                                                         <input type="hidden" name="grade_level" value="${grade}">
                                                         <input type="hidden" name="section" value="${section}">
@@ -1577,6 +1699,269 @@ function resetAccordionToInitialState(grade) {
 }
 
 // Make functions globally available
+// AJAX submission function for adviser assignments
+function submitAdviserAssignment(event, sectionId, grade, section, strand, track, replaceAssignmentId) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const formData = new FormData(form);
+    const submitButton = form.querySelector('button[type="submit"]');
+    const originalButtonText = submitButton.innerHTML;
+    
+    // Show loading state
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<i class="ri-loader-4-line ri-spin me-1"></i>Processing...';
+    
+    // Make AJAX request
+    fetch('/faculty-head/assign-adviser', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            showAlert(data.message, 'success');
+            
+            // Refresh faculty data from server to get latest assignments
+            refreshFacultyDataFromServer().then(() => {
+                // Refresh the section details to show updated assignment
+                showSectionDetailsAccordion(sectionId, grade, section, strand, track);
+            });
+        } else {
+            throw new Error(data.message || 'Assignment failed');
+        }
+    })
+    .catch(error => {
+        console.error('Error submitting adviser assignment:', error);
+        showAlert('Error: ' + error.message, 'error');
+        
+        // Restore button state
+        submitButton.disabled = false;
+        submitButton.innerHTML = originalButtonText;
+    });
+}
+
+// AJAX submission function for teacher assignments
+function submitTeacherAssignment(event, sectionId, grade, section, strand, track, subjectId, replaceAssignmentId) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const formData = new FormData(form);
+    const submitButton = form.querySelector('button[type="submit"]');
+    const originalButtonText = submitButton.innerHTML;
+    
+    // Show loading state
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<i class="ri-loader-4-line ri-spin me-1"></i>Processing...';
+    
+    // Close modal if this is from a modal
+    const modal = form.closest('.modal');
+    if (modal) {
+        const bsModal = bootstrap.Modal.getInstance(modal);
+        if (bsModal) {
+            bsModal.hide();
+        }
+    }
+    
+    // Make AJAX request
+    fetch('/faculty-head/assign-teacher', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            showAlert(data.message, 'success');
+            
+            // Refresh faculty data from server to get latest assignments
+            refreshFacultyDataFromServer().then(() => {
+                // Refresh the section details to show updated assignment
+                showSectionDetailsAccordion(sectionId, grade, section, strand, track);
+            });
+        } else {
+            throw new Error(data.message || 'Assignment failed');
+        }
+    })
+    .catch(error => {
+        console.error('Error submitting teacher assignment:', error);
+        showAlert('Error: ' + error.message, 'error');
+        
+        // Restore button state if form is still visible
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.innerHTML = originalButtonText;
+        }
+    });
+}
+
+// Function to refresh faculty data from server
+function refreshFacultyDataFromServer() {
+    return fetch('/faculty-head/get-faculty-data', {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update the global faculty data with fresh data from server
+            window.facultyData = {
+                teachers: data.teachers || [],
+                subjects: data.subjects || [],
+                assignments: data.assignments || [],
+                advisers: data.advisers || [],
+                sections: data.sections || []
+            };
+            console.log('Faculty data refreshed from server');
+        } else {
+            console.error('Failed to refresh faculty data:', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error refreshing faculty data:', error);
+    });
+}
+
+// Function to update faculty data after adviser assignment (deprecated - now using server refresh)
+function updateFacultyDataAfterAdviserAssignment(newAssignment, replaceAssignmentId) {
+    // This function is now deprecated in favor of refreshFacultyDataFromServer
+    // Keeping for backward compatibility
+    if (replaceAssignmentId) {
+        window.facultyData.advisers = window.facultyData.advisers.filter(a => a.id !== replaceAssignmentId);
+    }
+    window.facultyData.advisers.push(newAssignment);
+}
+
+// Function to update faculty data after teacher assignment (deprecated - now using server refresh)
+function updateFacultyDataAfterTeacherAssignment(newAssignment, replaceAssignmentId) {
+    // This function is now deprecated in favor of refreshFacultyDataFromServer
+    // Keeping for backward compatibility
+    if (replaceAssignmentId) {
+        window.facultyData.assignments = window.facultyData.assignments.filter(a => a.id !== replaceAssignmentId);
+    }
+    window.facultyData.assignments.push(newAssignment);
+}
+
+// Function to show alert messages
+function showAlert(message, type) {
+    // Create alert element
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // Add to page
+    document.body.appendChild(alertDiv);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+
+// Function to show replace adviser form
+function showReplaceAdviserForm(sectionId, grade, section, strand, track, assignmentId) {
+    const form = document.getElementById(`replaceAdviserForm${sectionId}`);
+    if (form) {
+        form.style.display = 'block';
+    }
+}
+
+// Function to hide replace adviser form
+function hideReplaceAdviserForm(sectionId) {
+    const form = document.getElementById(`replaceAdviserForm${sectionId}`);
+    if (form) {
+        form.style.display = 'none';
+    }
+}
+
+// Function to show replace teacher form
+function showReplaceTeacherForm(sectionId, subjectId, assignmentId) {
+    const form = document.getElementById(`replaceTeacherForm${sectionId}_${subjectId}`);
+    if (form) {
+        form.style.display = 'block';
+    }
+}
+
+// Function to hide replace teacher form
+function hideReplaceTeacherForm(sectionId, subjectId) {
+    const form = document.getElementById(`replaceTeacherForm${sectionId}_${subjectId}`);
+    if (form) {
+        form.style.display = 'none';
+    }
+}
+
+// Auto-refresh faculty data every 30 seconds to catch changes from other users
+let autoRefreshInterval;
+
+function startAutoRefresh() {
+    // Clear any existing interval
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+    }
+    
+    // Set up auto-refresh every 30 seconds
+    autoRefreshInterval = setInterval(() => {
+        console.log('Auto-refreshing faculty data...');
+        refreshFacultyDataFromServer().then(() => {
+            // If there's an open section details, refresh it
+            const openSectionDetails = document.querySelector('.section-details[style*="block"]');
+            if (openSectionDetails) {
+                // Find the section ID and refresh it
+                const sectionId = openSectionDetails.id.replace('details', '');
+                // We need to extract the grade, section, strand, track from the current view
+                // For now, just log that we detected an open section
+                console.log('Open section detected, but auto-refresh of section details requires more context');
+            }
+        });
+    }, 30000); // 30 seconds
+}
+
+function stopAutoRefresh() {
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+        autoRefreshInterval = null;
+    }
+}
+
+// Start auto-refresh when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    startAutoRefresh();
+    console.log('Auto-refresh started - faculty data will refresh every 30 seconds');
+});
+
+// Stop auto-refresh when page is about to unload
+window.addEventListener('beforeunload', function() {
+    stopAutoRefresh();
+});
+
+// Make functions globally available
+window.submitAdviserAssignment = submitAdviserAssignment;
+window.submitTeacherAssignment = submitTeacherAssignment;
+window.refreshFacultyDataFromServer = refreshFacultyDataFromServer;
+window.startAutoRefresh = startAutoRefresh;
+window.stopAutoRefresh = stopAutoRefresh;
+window.showReplaceAdviserForm = showReplaceAdviserForm;
+window.hideReplaceAdviserForm = hideReplaceAdviserForm;
+window.showReplaceTeacherForm = showReplaceTeacherForm;
+window.hideReplaceTeacherForm = hideReplaceTeacherForm;
 window.showStrandSections = showStrandSections;
 window.showTVLTracks = showTVLTracks;
 window.showSectionsForStrand = showSectionsForStrand;

@@ -333,6 +333,10 @@ Route::middleware(['auth', 'role:faculty_head'])->prefix('faculty-head')->name('
     Route::get('/get-sections', [App\Http\Controllers\FacultyHeadController::class, 'getSections'])
         ->name('get-sections');
     
+    // Get fresh faculty data for real-time updates
+    Route::get('/get-faculty-data', [App\Http\Controllers\FacultyHeadController::class, 'getFacultyData'])
+        ->name('get-faculty-data');
+    
     // Get grade sections for accordion
     Route::get('/get-grade-sections', [App\Http\Controllers\FacultyHeadController::class, 'getGradeSections'])
         ->name('get-grade-sections');
@@ -619,7 +623,6 @@ Route::post('/guidance/counseling-sessions/approve', [GuidanceController::class,
 
 
 // Student routes
-Route::get('/student', [StudentController::class, 'index']);
 Route::prefix('student')->name('student.')->group(function () {
     // Student login routes (public)
     Route::get('/login', [StudentController::class, 'showLoginForm'])->name('login');
@@ -628,21 +631,20 @@ Route::prefix('student')->name('student.')->group(function () {
     
     // Protected student routes
     Route::middleware('auth:student')->group(function () {
-        Route::get('/dashboard', [StudentController::class, 'index'])->name('dashboard');
-        
-        // Enrollment routes (always accessible for completing enrollment)
+        // Always accessible routes (no enrollment/payment required) - ONLY enrollment
         Route::get('/enrollment', [StudentController::class, 'enrollment'])->name('enrollment');
         Route::post('/enrollment', [StudentController::class, 'submitEnrollment'])->name('enrollment.submit');
-        
         Route::post('/logout', [StudentController::class, 'logout'])->name('logout');
         
-        // Payments routes (requires payment settlement - same as other features)
-        Route::middleware('student.payment')->group(function () {
+        // Routes that require full enrollment (enrolled status only)
+        Route::middleware('student.enrollment')->group(function () {
+            Route::get('/', [StudentController::class, 'index']); // /student route
+            Route::get('/dashboard', [StudentController::class, 'index'])->name('dashboard');
             Route::get('/payments', [StudentController::class, 'payments'])->name('payments');
             Route::post('/payment/mode/update', [StudentController::class, 'updatePaymentMode'])->name('payment.mode.update');
         });
         
-        // Routes that require payment settlement and enrollment completion
+        // Routes that require both enrollment completion AND payment settlement
         Route::middleware('student.payment')->group(function () {
             // Subjects routes (requires payment)
             Route::get('/subjects', [StudentController::class, 'subjects'])->name('subjects');

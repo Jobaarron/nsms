@@ -281,7 +281,7 @@
                                             <div class="card bg-light">
                                                 <div class="card-body p-3">
                                                     <h6 class="card-title mb-2">1st Quarter</h6>
-                                                    <input type="date" class="form-control form-control-sm mb-2" name="quarterly_date_1" min="{{ date('Y-m-d') }}" value="{{ $quarterDates[0] }}">
+                                                    <input type="date" class="form-control form-control-sm mb-2" name="quarterly_date_1" min="{{ date('Y-m-d') }}" value="{{ $quarterDates[0] }}" readonly title="First quarter date is automatically set and cannot be changed">
                                                     <div class="input-group input-group-sm">
                                                         <span class="input-group-text">₱</span>
                                                         <input type="number" class="form-control" name="quarterly_amount_1" step="0.01" min="0" value="{{ number_format($quarterlyAmount, 2, '.', '') }}" placeholder="0.00" readonly>
@@ -361,7 +361,7 @@
                                                 <div class="card bg-light">
                                                     <div class="card-body p-2">
                                                         <h6 class="card-title mb-1 small">Payment {{ $i }}</h6>
-                                                        <input type="date" class="form-control form-control-sm mb-1" name="monthly_date_{{ $i }}" min="{{ date('Y-m-d') }}" value="{{ $monthDates[$i-1] }}">
+                                                        <input type="date" class="form-control form-control-sm mb-1" name="monthly_date_{{ $i }}" min="{{ date('Y-m-d') }}" value="{{ $monthDates[$i-1] }}" {{ $i == 1 ? 'readonly title="First payment date is automatically set and cannot be changed"' : '' }}>
                                                         <div class="input-group input-group-sm">
                                                             <span class="input-group-text">₱</span>
                                                             <input type="number" class="form-control" name="monthly_amount_{{ $i }}" step="0.01" min="0" value="{{ number_format($monthlyAmount, 2, '.', '') }}" placeholder="0.00" readonly>
