@@ -13,8 +13,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     const toggleBtn = document.getElementById('toggleSubmissionBtn');
-    const toggleIcon = document.getElementById('toggleIcon');
-    const toggleText = document.getElementById('toggleText');
+    let toggleIcon = document.getElementById('toggleIcon');
+    let toggleText = document.getElementById('toggleText');
     const quarterSwitches = document.querySelectorAll('.quarter-switch');
     
     console.log('Elements found:', {
@@ -177,10 +177,13 @@ document.addEventListener('DOMContentLoaded', function() {
     function toggleGradeSubmission(newStatus) {
         console.log('toggleGradeSubmission called with status:', newStatus);
         
-        // Disable button during request
+        // Disable button during request and show loading state
         toggleBtn.disabled = true;
         const originalHTML = toggleBtn.innerHTML;
         const actionText = newStatus ? 'Activating...' : 'Deactivating...';
+        
+        // Update button appearance immediately for better UX
+        toggleBtn.className = 'btn btn-lg btn-secondary btn-updating';
         toggleBtn.innerHTML = `<i class="ri-loader-4-line me-2 spin"></i>${actionText}`;
         
         console.log('Making request to:', '/faculty-head/activate-submission/toggle');
@@ -207,19 +210,41 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             console.log('Response data:', data);
             if (data.success) {
-                // Update UI
-                updateToggleButton(data.active);
-                updateStatusCard(data.active);
-                updateQuarterSwitchesState(data.active);
-                
-                // Show success message
-                showAlert('success', data.message);
-                
-                // Update page data
+                // Update page data first
                 toggleBtn.dataset.active = data.active ? '1' : '0';
                 
-                // Notify teacher views of status change
-                notifyTeacherViews(data.active);
+                // Force immediate UI updates with multiple repaints
+                requestAnimationFrame(() => {
+                    updateToggleButton(data.active);
+                    updateStatusCard(data.active);
+                    updateQuarterSwitchesState(data.active);
+                    
+                    // Update quarter switches if quarters data is provided
+                    if (data.quarters) {
+                        updateQuarterSwitches(data.quarters);
+                    }
+                    
+                    // Force another repaint
+                    requestAnimationFrame(() => {
+                        console.log('UI updates completed - Button active:', data.active);
+                        
+                        // Show success message with quarter info if available
+                        let message = data.message;
+                        if (data.activated_quarter) {
+                            const quarterNames = {
+                                'q1': '1st Quarter',
+                                'q2': '2nd Quarter', 
+                                'q3': '3rd Quarter',
+                                'q4': '4th Quarter'
+                            };
+                            message += ` (${quarterNames[data.activated_quarter]} automatically activated)`;
+                        }
+                        showAlert('success', message, 7000);
+                        
+                        // Notify teacher views of status change
+                        notifyTeacherViews(data.active);
+                    });
+                });
             } else {
                 throw new Error(data.message || 'Failed to update grade submission status');
             }
@@ -228,8 +253,9 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error toggling grade submission:', error);
             showAlert('danger', 'Failed to update grade submission status. Please try again.');
             
-            // Restore original content on error
-            toggleBtn.innerHTML = originalHTML;
+            // Restore original button state on error
+            const currentActive = toggleBtn.dataset.active === '1';
+            updateToggleButton(currentActive);
         })
         .finally(() => {
             // Re-enable button
@@ -284,38 +310,94 @@ document.addEventListener('DOMContentLoaded', function() {
      * Update toggle button appearance
      */
     function updateToggleButton(isActive) {
-        if (isActive) {
-            toggleBtn.className = 'btn btn-lg btn-danger';
-            toggleIcon.className = 'ri-pause-circle-line me-2';
-            toggleText.textContent = 'Deactivate Grade Submission';
-        } else {
-            toggleBtn.className = 'btn btn-lg btn-success';
-            toggleIcon.className = 'ri-play-circle-line me-2';
-            toggleText.textContent = 'Activate Grade Submission';
-        }
+        console.log('Updating button - Active:', isActive);
+        
+        // Remove all existing classes and force DOM update
+        toggleBtn.removeAttribute('class');
+        toggleBtn.style.display = 'none';
+        toggleBtn.offsetHeight; // Force reflow
+        toggleBtn.style.display = '';
+        
+        // Build new button content
+        const iconClass = isActive ? 'ri-pause-circle-line' : 'ri-play-circle-line';
+        const buttonClass = isActive ? 'btn btn-lg btn-danger' : 'btn btn-lg btn-success';
+        const buttonText = isActive ? 'Deactivate Grade Submission' : 'Activate Grade Submission';
+        
+        // Update classes and content in one operation
+        toggleBtn.className = buttonClass;
+        toggleBtn.classList.remove('btn-updating'); // Remove updating class
+        toggleBtn.innerHTML = `<i class="${iconClass} me-2" id="toggleIcon"></i><span id="toggleText">${buttonText}</span>`;
+        
+        // Re-assign element references after innerHTML change
+        window.toggleIcon = document.getElementById('toggleIcon');
+        window.toggleText = document.getElementById('toggleText');
+        
+        // Force multiple repaints to ensure visibility
+        toggleBtn.offsetHeight;
+        toggleBtn.style.transform = 'scale(1.01)';
+        setTimeout(() => {
+            toggleBtn.style.transform = '';
+        }, 50);
+        
+        console.log('Button update completed - Classes:', toggleBtn.className, 'Text:', buttonText);
+    }
+
+    /**
+     * Update quarter switches based on data
+     */
+    function updateQuarterSwitches(quartersData) {
+        Object.keys(quartersData).forEach(quarter => {
+            const switchElement = document.getElementById(`${quarter}Switch`);
+            if (switchElement) {
+                switchElement.checked = quartersData[quarter];
+                console.log(`Updated ${quarter} switch to:`, quartersData[quarter]);
+            }
+        });
     }
     
     /**
      * Update status card
      */
     function updateStatusCard(isActive) {
+        console.log('Updating status card - Active:', isActive);
+        
         const statusCard = document.querySelector('.card-summary');
         const statusIcon = statusCard?.querySelector('i');
         const statusTitle = statusCard?.querySelector('h2');
         const statusDescription = statusCard?.querySelector('p');
         
         if (statusCard && statusIcon && statusTitle && statusDescription) {
-            if (isActive) {
-                statusCard.className = 'card card-summary card-payment h-100';
-                statusIcon.className = 'ri-play-circle-fill display-1 mb-3';
-                statusTitle.textContent = 'ACTIVE';
-                statusDescription.textContent = 'Teachers can submit grades';
-            } else {
-                statusCard.className = 'card card-summary card-schedule h-100';
-                statusIcon.className = 'ri-pause-circle-fill display-1 mb-3';
-                statusTitle.textContent = 'INACTIVE';
-                statusDescription.textContent = 'Grade submission is disabled';
-            }
+            // Force immediate visual update with animation
+            statusCard.style.opacity = '0.5';
+            statusCard.style.transform = 'scale(0.98)';
+            
+            setTimeout(() => {
+                // Clear existing classes
+                statusCard.removeAttribute('class');
+                statusIcon.removeAttribute('class');
+                
+                if (isActive) {
+                    statusCard.className = 'card card-summary card-payment h-100';
+                    statusIcon.className = 'ri-play-circle-fill display-1 mb-3';
+                    statusTitle.textContent = 'ACTIVE';
+                    statusDescription.textContent = 'Teachers can submit grades';
+                } else {
+                    statusCard.className = 'card card-summary card-schedule h-100';
+                    statusIcon.className = 'ri-pause-circle-fill display-1 mb-3';
+                    statusTitle.textContent = 'INACTIVE';
+                    statusDescription.textContent = 'Grade submission is disabled';
+                }
+                
+                // Restore animation
+                statusCard.style.opacity = '1';
+                statusCard.style.transform = 'scale(1)';
+                statusCard.style.transition = 'all 0.3s ease';
+                
+                // Force repaint
+                statusCard.offsetHeight;
+                
+                console.log('Status card update completed - Active:', isActive, 'Classes:', statusCard.className);
+            }, 100);
         }
     }
     
@@ -442,6 +524,21 @@ style.textContent = `
     .quarter-switch:disabled + label {
         opacity: 0.5;
         cursor: not-allowed;
+    }
+    
+    /* Enhanced button transitions */
+    #toggleSubmissionBtn {
+        transition: all 0.2s ease-in-out !important;
+    }
+    
+    .card-summary {
+        transition: all 0.3s ease-in-out !important;
+    }
+    
+    /* Force immediate visual updates */
+    .btn-updating {
+        transform: scale(1.02) !important;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
     }
 `;
 document.head.appendChild(style);

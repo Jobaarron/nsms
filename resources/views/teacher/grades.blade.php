@@ -1,6 +1,7 @@
 <x-teacher-layout>
   @push('scripts')
   @vite('resources/js/grade-submission-checker.js')
+  @vite('resources/js/teacher-grades.js')
   @endpush
 
   <!-- MAIN CONTENT -->
@@ -101,7 +102,7 @@
       </div>
     </div>
 
-    <!-- APPROVED GRADES AWAITING FINALIZATION -->
+    <!-- APPROVED GRADES AWAITING UPLOAD -->
     @php
       $approvedSubmissions = $submissions->where('status', 'approved');
     @endphp
@@ -109,13 +110,13 @@
     <div class="card mb-4">
       <div class="card-header bg-success text-white">
         <h5 class="mb-0">
-          <i class="ri-checkbox-circle-line me-2"></i>Approved Grades - Ready to Finalize
+          <i class="ri-upload-cloud-line me-2"></i>Approved Grades - Ready to Upload
         </h5>
       </div>
       <div class="card-body">
         <p class="text-muted mb-3">
           <i class="ri-information-line me-1"></i>
-          These grades have been approved by the faculty head. Click "Finalize" to make them visible to students.
+          These grades have been approved by the faculty head. Click "Upload" to make them visible to students.
         </p>
         <div class="table-responsive">
           <table class="table table-hover">
@@ -138,8 +139,8 @@
                 <td>{{ $submission->total_students }}</td>
                 <td>{{ $submission->reviewed_at->format('M d, Y') }}</td>
                 <td>
-                  <button class="btn btn-success btn-sm" onclick="finalizeGrades({{ $submission->id }})">
-                    <i class="ri-check-double-line me-1"></i>Finalize
+                  <button class="btn btn-success btn-sm" onclick="uploadGrades({{ $submission->id }})">
+                    <i class="ri-upload-line me-1"></i>Upload
                   </button>
                 </td>
               </tr>
@@ -231,6 +232,9 @@
                       @break
                     @case('revision_requested')
                       <span class="badge bg-info">Revision Requested</span>
+                      @break
+                    @case('finalized')
+                      <span class="badge bg-secondary">Uploaded</span>
                       @break
                     @default
                       <span class="badge bg-secondary">{{ ucfirst($submission->status) }}</span>

@@ -628,10 +628,10 @@ window.handleCreateSubmissionForm = function() {
     }
 };
 
-// Grade finalization function - Define immediately for onclick access
-window.finalizeGrades = function(submissionId) {
-    console.log('finalizeGrades called with ID:', submissionId);
-    if (!confirm('Are you sure you want to finalize these grades? Once finalized, grades will be visible to students.')) {
+// Grade upload function - Define immediately for onclick access
+window.uploadGrades = function(submissionId) {
+    console.log('uploadGrades called with ID:', submissionId);
+    if (!confirm('Are you sure you want to upload these grades? Once uploaded, grades will be visible to students.')) {
         return;
     }
 
@@ -640,7 +640,7 @@ window.finalizeGrades = function(submissionId) {
     
     // Show loading state
     button.disabled = true;
-    button.innerHTML = '<i class="ri-loader-4-line me-1"></i>Finalizing...';
+    button.innerHTML = '<i class="ri-loader-4-line me-1"></i>Uploading...';
 
     // Get CSRF token
     const csrfToken = document.querySelector('meta[name="csrf-token"]');
@@ -667,11 +667,11 @@ window.finalizeGrades = function(submissionId) {
                 window.location.reload();
             }, 1500);
         } else {
-            throw new Error(data.error || 'Failed to finalize grades');
+            throw new Error(data.error || 'Failed to upload grades');
         }
     })
     .catch(error => {
-        console.error('Finalization error:', error);
+        console.error('Upload error:', error);
         window.showErrorMessage('Error: ' + error.message);
         
         // Restore button state
@@ -703,15 +703,15 @@ document.addEventListener('DOMContentLoaded', function() {
             window.handleCreateSubmissionForm();
         }
         
-        console.log('Teacher Grades JavaScript loaded with finalization support');
-        console.log('finalizeGrades function available:', typeof window.finalizeGrades);
+        console.log('Teacher Grades JavaScript loaded with upload support');
+        console.log('uploadGrades function available:', typeof window.uploadGrades);
     } catch (error) {
         console.log('Teacher Grades initialization error:', error);
     }
 });
 
 // Test function to verify script loading
-window.testFinalization = function() {
+window.testUpload = function() {
     console.log('Test function called - script is loaded');
     return 'Script loaded successfully';
 };

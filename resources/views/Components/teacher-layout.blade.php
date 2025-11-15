@@ -20,9 +20,9 @@
   @vite(['resources/sass/app.scss','resources/js/app.js'])
   @vite(['resources/css/index_teacher.css'])
   @vite('resources/js/teacher-dashboard.js')
-  @vite('resources/js/teacher-recommend-counseling.js')
   @vite('resources/js/teacher-advisory.js')
   @vite('resources/js/teacher-grades.js')
+  @vite('resources/js/teacher-grade-entry.js')
 
   <style>
     .spin {
@@ -33,6 +33,9 @@
       to { transform: rotate(360deg); }
     }
   </style>
+
+  <!-- Page-specific data injection -->
+  @stack('page-data')
   
 </head>
 <body>
