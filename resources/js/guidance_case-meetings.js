@@ -102,6 +102,31 @@ document.addEventListener('DOMContentLoaded', function() {
             allowInput: true,
         });
 
+        // Initialize time pickers for case meetings with school hours (7 AM - 4 PM)
+        flatpickr("#scheduleCaseMeetingModal input[name='scheduled_time']", {
+            enableTime: true,
+            noCalendar: true,
+            dateFormat: "h:i K",
+            time_24hr: false,
+            minTime: "07:00",
+            maxTime: "16:00",
+            minuteIncrement: 15,
+            defaultHour: 7,
+            defaultMinute: 0
+        });
+
+        flatpickr("#editCaseMeetingModal input[name='scheduled_time']", {
+            enableTime: true,
+            noCalendar: true,
+            dateFormat: "h:i K",
+            time_24hr: false,
+            minTime: "07:00",
+            maxTime: "16:00",
+            minuteIncrement: 15,
+            defaultHour: 7,
+            defaultMinute: 0
+        });
+
         // Initialize flatpickr for intervention date fields in case summary modal
         flatpickr("#createCaseSummaryModal input[name='written_reflection_due']", {
             dateFormat: "Y-m-d",

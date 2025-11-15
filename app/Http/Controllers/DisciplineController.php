@@ -15,9 +15,18 @@ use App\Models\Guidance;
 use App\Models\ArchiveViolation;
 use App\Models\Sanction;
 use Illuminate\Support\Facades\Storage;
+use Carbon\Carbon;
 
 class DisciplineController extends Controller
 {
+    /**
+     * Get school time (Philippine Time)
+     */
+    private function schoolNow()
+    {
+        return Carbon::now('Asia/Manila');
+    }
+
     public function __construct()
     {
         // Role and permission management is handled by RolePermissionSeeder
@@ -84,13 +93,14 @@ class DisciplineController extends Controller
         $totalStudents = Student::count();
 
         // Get violations statistics
-        $violationsThisMonth = Violation::whereMonth('violation_date', now()->month)
-            ->whereYear('violation_date', now()->year)
+        $now = $this->schoolNow();
+        $violationsThisMonth = Violation::whereMonth('violation_date', $now->month)
+            ->whereYear('violation_date', $now->year)
             ->count();
 
         $totalViolations = Violation::count();
         $pendingViolations = Violation::where('status', 'pending')->count();
-        $violationsToday = Violation::whereDate('violation_date', now()->toDateString())->count();
+        $violationsToday = Violation::whereDate('violation_date', $now->toDateString())->count();
 
     $majorViolations = Violation::where('severity', 'major')->count();
     $minorViolations = Violation::where('severity', 'minor')->count();
@@ -98,7 +108,7 @@ class DisciplineController extends Controller
 
         // Get weekly violations (last 7 days)
         $weeklyViolations = Violation::with(['student', 'reportedBy'])
-            ->where('violation_date', '>=', now()->subDays(7))
+            ->where('violation_date', '>=', $now->copy()->subDays(7))
             ->orderBy('violation_date', 'desc')
             ->orderBy('violation_time', 'desc')
             ->limit(10)
@@ -183,25 +193,46 @@ class DisciplineController extends Controller
 
         // Group violations by student and title to count occurrences
         $counts = [];
+        $grouped = [];
         foreach ($allViolations as $violation) {
             $key = $violation->student_id . '|' . $violation->title;
             $counts[$key] = ($counts[$key] ?? 0) + 1;
+            
+            // Store violations grouped by key
+            if (!isset($grouped[$key])) {
+                $grouped[$key] = [];
+            }
+            $grouped[$key][] = $violation;
         }
 
-        // Add effective_severity property based on count
+        // Process violations and handle escalated cases
+        $processed = collect();
+        $seenKeys = [];
+        
         foreach ($allViolations as $violation) {
             $key = $violation->student_id . '|' . $violation->title;
+            
+            // Skip if we've already processed this student-violation combination
+            if (in_array($key, $seenKeys)) {
+                continue;
+            }
+            
+            // Add effective_severity property based on count
             if (($counts[$key] ?? 0) >= 3) {
                 $violation->effective_severity = 'major';
-            } else {
-                $violation->effective_severity = $violation->severity;
+                $violation->is_escalated = true;
+                $violation->occurrence_count = $counts[$key];
+                $seenKeys[] = $key;
+                $processed->push($violation);
+            } elseif ($violation->severity === 'major') {
+                $violation->effective_severity = 'major';
+                $violation->is_escalated = false;
+                $processed->push($violation);
             }
         }
 
         // Filter to only include major effective_severity violations
-        $filtered = $allViolations->filter(function ($violation) {
-            return $violation->effective_severity === 'major';
-        });
+        $filtered = $processed;
 
         // Paginate filtered results manually
         $perPage = 20;
@@ -367,7 +398,16 @@ class DisciplineController extends Controller
         // Process violation time
         if (isset($validatedData['violation_time']) && $validatedData['violation_time']) {
             $time = $validatedData['violation_time'];
-            if (preg_match('/^(\d{1,2}):(\d{2})$/', $time)) {
+            
+            // Try to convert from 12-hour format (h:i A) to 24-hour format (H:i:s)
+            if (preg_match('/(AM|PM|am|pm)/', $time)) {
+                try {
+                    $validatedData['violation_time'] = \Carbon\Carbon::createFromFormat('h:i A', $time)->format('H:i:s');
+                } catch (\Exception $e) {
+                    // Fallback for different 12-hour format variations
+                    $validatedData['violation_time'] = date('H:i:s', strtotime($time));
+                }
+            } elseif (preg_match('/^(\d{1,2}):(\d{2})$/', $time)) {
                 $validatedData['violation_time'] = $time . ':00';
             } elseif (preg_match('/^(\d{1,2}):(\d{2}):(\d{2})$/', $time)) {
                 $validatedData['violation_time'] = $time;
@@ -598,7 +638,16 @@ class DisciplineController extends Controller
         // Process violation time
         if (isset($validatedData['violation_time']) && $validatedData['violation_time']) {
             $time = $validatedData['violation_time'];
-            if (preg_match('/^(\d{1,2}):(\d{2})$/', $time)) {
+            
+            // Try to convert from 12-hour format (h:i A) to 24-hour format (H:i:s)
+            if (preg_match('/(AM|PM|am|pm)/', $time)) {
+                try {
+                    $validatedData['violation_time'] = \Carbon\Carbon::createFromFormat('h:i A', $time)->format('H:i:s');
+                } catch (\Exception $e) {
+                    // Fallback for different 12-hour format variations
+                    $validatedData['violation_time'] = date('H:i:s', strtotime($time));
+                }
+            } elseif (preg_match('/^(\d{1,2}):(\d{2})$/', $time)) {
                 $validatedData['violation_time'] = $time . ':00';
             } elseif (preg_match('/^(\d{1,2}):(\d{2}):(\d{2})$/', $time)) {
                 $validatedData['violation_time'] = $time;
@@ -636,7 +685,7 @@ class DisciplineController extends Controller
                     // Fallback: use user ID if no discipline record
                     $validatedData['resolved_by'] = $user->id;
                 }
-                $validatedData['resolved_at'] = now();
+                $validatedData['resolved_at'] = $this->schoolNow();
             }
         }
 
@@ -932,17 +981,18 @@ class DisciplineController extends Controller
         $period = $request->get('period', 'month');
         
         $query = \App\Models\Violation::query();
+        $now = $this->schoolNow();
         
         switch ($period) {
             case 'quarter':
-                $query->where('violation_date', '>=', now()->subMonths(3));
+                $query->where('violation_date', '>=', $now->copy()->subMonths(3));
                 break;
             case 'year':
-                $query->where('violation_date', '>=', now()->subYear());
+                $query->where('violation_date', '>=', $now->copy()->subYear());
                 break;
             case 'month':
-                $query->whereMonth('violation_date', now()->month)
-                      ->whereYear('violation_date', now()->year);
+                $query->whereMonth('violation_date', $now->month)
+                      ->whereYear('violation_date', $now->year);
                 break;
             case 'all':
             default:
@@ -987,7 +1037,9 @@ class DisciplineController extends Controller
         
         // Get the specified number of months
         for ($i = $monthsCount - 1; $i >= 0; $i--) {
-            $date = now()->subMonths($i);
+            $now = $this->schoolNow();
+            $date = $now->copy()->subMonths($i);
+            $date = $now->copy()->subMonths($i);
             $label = $date->format('M Y');
             $months[] = $label;
             $minorCounts[] = \App\Models\Violation::where('severity', 'minor')
@@ -1018,18 +1070,21 @@ class DisciplineController extends Controller
             
             switch ($period) {
                 case 'quarter':
-                    $violationQuery->where('violation_date', '>=', now()->subMonths(3));
-                    $caseMeetingQuery->where('created_at', '>=', now()->subMonths(3));
+                    $now = $this->schoolNow();
+                    $violationQuery->where('violation_date', '>=', $now->copy()->subMonths(3));
+                    $caseMeetingQuery->where('created_at', '>=', $now->copy()->subMonths(3));
                     break;
                 case 'year':
-                    $violationQuery->where('violation_date', '>=', now()->subYear());
-                    $caseMeetingQuery->where('created_at', '>=', now()->subYear());
+                    $now = $this->schoolNow();
+                    $violationQuery->where('violation_date', '>=', $now->copy()->subYear());
+                    $caseMeetingQuery->where('created_at', '>=', $now->copy()->subYear());
                     break;
                 case 'month':
-                    $violationQuery->whereMonth('violation_date', now()->month)
-                                  ->whereYear('violation_date', now()->year);
-                    $caseMeetingQuery->whereMonth('created_at', now()->month)
-                                    ->whereYear('created_at', now()->year);
+                    $now = $this->schoolNow();
+                    $violationQuery->whereMonth('violation_date', $now->month)
+                                  ->whereYear('violation_date', $now->year);
+                    $caseMeetingQuery->whereMonth('created_at', $now->month)
+                                    ->whereYear('created_at', $now->year);
                     break;
                 case 'all':
                 default:
@@ -1125,7 +1180,7 @@ class DisciplineController extends Controller
                 $priority = 'medium';
                 
                 // Determine priority based on severity and age
-                $daysSinceViolation = now()->diffInDays($violation->violation_date);
+                $daysSinceViolation = $this->schoolNow()->diffInDays($violation->violation_date);
                 
                 if ($violation->severity === 'major' || $daysSinceViolation > 3) {
                     $priority = 'high';
@@ -1255,7 +1310,8 @@ class DisciplineController extends Controller
             }
             
             for ($i = $monthsCount - 1; $i >= 0; $i--) {
-                $date = now()->subMonths($i);
+                $now = $this->schoolNow();
+                $date = $now->copy()->subMonths($i);
                 $months[] = $date->format('M Y');
                 
                 $minorCount = Violation::where('severity', 'minor')

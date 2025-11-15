@@ -1,34 +1,3 @@
-// Reject counseling session (simple version for action button)
-function rejectCounselingSession(sessionId) {
-    if (confirm('Are you sure you want to reject this counseling session?')) {
-        fetch(`/guidance/counseling-sessions/${sessionId}/reject-with-feedback`, {
-            method: 'POST',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-            },
-            body: JSON.stringify({ feedback: 'Rejected by guidance staff.' })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showAlert('Counseling session rejected successfully', 'success');
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1500);
-            } else {
-                showAlert(data.message || 'Failed to reject session', 'danger');
-            }
-        })
-        .catch(error => {
-            console.error('Error rejecting session:', error);
-            showAlert('Error rejecting session', 'danger');
-        });
-    }
-}
-window.rejectCounselingSession = rejectCounselingSession;
 // Show counseling session detail modal (schedule tab)
 function showSessionDetailModal(sessionId) {
     const modalElem = document.getElementById('sessionDetailModal');
@@ -50,17 +19,43 @@ function showSessionDetailModal(sessionId) {
                         if (data.success && data.session) {
                                 const s = data.session;
                                 // Schedule/Status Card (left column)
+                                // Generate table rows for each scheduled date
+                                let dateRows = '';
+                                if (s.scheduled_dates && s.scheduled_dates.length > 0) {
+                                    dateRows = s.scheduled_dates.map(date => `
+                                        <tr>
+                                            <td>${date}</td>
+                                            <td>${s.scheduled_time ?? '-'}</td>
+                                            <td>${s.status_display ? `<span class='badge bg-success'>${s.status_display}</span>` : '-'}</td>
+                                        </tr>
+                                    `).join('');
+                                } else {
+                                    dateRows = `
+                                        <tr>
+                                            <td>${s.scheduled_date ?? '-'}</td>
+                                            <td>${s.scheduled_time ?? '-'}</td>
+                                            <td>${s.status_display ? `<span class='badge bg-success'>${s.status_display}</span>` : '-'}</td>
+                                        </tr>
+                                    `;
+                                }
             const scheduleStatusBox = `
-                     <div class="card mb-3 border-primary h-100" style="border-width:2px; min-height:420px;">
-                                                                                                        <div class="card-header bg-primary bg-opacity-10 text-primary d-flex align-items-center" style="font-weight:500; font-size:1.25rem;">
+                     <div class="card mb-3 border-primary h-100" style="border-width:2px;">
+                                                                                                        <div class="card-header bg-primary bg-opacity-10 text-primary d-flex align-items-center" style="font-weight:500;">
                                                                                                             <i class="ri-calendar-check-line me-2"></i> Schedule & Status
                                                                                                         </div>
                                                                                                         <div class="card-body p-4">
-                                                                                                            <ul class="ps-3" style="font-size:1.25rem; list-style:none; padding-left:0;">
-                                                                                                                <li class="mb-2">Date: <span class='fw-normal'>${s.scheduled_date ?? '-'}</span></li>
-                                                                                                                <li class="mb-2">Time: <span class='fw-normal'>${s.scheduled_time ?? '-'}</span></li>
-                                                                                                                <li class="mb-2">Status: ${s.status_display ? `<span class='fw-normal badge bg-success'>${s.status_display}</span>` : '-'}</li>
-                                                                                                            </ul>
+                                                                                                            <table class="table table-bordered mb-0" style="width: 100%;">
+                                                                                                                <thead>
+                                                                                                                    <tr>
+                                                                                                                        <th style="width: 33.33%;">Date</th>
+                                                                                                                        <th style="width: 33.33%;">Time</th>
+                                                                                                                        <th style="width: 33.34%;">Status</th>
+                                                                                                                    </tr>
+                                                                                                                </thead>
+                                                                                                                <tbody>
+                                                                                                                    ${dateRows}
+                                                                                                                </tbody>
+                                                                                                            </table>
                                                                                                         </div>
                                                                                                     </div>
                                  `;
@@ -70,17 +65,31 @@ function showSessionDetailModal(sessionId) {
                                         <div class="card-header bg-success bg-opacity-10 text-success d-flex align-items-center" style="font-weight:500;">
                                             <i class="ri-user-3-line me-2"></i> Personal Information
                                         </div>
-                                        <div class="card-body p-3">
-                                            <table class="table table-borderless mb-0">
-                                                <tbody>
-                                                    <tr><td class="fw-bold">Full Name</td><td>${s.student_full_name ?? '-'}</td></tr>
-                                                    <tr><td class="fw-bold">Date of Birth</td><td>${s.student_birthdate ?? '-'}${s.student_age ? ` (${s.student_age} years old)` : ''}</td></tr>
-                                                    <tr><td class="fw-bold">Gender</td><td>${s.student_gender ?? '-'}</td></tr>
-                                                    <tr><td class="fw-bold">Nationality</td><td>${s.student_nationality ?? '-'}</td></tr>
-                                                    <tr><td class="fw-bold">Religion</td><td>${s.student_religion ?? '-'}</td></tr>
-                                                    <tr><td class="fw-bold">Student Type</td><td><span class="badge bg-success">${s.student_type_badge ?? 'New'}</span> <span class="text-muted small ms-1">${s.student_type_desc ?? ''}</span></td></tr>
-                                                </tbody>
-                                            </table>
+                                        <div class="card-body p-4">
+                                            <div class="mb-3">
+                                                <div class="fw-bold mb-1">Full Name</div>
+                                                <div>${s.student_full_name ?? '-'}</div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <div class="fw-bold mb-1">Date of Birth</div>
+                                                <div>${s.student_birthdate ?? '-'}${s.student_age ? ` (${s.student_age} years old)` : ''}</div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <div class="fw-bold mb-1">Gender</div>
+                                                <div>${s.student_gender ?? '-'}</div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <div class="fw-bold mb-1">Nationality</div>
+                                                <div>${s.student_nationality ?? '-'}</div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <div class="fw-bold mb-1">Religion</div>
+                                                <div>${s.student_religion ?? '-'}</div>
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold mb-1">Student Type</div>
+                                                <div><span class="badge bg-success">${s.student_type_badge ?? 'New'}</span> <span class="text-muted small ms-1">${s.student_type_desc ?? ''}</span></div>
+                                            </div>
                                         </div>
                                     </div>
                                 `;
@@ -91,13 +100,11 @@ function showSessionDetailModal(sessionId) {
                                         <div class="card-header bg-success bg-opacity-10 text-success" style="font-weight:500;">
                                             <span><i class="ri-file-list-3-line me-2"></i> Documents</span>
                                         </div>
-                                        <div class="w-100 px-3 pt-2 pb-0">
-                                            <a href="${pdfUrl}" class="btn btn-sm btn-outline-success w-100 mb-2" target="_blank" title="Download Counseling Session PDF">
-                                                <i class="ri-download-2-line"></i> Student Profile Recommendation Letter
-                                            </a>
-                                        </div>
                                         <div class="card-body p-3">
-                                            ${s.documents_html ?? '<span class="text-muted">No documents uploaded.</span>'}
+                                            <a href="${pdfUrl}" class="btn btn-sm btn-outline-success w-100 d-flex align-items-center justify-content-center" target="_blank" title="Download Counseling Session PDF">
+                                                <i class="ri-download-2-line me-2"></i> Student Profile Recommendation Letter
+                                            </a>
+                                            ${s.documents_html ? `<div class="mt-3">${s.documents_html}</div>` : ''}
                                         </div>
                                     </div>
                                 `;
@@ -113,11 +120,12 @@ function showSessionDetailModal(sessionId) {
                                     </div>
                                 `;
                         } else {
-                                modalBody.innerHTML = '<div class="text-danger">Failed to load session details.</div>';
+                                modalBody.innerHTML = '<div class="alert alert-danger m-3">Failed to load session details.</div>';
                         }
                 })
-                .catch(() => {
-                        modalBody.innerHTML = '<div class="text-danger">Error loading session details.</div>';
+                .catch((error) => {
+                        console.error('Error loading counseling session details:', error);
+                        modalBody.innerHTML = '<div class="alert alert-danger m-3">Error loading session details. Please try again.</div>';
                 });
 }
 window.showSessionDetailModal = showSessionDetailModal;
@@ -172,10 +180,13 @@ function submitApproveSession(event) {
             try {
                 const errorData = await response.json();
                 if (errorData.errors) {
-                    errorMsg = Object.values(errorData.errors).map(arr => arr.join(' ')).join(' ');
+                    const errors = Object.values(errorData.errors).flat();
+                    errorMsg = '<ul class="mb-0 ps-3">' + errors.map(err => `<li>${err}</li>`).join('') + '</ul>';
+                } else if (errorData.message) {
+                    errorMsg = errorData.message;
                 }
             } catch (e) {}
-            showAlert(errorMsg, 'danger');
+            showModalError('approveSessionModal', errorMsg, 'danger');
             throw new Error(errorMsg);
         }
         return response.json();
@@ -186,11 +197,13 @@ function submitApproveSession(event) {
             closeModal('approveSessionModal');
             refreshCounselingSessions();
         } else {
-            showAlert(data.message || 'Failed to approve session', 'danger');
+            showModalError('approveSessionModal', data.message || 'Failed to approve session', 'danger');
         }
     })
     .catch(error => {
-        showAlert(error.message || 'Error approving session', 'danger');
+        if (error.message && !error.message.includes('<ul')) {
+            showModalError('approveSessionModal', error.message || 'Error approving session', 'danger');
+        }
     })
     .finally(() => {
         submitBtn.innerHTML = 'Approve';
@@ -281,62 +294,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Handle feedback form submission (Reject with feedback)
-    const feedbackForm = document.getElementById('feedbackForm');
-    if (feedbackForm) {
-        feedbackForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const feedback = feedbackForm.elements['feedback'].value.trim();
-            if (!feedback) {
-                showAlert('Please provide feedback for rejection.', 'warning');
-                return;
-            }
-            // Try to get sessionId from PDF iframe src (if available)
-            let sessionId = null;
-            const pdfFrame = document.getElementById('pdfFrame');
-            if (pdfFrame && pdfFrame.src) {
-                try {
-                    const url = new URL(pdfFrame.src, window.location.origin);
-                    sessionId = url.searchParams.get('session_id');
-                } catch (e) {}
-            }
-            if (!sessionId) {
-                showAlert('Session ID not found. Please try again.', 'danger');
-                return;
-            }
-            const submitBtn = feedbackForm.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<i class="ri-loader-4-line me-2 spinner-border spinner-border-sm"></i>Submitting...';
-            submitBtn.disabled = true;
-            fetch(`/guidance/counseling-sessions/${sessionId}/reject-with-feedback`, {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-                },
-                body: JSON.stringify({ feedback })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showAlert('Feedback submitted and session archived.', 'success');
-                    closeModal('feedbackModal');
-                    setTimeout(() => { window.location.reload(); }, 1500);
-                } else {
-                    showAlert(data.message || 'Failed to submit feedback.', 'danger');
-                }
-            })
-            .catch(error => {
-                showAlert(error.message || 'Error submitting feedback.', 'danger');
-            })
-            .finally(() => {
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
-            });
-        });
-    }
+
 });
 
 // Initialize counseling sessions functionality
@@ -378,6 +336,24 @@ function setupDateTimeConstraints() {
         const today = new Date().toISOString().split('T')[0];
         followUpDateInput.min = today;
     }
+
+    // Initialize Flatpickr for time inputs with school hours (7 AM - 4 PM)
+    const timeInputs = document.querySelectorAll('input[name="scheduled_time"]');
+    if (typeof flatpickr !== 'undefined' && timeInputs.length > 0) {
+        timeInputs.forEach(input => {
+            flatpickr(input, {
+                enableTime: true,
+                noCalendar: true,
+                dateFormat: "h:i K",
+                time_24hr: false,
+                minTime: "07:00",
+                maxTime: "16:00",
+                minuteIncrement: 15,
+                defaultHour: 7,
+                defaultMinute: 0
+            });
+        });
+    }
 }
 
 // Setup follow-up toggle functionality
@@ -417,7 +393,19 @@ function submitCounselingSession(event) {
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
         }
     })
-    .then(response => response.json())
+    .then(async response => {
+        const data = await response.json();
+        if (!response.ok) {
+            let errorMsg = data.message || 'Failed to schedule counseling session';
+            if (data.errors) {
+                const errors = Object.values(data.errors).flat();
+                errorMsg = '<ul class="mb-0 ps-3">' + errors.map(err => `<li>${err}</li>`).join('') + '</ul>';
+            }
+            showModalError('scheduleCounselingModal', errorMsg, 'danger');
+            throw new Error(errorMsg);
+        }
+        return data;
+    })
     .then(data => {
         if (data.success) {
             showAlert('Counseling session scheduled successfully!', 'success');
@@ -432,12 +420,14 @@ function submitCounselingSession(event) {
                 window.location.reload();
             }, 1500);
         } else {
-            showAlert(data.message || 'Failed to schedule counseling session', 'danger');
+            showModalError('scheduleCounselingModal', data.message || 'Failed to schedule counseling session', 'danger');
         }
     })
     .catch(error => {
         console.error('Error scheduling counseling session:', error);
-        showAlert('An error occurred while scheduling the session', 'danger');
+        if (!error.message || !error.message.includes('<ul')) {
+            showModalError('scheduleCounselingModal', 'An error occurred while scheduling the session', 'danger');
+        }
     })
     .finally(() => {
         // Restore button state
@@ -514,7 +504,7 @@ function scheduleRecommendedSession(sessionId) {
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Time <span class="text-danger">*</span></label>
-                                    <input type="time" class="form-control" name="scheduled_time" required>
+                                    <input type="text" class="form-control schedule-time-picker" name="scheduled_time" required placeholder="Select time">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Duration (minutes) <span class="text-danger">*</span></label>
@@ -555,6 +545,24 @@ function scheduleRecommendedSession(sessionId) {
 
     // Load counselors
     loadCounselors();
+
+    // Initialize time picker with school hours
+    setTimeout(() => {
+        const timeInput = document.querySelector('#scheduleRecommendedModal .schedule-time-picker');
+        if (timeInput && typeof flatpickr !== 'undefined') {
+            flatpickr(timeInput, {
+                enableTime: true,
+                noCalendar: true,
+                dateFormat: "h:i K",
+                time_24hr: false,
+                minTime: "07:00",
+                maxTime: "16:00",
+                minuteIncrement: 15,
+                defaultHour: 7,
+                defaultMinute: 0
+            });
+        }
+    }, 100);
 
     // Show modal
     const modal = new bootstrap.Modal(document.getElementById('scheduleRecommendedModal'));
@@ -606,7 +614,19 @@ function submitScheduleRecommended(event, sessionId) {
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
         }
     })
-    .then(response => response.json())
+    .then(async response => {
+        const data = await response.json();
+        if (!response.ok) {
+            let errorMsg = data.message || 'Failed to schedule session';
+            if (data.errors) {
+                const errors = Object.values(data.errors).flat();
+                errorMsg = '<ul class="mb-0 ps-3">' + errors.map(err => `<li>${err}</li>`).join('') + '</ul>';
+            }
+            showModalError('scheduleRecommendedModal', errorMsg, 'danger');
+            throw new Error(errorMsg);
+        }
+        return data;
+    })
     .then(data => {
         if (data.success) {
             showAlert('Recommended counseling session scheduled successfully!', 'success');
@@ -615,12 +635,14 @@ function submitScheduleRecommended(event, sessionId) {
                 window.location.reload();
             }, 1500);
         } else {
-            showAlert(data.message || 'Failed to schedule session', 'danger');
+            showModalError('scheduleRecommendedModal', data.message || 'Failed to schedule session', 'danger');
         }
     })
     .catch(error => {
         console.error('Error scheduling recommended session:', error);
-        showAlert('An error occurred while scheduling the session', 'danger');
+        if (!error.message || !error.message.includes('<ul')) {
+            showModalError('scheduleRecommendedModal', 'An error occurred while scheduling the session', 'danger');
+        }
     })
     .finally(() => {
         // Restore button state
@@ -732,6 +754,48 @@ function closeModal(modalId) {
     if (modal) {
         modal.hide();
     }
+}
+
+// Show error in modal
+function showModalError(modalId, message, type = 'danger') {
+    const modal = document.getElementById(modalId);
+    if (!modal) {
+        showAlert(message, type);
+        return;
+    }
+
+    // Find or create error container in modal
+    let errorContainer = modal.querySelector('.modal-error-container');
+    if (!errorContainer) {
+        const modalBody = modal.querySelector('.modal-body');
+        if (modalBody) {
+            errorContainer = document.createElement('div');
+            errorContainer.className = 'modal-error-container';
+            modalBody.insertBefore(errorContainer, modalBody.firstChild);
+        } else {
+            showAlert(message, type);
+            return;
+        }
+    }
+
+    // Create error alert
+    const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show mb-3" role="alert">
+            <i class="ri-${type === 'danger' ? 'error-warning' : type === 'warning' ? 'alert' : 'information'}-line me-2"></i>
+            <strong>${type === 'danger' ? 'Error: ' : type === 'warning' ? 'Warning: ' : ''}</strong>${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+
+    errorContainer.innerHTML = alertHtml;
+
+    // Auto-remove after 8 seconds
+    setTimeout(() => {
+        const alert = errorContainer.querySelector('.alert');
+        if (alert) {
+            alert.remove();
+        }
+    }, 8000);
 }
 
 // Show alert helper
@@ -1011,4 +1075,3 @@ window.startInlineScheduling = startInlineScheduling;
 window.saveInlineScheduling = saveInlineScheduling;
 window.cancelInlineScheduling = cancelInlineScheduling;
 window.showApproveCounselingModal = showApproveCounselingModal;
-window.downloadPdf = downloadPdf;
