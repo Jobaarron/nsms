@@ -47,6 +47,9 @@ class Violation extends Model
         'notes',
         'sanction',
         'urgency_level',
+        'student_attachment_path',
+        'student_attachment_description',
+        'student_attachment_uploaded_at',
     ];
 
     protected $attributes = [

@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('section_name'); // e.g., 'A', 'B', 'C', 'Diamond', 'Ruby'
             $table->string('grade_level'); // e.g., 'Grade 1', 'Grade 7', 'Kinder'
             $table->string('academic_year'); // e.g., '2025-2026'
-            $table->integer('max_students')->default(35); // Maximum students per section
+            $table->integer('max_students')->default(40); // Maximum students per section
             $table->integer('current_students')->default(0); // Current enrolled students
             $table->boolean('is_active')->default(true);
             $table->text('description')->nullable(); // Optional description

@@ -1,21 +1,21 @@
 <x-registrar-layout>
     <div class="py-4">
         <!-- HEADER SECTION -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-4 gap-3">
             <div>
                 <h1 class="section-title mb-2">Student Applications Dashboard</h1>
                 <p class="text-muted mb-0">Review and manage student enrollment applications</p>
             </div>
             <div>
                 <a href="{{ route('registrar.applications') }}" class="btn btn-registrar btn-lg">
-                    <i class="ri-file-list-line me-2"></i>View All Applications
+                    <i class="ri-file-list-line me-2"></i><span class="d-none d-sm-inline">View All </span>Applications
                 </a>
             </div>
         </div>
         
         <!-- STATISTICS OVERVIEW -->
         <div class="row g-4 mb-5">
-            <div class="col-md-3">
+            <div class="col-6 col-sm-6 col-md-3">
                 <div class="card border-0 shadow-sm h-100 text-center">
                     <div class="card-body py-4">
                         <div class="mb-3">
@@ -28,7 +28,7 @@
                 </div>
             </div>
             
-            <div class="col-md-3">
+            <div class="col-6 col-sm-6 col-md-3">
                 <div class="card border-0 shadow-sm h-100 text-center">
                     <div class="card-body py-4">
                         <div class="mb-3">
@@ -41,7 +41,7 @@
                 </div>
             </div>
             
-            <div class="col-md-3">
+            <div class="col-6 col-sm-6 col-md-3">
                 <div class="card border-0 shadow-sm h-100 text-center">
                     <div class="card-body py-4">
                         <div class="mb-3">
@@ -54,7 +54,7 @@
                 </div>
             </div>
             
-            <div class="col-md-3">
+            <div class="col-6 col-sm-6 col-md-3">
                 <div class="card border-0 shadow-sm h-100 text-center">
                     <div class="card-body py-4">
                         <div class="mb-3">
@@ -100,7 +100,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-6 col-sm-6 col-md-3">
                                         <div class="text-center">
                                             <span class="badge bg-warning fs-6 px-3 py-2">
                                                 <i class="ri-time-line me-1"></i>Pending Review
@@ -154,9 +154,18 @@
                                     <div class="d-flex justify-content-between align-items-start">
                                         <div class="flex-grow-1">
                                             <div class="d-flex align-items-center mb-2">
-                                                <div class="bg-{{ $application->enrollment_status === 'pending' ? 'warning' : ($application->enrollment_status === 'approved' ? 'success' : 'danger') }} bg-opacity-10 rounded-circle p-2 me-3">
-                                                    <i class="ri-user-line text-{{ $application->enrollment_status === 'pending' ? 'warning' : ($application->enrollment_status === 'approved' ? 'success' : 'danger') }}"></i>
-                                                </div>
+                                                @if($application->id_photo_data_url)
+                                                    <div class="me-3">
+                                                        <img src="{{ $application->id_photo_data_url }}" alt="{{ $application->first_name }}" 
+                                                             class="rounded-circle" 
+                                                             style="width: 40px; height: 40px; object-fit: cover; border: 2px solid {{ $application->enrollment_status === 'pending' ? '#ffc107' : ($application->enrollment_status === 'approved' ? '#198754' : '#dc3545') }};">
+                                                    </div>
+                                                @else
+                                                    <div class="bg-{{ $application->enrollment_status === 'pending' ? 'warning' : ($application->enrollment_status === 'approved' ? 'success' : 'danger') }} bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                                        <i class="ri-user-line text-{{ $application->enrollment_status === 'pending' ? 'warning' : ($application->enrollment_status === 'approved' ? 'success' : 'danger') }}"></i>
+                                                    </div>
+                                                @endif
+                                                
                                                 <div>
                                                     <h6 class="mb-0">{{ $application->first_name }} {{ $application->last_name }}</h6>
                                                     <small class="text-muted">{{ $application->grade_level_applied }}</small>

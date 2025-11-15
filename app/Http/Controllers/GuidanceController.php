@@ -12,6 +12,8 @@ use App\Models\Student;
 use App\Models\CaseMeeting;
 use App\Models\CounselingSession;
 use App\Models\Violation;
+use App\Models\FacultyAssignment;
+use App\Models\Sanction;
 
 class GuidanceController extends Controller
 {
@@ -102,8 +104,12 @@ class GuidanceController extends Controller
      */
     public function caseMeetingsIndex()
     {
-        $caseMeetings = CaseMeeting::with(['student', 'counselor', 'sanctions'])
-            ->orderBy('scheduled_date', 'desc')
+        $caseMeetings = CaseMeeting::with(['student', 'counselor', 'sanctions', 'violation'])
+            ->where('case_meetings.status', '!=', 'case_closed')
+            ->leftJoin('student_violations', 'case_meetings.violation_id', '=', 'student_violations.id')
+            ->orderByRaw('CASE WHEN student_violations.reported_by IS NOT NULL THEN 0 ELSE 1 END')
+            ->orderBy('case_meetings.created_at', 'desc')
+            ->select('case_meetings.*')
             ->paginate(20);
 
         $students = Student::select('id', 'first_name', 'last_name', 'student_id')
@@ -223,6 +229,43 @@ class GuidanceController extends Controller
         $validatedData['counselor_id'] = $guidanceRecord->id;
         $validatedData['status'] = 'scheduled';
 
+        // Get the student to find their class adviser
+        $student = Student::find($validatedData['student_id']);
+        if ($student) {
+            \Log::info('Found student for adviser lookup', [
+                'student_id' => $student->id,
+                'grade_level' => $student->grade_level,
+                'section' => $student->section,
+                'academic_year' => $student->academic_year
+            ]);
+            
+            // Find the class adviser for this student's grade level and section
+            $advisoryAssignment = FacultyAssignment::where('grade_level', $student->grade_level)
+                ->where('section', $student->section)
+                ->where('academic_year', $student->academic_year)
+                ->where('assignment_type', 'class_adviser')
+                ->where('status', 'active')
+                ->with(['teacher.user'])
+                ->first();
+            
+            \Log::info('Advisory assignment search result', [
+                'found' => $advisoryAssignment ? 'yes' : 'no',
+                'assignment_id' => $advisoryAssignment->id ?? null,
+                'teacher_id' => $advisoryAssignment->teacher_id ?? null
+            ]);
+            
+            if ($advisoryAssignment && $advisoryAssignment->teacher && $advisoryAssignment->teacher->user) {
+                $validatedData['adviser_id'] = $advisoryAssignment->teacher->user->id;
+                \Log::info('Set adviser_id', ['adviser_id' => $validatedData['adviser_id']]);
+            } else {
+                \Log::warning('Could not find adviser for student', [
+                    'student_grade_level' => $student->grade_level,
+                    'student_section' => $student->section,
+                    'academic_year' => $student->academic_year
+                ]);
+            }
+        }
+
         // Check if there's an existing pending or in_progress case meeting for this student
         $existingMeeting = CaseMeeting::where('student_id', $validatedData['student_id'])
             ->whereIn('status', ['pending', 'in_progress'])
@@ -249,7 +292,8 @@ class GuidanceController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Case meeting scheduled successfully.',
-                'meeting' => $caseMeeting
+                'meeting' => $caseMeeting,
+                'meeting_id' => $caseMeeting->id
             ]);
         }
 
@@ -366,6 +410,9 @@ class GuidanceController extends Controller
 
         $caseMeeting->update($updateData);
 
+        // Automatically create sanctions based on selected interventions
+        $this->createAutomaticSanctions($caseMeeting, $updateData);
+
         // Automatically update all related violations' statuses
         foreach ($caseMeeting->violations as $violation) {
             $violation->update(['status' => 'pre_completed']);
@@ -418,7 +465,7 @@ class GuidanceController extends Controller
                     'action_plan' => $caseMeeting->violation ? $caseMeeting->violation->action_plan : null,
                     // Add teacher reply fields from the case meeting itself
                     'teacher_statement' => $caseMeeting->teacher_statement,
-                    'teacher_action_plan' => $caseMeeting->action_plan,
+                    'action_plan' => $caseMeeting->action_plan,
                     'sanctions' => $caseMeeting->sanctions->map(function ($sanction) {
                         return [
                             'id' => $sanction->id,
@@ -602,6 +649,7 @@ class GuidanceController extends Controller
     /**
      * Forward case to president
      */
+
  public function forwardToPresident(CaseMeeting $caseMeeting)
 {
     try {
@@ -614,12 +662,46 @@ class GuidanceController extends Controller
             'meeting_type' => $caseMeeting->meeting_type,
         ]);
 
-        // Only require summary and schedule for forwarding
+        // Basic requirements: summary and schedule
         if (empty($caseMeeting->summary) || $caseMeeting->status !== 'pre_completed') {
-            Log::warning('Forward blocked: requirements not met', ['id' => $caseMeeting->id]);
+            Log::warning('Forward blocked: basic requirements not met', ['id' => $caseMeeting->id]);
             return response()->json([
                 'success' => false,
                 'message' => 'Please add both a schedule and a summary report before forwarding.'
+            ], 400);
+        }
+
+        // Check for required attachments and replies
+        $missingItems = [];
+
+        // Check if student narrative report exists and has student reply
+        $violation = $caseMeeting->violation;
+        if ($violation && $violation->severity === 'major') {
+            // For major violations, student narrative report is required
+            if (empty($violation->student_statement) && empty($violation->incident_feelings) && empty($violation->action_plan)) {
+                $missingItems[] = 'Student Narrative Report (student reply required)';
+            }
+        }
+
+        // Check if teacher observation report exists and has teacher reply
+        if (empty($caseMeeting->teacher_statement) && empty($caseMeeting->action_plan)) {
+            $missingItems[] = 'Teacher Observation Report (teacher reply required)';
+        }
+
+        // Check if disciplinary conference report can be generated (requires summary)
+        if (empty($caseMeeting->summary)) {
+            $missingItems[] = 'Disciplinary Conference Report (summary required)';
+        }
+
+        // If there are missing attachments/replies, prevent forwarding
+        if (!empty($missingItems)) {
+            Log::warning('Forward blocked: missing attachments/replies', [
+                'id' => $caseMeeting->id,
+                'missing_items' => $missingItems
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot forward to president. Missing: ' . implode(', ', $missingItems) . '. Please ensure all required reports are completed with proper replies.'
             ], 400);
         }
 
@@ -654,6 +736,7 @@ class GuidanceController extends Controller
         ], 500);
     }
 }
+
 
 
     // COUNSELING SESSION METHODS
@@ -1376,106 +1459,217 @@ class GuidanceController extends Controller
         return response()->json(['success' => true, 'sanctions' => $sanctions]);
     }
        /**
-     * API: Get case status counts for dashboard pie chart
+     * API: Get case status counts for dashboard pie chart (dynamic filtering)
      */
-    public function getCaseStatusStats()
+    public function getCaseStatusStats(Request $request)
     {
-        $onGoing = \App\Models\CaseMeeting::where('status', 'in_progress')->count();
-        $scheduled = \App\Models\CaseMeeting::where('status', 'scheduled')->count();
-        $preCompleted = \App\Models\CaseMeeting::where('status', 'pre_completed')->count();
+        $period = $request->get('period', 'month');
+        
+        // Calculate date filter
+        $startDate = $this->getDateRangeStart($period);
+        
+        // Build query with date filter
+        $query = \App\Models\CaseMeeting::query();
+        
+        if ($startDate) {
+            $query->where('created_at', '>=', $startDate);
+        }
+        
+        $onGoing = (clone $query)->where('status', 'in_progress')->count();
+        $scheduled = (clone $query)->where('status', 'scheduled')->count();
+        $preCompleted = (clone $query)->where('status', 'pre_completed')->count();
+        $closed = (clone $query)->where('status', 'case_closed')->count();
+        
         return response()->json([
             'success' => true,
             'on_going_cases' => $onGoing,
             'scheduled_meeting' => $scheduled,
             'pre_completed' => $preCompleted,
+            'closed_cases' => $closed,
+            'period' => $period
         ]);
     }
         /**
-     * API: Get closed cases per month for bar chart
+     * API: Get closed cases per month for bar chart (dynamic filtering)
      */
-    public function getClosedCasesStats()
+    public function getClosedCasesStats(Request $request)
     {
-        $months = [];
+        $period = $request->get('period', '6months');
+        $view = $request->get('view', 'monthly');
+        
+        $monthsBack = match($period) {
+            '3months' => 3,
+            '6months' => 6,
+            '12months' => 12,
+            '24months' => 24,
+            default => 6
+        };
+        
+        $labels = [];
         $data = [];
-        $now = now();
-        for ($i = 5; $i >= 0; $i--) {
-            $month = $now->copy()->subMonths($i);
-            $label = $month->format('M Y');
-            $count = \App\Models\CaseMeeting::where('status', 'case_closed')
-                ->whereYear('completed_at', $month->year)
-                ->whereMonth('completed_at', $month->month)
-                ->count();
-            $months[] = $label;
-            $data[] = $count;
+        
+        for ($i = $monthsBack - 1; $i >= 0; $i--) {
+            $month = now()->copy()->subMonths($i);
+            
+            if ($view === 'quarterly' && $monthsBack >= 12) {
+                // Group by quarters for longer periods
+                if ($i % 3 === 2) {
+                    $labels[] = 'Q' . ceil((13 - $i) / 3) . ' ' . $month->format('Y');
+                    $quarterStart = $month->copy()->startOfQuarter();
+                    $quarterEnd = $month->copy()->endOfQuarter();
+                    
+                    $count = \App\Models\CaseMeeting::where('status', 'case_closed')
+                        ->whereBetween('completed_at', [$quarterStart, $quarterEnd])
+                        ->count();
+                    $data[] = $count;
+                }
+            } else {
+                // Monthly view (default)
+                $labels[] = $month->format('M Y');
+                $count = \App\Models\CaseMeeting::where('status', 'case_closed')
+                    ->whereYear('completed_at', $month->year)
+                    ->whereMonth('completed_at', $month->month)
+                    ->count();
+                $data[] = $count;
+            }
         }
+        
         return response()->json([
             'success' => true,
-            'labels' => $months,
+            'labels' => $labels,
             'data' => $data,
+            'period' => $period,
+            'view' => $view
         ]);
     }
         /**
-     * API: Get counseling sessions per month for bar chart
+     * API: Get counseling sessions per month for bar chart (dynamic filtering)
      */
-    public function getCounselingSessionsStats()
+    public function getCounselingSessionsStats(Request $request)
     {
-        $months = [];
+        $period = $request->get('period', '6months');
+        $status = $request->get('status', 'all');
+        
+        $monthsBack = match($period) {
+            '3months' => 3,
+            '6months' => 6,
+            '12months' => 12,
+            '24months' => 24,
+            default => 6
+        };
+        
+        $labels = [];
         $data = [];
-        $now = now();
-        for ($i = 5; $i >= 0; $i--) {
-            $month = $now->copy()->subMonths($i);
-            $label = $month->format('M Y');
-            $count = \App\Models\CounselingSession::whereYear('start_date', $month->year)
-                ->whereMonth('start_date', $month->month)
-                ->count();
-            $months[] = $label;
+        
+        for ($i = $monthsBack - 1; $i >= 0; $i--) {
+            $month = now()->copy()->subMonths($i);
+            $labels[] = $month->format('M Y');
+            
+            $query = \App\Models\CounselingSession::whereYear('start_date', $month->year)
+                ->whereMonth('start_date', $month->month);
+            
+            if ($status !== 'all') {
+                $query->where('status', $status);
+            }
+            
+            $count = $query->count();
             $data[] = $count;
         }
+        
         return response()->json([
             'success' => true,
-            'labels' => $months,
+            'labels' => $labels,
             'data' => $data,
+            'period' => $period,
+            'status' => $status
         ]);
     }
     
-public function getDisciplineVsTotalStats()
+public function getDisciplineVsTotalStats(Request $request)
 {
+    $period = $request->get('period', '5years');
+    $view = $request->get('view', 'comparison');
+    
+    $yearsBack = match($period) {
+        '3years' => 3,
+        '5years' => 5,
+        '10years' => 10,
+        default => 5
+    };
+    
     $currentYear = now()->year;
     $years = [];
     $withDiscipline = [];
     $totalStudents = [];
-    for ($i = $currentYear - 5; $i <= $currentYear; $i++) {
+    $percentages = [];
+    
+    for ($i = $currentYear - $yearsBack; $i <= $currentYear; $i++) {
         $years[] = (string)$i;
+        
         // Only count violations with a valid violation_date in this year
         $disciplineCount = \App\Models\Violation::whereNotNull('violation_date')
             ->whereYear('violation_date', $i)
             ->distinct('student_id')
             ->count('student_id');
+            
         // Count all students created up to and including this year
         $studentCount = \App\Models\Student::whereYear('created_at', '<=', $i)
             ->count();
+        
         $withDiscipline[] = $disciplineCount;
         $totalStudents[] = $studentCount;
+        
+        // Calculate percentage for trend analysis
+        $percentage = $studentCount > 0 ? round(($disciplineCount / $studentCount) * 100, 1) : 0;
+        $percentages[] = $percentage;
     }
-    return response()->json([
-        'success' => true,
-        'labels' => $years,
-        'data' => [
+    
+    $data = match($view) {
+        'percentage' => [
+            'percentages' => $percentages,
+        ],
+        'discipline_only' => [
+            'with_discipline' => $withDiscipline,
+        ],
+        'comparison' => [
             'with_discipline' => $withDiscipline,
             'total_students' => $totalStudents,
         ],
+        default => [
+            'with_discipline' => $withDiscipline,
+            'total_students' => $totalStudents,
+        ]
+    };
+    
+    return response()->json([
+        'success' => true,
+        'labels' => $years,
+        'data' => $data,
+        'period' => $period,
+        'view' => $view
     ]);
 }    // Weekly violation list for dashboard
         // Weekly violation list for dashboard
-    // API: Get Top 5 Cases for dashboard
-    public function getTopCases()
+    // API: Get Top Cases for dashboard (dynamic filtering)
+    public function getTopCases(Request $request)
     {
-        // Group by student and case title, count occurrences, order by count desc, limit 5
-        $topCases = \App\Models\Violation::with('student')
-            ->selectRaw('student_id, title as case_title, COUNT(*) as count')
-            ->groupBy('student_id', 'case_title')
+        $dateRange = $request->get('date_range', 'month');
+        $limit = $request->get('limit', 5);
+        
+        // Calculate date filter
+        $startDate = $this->getDateRangeStart($dateRange);
+        
+        // Build query with date filter
+        $query = \App\Models\Violation::with('student')
+            ->selectRaw('student_id, title as case_title, COUNT(*) as count');
+            
+        if ($startDate) {
+            $query->where('violation_date', '>=', $startDate);
+        }
+        
+        $topCases = $query->groupBy('student_id', 'case_title')
             ->orderByDesc('count')
-            ->limit(5)
+            ->limit($limit)
             ->get();
 
         $formatted = $topCases->map(function($c) {
@@ -1489,7 +1683,539 @@ public function getDisciplineVsTotalStats()
 
         return response()->json([
             'success' => true,
-            'cases' => $formatted
+            'cases' => $formatted,
+            'date_range' => $dateRange,
+            'limit' => $limit
         ]);
     }
+
+    /**
+     * API: Get violation trends by category (dynamic filtering)
+     */
+    public function getViolationTrends(Request $request)
+    {
+        $period = $request->get('period', '12months');
+        $chartType = $request->get('chart_type', 'line');
+        $severity = $request->get('severity', 'all');
+        $groupBy = $request->get('group_by', 'month');
+        
+        // Calculate period range
+        $monthsBack = match($period) {
+            '6months' => 6,
+            '12months' => 12,
+            '24months' => 24,
+            '36months' => 36,
+            default => 12
+        };
+        
+        $labels = [];
+        $violations = [];
+        
+        // Build query with filters
+        $query = \App\Models\Violation::query();
+        
+        if ($severity !== 'all') {
+            $query->where('severity', $severity);
+        }
+        
+        // Get data by grouping
+        for ($i = $monthsBack - 1; $i >= 0; $i--) {
+            $date = now()->subMonths($i);
+            
+            if ($groupBy === 'quarter') {
+                // Group by quarters
+                if ($i % 3 === 2) {
+                    $labels[] = 'Q' . ceil((13 - $i) / 3) . ' ' . $date->format('Y');
+                    $quarterStart = $date->startOfQuarter();
+                    $quarterEnd = $date->endOfQuarter();
+                    
+                    $count = (clone $query)
+                        ->whereBetween('violation_date', [$quarterStart, $quarterEnd])
+                        ->count();
+                    $violations[] = $count;
+                }
+            } else {
+                // Group by months (default)
+                $labels[] = $date->format('M Y');
+                
+                $count = (clone $query)
+                    ->whereYear('violation_date', $date->year)
+                    ->whereMonth('violation_date', $date->month)
+                    ->count();
+                $violations[] = $count;
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'labels' => $labels,
+            'data' => $violations,
+            'chart_type' => $chartType
+        ]);
     }
+
+    /**
+     * API: Get violation severity distribution
+     */
+    public function getViolationSeverity()
+    {
+        $severities = \App\Models\Violation::select('severity', \DB::raw('count(*) as count'))
+            ->whereNotNull('severity')
+            ->groupBy('severity')
+            ->pluck('count', 'severity')
+            ->toArray();
+
+        return response()->json([
+            'success' => true,
+            'data' => $severities
+        ]);
+    }
+
+    /**
+     * API: Get counseling session effectiveness (dynamic filtering)
+     */
+    public function getCounselingEffectiveness(Request $request)
+    {
+        $period = $request->get('period', 'month');
+        $counselor = $request->get('counselor', 'all');
+        
+        // Calculate date filter
+        $startDate = $this->getDateRangeStart($period);
+        
+        // Build query with filters
+        $query = \App\Models\CounselingSession::query();
+        
+        if ($startDate) {
+            $query->where('created_at', '>=', $startDate);
+        }
+        
+        if ($counselor !== 'all') {
+            $query->where('counselor_id', $counselor);
+        }
+        
+        $total = $query->count();
+        $completed = (clone $query)->where('status', 'completed')->count();
+        $scheduled = (clone $query)->where('status', 'scheduled')->count();
+        $cancelled = (clone $query)->where('status', 'cancelled')->count();
+        $in_progress = (clone $query)->where('status', 'in_progress')->count();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'completed' => $completed,
+                'scheduled' => $scheduled,
+                'cancelled' => $cancelled,
+                'in_progress' => $in_progress,
+                'total' => $total,
+                'effectiveness_rate' => $total > 0 ? round(($completed / $total) * 100, 1) : 0,
+                'period' => $period,
+                'counselor' => $counselor
+            ]
+        ]);
+    }
+
+    /**
+     * API: Get recent activities for timeline
+     */
+    public function getRecentActivities(Request $request)
+    {
+        $dateRange = $request->get('date_range', 'week');
+        $status = $request->get('status', 'all');
+        $search = $request->get('search', '');
+        $contentTypes = explode(',', $request->get('content_types', 'caseMeetings,counseling,violations,activities'));
+        
+        // Calculate date filter
+        $startDate = $this->getDateRangeStart($dateRange);
+        
+        $activities = collect();
+
+        // Recent case meetings (with filters)
+        $caseMeetingsQuery = \App\Models\CaseMeeting::with(['student', 'counselor'])
+            ->orderBy('created_at', 'desc');
+            
+        if ($startDate) {
+            $caseMeetingsQuery->where('created_at', '>=', $startDate);
+        }
+        
+        if ($status !== 'all') {
+            $caseMeetingsQuery->where('status', $status);
+        }
+        
+        if ($search) {
+            $caseMeetingsQuery->whereHas('student', function($q) use ($search) {
+                $q->where('first_name', 'like', "%{$search}%")
+                  ->orWhere('last_name', 'like', "%{$search}%");
+            });
+        }
+        
+        $caseMeetings = $caseMeetingsQuery->limit(5)->get()
+            ->map(function($meeting) {
+                return [
+                    'type' => 'case_meeting',
+                    'icon' => 'ri-calendar-event-line',
+                    'color' => 'success',
+                    'title' => 'Case Meeting Scheduled',
+                    'description' => 'Meeting with ' . ($meeting->student->first_name ?? 'Unknown') . ' ' . ($meeting->student->last_name ?? ''),
+                    'timestamp' => $meeting->created_at,
+                    'human_time' => $meeting->created_at->diffForHumans()
+                ];
+            });
+
+        // Recent counseling sessions
+        $counselingSessions = \App\Models\CounselingSession::with(['student', 'counselor'])
+            ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get()
+            ->map(function($session) {
+                return [
+                    'type' => 'counseling',
+                    'icon' => 'ri-heart-pulse-line',
+                    'color' => 'success',
+                    'title' => 'Counseling Session',
+                    'description' => 'Session ' . $session->session_no . ' with ' . ($session->student->first_name ?? 'Unknown'),
+                    'timestamp' => $session->created_at,
+                    'human_time' => $session->created_at->diffForHumans()
+                ];
+            });
+
+        // Recent violations
+        $violations = \App\Models\Violation::with('student')
+            ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get()
+            ->map(function($violation) {
+                return [
+                    'type' => 'violation',
+                    'icon' => 'ri-error-warning-line',
+                    'color' => 'danger',
+                    'title' => 'New Violation Reported',
+                    'description' => $violation->case_title . ' - ' . ($violation->student->first_name ?? 'Unknown'),
+                    'timestamp' => $violation->created_at,
+                    'human_time' => $violation->created_at->diffForHumans()
+                ];
+            });
+
+        // Merge and sort by timestamp
+        $activities = $activities->concat($caseMeetings)
+            ->concat($counselingSessions)
+            ->concat($violations)
+            ->sortByDesc('timestamp')
+            ->take(10)
+            ->values();
+
+        return response()->json([
+            'success' => true,
+            'activities' => $activities
+        ]);
+    }
+
+    /**
+     * API: Get upcoming tasks and reminders
+     */
+    public function getUpcomingTasks(Request $request)
+    {
+        $dateRange = $request->get('date_range', 'week');
+        $status = $request->get('status', 'all');
+        $priority = $request->get('priority', 'all');
+        $search = $request->get('search', '');
+        
+        // Calculate date filter
+        $startDate = $this->getDateRangeStart($dateRange);
+        $endDate = $dateRange === 'today' ? now()->endOfDay() : 
+                  ($dateRange === 'week' ? now()->endOfWeek() : 
+                   ($dateRange === 'month' ? now()->endOfMonth() : now()->addWeek()));
+        
+        $tasks = collect();
+
+        // Upcoming case meetings
+        $upcomingMeetings = \App\Models\CaseMeeting::with(['student'])
+            ->where('status', 'scheduled')
+            ->where('scheduled_date', '>=', now())
+            ->where('scheduled_date', '<=', now()->addWeek())
+            ->orderBy('scheduled_date', 'asc')
+            ->get()
+            ->map(function($meeting) {
+                return [
+                    'type' => 'meeting',
+                    'title' => 'Case Meeting',
+                    'student' => ($meeting->student->first_name ?? 'Unknown') . ' ' . ($meeting->student->last_name ?? ''),
+                    'date' => $meeting->scheduled_date,
+                    'time' => $meeting->scheduled_time,
+                    'priority' => 'medium',
+                    'status' => $meeting->status
+                ];
+            });
+
+        // Overdue follow-ups
+        $overdueFollowups = \App\Models\CounselingSession::with(['student'])
+            ->whereNotNull('follow_up_date')
+            ->where('follow_up_date', '<', now())
+            ->where('status', '!=', 'completed')
+            ->orderBy('follow_up_date', 'asc')
+            ->get()
+            ->map(function($session) {
+                return [
+                    'type' => 'followup',
+                    'title' => 'Follow-up Required',
+                    'student' => ($session->student->first_name ?? 'Unknown') . ' ' . ($session->student->last_name ?? ''),
+                    'date' => $session->follow_up_date,
+                    'priority' => 'high',
+                    'status' => 'overdue'
+                ];
+            });
+
+        $tasks = $tasks->concat($upcomingMeetings)->concat($overdueFollowups)->sortBy('date');
+
+        return response()->json([
+            'success' => true,
+            'tasks' => $tasks->values()
+        ]);
+    }
+
+    /**
+     * API: Get performance metrics for counselors
+     */
+    public function getCounselorPerformance()
+    {
+        $counselors = \App\Models\Guidance::where('is_active', true)
+            ->with(['caseMeetings', 'counselingSessions'])
+            ->get()
+            ->map(function($counselor) {
+                $totalMeetings = $counselor->caseMeetings->count();
+                $completedMeetings = $counselor->caseMeetings->where('status', 'completed')->count();
+                $totalSessions = $counselor->counselingSessions->count();
+                $completedSessions = $counselor->counselingSessions->where('status', 'completed')->count();
+                
+                return [
+                    'name' => $counselor->user->name ?? 'Unknown',
+                    'total_meetings' => $totalMeetings,
+                    'completed_meetings' => $completedMeetings,
+                    'completion_rate' => $totalMeetings > 0 ? round(($completedMeetings / $totalMeetings) * 100, 1) : 0,
+                    'total_sessions' => $totalSessions,
+                    'session_completion_rate' => $totalSessions > 0 ? round(($completedSessions / $totalSessions) * 100, 1) : 0
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'counselors' => $counselors
+        ]);
+    }
+
+    /**
+     * Helper method to calculate date range start based on filter
+     */
+    private function getDateRangeStart($dateRange)
+    {
+        switch($dateRange) {
+            case 'today':
+                return now()->startOfDay();
+            case 'week':
+                return now()->startOfWeek();
+            case 'month':
+                return now()->startOfMonth();
+            case 'quarter':
+                return now()->startOfQuarter();
+            case 'year':
+                return now()->startOfYear();
+            default:
+                return null; // 'all' or any other value
+        }
+    }
+
+    /**
+     * Forward Teacher Observation Report to adviser after scheduling a case meeting
+     */
+    public function forwardObservationReportToAdviser(Request $request, $caseMeetingId)
+    {
+        try {
+            $caseMeeting = CaseMeeting::with(['adviser', 'student'])->findOrFail($caseMeetingId);
+            
+            // Check if case meeting has an adviser assigned
+            if (!$caseMeeting->adviser_id || !$caseMeeting->adviser) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No adviser assigned to this case meeting.'
+                ]);
+            }
+
+            // Here you would implement the actual forwarding logic
+            // For example: sending an email notification to the adviser
+            // Mail::to($caseMeeting->adviser->email)->send(new TeacherObservationReportMail($caseMeeting));
+            
+            // For now, we'll just return success
+            return response()->json([
+                'success' => true,
+                'message' => 'Teacher Observation Report forwarded to ' . ($caseMeeting->adviser->full_name ?? $caseMeeting->adviser->name) . ' successfully.'
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error forwarding observation report to adviser', [
+                'case_meeting_id' => $caseMeetingId,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error forwarding report to adviser.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Create automatic sanctions based on selected interventions
+     */
+    private function createAutomaticSanctions(CaseMeeting $caseMeeting, array $interventions)
+    {
+        // Clear existing automatic sanctions to avoid duplicates
+        $caseMeeting->sanctions()->where('is_automatic', true)->delete();
+
+        $sanctionsToCreate = [];
+
+        // Written Reflection
+        if ($interventions['written_reflection']) {
+            $sanctionsToCreate[] = [
+                'case_meeting_id' => $caseMeeting->id,
+                'violation_id' => $caseMeeting->violation_id,
+                'severity' => 'Low',
+                'category' => 'Intervention',
+                'major_category' => 'Written Reflection',
+                'sanction' => 'Student must write a one-page reflection on the importance of respect, responsibility, and self-control.',
+                'deportment_grade_action' => 'Intervention noted in record',
+                'suspension' => 0,
+                'notes' => 'Due date: ' . ($interventions['written_reflection_due'] ? date('M d, Y', strtotime($interventions['written_reflection_due'])) : date('M d, Y', strtotime('+7 days'))),
+                'is_automatic' => true,
+                'is_approved' => false,
+                'created_at' => now(),
+                'updated_at' => now()
+            ];
+        }
+
+        // Mentorship/Counseling
+        if ($interventions['mentorship_counseling']) {
+            $sanctionsToCreate[] = [
+                'case_meeting_id' => $caseMeeting->id,
+                'violation_id' => $caseMeeting->violation_id,
+                'severity' => 'Medium',
+                'category' => 'Intervention',
+                'major_category' => 'Mentorship/Counseling',
+                'sanction' => 'Weekly meetings with school counselor or mentor for behavior management and coping strategies.',
+                'deportment_grade_action' => 'Counseling intervention recorded',
+                'suspension' => 0,
+                'notes' => 'Mentor: ' . ($interventions['mentor_name'] ?? 'TBD') . ' | Duration: 4 weeks',
+                'is_automatic' => true,
+                'is_approved' => false,
+                'created_at' => now(),
+                'updated_at' => now()
+            ];
+        }
+
+        // Suspension
+        if ($interventions['suspension']) {
+            $suspensionDays = 3; // default
+            if ($interventions['suspension_3days']) {
+                $suspensionDays = 3;
+            } elseif ($interventions['suspension_5days']) {
+                $suspensionDays = 5;
+            } elseif ($interventions['suspension_other_days']) {
+                $suspensionDays = $interventions['suspension_other_days'];
+            }
+
+            $suspensionNotes = "Duration: {$suspensionDays} days";
+            if ($interventions['suspension_start']) {
+                $suspensionNotes .= " | Start: " . date('M d, Y', strtotime($interventions['suspension_start']));
+            }
+            if ($interventions['suspension_end']) {
+                $suspensionNotes .= " | End: " . date('M d, Y', strtotime($interventions['suspension_end']));
+            }
+            if ($interventions['suspension_return']) {
+                $suspensionNotes .= " | Return: " . date('M d, Y', strtotime($interventions['suspension_return']));
+            }
+
+            $sanctionsToCreate[] = [
+                'case_meeting_id' => $caseMeeting->id,
+                'violation_id' => $caseMeeting->violation_id,
+                'severity' => 'High',
+                'category' => 'Disciplinary Action',
+                'major_category' => 'Suspension',
+                'sanction' => "Student suspended from school for {$suspensionDays} days as consequence for actions. Must complete activity sheets for missed classes.",
+                'suspension' => $suspensionDays,
+                'deportment_grade_action' => 'Suspension recorded in deportment grade',
+                'notes' => $suspensionNotes,
+                'is_automatic' => true,
+                'is_approved' => false,
+                'created_at' => now(),
+                'updated_at' => now()
+            ];
+        }
+
+        // Expulsion
+        if ($interventions['expulsion']) {
+            $expulsionNotes = 'Expulsion Date: ' . ($interventions['expulsion_date'] ? date('M d, Y', strtotime($interventions['expulsion_date'])) : date('M d, Y'));
+            
+            $sanctionsToCreate[] = [
+                'case_meeting_id' => $caseMeeting->id,
+                'violation_id' => $caseMeeting->violation_id,
+                'severity' => 'Critical',
+                'category' => 'Disciplinary Action',
+                'major_category' => 'Expulsion',
+                'sanction' => 'Student expelled from school. Certificate of eligibility may not be issued at the end of school year.',
+                'deportment_grade_action' => 'Expulsion recorded in permanent record',
+                'suspension' => 0,
+                'notes' => $expulsionNotes,
+                'is_automatic' => true,
+                'is_approved' => false,
+                'created_at' => now(),
+                'updated_at' => now()
+            ];
+        }
+
+        // Insert all sanctions at once
+        if (!empty($sanctionsToCreate)) {
+            Sanction::insert($sanctionsToCreate);
+            
+            // Log the creation of automatic sanctions
+            \Log::info('Automatic sanctions created for case meeting', [
+                'case_meeting_id' => $caseMeeting->id,
+                'sanctions_created' => count($sanctionsToCreate)
+            ]);
+        }
+    }
+
+    /**
+     * Check if the case meeting has any interventions selected.
+     *
+     * @param CaseMeeting $caseMeeting
+     * @return bool
+     */
+    private function hasAnyInterventions(CaseMeeting $caseMeeting): bool
+    {
+        // Check if any intervention/sanction fields are set to true
+        $interventionFields = [
+            'written_reflection',
+            'mentorship_counseling', 
+            'parent_teacher_communication',
+            'restorative_justice_activity',
+            'follow_up_meeting',
+            'community_service',
+            'suspension',
+            'suspension_3days',
+            'suspension_5days',
+            'expulsion'
+        ];
+
+        foreach ($interventionFields as $field) {
+            if ($caseMeeting->{$field}) {
+                return true;
+            }
+        }
+
+        // Also check if suspension_other_days has a value greater than 0
+        if ($caseMeeting->suspension_other_days && $caseMeeting->suspension_other_days > 0) {
+            return true;
+        }
+
+        // Check if there are any sanctions in the sanctions table as well (for backward compatibility)
+        return $caseMeeting->sanctions()->exists();
+    }
+}

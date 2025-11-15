@@ -24,13 +24,15 @@ class CheckStudentPaymentStatus
         $student = Auth::guard('student')->user();
 
         // Check if student is enrolled (which happens after 1st quarter payment approval)
+        // Students are enrolled after ANY payment is confirmed by cashier
         if ($student->enrollment_status !== 'enrolled') {
             // Redirect to dashboard with message about completing enrollment/payment
             return redirect()->route('student.dashboard')->with('error', 
-                'Please complete your enrollment and settle your first quarter payment to access this feature.');
+                'Please complete your enrollment and wait for cashier to approve your 1st quarter payment to access this feature.');
         }
         
         // Additional check: Ensure at least one payment is confirmed (1st quarter)
+        // This ensures the student has paid at least the 1st quarter
         $hasConfirmedPayment = \App\Models\Payment::where('payable_type', 'App\\Models\\Student')
             ->where('payable_id', $student->id)
             ->where('confirmation_status', 'confirmed')
@@ -38,7 +40,7 @@ class CheckStudentPaymentStatus
             
         if (!$hasConfirmedPayment) {
             return redirect()->route('student.dashboard')->with('error', 
-                'Please wait for cashier to approve your first quarter payment to access this feature.');
+                'Please wait for cashier to approve your 1st quarter payment to access this feature.');
         }
 
         return $next($request);

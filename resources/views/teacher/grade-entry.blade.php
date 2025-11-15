@@ -172,6 +172,41 @@
               </table>
             </div>
 
+            <!-- EXCEL UPLOAD SECTION -->
+            @if($submission->canEdit())
+            <div class="card mt-4">
+              <div class="card-header">
+                <h6 class="mb-0">
+                  <i class="ri-file-excel-line me-2"></i>Upload Grades from Excel/CSV
+                </h6>
+              </div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-8">
+                    <input type="file" class="form-control" id="gradesFile" accept=".csv,.xlsx,.xls">
+                    <div class="form-text">
+                      <strong>Required columns:</strong> student_id (NS-25XXX), last_name, first_name, middle_name (optional), grade, remarks (optional)
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <button type="button" class="btn btn-outline-primary" onclick="uploadGradesFile()">
+                      <i class="ri-upload-line me-2"></i>Upload Grades
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary ms-2" onclick="downloadTemplate()">
+                      <i class="ri-download-line me-2"></i>Template
+                    </button>
+                  </div>
+                </div>
+                <div id="uploadProgress" class="mt-3" style="display: none;">
+                  <div class="progress">
+                    <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                  </div>
+                  <small class="text-muted">Uploading and processing file...</small>
+                </div>
+              </div>
+            </div>
+            @endif
+
             <!-- SUBMISSION ACTIONS -->
             <div class="row mt-4">
               <div class="col-12">
@@ -249,6 +284,69 @@ function confirmSubmission() {
 }
 
 // Quarter loading function removed - quarter is now controlled by faculty head
+
+// Excel/CSV Upload Functions
+function uploadGradesFile() {
+    const fileInput = document.getElementById('gradesFile');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        alert('Please select a file to upload');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('grades_file', file);
+    formData.append('submission_id', {{ $submission->id }});
+    
+    // Show progress
+    document.getElementById('uploadProgress').style.display = 'block';
+    
+    fetch('{{ route("teacher.grades.upload") }}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('uploadProgress').style.display = 'none';
+        
+        if (data.success) {
+            alert(`Success! Uploaded ${data.processed} grades out of ${data.total_expected} students`);
+            location.reload(); // Reload to show updated grades
+        } else {
+            let errorMsg = data.message;
+            if (data.errors) {
+                errorMsg += '\n\nErrors:\n' + data.errors.join('\n');
+            }
+            alert(errorMsg);
+        }
+    })
+    .catch(error => {
+        document.getElementById('uploadProgress').style.display = 'none';
+        alert('Upload failed: ' + error.message);
+    });
+}
+
+function downloadTemplate() {
+    // Create CSV template with sample data using NS-25XXX format
+    const csvContent = `student_id,last_name,first_name,middle_name,grade,remarks
+NS-25001,Dela Cruz,Juan,Santos,85.50,Good performance
+NS-25002,Garcia,Maria,Lopez,92.00,Excellent work
+NS-25003,Reyes,Pedro,,78.25,Needs improvement
+NS-25004,Santos,Ana,Cruz,95.75,Outstanding
+NS-25005,Mendoza,Carlos,,88.00,`;
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'grade_upload_template.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
 
 // Auto-save functionality (optional)
 let autoSaveTimer;

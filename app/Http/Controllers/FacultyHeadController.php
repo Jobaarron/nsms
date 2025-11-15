@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Models\Subject;
 use App\Models\Student;
 use App\Models\Section;
+use App\Models\Payment;
 use Illuminate\Support\Facades\DB;
 
 class FacultyHeadController extends Controller
@@ -918,13 +919,12 @@ class FacultyHeadController extends Controller
                 ], 400);
             }
             
-            // Build student query - only enrolled students with settled payments
+            // Build student query - include all enrolled students (full, quarterly, monthly payers)
             $studentQuery = Student::where('grade_level', $gradeLevel)
                                   ->where('section', $sectionName)
                                   ->where('academic_year', $currentAcademicYear)
                                   ->where('is_active', true)
-                                  ->where('enrollment_status', 'enrolled')
-                                  ->where('is_paid', true);
+                                  ->where('enrollment_status', 'enrolled');
             
             // Add strand filter if provided
             if ($strand) {
@@ -936,15 +936,34 @@ class FacultyHeadController extends Controller
                 $studentQuery->where('track', $track);
             }
             
-            // Get students with full details
+            // Get students with full details including payment status
             $students = $studentQuery->select(
-                'student_id', 'first_name', 'middle_name', 'last_name', 'suffix',
-                'grade_level', 'section', 'strand', 'track', 'contact_number', 'is_active'
+                'id', 'student_id', 'first_name', 'middle_name', 'last_name', 'suffix',
+                'grade_level', 'section', 'strand', 'track', 'contact_number', 'is_active', 'is_paid', 'academic_year'
             )->get();
             
             
             
-            $students = $students->map(function($student) {
+            $students = $students->map(function($student) use ($currentAcademicYear) {
+                // Determine payment status display
+                $paymentStatus = $student->is_paid ? 'Paid' : 'Pending';
+                $paymentType = 'Full'; // Default assumption for paid students
+                
+                // Check for quarterly/monthly payments if not fully paid
+                if (!$student->is_paid) {
+                    $hasPayments = Payment::where('payable_type', 'App\\Models\\Student')
+                        ->where('payable_id', $student->id)
+                        ->where('status', 'paid')
+                        ->exists();
+                    
+                    if ($hasPayments) {
+                        $paymentType = 'Partial (Q/M)'; // Quarterly/Monthly
+                        $paymentStatus = 'Partial';
+                    } else {
+                        $paymentType = 'None';
+                    }
+                }
+                
                 return [
                     'student_id' => $student->student_id,
                     'first_name' => $student->first_name,
@@ -956,7 +975,9 @@ class FacultyHeadController extends Controller
                     'strand' => $student->strand,
                     'track' => $student->track,
                     'contact_number' => $student->contact_number,
-                    'is_active' => $student->is_active
+                    'is_active' => $student->is_active,
+                    'payment_status' => $paymentStatus,
+                    'payment_type' => $paymentType
                 ];
             });
             
@@ -1023,6 +1044,16 @@ class FacultyHeadController extends Controller
                 ]
             ]);
         } catch (\Exception $e) {
+            \Log::error('Error in getSectionDetails', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'request_params' => $request->all(),
+                'grade_level' => $request->get('grade_level'),
+                'section' => $request->get('section'),
+                'strand' => $request->get('strand'),
+                'track' => $request->get('track')
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Error loading section details: ' . $e->getMessage()

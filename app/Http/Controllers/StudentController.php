@@ -18,9 +18,26 @@ use App\Models\Payment;
 use App\Models\ClassSchedule;
 use App\Models\Grade;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class StudentController extends Controller
 {
+    /**
+     * Get current academic year using Philippine academic year logic
+     */
+    private static function getCurrentAcademicYear()
+    {
+        $currentYear = date('Y');
+        $currentMonth = date('n'); // 1-12
+        
+        if ($currentMonth >= 1 && $currentMonth <= 5) {
+            // January to May - second half of academic year
+            return ($currentYear - 1) . '-' . $currentYear;
+        } else {
+            // June to December - first half of academic year
+            return $currentYear . '-' . ($currentYear + 1);
+        }
+    }
     public function index()
     {
         $student = Auth::guard('student')->user();
@@ -171,7 +188,7 @@ class StudentController extends Controller
                 'id_photo' => $request->id_photo,
                 'id_photo_mime_type' => $request->id_photo_mime_type,
                 'enrollment_status' => 'pending',
-                'academic_year' => $request->academic_year ?? '2024-2025',
+                'academic_year' => $request->academic_year ?? self::getCurrentAcademicYear(),
                 'student_type' => $request->student_type ?? 'new',
                 'password' => null, // Explicitly set to null
             ];
@@ -214,7 +231,8 @@ class StudentController extends Controller
         }
         
         // Calculate total fees for the student
-        $feeCalculation = Fee::calculateTotalFeesForGrade($student->grade_level);
+        $academicYear = $student->academic_year ?? (date('Y') . '-' . (date('Y') + 1));
+        $feeCalculation = Fee::calculateTotalFeesForGrade($student->grade_level, $academicYear);
         $totalAmount = $feeCalculation['total_amount'];
         
         // Check payment schedule status
@@ -224,7 +242,7 @@ class StudentController extends Controller
             
         // Get current subjects for the student (same logic as subjects view)
         $currentSubjects = Subject::where('grade_level', $student->grade_level)
-            ->where('academic_year', $student->academic_year ?? '2024-2025')
+            ->where('academic_year', $student->academic_year ?? self::getCurrentAcademicYear())
             ->where('is_active', true)
             ->when(in_array($student->grade_level, ['Grade 11', 'Grade 12']), function($query) use ($student) {
                 return $query->where(function($q) use ($student) {
@@ -295,7 +313,8 @@ class StudentController extends Controller
             Log::info('Preferred schedule date: ' . $preferredScheduleDate);
 
             // Calculate total fees
-            $feeCalculation = Fee::calculateTotalFeesForGrade($student->grade_level);
+            $academicYear = $student->academic_year ?? (date('Y') . '-' . (date('Y') + 1));
+            $feeCalculation = Fee::calculateTotalFeesForGrade($student->grade_level, $academicYear);
             $totalAmount = $feeCalculation['total_amount'];
             
             Log::info('Total amount calculated: ' . $totalAmount);
@@ -341,7 +360,7 @@ class StudentController extends Controller
             foreach ($schedules as $idx => $schedule) {
                 try {
                     $payment = Payment::create([
-                        'transaction_id' => 'TXN-' . $student->student_id . '-' . time() . '-' . rand(100, 999),
+                        'transaction_id' => Payment::generateTransactionId($student->student_id),
                         'payable_type' => 'App\\Models\\Student',
                         'payable_id' => $student->id,
                         'fee_id' => null,
@@ -361,7 +380,7 @@ class StudentController extends Controller
                     Log::error('Payment creation failed: ' . $e->getMessage());
                     Log::error('Payment creation stack trace: ' . $e->getTraceAsString());
                     Log::error('Payment data: ' . json_encode([
-                        'transaction_id' => 'TXN-' . $student->student_id . '-' . time() . '-' . rand(100, 999),
+                        'transaction_id' => Payment::generateTransactionId($student->student_id),
                         'payable_type' => 'App\\Models\\Student',
                         'payable_id' => $student->id,
                         'fee_id' => null,
@@ -474,7 +493,7 @@ class StudentController extends Controller
         foreach ($schedules as $schedule) {
             try {
                 Payment::create([
-                    'transaction_id' => 'TXN-' . $student->student_id . '-' . time() . '-' . rand(100, 999),
+                    'transaction_id' => Payment::generateTransactionId($student->student_id),
                     'payable_type' => 'App\\Models\\Student',
                     'payable_id' => $student->id,
                     'fee_id' => null, // Explicitly set to null since this is a payment schedule, not tied to specific fee
@@ -491,7 +510,7 @@ class StudentController extends Controller
                 Log::error('Payment creation failed: ' . $e->getMessage());
                 Log::error('Payment creation stack trace: ' . $e->getTraceAsString());
                 Log::error('Payment data: ' . json_encode([
-                    'transaction_id' => 'TXN-' . $student->student_id . '-' . time() . '-' . rand(100, 999),
+                    'transaction_id' => Payment::generateTransactionId($student->student_id),
                     'payable_type' => 'App\\Models\\Student',
                     'payable_id' => $student->id,
                     'fee_id' => null,
@@ -524,7 +543,7 @@ class StudentController extends Controller
         
         // Get subjects based on student's grade level
         $query = Subject::where('grade_level', $student->grade_level)
-            ->where('academic_year', $student->academic_year ?? '2024-2025')
+            ->where('academic_year', $student->academic_year ?? self::getCurrentAcademicYear())
             ->where('is_active', true);
             
         // Add strand and track filters for senior high school
@@ -623,7 +642,8 @@ class StudentController extends Controller
             ->get();
         
         // Calculate fee breakdown and totals
-        $feeCalculation = Fee::calculateTotalFeesForGrade($student->grade_level);
+        $academicYear = $student->academic_year ?? (date('Y') . '-' . (date('Y') + 1));
+        $feeCalculation = Fee::calculateTotalFeesForGrade($student->grade_level, $academicYear);
         $totalFeesAmount = $feeCalculation['total_amount'];
         
         // Calculate total paid (confirmed payments) - use amount_received if available
@@ -809,7 +829,8 @@ class StudentController extends Controller
         
         // Calculate total fees due if not set
         if (!$student->total_fees_due) {
-            $feeCalculation = Fee::calculateTotalFeesForGrade($student->grade_level);
+            $academicYear = $student->academic_year ?? (date('Y') . '-' . (date('Y') + 1));
+            $feeCalculation = Fee::calculateTotalFeesForGrade($student->grade_level, $academicYear);
             $totalFeesDue = $feeCalculation['total_amount'];
         } else {
             $totalFeesDue = $student->total_fees_due;
@@ -843,5 +864,74 @@ class StudentController extends Controller
         $violation->save();
 
         return redirect()->route('student.violations')->with('info', 'Your reply has been submitted successfully.');
+    }
+
+    public function uploadViolationAttachment(Request $request, Violation $violation)
+    {
+        $student = Auth::guard('student')->user();
+
+        if (!$student || $violation->student_id != $student->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized access.'
+            ], 403);
+        }
+
+        // Check if violation has approved disciplinary action
+        if (!$violation->disciplinary_action) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Attachment can only be uploaded for approved disciplinary actions.'
+            ], 400);
+        }
+
+        $request->validate([
+            'attachment' => 'required|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120', // 5MB max
+            'description' => 'nullable|string|max:500'
+        ]);
+
+        try {
+            $file = $request->file('attachment');
+            $fileName = time() . '_' . $student->student_id . '_' . $file->getClientOriginalName();
+            $filePath = $file->storeAs('violation_attachments', $fileName, 'public');
+
+            $violation->update([
+                'student_attachment_path' => $filePath,
+                'student_attachment_description' => $request->description,
+                'student_attachment_uploaded_at' => now()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Attachment uploaded successfully.'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error uploading violation attachment', [
+                'violation_id' => $violation->id,
+                'student_id' => $student->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error uploading attachment: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function downloadViolationAttachment(Violation $violation)
+    {
+        $student = Auth::guard('student')->user();
+
+        if (!$student || $violation->student_id != $student->id) {
+            abort(403, 'Unauthorized access.');
+        }
+
+        if (!$violation->student_attachment_path || !Storage::disk('public')->exists($violation->student_attachment_path)) {
+            abort(404, 'Attachment not found.');
+        }
+
+        return Storage::disk('public')->download($violation->student_attachment_path);
     }
 }

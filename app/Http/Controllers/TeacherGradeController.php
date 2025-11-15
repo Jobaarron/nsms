@@ -390,10 +390,11 @@ class TeacherGradeController extends Controller
         ]);
 
         $teacher = Auth::user();
+        $teacherRecord = \App\Models\Teacher::where('user_id', $teacher->id)->first();
         $submission = GradeSubmission::findOrFail($request->submission_id);
 
         // Verify ownership
-        if ($submission->teacher_id !== $teacher->teacher->id) {
+        if ($submission->teacher_id !== $teacherRecord->id) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -403,12 +404,150 @@ class TeacherGradeController extends Controller
         }
 
         try {
-            // Process uploaded file (implementation would depend on chosen Excel library)
-            // For now, return success message
+            // Get expected students for this submission using student_id (NS-25XXX format)
+            $expectedStudents = Student::where('grade_level', $submission->grade_level)
+                                     ->where('section', $submission->section)
+                                     ->where('academic_year', $submission->academic_year)
+                                     ->where('enrollment_status', 'enrolled')
+                                     ->where('is_paid', true)
+                                     ->where('is_active', true)
+                                     ->get()
+                                     ->keyBy('student_id'); // Key by student_id (NS-25XXX)
+
+            // Process Excel/CSV file
+            $file = $request->file('grades_file');
+            $fileExtension = strtolower($file->getClientOriginalExtension());
+            
+            // Simple CSV parsing for now (can be enhanced with Excel library later)
+            if ($fileExtension === 'csv') {
+                $handle = fopen($file->getPathname(), 'r');
+                $data = [];
+                while (($row = fgetcsv($handle)) !== false) {
+                    $data[] = $row;
+                }
+                fclose($handle);
+            } else {
+                // For Excel files, we'll need the Excel library
+                return response()->json([
+                    'error' => 'Excel files not supported yet. Please use CSV format.'
+                ], 400);
+            }
+            
+            $gradesData = [];
+            $errors = [];
+            $processed = 0;
+            
+            foreach ($data as $index => $row) {
+                // Skip header row
+                if ($index === 0) continue;
+                
+                // Map columns according to new format
+                $studentId = $row[0] ?? null;      // NS-25XXX format
+                $lastName = $row[1] ?? null;       // Last name
+                $firstName = $row[2] ?? null;      // First name
+                $middleName = $row[3] ?? null;     // Middle name (optional)
+                $grade = $row[4] ?? null;          // Grade
+                $remarks = $row[5] ?? null;        // Remarks (optional)
+                
+                $rowNumber = $index + 1;
+                
+                // Validate required fields
+                if (empty($studentId) || empty($lastName) || empty($firstName) || empty($grade)) {
+                    $errors[] = "Row {$rowNumber}: Missing required fields (student_id, last_name, first_name, or grade)";
+                    continue;
+                }
+                
+                // Validate student_id format (NS-25XXX)
+                if (!preg_match('/^NS-25\d{3}$/', $studentId)) {
+                    $errors[] = "Row {$rowNumber}: Invalid student_id format '{$studentId}'. Must be NS-25XXX (e.g., NS-25001)";
+                    continue;
+                }
+                
+                // Validate grade range
+                if (!is_numeric($grade) || $grade < 0 || $grade > 100) {
+                    $errors[] = "Row {$rowNumber}: Invalid grade '{$grade}'. Must be 0-100";
+                    continue;
+                }
+                
+                // Check if student exists in expected list
+                if (!isset($expectedStudents[$studentId])) {
+                    $errors[] = "Row {$rowNumber}: Student ID '{$studentId}' not found in class {$submission->grade_level} - {$submission->section}";
+                    continue;
+                }
+                
+                $student = $expectedStudents[$studentId];
+                
+                // Verify student name details match
+                $nameMatch = true;
+                $nameErrors = [];
+                
+                if (trim(strtolower($student->last_name)) !== trim(strtolower($lastName))) {
+                    $nameMatch = false;
+                    $nameErrors[] = "last name mismatch";
+                }
+                
+                if (trim(strtolower($student->first_name)) !== trim(strtolower($firstName))) {
+                    $nameMatch = false;
+                    $nameErrors[] = "first name mismatch";
+                }
+                
+                // Check middle name only if both Excel and database have values
+                if (!empty($middleName) && !empty($student->middle_name)) {
+                    if (trim(strtolower($student->middle_name)) !== trim(strtolower($middleName))) {
+                        $nameMatch = false;
+                        $nameErrors[] = "middle name mismatch";
+                    }
+                }
+                
+                if (!$nameMatch) {
+                    $errors[] = "Row {$rowNumber}: Student name mismatch for ID '{$studentId}'. " . 
+                               "Expected: {$student->first_name} " . 
+                               ($student->middle_name ? $student->middle_name . ' ' : '') . 
+                               "{$student->last_name}. Issues: " . implode(', ', $nameErrors);
+                    continue;
+                }
+                
+                // Add to grades data
+                $gradesData[] = [
+                    'student_id' => $student->id, // Use database primary key ID
+                    'grade' => (float) $grade,
+                    'remarks' => $remarks ?: null
+                ];
+                
+                $processed++;
+            }
+            
+            if (!empty($errors)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'File contains errors',
+                    'errors' => $errors,
+                    'processed' => $processed
+                ], 400);
+            }
+            
+            if (empty($gradesData)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No valid grade data found in file'
+                ], 400);
+            }
+            
+            // Update submission with uploaded grades
+            $submission->update([
+                'grades_data' => $gradesData,
+                'total_students' => $expectedStudents->count(),
+                'grades_entered' => count($gradesData)
+            ]);
+            
             return response()->json([
                 'success' => true,
-                'message' => 'Grades uploaded successfully'
+                'message' => "Successfully uploaded {$processed} grades",
+                'processed' => $processed,
+                'total_expected' => $expectedStudents->count(),
+                'completion_percentage' => $submission->completion_percentage
             ]);
+            
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Failed to process uploaded file: ' . $e->getMessage()
@@ -470,6 +609,30 @@ class TeacherGradeController extends Controller
                 'approved' => 0,
                 'revised' => 0,
             ]);
+        }
+    }
+
+    /**
+     * Finalize approved grades (makes them visible to students)
+     */
+    public function finalizeGrades(GradeSubmission $submission)
+    {
+        $teacher = Auth::user();
+        $teacherRecord = \App\Models\Teacher::where('user_id', $teacher->id)->first();
+
+        if (!$teacherRecord || $submission->teacher_id !== $teacherRecord->id) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        if ($submission->status !== 'approved') {
+            return response()->json(['error' => 'Only approved grades can be finalized'], 400);
+        }
+
+        try {
+            $submission->finalizeByTeacher();
+            return response()->json(['success' => true, 'message' => 'Grades finalized and visible to students']);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 }

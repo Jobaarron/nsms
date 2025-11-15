@@ -56,7 +56,8 @@ class RegistrarController extends Controller
      */
     public function applications(Request $request)
     {
-        $query = Enrollee::query();
+        // Only show pending and declined applications (approved ones go to archives)
+        $query = Enrollee::whereIn('enrollment_status', ['pending', 'declined']);
 
         // Apply filters
         if ($request->filled('status')) {
@@ -79,10 +80,10 @@ class RegistrarController extends Controller
 
         $applications = $query->orderBy('created_at', 'desc')->paginate(20);
 
-        // Calculate summary statistics
-        $totalApplications = Enrollee::count();
+        // Calculate summary statistics (only for pending and declined)
+        $totalApplications = Enrollee::whereIn('enrollment_status', ['pending', 'declined'])->count();
         $pendingApplications = Enrollee::where('enrollment_status', 'pending')->count();
-        $approvedApplications = Enrollee::where('enrollment_status', 'approved')->count();
+        $declinedApplications = Enrollee::where('enrollment_status', 'declined')->count();
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -100,7 +101,7 @@ class RegistrarController extends Controller
             'applications', 
             'totalApplications', 
             'pendingApplications', 
-            'approvedApplications', 
+            'declinedApplications', 
         ));
     }
 
@@ -399,44 +400,152 @@ class RegistrarController extends Controller
 
 
     /**
-     * Show approved applications
+     * Show applicant archives (approved and declined applications)
      */
-    public function approved(Request $request)
+    public function applicantArchives(Request $request)
     {
-        $query = Enrollee::where('enrollment_status', 'approved');
+        // Get approved applications with student relationship
+        $approvedQuery = Enrollee::with('student')
+            ->where('enrollment_status', 'approved');
+        
+        // Get declined applications
+        $declinedQuery = Enrollee::where('enrollment_status', 'declined');
+        
+        // Get all archived applications (approved + declined)
+        $allArchivesQuery = Enrollee::with('student')
+            ->whereIn('enrollment_status', ['approved', 'declined']);
 
-        // Apply filters
-        if ($request->filled('grade_level')) {
-            $query->where('grade_level_applied', $request->grade_level);
+        // Apply filters to all queries
+        $queries = [$approvedQuery, $declinedQuery, $allArchivesQuery];
+        
+        foreach ($queries as $query) {
+            if ($request->filled('status')) {
+                if ($request->status === 'approved') {
+                    $query->where('enrollment_status', 'approved');
+                } elseif ($request->status === 'declined') {
+                    $query->where('enrollment_status', 'declined');
+                }
+            }
+            
+            if ($request->filled('grade_level')) {
+                $query->where('grade_level_applied', $request->grade_level);
+            }
+
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->where(function($q) use ($search) {
+                    $q->where('first_name', 'like', "%{$search}%")
+                      ->orWhere('last_name', 'like', "%{$search}%")
+                      ->orWhere('application_id', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%");
+                });
+            }
         }
 
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('first_name', 'like', "%{$search}%")
-                  ->orWhere('last_name', 'like', "%{$search}%")
-                  ->orWhere('application_id', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
-            });
-        }
+        // Get paginated results
+        $approvedApplications = $approvedQuery->orderBy('approved_at', 'desc')->paginate(20, ['*'], 'approved_page');
+        $declinedApplications = $declinedQuery->orderBy('declined_at', 'desc')->paginate(20, ['*'], 'declined_page');
+        $allArchives = $allArchivesQuery->orderBy('updated_at', 'desc')->paginate(20, ['*'], 'all_page');
 
-        $approved_applications = $query->orderBy('approved_at', 'desc')->paginate(20);
+        // Calculate counts
+        $approvedCount = Enrollee::where('enrollment_status', 'approved')->count();
+        $declinedCount = Enrollee::where('enrollment_status', 'declined')->count();
+        $enrolledCount = \App\Models\Student::where('enrollment_status', 'enrolled')->count();
 
         if ($request->expectsJson()) {
+            $tab = $request->get('tab', 'approved');
+            
+            switch ($tab) {
+                case 'declined':
+                    $applications = $declinedApplications;
+                    break;
+                case 'all-archives':
+                    $applications = $allArchives;
+                    break;
+                default:
+                    $applications = $approvedApplications;
+                    break;
+            }
+            
             return response()->json([
                 'success' => true,
-                'applications' => $approved_applications->items(),
+                'applications' => $applications->items(),
                 'pagination' => [
-                    'current_page' => $approved_applications->currentPage(),
-                    'last_page' => $approved_applications->lastPage(),
-                    'total' => $approved_applications->total(),
+                    'current_page' => $applications->currentPage(),
+                    'last_page' => $applications->lastPage(),
+                    'total' => $applications->total(),
+                ],
+                'counts' => [
+                    'approved' => $approvedCount,
+                    'declined' => $declinedCount,
+                    'enrolled' => $enrolledCount,
+                    'total_archived' => $approvedCount + $declinedCount
                 ]
             ]);
         }
 
-        return view('registrar.approved', compact('approved_applications'));
+        return view('registrar.applicant-archives', compact(
+            'approvedApplications',
+            'declinedApplications', 
+            'allArchives',
+            'approvedCount',
+            'declinedCount',
+            'enrolledCount'
+        ));
     }
 
+    /**
+     * Reconsider a declined application
+     */
+    public function reconsiderApplication(Request $request, $id)
+    {
+        $request->validate([
+            'reason' => 'required|string|max:500'
+        ]);
+
+        try {
+            $application = Enrollee::findOrFail($id);
+            
+            if ($application->enrollment_status !== 'declined') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Only declined applications can be reconsidered'
+                ], 400);
+            }
+
+            $application->update([
+                'enrollment_status' => 'pending',
+                'declined_at' => null,
+                'decline_reason' => null,
+                'reconsider_reason' => $request->reason,
+                'reconsidered_at' => now(),
+                'reconsidered_by' => auth()->id()
+            ]);
+
+            // Create a notice for the applicant
+            Notice::create([
+                'enrollee_id' => $application->id,
+                'title' => 'Application Reconsidered',
+                'message' => "Your application has been reconsidered and is now under review again. Reason: {$request->reason}",
+                'type' => 'info',
+                'priority' => 'normal',
+                'is_global' => false,
+                'created_by' => auth()->id(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Application has been reconsidered and moved back to pending status'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error reconsidering application: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to reconsider application'
+            ], 500);
+        }
+    }
 
     /**
      * Get application documents
@@ -1185,10 +1294,10 @@ class RegistrarController extends Controller
         $selectedSection = $request->get('section');
         
         // Get all available grade levels from enrolled students with settled payments
+        // Only need to be enrolled (1st quarter paid), not fully paid
         $availableGrades = Student::where('academic_year', $currentAcademicYear)
                                  ->where('is_active', true)
                                  ->where('enrollment_status', 'enrolled')
-                                 ->where('is_paid', true)
                                  ->distinct()
                                  ->pluck('grade_level')
                                  ->sort()
@@ -1217,7 +1326,6 @@ class RegistrarController extends Controller
                                      ->where('academic_year', $currentAcademicYear)
                                      ->where('is_active', true)
                                      ->where('enrollment_status', 'enrolled')
-                                     ->where('is_paid', true)
                                      ->whereNotNull('strand')
                                      ->distinct()
                                      ->pluck('strand')
@@ -1233,7 +1341,6 @@ class RegistrarController extends Controller
                                     ->where('academic_year', $currentAcademicYear)
                                     ->where('is_active', true)
                                     ->where('enrollment_status', 'enrolled')
-                                    ->where('is_paid', true)
                                     ->whereNotNull('track')
                                     ->distinct()
                                     ->pluck('track')
@@ -1247,8 +1354,7 @@ class RegistrarController extends Controller
             $sectionsQuery = Student::where('grade_level', $selectedGrade)
                                    ->where('academic_year', $currentAcademicYear)
                                    ->where('is_active', true)
-                                   ->where('enrollment_status', 'enrolled')
-                                   ->where('is_paid', true);
+                                   ->where('enrollment_status', 'enrolled');
             
             if ($selectedStrand) {
                 $sectionsQuery->where('strand', $selectedStrand);
@@ -1271,13 +1377,12 @@ class RegistrarController extends Controller
         $subjectTeachers = collect();
         
         if ($selectedGrade && $selectedSection) {
-            // Build the query - only enrolled students with settled payments
+            // Build the query - only enrolled students (1st quarter paid)
             $studentsQuery = Student::where('grade_level', $selectedGrade)
                                    ->where('section', $selectedSection)
                                    ->where('academic_year', $currentAcademicYear)
                                    ->where('is_active', true)
-                                   ->where('enrollment_status', 'enrolled')
-                                   ->where('is_paid', true);
+                                   ->where('enrollment_status', 'enrolled');
             
             // Add strand/track filters if applicable
             if ($selectedStrand) {
@@ -1378,8 +1483,7 @@ class RegistrarController extends Controller
         $sectionsQuery = Student::where('grade_level', $gradeLevel)
                                ->where('academic_year', $currentAcademicYear)
                                ->where('is_active', true)
-                               ->where('enrollment_status', 'enrolled')
-                               ->where('is_paid', true);
+                               ->where('enrollment_status', 'enrolled');
         
         if ($strand) {
             $sectionsQuery->where('strand', $strand);
@@ -1426,7 +1530,6 @@ class RegistrarController extends Controller
                          ->where('academic_year', $currentAcademicYear)
                          ->where('is_active', true)
                          ->where('enrollment_status', 'enrolled')
-                         ->where('is_paid', true)
                          ->whereNotNull('strand')
                          ->distinct()
                          ->pluck('strand')
@@ -1458,20 +1561,19 @@ class RegistrarController extends Controller
         }
         
         $tracks = Student::where('grade_level', $gradeLevel)
-                        ->where('strand', 'TVL')
+                        ->where('strand', $strand)
                         ->where('academic_year', $currentAcademicYear)
                         ->where('is_active', true)
                         ->where('enrollment_status', 'enrolled')
-                        ->where('is_paid', true)
                         ->whereNotNull('track')
                         ->distinct()
                         ->pluck('track')
                         ->sort()
                         ->values();
         
-        // If no tracks found in database, provide default TVL tracks
+        // If no tracks found in database, provide default options
         if ($tracks->isEmpty()) {
-            $tracks = collect(['ICT', 'H.E.']);
+            $tracks = collect(['ICT', 'H.E']);
         }
         
         return response()->json([
@@ -1481,7 +1583,7 @@ class RegistrarController extends Controller
     }
     
     /**
-     * Get students for accordion view
+     * Get students via AJAX for dynamic filtering
      */
     public function getClassListStudents(Request $request)
     {
@@ -1489,6 +1591,7 @@ class RegistrarController extends Controller
         $section = $request->get('section');
         $strand = $request->get('strand');
         $track = $request->get('track');
+        $currentAcademicYear = date('Y') . '-' . (date('Y') + 1);
         
         if (!$gradeLevel || !$section) {
             return response()->json([
@@ -1497,12 +1600,12 @@ class RegistrarController extends Controller
             ]);
         }
         
-        // Build query for students
+        // Build the query - only enrolled students (1st quarter paid)
         $studentsQuery = Student::where('grade_level', $gradeLevel)
                                ->where('section', $section)
+                               ->where('academic_year', $currentAcademicYear)
                                ->where('is_active', true)
-                               ->where('enrollment_status', 'enrolled')
-                               ->where('is_paid', true);
+                               ->where('enrollment_status', 'enrolled');
         
         // Add strand filter for Grade 11 & 12
         if (in_array($gradeLevel, ['Grade 11', 'Grade 12']) && $strand) {
@@ -1544,7 +1647,6 @@ class RegistrarController extends Controller
             $student = Student::where('id', $studentId)
                              ->where('is_active', true)
                              ->where('enrollment_status', 'enrolled')
-                             ->where('is_paid', true)
                              ->first();
             
             if (!$student) {

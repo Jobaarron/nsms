@@ -77,6 +77,16 @@ Route::prefix('admin')->group(function () {
         // Forwarded Case Meetings for President (Admin)
         Route::get('/forwarded-cases', [AdminController::class, 'forwardedCases'])->name('forwarded.cases');
 
+        // Case actions for forwarded cases
+        Route::post('/cases/{caseMeeting}/approve', [AdminController::class, 'approveCase'])->name('cases.approve');
+        Route::post('/cases/{caseMeeting}/close', [AdminController::class, 'closeCase'])->name('cases.close');
+        Route::post('/cases/{caseMeeting}/complete', [AdminController::class, 'completeCase'])->name('cases.complete');
+        
+        // Case meeting sanctions management
+        Route::post('/case-meetings/{caseMeeting}/approve', [AdminController::class, 'approveCaseMeeting'])->name('case-meetings.approve');
+        Route::get('/case-meetings/{caseMeeting}/sanctions', [AdminController::class, 'getCaseMeetingSanctions'])->name('case-meetings.sanctions');
+        Route::post('/case-meetings/{caseMeeting}/sanctions', [AdminController::class, 'updateCaseMeetingSanctions'])->name('case-meetings.sanctions.update');
+
         // Sanction actions for forwarded cases
         Route::post('/sanctions/{sanction}/approve', [AdminController::class, 'approveSanction'])->name('sanctions.approve');
         Route::post('/sanctions/{sanction}/reject', [AdminController::class, 'rejectSanction'])->name('sanctions.reject');
@@ -182,36 +192,45 @@ Route::middleware(['auth', 'role:teacher'])->prefix('teacher')->name('teacher.')
         ->name('recommend-counseling');
 
 
-    // Route for the Teacher Observation Report page
-    Route::get('/observationreport', [TeacherController::class, 'showObservationReport'])
-        ->name('observationreport');
+    // Class Adviser Only Routes - Protected by teacher.adviser middleware
+    Route::middleware(['teacher.adviser'])->group(function () {
+        // Route for the Teacher Observation Report page
+        Route::get('/observationreport', [TeacherController::class, 'showObservationReport'])
+            ->name('observationreport');
 
-    // Route to serve the dynamic teacher observation report PDF
-    Route::get('/observationreport/pdf/{caseMeeting}', [App\Http\Controllers\PdfController::class, 'teacherObservationReportPdf'])
-        ->name('observationreport.pdf');
+        // Route to serve the dynamic teacher observation report PDF
+        Route::get('/observationreport/pdf/{caseMeeting}', [App\Http\Controllers\PdfController::class, 'teacherObservationReportPdf'])
+            ->name('observationreport.pdf');
 
-    // Teacher Observation Report: Teacher Reply (update case meeting)
-    Route::post('/observationreport/reply/{caseMeeting}', [App\Http\Controllers\TeacherController::class, 'submitObservationReply'])
-        ->name('observationreport.reply');
+        // Teacher Observation Report: Teacher Reply (update case meeting)
+        Route::post('/observationreport/reply/{caseMeeting}', [App\Http\Controllers\TeacherController::class, 'submitObservationReply'])
+            ->name('observationreport.reply');
 
-    // Teacher Advisory Routes
-    Route::get('/advisory', [App\Http\Controllers\TeacherAdvisoryController::class, 'advisory'])
-        ->name('advisory');
+        // Teacher Advisory Routes
+        Route::get('/advisory', [App\Http\Controllers\TeacherAdvisoryController::class, 'advisory'])
+            ->name('advisory');
 
-    // Route to generate Report Card PDF
-    // Route to generate Report Card PDF for a specific student
-    Route::get('/report-card/pdf/{student}', [App\Http\Controllers\PdfController::class, 'generateReportCardPdf'])
-        ->name('report-card.pdf');
+        // Report Card PDF routes
+        Route::get('/report-card/pdf/{student}', [App\Http\Controllers\PdfController::class, 'generateReportCardPdf'])
+            ->name('report-card.pdf');
+        Route::get('/report-card/elementary/pdf/{student}', [App\Http\Controllers\PdfController::class, 'generateElementaryReportCardPdf'])
+            ->name('report-card.elementary.pdf');
+        Route::get('/report-card/grade11stem/pdf/{student}', [App\Http\Controllers\PdfController::class, 'generateGrade11ReportCardPdf'])
+            ->name('report-card.grade11stem.pdf');
+        Route::get('/report-cards/print-all', [PdfController::class, 'printAllReportCards'])
+            ->name('report-cards.print-all');
         
-    // Teacher Advisory AJAX Routes
-    Route::get('/advisory/student/{student}/grades', [App\Http\Controllers\TeacherAdvisoryController::class, 'getStudentGrades'])
-        ->name('advisory.student.grades');
-    Route::get('/advisory/all-grades', [App\Http\Controllers\TeacherAdvisoryController::class, 'getAllAdvisoryGrades'])
-        ->name('advisory.all-grades');
-    Route::get('/advisory/student/{student}/report-card', [App\Http\Controllers\TeacherAdvisoryController::class, 'generateStudentReportCard'])
-        ->name('advisory.student.report-card');
-    Route::get('/advisory/all-report-cards', [App\Http\Controllers\TeacherAdvisoryController::class, 'generateAllReportCards'])
-        ->name('advisory.all-report-cards');
+            
+        // Teacher Advisory AJAX Routes
+        Route::get('/advisory/student/{student}/grades', [App\Http\Controllers\TeacherAdvisoryController::class, 'getStudentGrades'])
+            ->name('advisory.student.grades');
+        Route::get('/advisory/all-grades', [App\Http\Controllers\TeacherAdvisoryController::class, 'getAllAdvisoryGrades'])
+            ->name('advisory.all-grades');
+        Route::get('/advisory/student/{student}/report-card', [App\Http\Controllers\TeacherAdvisoryController::class, 'generateStudentReportCard'])
+            ->name('advisory.student.report-card');
+        Route::get('/advisory/all-report-cards', [App\Http\Controllers\TeacherAdvisoryController::class, 'generateAllReportCards'])
+            ->name('advisory.all-report-cards');
+    });
 });
 
 
@@ -241,6 +260,14 @@ Route::middleware(['auth', 'role:teacher|faculty_head'])->prefix('teacher')->nam
         ->name('grades.data');
     Route::get('/grades/stats', [App\Http\Controllers\TeacherGradeController::class, 'getSubmissionStats'])
         ->name('grades.stats');
+    
+    // Finalize approved grades (make them visible to students)
+    Route::post('/grades/{submission}/finalize', [App\Http\Controllers\TeacherGradeController::class, 'finalizeGrades'])
+        ->name('grades.finalize');
+    
+    // Upload grades from Excel/CSV file
+    Route::post('/grades/upload', [App\Http\Controllers\TeacherGradeController::class, 'upload'])
+        ->name('grades.upload');
 });
 
 // Student Schedule Routes (requires payment)
@@ -362,6 +389,18 @@ Route::prefix('discipline')->name('discipline.')->group(function () {
     Route::get('/violation-bar-stats', [App\Http\Controllers\DisciplineController::class, 'getViolationBarStats'])->name('violation-bar-stats');
     // AJAX: Case status pie chart (pending, ongoing, completed)
     Route::get('/case-status-stats', [App\Http\Controllers\DisciplineController::class, 'getCaseStatusStats'])->name('case-status-stats');
+    // AJAX: Resolution trend stats for line chart
+    Route::get('/resolution-trend-stats', [App\Http\Controllers\DisciplineController::class, 'getResolutionTrendStats'])->name('resolution-trend-stats');
+    // AJAX: Dashboard insights
+    Route::get('/dashboard-insights', [App\Http\Controllers\DisciplineController::class, 'getDashboardInsights'])->name('dashboard-insights');
+    // AJAX: Dashboard statistics
+    Route::get('/dashboard-stats', [App\Http\Controllers\DisciplineController::class, 'getDashboardStats'])->name('dashboard-stats');
+
+    // AJAX: Dynamic dashboard content
+    Route::get('/recent-violations', [App\Http\Controllers\DisciplineController::class, 'getRecentViolations'])->name('recent-violations');
+    Route::get('/pending-actions', [App\Http\Controllers\DisciplineController::class, 'getPendingActions'])->name('pending-actions');
+    Route::get('/critical-cases', [App\Http\Controllers\DisciplineController::class, 'getCriticalCases'])->name('critical-cases');
+    Route::get('/violation-trends', [App\Http\Controllers\DisciplineController::class, 'getViolationTrends'])->name('violation-trends');
 
     // Protected routes
     Route::middleware(['web'])->group(function () {
@@ -412,7 +451,15 @@ Route::prefix('discipline')->name('discipline.')->group(function () {
         // Forward violation to case meeting
         Route::post('/{violation}/forward', [App\Http\Controllers\DisciplineController::class, 'forwardViolation'])
             ->name('forward');
+            
+        // Download student attachment for violations
+        Route::get('/{violation}/download-student-attachment', [App\Http\Controllers\DisciplineController::class, 'downloadStudentAttachment'])
+            ->name('download-student-attachment');
         });
+        
+        // Disciplinary Conference Report PDF (for discipline staff access)
+        Route::get('/case-meetings/{caseMeeting}/disciplinary-conference-report/pdf', [PdfController::class, 'DisciplinaryConReports'])
+            ->name('case-meetings.disciplinary-conference-report.pdf');
     });
 });
 
@@ -440,7 +487,17 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
             // API: Weekly violation list for dashboard
             Route::get('/weekly-violations', [App\Http\Controllers\GuidanceController::class, 'getWeeklyViolations'])->name('weekly-violations');
 
-            Route::get('/top-cases', [App\Http\Controllers\GuidanceController::class, 'getTopCases']);        // Logout
+            Route::get('/top-cases', [App\Http\Controllers\GuidanceController::class, 'getTopCases']);
+            
+            // New Analytics Routes
+            Route::get('/violation-trends', [App\Http\Controllers\GuidanceController::class, 'getViolationTrends'])->name('violation-trends');
+            Route::get('/violation-severity', [App\Http\Controllers\GuidanceController::class, 'getViolationSeverity'])->name('violation-severity');
+            Route::get('/counseling-effectiveness', [App\Http\Controllers\GuidanceController::class, 'getCounselingEffectiveness'])->name('counseling-effectiveness');
+            Route::get('/recent-activities', [App\Http\Controllers\GuidanceController::class, 'getRecentActivities'])->name('recent-activities');
+            Route::get('/upcoming-tasks', [App\Http\Controllers\GuidanceController::class, 'getUpcomingTasks'])->name('upcoming-tasks');
+            Route::get('/counselor-performance', [App\Http\Controllers\GuidanceController::class, 'getCounselorPerformance'])->name('counselor-performance');
+            
+        // Logout
         Route::post('/logout', [App\Http\Controllers\GuidanceController::class, 'logout'])->name('logout');
         
         // Case Meeting Routes
@@ -472,6 +529,8 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
             Route::post('/{caseMeeting}/forward', [App\Http\Controllers\GuidanceController::class, 'forwardToPresident'])
                 ->name('forward');
 
+            Route::post('/{caseMeeting}/forward-observation-report', [App\Http\Controllers\GuidanceController::class, 'forwardObservationReportToAdviser'])
+                ->name('forward-observation-report');
                 
         });
         // API route to fetch all unique sanctions for dropdown (Guidance)
@@ -482,6 +541,9 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
     Route::get('/observationreport/pdf/{caseMeeting}', [App\Http\Controllers\PdfController::class, 'teacherObservationReportPdf']);
         // PDF route for case meeting attachment (moved outside case-meetings group)
         Route::get('/pdf/case-meeting/{caseMeetingId}', [PdfController::class, 'caseMeetingAttachmentPdf'])->name('pdf.case-meeting.attachment');
+        
+        // PDF route for disciplinary conference report
+        Route::get('/case-meetings/{caseMeeting}/disciplinary-conference-report/pdf', [PdfController::class, 'DisciplinaryConReports'])->name('case-meetings.disciplinary-conference-report.pdf');
         
         // Counseling Session Routes
     Route::prefix('counseling-sessions')->name('counseling-sessions.')->group(function () {
@@ -589,6 +651,8 @@ Route::prefix('student')->name('student.')->group(function () {
             // Violations routes (requires payment)
             Route::match(['get', 'post'], '/violations', [StudentController::class, 'violations'])->name('violations');
             Route::post('/violations/reply/{violation}', [StudentController::class, 'submitViolationReply'])->name('violations.reply');
+            Route::post('/violations/{violation}/upload-attachment', [StudentController::class, 'uploadViolationAttachment'])->name('violations.upload-attachment');
+            Route::get('/violations/{violation}/download-attachment', [StudentController::class, 'downloadViolationAttachment'])->name('violations.download-attachment');
 
             // Student Narrative Report - Reply Form (requires payment)
             Route::get('/narrative-report/reply', function() {
@@ -726,6 +790,9 @@ Route::prefix('registrar')->name('registrar.')->group(function () {
         // Approved applications
         Route::get('/approved', [RegistrarController::class, 'approved'])->name('approved');
         Route::post('/applications/{id}/generate-credentials', [RegistrarController::class, 'generateStudentCredentials'])->name('applications.generate-credentials');
+        
+        // Applicant archives
+        Route::get('/applicant-archives', [RegistrarController::class, 'applicantArchives'])->name('applicant-archives');
         
         // Notices and Documents data
         Route::get('/notices', [RegistrarController::class, 'getNotices'])->name('notices.get');

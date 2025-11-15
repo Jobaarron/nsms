@@ -82,11 +82,11 @@
                   <td>
                     <div class="btn-group" role="group">
                       <button type="button" class="btn btn-sm btn-outline-primary" 
-                              onclick="viewStudentGrades({{ $student->id }})" title="View Grades">
+                              onclick="viewStudentGrades({{ $student->id }}, '{{ $student->grade_level }}')" title="View Grades">
                         <i class="ri-file-list-3-line"></i>
                       </button>
                       <button type="button" class="btn btn-sm btn-outline-success" 
-                              onclick="printReportCard({{ $student->id }})" title="Print Report Card">
+                              onclick="printReportCard({{ $student->id }}, '{{ $student->grade_level }}')" title="Print Report Card">
                         <i class="ri-printer-line"></i>
                       </button>
                       <a href="{{ route('teacher.recommend-counseling.form', ['student_id' => $student->id]) }}" 

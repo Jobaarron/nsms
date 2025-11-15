@@ -17,7 +17,7 @@
 
     <!-- DASHBOARD STATISTICS -->
     <div class="row g-3 mb-4">
-      <div class="col-6 col-lg-3">
+      <div class="col-6 col-sm-6 col-lg-3">
         <div class="card card-summary card-application h-100">
           <div class="card-body text-center">
             <i class="ri-user-line display-6 mb-2"></i>
@@ -26,7 +26,7 @@
           </div>
         </div>
       </div>
-      <div class="col-6 col-lg-3">
+      <div class="col-6 col-sm-6 col-lg-3">
         <div class="card card-summary card-status h-100">
           <div class="card-body text-center">
             <i class="ri-book-open-line display-6 mb-2"></i>
@@ -35,7 +35,7 @@
           </div>
         </div>
       </div>
-      <div class="col-6 col-lg-3">
+      <div class="col-6 col-sm-6 col-lg-3">
         <div class="card card-summary card-application h-100">
           <div class="card-body text-center">
             <i class="ri-user-star-line display-6 mb-2"></i>
@@ -48,7 +48,7 @@
 
     <!-- SECOND ROW OF STATS -->
     <div class="row g-3 mb-4">
-      <div class="col-6 col-lg-3">
+      <div class="col-6 col-sm-6 col-lg-3">
         <div class="card card-summary card-application h-100">
           <div class="card-body text-center">
             <i class="ri-task-line display-6 mb-2"></i>
@@ -57,7 +57,7 @@
           </div>
         </div>
       </div>
-      <div class="col-6 col-lg-3">
+      <div class="col-6 col-sm-6 col-lg-3">
         <div class="card card-summary card-schedule h-100">
           <div class="card-body text-center">
             <i class="ri-book-line display-6 mb-2"></i>
@@ -75,7 +75,7 @@
           <i class="ri-file-list-3-line me-2"></i>Recent Grade Submissions for Review
         </h5>
       </div>
-      <div class="card-body">
+      <div class="card-body p-0">
         <div class="table-responsive">
           <table class="table table-hover">
             <thead>

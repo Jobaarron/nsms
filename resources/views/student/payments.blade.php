@@ -339,7 +339,8 @@
                     </div>
                     <div class="card-body">
                         @php
-                            $feeCalculation = \App\Models\Fee::calculateTotalFeesForGrade($student->grade_level);
+                            $academicYear = $student->academic_year ?? (date('Y') . '-' . (date('Y') + 1));
+                            $feeCalculation = \App\Models\Fee::calculateTotalFeesForGrade($student->grade_level, $academicYear);
                             $fees = $feeCalculation['fees'];
                             $totalAmount = $feeCalculation['total_amount'];
                         @endphp

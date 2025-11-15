@@ -16,9 +16,15 @@ return new class extends Migration
             $table->string('name');
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
+            $table->enum('status', ['active', 'inactive', 'suspended', 'pending'])
+                  ->default('active');
             $table->string('password');
             $table->rememberToken();
             $table->timestamps();
+            
+            // Add performance indexes for commonly queried fields
+            $table->index('email_verified_at');
+            $table->index(['status', 'created_at']); // Compound index for status filtering with date ordering
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

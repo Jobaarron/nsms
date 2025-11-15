@@ -22,6 +22,12 @@ return new class extends Migration
             $table->morphs('payable');
 
             $table->decimal('amount', 10, 2);
+            // Add fee breakdown columns
+            $table->decimal('entrance_fee', 10, 2)->nullable();
+            $table->decimal('miscellaneous_fee', 10, 2)->nullable();
+            $table->decimal('tuition_fee', 10, 2)->nullable();
+            $table->decimal('others_fee', 10, 2)->nullable();
+            $table->decimal('total_fee', 10, 2)->nullable();
             $table->enum('status', ['pending', 'paid', 'failed', 'refunded'])->default('pending');
             $table->enum('payment_method', ['full', 'quarterly', 'monthly'])->default('full');
             $table->string('reference_number')->nullable();

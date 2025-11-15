@@ -35,6 +35,11 @@
                     <a href="{{ url('guidance/pdf/case-meeting/' . $caseMeeting->id) }}" target="_blank" class="btn btn-outline-success">
                         <i class="ri-attachment-2"></i> View Attachment
                     </a>
+                    @if($caseMeeting->summary)
+                        <a href="{{ route('guidance.case-meetings.disciplinary-conference-report.pdf', $caseMeeting->id) }}" target="_blank" class="btn btn-outline-danger">
+                            <i class="ri-file-text-line me-2"></i>Discipline Conference Report
+                        </a>
+                    @endif
     <!-- INCIDENT FORM PDF PREVIEW MODAL (READ-ONLY) -->
     <div class="modal fade" id="incidentFormPdfPreviewModal" tabindex="-1" aria-labelledby="incidentFormPdfPreviewModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl">
@@ -74,9 +79,14 @@
                             <i class="ri-file-text-line me-2"></i>Add Summary
                         </button>
                     @endif
-                    @if($caseMeeting->summary && $caseMeeting->status === 'pre_completed' && !$caseMeeting->forwarded_to_president)
-                        <button class="btn btn-warning" onclick="forwardToPresident({{ $caseMeeting->id }})">
+                    @if(!$caseMeeting->forwarded_to_president)
+                        <button class="btn btn-warning" onclick="forwardToPresident({{ $caseMeeting->id }}, '')" 
+                                title="Forward to President">
                             <i class="ri-send-plane-line me-2"></i>Forward to President
+                        </button>
+                    @else
+                        <button class="btn btn-secondary" disabled>
+                            <i class="ri-check-line me-2"></i>Already Forwarded
                         </button>
                     @endif
                     @if(!in_array($caseMeeting->status, ['in_progress','scheduled','pre_completed','submitted','completed']))
@@ -165,9 +175,7 @@
                             <select class="form-select" id="status-filter" onchange="filterCaseMeetings()">
                                 <option value="">All Status</option>
                                 <option value="scheduled">Scheduled</option>
-                                <option value="pre_completed">Pre-Completed</option>
                                 <option value="submitted">Submitted</option>
-                                <option value="completed">Completed</option>
                                 <option value="cancelled">Cancelled</option>
                             </select>
                         </div>
@@ -223,13 +231,13 @@
     </div>
     
 
-    <!-- Sanctions -->
+    <!-- Interventions -->
     @if($caseMeeting->sanctions->isNotEmpty())
     <div class="row mb-4">
         <div class="col-12">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white border-0">
-                    <h5 class="card-title mb-0">Sanctions Applied</h5>
+                    <h5 class="card-title mb-0">Interventions Applied</h5>
                 </div>
                 <div class="card-body">
                     <div class="list-group list-group-flush">
@@ -280,108 +288,19 @@
 
     @else
     <!-- Header -->
-    <div class="row mb-4">
+    <div class="row mb-3">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <h1 class="h3 mb-0 text-guidance">Case Meetings</h1>
-                    <p class="text-muted">Manage case meetings and house visits</p>
-                </div>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-outline-primary" onclick="refreshCaseMeetings()">
-                        <i class="ri-refresh-line me-2"></i>Refresh
-                    </button>
-                    <!-- <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#scheduleCaseMeetingModal">
-                        <i class="ri-calendar-event-line me-2"></i>Schedule Meeting
-                    </button> -->
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Statistics Cards -->
-    <div class="row mb-4">
-        <div class="col-xl-3 col-md-6 mb-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body d-flex align-items-center">
-                    <div class="flex-shrink-0 me-3">
-                        <div class="rounded-circle bg-primary bg-opacity-10 p-3">
-                            <i class="ri-calendar-event-line fs-2 text-primary"></i>
-                        </div>
-                    </div>
-                    <div class="flex-grow-1">
-                        <div class="fw-bold fs-4" id="scheduled-meetings">{{ $caseMeetings->where('status', 'scheduled')->count() }}</div>
-                        <div class="text-muted small">Scheduled</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6 mb-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body d-flex align-items-center">
-                    <div class="flex-shrink-0 me-3">
-                        <div class="rounded-circle bg-info bg-opacity-10 p-3">
-                            <i class="ri-time-line fs-2 text-info"></i>
-                        </div>
-                    </div>
-                    <div class="flex-grow-1">
-                        <div class="fw-bold fs-4" id="in-progress-meetings">{{ $caseMeetings->where('status', 'in_progress')->count() }}</div>
-                        <div class="text-muted small">In Progress</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6 mb-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body d-flex align-items-center">
-                    <div class="flex-shrink-0 me-3">
-                        <div class="rounded-circle bg-warning bg-opacity-10 p-3">
-                            <i class="ri-file-text-line fs-2 text-warning"></i>
-                        </div>
-                    </div>
-                    <div class="flex-grow-1">
-                        <div class="fw-bold fs-4" id="pre-completed-meetings">{{ $caseMeetings->where('status', 'pre_completed')->count() }}</div>
-                        <div class="text-muted small">Pre-Completed</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6 mb-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="flex-shrink-0 me-3">
-                    <div class="rounded-circle bg-success bg-opacity-10 p-3">
-                        <i class="ri-checkbox-circle-line fs-2 text-success"></i>
-                    </div>
-                </div>
-                <div class="flex-grow-1">
-                    <div class="fw-bold fs-4" id="completed-meetings">{{ $caseMeetings->where('status', 'completed')->count() }}</div>
-                    <div class="text-muted small">Completed</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6 mb-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body d-flex align-items-center">
-                    <div class="flex-shrink-0 me-3">
-                        <div class="rounded-circle bg-warning bg-opacity-10 p-3">
-                            <i class="ri-send-plane-line fs-2 text-warning"></i>
-                        </div>
-                    </div>
-                    <div class="flex-grow-1">
-                        <div class="fw-bold fs-4" id="forwarded-cases">{{ $caseMeetings->where('forwarded_to_president', true)->count() }}</div>
-                        <div class="text-muted small">Submitted</div>
-                    </div>
+                    <p class="text-muted mb-0">Manage case meetings and house visits</p>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Filters -->
-    <div class="row mb-4">
+    <div class="row mb-3">
         <div class="col-12">
             <div class="card border-0 shadow-sm">
                 <div class="card-body">
@@ -391,9 +310,7 @@
                             <select class="form-select" id="status-filter" onchange="filterCaseMeetings()">
                                 <option value="">All Status</option>
                                 <option value="scheduled">Scheduled</option>
-                                <option value="pre_completed">Pre-Completed</option>
                                 <option value="submitted">Submitted</option>
-                                <option value="completed">Completed</option>
                                 <option value="cancelled">Cancelled</option>
                             </select>
                         </div>
@@ -405,7 +322,7 @@
                                 <input type="date" class="form-control" id="date-filter-end" placeholder="To">
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label class="form-label">Search</label>
                             <div class="input-group">
                                 <input type="text" class="form-control" id="search-filter" placeholder="Search student name..." onkeyup="filterCaseMeetings()">
@@ -414,8 +331,8 @@
                                 </button>
                             </div>
                         </div>
-                        <div class="col-md-3 d-flex align-items-end">
-                            <button class="btn btn-success w-auto" type="button" onclick="window.open('/guidance/conference-summary-report/pdf', '_blank')">
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button class="btn btn-success w-100" type="button" onclick="window.open('/guidance/conference-summary-report/pdf', '_blank')">
                                 <i class="ri-file-list-3-line me-1"></i> Conference Summary Report
                             </button>
                         </div>
@@ -509,10 +426,15 @@
                                                 <i class="ri-edit-line"></i>
                                             </button>
 
-                                            <!-- Forward Button - Enabled only if scheduled, summary, sanctions, and not submitted -->
-                                            <button class="btn btn-outline-warning {{ !$meeting->scheduled_date || !$meeting->summary || $meeting->sanctions->isEmpty() || $meeting->status === 'submitted' ? 'disabled' : '' }}"
-                                                onclick="{{ $meeting->scheduled_date && $meeting->summary && $meeting->sanctions->isNotEmpty() && $meeting->status !== 'submitted' ? 'forwardToPresident(' . $meeting->id . ')' : '' }}"
-                                                title="{{ $meeting->status === 'submitted' ? 'Already submitted' : ($meeting->scheduled_date && $meeting->summary && $meeting->sanctions->isNotEmpty() ? 'Forward to President' : 'Schedule, summary, and sanctions required before forwarding') }}">
+                                            <!-- Forward Button -->
+                                            @if($meeting->status !== 'submitted')
+                                                <button class="btn btn-outline-warning"
+                                                    onclick="forwardToPresident({{ $meeting->id }}, '')"
+                                                    title="Forward to President">
+                                            @else
+                                                <button class="btn btn-outline-secondary" disabled
+                                                    title="Already submitted">
+                                            @endif
                                                 <i class="ri-send-plane-line"></i>
                                             </button>
                                         </div>
@@ -619,54 +541,57 @@
                             <div class="col-12 mt-4">
                                 <label class="form-label fw-bold">AGREED ACTIONS AND INTERVENTION:</label>
                                 <div class="border rounded p-3 bg-light">
-                                    <p class="mb-2">To address the pupil’s/student's behavior and support his/her/their improvement, the following actions and interventions have been agreed upon:</p>
-                                    <div class="form-check mb-2">
+                                    <p class="mb-2">To address the pupil's/student's behavior and support his/her/their improvement, the following actions and interventions have been agreed upon:</p>
+                                    <div class="alert alert-info mb-3 p-2">
+                                        <i class="ri-information-line me-2"></i><small><strong>Note:</strong> Options marked with <span class="badge bg-info text-white">Auto-Intervention</span> will automatically create corresponding intervention when selected.</small>
+                                    </div>
+                                    <div class="form-check mb-2 border border-info bg-light-blue p-2 rounded" style="background-color: #e3f2fd;">
                                         <input type="hidden" name="written_reflection" value="0">
                                         <input class="form-check-input" type="checkbox" name="written_reflection" value="1" id="action_written_reflection">
                                         <label class="form-check-label" for="action_written_reflection">
-                                            <strong>Written Reflection as Warning</strong> – The student will write a one-page reflection on the importance of respect, responsibility, and self-control. To be submitted on or before: <input type="date" name="written_reflection_due" class="form-control d-inline-block w-auto ms-2" autocomplete="off">
+                                            <strong>Written Reflection as Warning</strong> <span class="badge bg-info text-white ms-1">Auto-Intervention</span> – The student will write a one-page reflection on the importance of respect, responsibility, and self-control.<span class="conditional-field" data-target="written_reflection"> To be submitted on or before: <input type="date" name="written_reflection_due" class="form-control d-inline-block w-auto ms-2" autocomplete="off"></span>
                                         </label>
                                     </div>
-                                    <div class="form-check mb-2">
+                                    <div class="form-check mb-2 border border-info bg-light-blue p-2 rounded" style="background-color: #e3f2fd;">
                                         <input type="hidden" name="mentorship_counseling" value="0">
                                         <input class="form-check-input" type="checkbox" name="mentorship_counseling" value="1" id="action_mentorship">
                                         <label class="form-check-label" for="action_mentorship">
-                                            <strong>Mentorship/Counseling</strong> – The student will meet with the school counselor or a mentor weekly to discuss behavior management and coping strategies. Name of Mentor: <input type="text" name="mentor_name" class="form-control d-inline-block w-auto ms-2" placeholder="Name" autocomplete="off">
+                                            <strong>Mentorship/Counseling</strong> <span class="badge bg-info text-white ms-1">Auto-Intervention</span> – The student will meet with the school counselor or a mentor weekly to discuss behavior management and coping strategies.<span class="conditional-field" data-target="mentorship_counseling"> Name of Mentor: <input type="text" name="mentor_name" class="form-control d-inline-block w-auto ms-2" placeholder="Name" autocomplete="off"></span>
                                         </label>
                                     </div>
                                     <div class="form-check mb-2">
                                         <input type="hidden" name="parent_teacher_communication" value="0">
                                         <input class="form-check-input" type="checkbox" name="parent_teacher_communication" value="1" id="action_parent_teacher">
                                         <label class="form-check-label" for="action_parent_teacher">
-                                            <strong>Parent-Teacher Communication</strong> – Weekly progress updates will be shared with the parents to monitor the student's behavior and academic performance. Date: <input type="date" name="parent_teacher_date" class="form-control d-inline-block w-auto ms-2" autocomplete="off">
+                                            <strong>Parent-Teacher Communication</strong> – Weekly progress updates will be shared with the parents to monitor the student's behavior and academic performance.<span class="conditional-field" data-target="parent_teacher_communication"> Date: <input type="date" name="parent_teacher_date" class="form-control d-inline-block w-auto ms-2" autocomplete="off"></span>
                                         </label>
                                     </div>
                                     <div class="form-check mb-2">
                                         <input type="hidden" name="restorative_justice_activity" value="0">
                                         <input class="form-check-input" type="checkbox" name="restorative_justice_activity" value="1" id="action_restorative_justice">
                                         <label class="form-check-label" for="action_restorative_justice">
-                                            <strong>Restorative Justice Activity</strong> – The student will participate in a peer mediation or conflict resolution session if their behavior impacted others. Date: <input type="date" name="restorative_justice_date" class="form-control d-inline-block w-auto ms-2" autocomplete="off">
+                                            <strong>Restorative Justice Activity</strong> – The student will participate in a peer mediation or conflict resolution session if their behavior impacted others.<span class="conditional-field" data-target="restorative_justice_activity"> Date: <input type="date" name="restorative_justice_date" class="form-control d-inline-block w-auto ms-2" autocomplete="off"></span>
                                         </label>
                                     </div>
                                     <div class="form-check mb-2">
                                         <input type="hidden" name="follow_up_meeting" value="0">
                                         <input class="form-check-input" type="checkbox" name="follow_up_meeting" value="1" id="action_follow_up_meeting">
                                         <label class="form-check-label" for="action_follow_up_meeting">
-                                            <strong>Follow-up Meeting</strong> – A follow-up conference will be held in one month to assess progress and determine if further interventions are needed. Date: <input type="date" name="follow_up_meeting_date" class="form-control d-inline-block w-auto ms-2" autocomplete="off">
+                                            <strong>Follow-up Meeting</strong> – A follow-up conference will be held in one month to assess progress and determine if further interventions are needed.<span class="conditional-field" data-target="follow_up_meeting"> Date: <input type="date" name="follow_up_meeting_date" class="form-control d-inline-block w-auto ms-2" autocomplete="off"></span>
                                         </label>
                                     </div>
                                     <div class="form-check mb-2">
                                         <input type="hidden" name="community_service" value="0">
                                         <input class="form-check-input" type="checkbox" name="community_service" value="1" id="action_community_service">
                                         <label class="form-check-label" for="action_community_service">
-                                            <strong>Conduct Community/ School Service</strong> – The student will be given the task to participate community or school service activity to promote cleanliness and orderliness of the surroundings. <br>Date: <input type="date" name="community_service_date" class="form-control d-inline-block w-auto ms-2" autocomplete="off"> Assigned Area: <input type="text" name="community_service_area" class="form-control d-inline-block w-auto ms-2" placeholder="Area" autocomplete="off">.
+                                            <strong>Conduct Community/ School Service</strong> – The student will be given the task to participate community or school service activity to promote cleanliness and orderliness of the surroundings.<span class="conditional-field" data-target="community_service"> <br>Date: <input type="date" name="community_service_date" class="form-control d-inline-block w-auto ms-2" autocomplete="off"> Assigned Area: <input type="text" name="community_service_area" class="form-control d-inline-block w-auto ms-2" placeholder="Area" autocomplete="off">.</span>
                                         </label>
                                     </div>
-                                    <div class="form-check mb-2 align-items-center d-flex flex-wrap">
+                                    <div class="form-check mb-2 align-items-center d-flex flex-wrap border border-warning bg-warning-light p-2 rounded" style="background-color: #fff3cd;">
                                         <input type="hidden" name="suspension" value="0">
                                         <input class="form-check-input me-2" type="checkbox" name="suspension" value="1" id="action_suspension">
-                                        <label class="form-check-label me-2" for="action_suspension"><strong>Suspension</strong></label>
-                                        <span>– The student will serve</span>
+                                        <label class="form-check-label me-2" for="action_suspension"><strong>Suspension</strong> <span class="badge bg-warning text-dark ms-1">Auto-Intervention</span></label>
+                                        <span class="conditional-field" data-target="suspension">– The student will serve
                                         <input type="hidden" name="suspension_3days" value="0">
                                         <input type="checkbox" class="form-check-input ms-2 me-1" name="suspension_3days" value="1" id="suspension_3days">
                                         <label for="suspension_3days" class="form-check-label me-2">3 days,</label>
@@ -680,13 +605,13 @@
                                         <span class="ms-2">until</span>
                                         <input type="date" name="suspension_end" class="form-control d-inline-block w-auto ms-2" placeholder="" autocomplete="off">
                                         <span class="ms-2">and must accomplish the activity sheets missed during classes when he/she/they return to school on</span>
-                                        <input type="date" name="suspension_return" class="form-control d-inline-block w-auto ms-2" placeholder="" autocomplete="off">.
+                                        <input type="date" name="suspension_return" class="form-control d-inline-block w-auto ms-2" placeholder="" autocomplete="off">.</span>
                                     </div>
-                                    <div class="form-check mb-2">
+                                    <div class="form-check mb-2 border border-danger bg-danger-light p-2 rounded" style="background-color: #f8d7da;">
                                         <input type="hidden" name="expulsion" value="0">
                                         <input class="form-check-input" type="checkbox" name="expulsion" value="1" id="action_expulsion">
                                         <label class="form-check-label" for="action_expulsion">
-                                            <strong>Expulsion</strong> – A student may not be issued his certificate of eligibility to transfer at the end of the school year when he is undergoing a penalty of suspension or expulsion for failure to settle satisfactorily his financial or property obligations to the school. However, it shall be released as soon as he will finish serving the suspension or expulsion shall have been lifted. (RMPS Sec. 146) Date: <input type="date" name="expulsion_date" class="form-control d-inline-block w-auto ms-2" autocomplete="off">.
+                                            <strong>Expulsion</strong> <span class="badge bg-danger text-white ms-1">Auto-Intervention</span> – A student may not be issued his certificate of eligibility to transfer at the end of the school year when he is undergoing a penalty of suspension or expulsion for failure to settle satisfactorily his financial or property obligations to the school. However, it shall be released as soon as he will finish serving the suspension or expulsion shall have been lifted. (RMPS Sec. 146)<span class="conditional-field" data-target="expulsion"> Date: <input type="date" name="expulsion_date" class="form-control d-inline-block w-auto ms-2" autocomplete="off">.</span>
                                         </label>
                                     </div>
                                 </div>
@@ -760,9 +685,9 @@
                                  <textarea class="form-control" name="summary" id="edit_summary" rows="3" placeholder="Enter summary..."></textarea>
                              </div>
                              <div class="col-12">
-                                 <label class="form-label">Sanctions</label>
+                                 <label class="form-label">Interventions</label>
                                  <select class="form-control" name="sanction" id="edit_sanction">
-                                     <option value="">Select Sanction</option>
+                                     <option value="">Select Intervention</option>
                                      <!-- Options will be populated by JS -->
                                  </select>
                              </div>

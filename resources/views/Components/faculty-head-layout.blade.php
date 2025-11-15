@@ -22,12 +22,22 @@
   @vite(['resources/css/index_faculty_head.css'])
   
   <!-- Faculty Head JavaScript - Load in HEAD for onclick handlers -->
-  @vite('resources/js/faculty-head-assign-teacher.js')
-  @vite('resources/js/faculty-head-activate-submission.js')
-  @vite('resources/js/faculty-head-view-grades.js')
+  @vite(['resources/js/faculty-head-assign-teacher.js'])
+  @vite(['resources/js/faculty-head-activate-submission.js'])
+  @vite(['resources/js/faculty-head-view-grades.js'])
 
 </head>
 <body>
+  <!-- Mobile Navigation Toggle -->
+  <div class="d-md-none bg-white border-bottom p-3 fixed-top" style="z-index: 1030;">
+    <div class="d-flex justify-content-between align-items-center">
+      <img src="{{ Vite::asset('resources/assets/images/nms logo.png') }}" alt="Nicolites Montessori School" style="height: 30px;">
+      <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#facultyHeadSidebar" aria-controls="facultyHeadSidebar">
+        <i class="ri-menu-line"></i>
+      </button>
+    </div>
+  </div>
+
   <div class="container-fluid">
     <div class="row">
       <!-- SIDEBAR -->
@@ -79,8 +89,52 @@
         </ul>
       </nav>
 
+      <!-- MOBILE SIDEBAR (Offcanvas) -->
+      <div class="offcanvas offcanvas-start d-md-none" tabindex="-1" id="facultyHeadSidebar" aria-labelledby="facultyHeadSidebarLabel">
+        <div class="offcanvas-header border-bottom">
+          <div class="d-flex align-items-center">
+            <img src="{{ Vite::asset('resources/assets/images/nms logo.png') }}" alt="Nicolites Montessori School" style="height: 30px;" class="me-2">
+            <h5 class="offcanvas-title mb-0" id="facultyHeadSidebarLabel">Faculty Head Portal</h5>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body p-0">
+          <ul class="nav flex-column">
+            <li class="nav-item mb-2">
+              <a class="nav-link {{ request()->routeIs('faculty-head.dashboard') ? 'active' : '' }}" href="{{ route('faculty-head.dashboard') }}">
+                <i class="ri-dashboard-line me-2"></i>Dashboard
+              </a>
+            </li>
+            <li class="nav-item mb-2">
+              <a class="nav-link {{ request()->routeIs('faculty-head.assign-faculty') ? 'active' : '' }}" href="{{ route('faculty-head.assign-faculty') }}">
+                <i class="ri-user-add-line me-2"></i>Faculty Assignments
+              </a>
+            </li>
+            <li class="nav-item mb-2">
+              <a class="nav-link {{ request()->routeIs('faculty-head.approve-grades') ? 'active' : '' }}" href="{{ route('faculty-head.approve-grades') }}">
+                <i class="ri-file-list-3-line me-2"></i>Review & Approve Grades
+              </a>
+            </li>
+            <li class="nav-item mb-2">
+              <a class="nav-link {{ request()->routeIs('faculty-head.activate-submission') ? 'active' : '' }}" href="{{ route('faculty-head.activate-submission') }}">
+                <i class="ri-play-circle-line me-2"></i>Activate Grade Submission
+              </a>
+            </li>
+            <li class="nav-item mt-3">
+              <form method="POST" action="{{ route('faculty-head.logout') }}">
+                @csrf
+                <button type="submit" class="btn btn-outline-danger w-100">
+                  <i class="ri-logout-box-line me-2"></i>Logout
+                </button>
+              </form>
+            </li>
+          </ul>
+        </div>
+      </div>
+
       <!-- MAIN CONTENT -->
-      <main class="col-12 col-md-10 ms-sm-auto px-md-4">
+      <main class="col-12 col-md-10 ms-sm-auto px-3 px-md-4" style="margin-top: 70px;">
+        <div class="d-md-none mb-3"></div>
         <div class="main-content py-4">
           {{ $slot }}
         </div>

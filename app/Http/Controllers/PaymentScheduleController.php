@@ -137,13 +137,15 @@ class PaymentScheduleController extends Controller
     }
 
     /**
-     * Get all payment schedules for cashier
+     * Get all payment schedules for cashier (pending payments only)
      */
     public function getAllPaymentSchedules(Request $request)
     {
         // Get payment schedules grouped by student and payment method
+        // Only show pending payments - confirmed payments go to archives
         $query = Payment::with(['payable'])
             ->where('payable_type', 'App\\Models\\Student')
+            ->where('confirmation_status', 'pending') // Only pending payments
             ->select('payable_id', 'payment_method', 'confirmation_status')
             ->selectRaw('MIN(id) as first_payment_id')
             ->selectRaw('MIN(transaction_id) as base_transaction_id')
@@ -154,9 +156,22 @@ class PaymentScheduleController extends Controller
             ->selectRaw('MIN(created_at) as created_at')
             ->groupBy('payable_id', 'payment_method', 'confirmation_status');
 
-        // Apply filters
-        if ($request->filled('status')) {
-            $query->where('confirmation_status', $request->status);
+        // Status filter (kept for compatibility, but defaults to pending)
+        if ($request->filled('status') && $request->status !== 'pending') {
+            // If requesting non-pending status, return empty result
+            // Those belong in archives
+            return response()->json([
+                'success' => true,
+                'payments' => [
+                    'data' => [],
+                    'current_page' => 1,
+                    'last_page' => 1,
+                    'per_page' => 20,
+                    'total' => 0,
+                    'from' => null,
+                    'to' => null,
+                ]
+            ]);
         }
 
         if ($request->filled('payment_method')) {
@@ -453,19 +468,25 @@ class PaymentScheduleController extends Controller
                 ->where('confirmation_status', 'confirmed')
                 ->sum('amount');
                 
-                $isFullyPaid = $totalPaid >= ($student->total_fees_due ?? 0);
+            $isFullyPaid = $totalPaid >= ($student->total_fees_due ?? 0);
+            
+            // Check if this is the first payment being approved
+            $confirmedPaymentsCount = Payment::where('payable_type', 'App\\Models\\Student')
+                ->where('payable_id', $student->id)
+                ->where('confirmation_status', 'confirmed')
+                ->count();
                 
-                $student->update([
-                    'enrollment_status' => 'enrolled',
-                    'total_paid' => $totalPaid,
-                    'is_paid' => $isFullyPaid,
-                    'payment_completed_at' => $isFullyPaid ? now() : null
-                ]);
+            $student->update([
+                'enrollment_status' => 'enrolled', // Enrolled after ANY payment approval
+                'total_paid' => $totalPaid,
+                'is_paid' => $isFullyPaid, // Full payment status
+                'payment_completed_at' => $isFullyPaid ? now() : null
+            ]);
                 
-                // Auto-assign section when payment is fully settled
-                if ($isFullyPaid && !$student->section) {
-                    $this->assignStudentToSection($student);
-                }
+            // Auto-assign section after FIRST payment (1st quarter)
+            if ($confirmedPaymentsCount === 1 && !$student->section) {
+                $this->assignStudentToSection($student);
+            }
         }
 
         $message = $action === 'approve' 
@@ -593,15 +614,36 @@ class PaymentScheduleController extends Controller
             // Get current academic year
             $currentAcademicYear = date('Y') . '-' . (date('Y') + 1);
             
-            // Define section priority order
-            $sectionOrder = ['A', 'B', 'C', 'D', 'E', 'F'];
+            // Define section priority order (only A, B, C as requested)
+            $sectionOrder = ['A', 'B', 'C'];
+            
+            // Get max students per section based on grade level (from seeder config)
+            $maxStudentsConfig = [
+                'Nursery' => 20,
+                'Junior Casa' => 20,
+                'Senior Casa' => 25,
+                'Kinder' => 25,
+                'Grade 1' => 40,
+                'Grade 2' => 40,
+                'Grade 3' => 40,
+                'Grade 4' => 40,
+                'Grade 5' => 40,
+                'Grade 6' => 40,
+                'Grade 7' => 40,
+                'Grade 8' => 40,
+                'Grade 9' => 40,
+                'Grade 10' => 40,
+                'Grade 11' => 40,
+                'Grade 12' => 40,
+            ];
+            $maxStudentsPerSection = $maxStudentsConfig[$student->grade_level] ?? 35;
             
             // Build query to find students in same grade/strand/track
+            // Only need to be enrolled (1st quarter paid), not fully paid
             $baseQuery = Student::where('grade_level', $student->grade_level)
                                ->where('academic_year', $currentAcademicYear)
                                ->where('is_active', true)
                                ->where('enrollment_status', 'enrolled')
-                               ->where('is_paid', true)
                                ->whereNotNull('section');
             
             // Add strand filter for SHS students
@@ -620,26 +662,20 @@ class PaymentScheduleController extends Controller
                                      ->pluck('count', 'section')
                                      ->toArray();
             
-            // Find the section with the least students, following priority order
+            // Sequential filling: Fill A first (up to 40), then B (up to 40), then C (up to 40)
             $assignedSection = null;
-            $minCount = PHP_INT_MAX;
             
             foreach ($sectionOrder as $section) {
                 $count = $sectionCounts[$section] ?? 0;
                 
-                // Assign to first available section or section with least students
-                if ($count < $minCount) {
-                    $minCount = $count;
+                // If this section has space (less than 40 students), assign here
+                if ($count < $maxStudentsPerSection) {
                     $assignedSection = $section;
-                }
-                
-                // If we find an empty section, use it immediately
-                if ($count === 0) {
-                    break;
+                    break; // Stop at first available section in order
                 }
             }
             
-            // If no sections exist yet, start with section A
+            // If all sections are full or no sections exist yet, start with section A
             if (!$assignedSection) {
                 $assignedSection = 'A';
             }
@@ -653,7 +689,7 @@ class PaymentScheduleController extends Controller
                 'strand' => $student->strand,
                 'track' => $student->track,
                 'assigned_section' => $assignedSection,
-                'section_count' => $minCount
+                'section_count' => $sectionCounts[$assignedSection] ?? 0
             ]);
             
         } catch (\Exception $e) {
@@ -725,27 +761,23 @@ class PaymentScheduleController extends Controller
                 
             $isFullyPaid = $totalPaid >= ($student->total_fees_due ?? 0);
             
+            // Check if this is the first payment (1st quarter)
+            $confirmedPaymentsCount = Payment::where('payable_type', 'App\\Models\\Student')
+                ->where('payable_id', $student->id)
+                ->where('confirmation_status', 'confirmed')
+                ->count();
+            
             // Update student payment status
             $student->update([
+                'enrollment_status' => 'enrolled', // Enrolled after ANY payment approval
                 'total_paid' => $totalPaid,
                 'is_paid' => $isFullyPaid,
                 'payment_completed_at' => $isFullyPaid ? now() : null
             ]);
             
-            // Check if this is the first payment (1st quarter) and student is not yet enrolled
-            $isFirstPayment = Payment::where('payable_type', 'App\\Models\\Student')
-                ->where('payable_id', $student->id)
-                ->where('confirmation_status', 'confirmed')
-                ->count() === 1;
-                
-            if ($isFirstPayment && $student->enrollment_status !== 'enrolled') {
-                // Enroll student after first payment
-                $student->update(['enrollment_status' => 'enrolled']);
-                
-                // Auto-assign section if not already assigned
-                if (!$student->section) {
-                    $this->assignStudentToSection($student);
-                }
+            // Auto-assign section after FIRST payment only
+            if ($confirmedPaymentsCount === 1 && !$student->section) {
+                $this->assignStudentToSection($student);
             }
         }
 

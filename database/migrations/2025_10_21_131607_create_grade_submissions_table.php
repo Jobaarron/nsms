@@ -26,9 +26,10 @@ return new class extends Migration
             $table->enum('quarter', ['1st', '2nd', '3rd', '4th']);
             
             // Submission workflow
-            $table->enum('status', ['draft', 'submitted', 'approved', 'rejected', 'revision_requested'])->default('draft');
+            $table->enum('status', ['draft', 'submitted', 'approved', 'rejected', 'revision_requested', 'finalized'])->default('draft');
             $table->timestamp('submitted_at')->nullable();
             $table->timestamp('reviewed_at')->nullable();
+            $table->timestamp('finalized_at')->nullable();
             $table->foreignId('reviewed_by')->nullable()->constrained('users')->onDelete('set null'); // Faculty head
             
             // Grade data - JSON to store all student grades at once

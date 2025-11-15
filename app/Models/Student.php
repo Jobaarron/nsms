@@ -136,6 +136,57 @@ class Student extends Authenticatable
     {
         return 'student_id';
     }
+
+    /**
+     * Get the unique identifier for the user.
+     *
+     * @return mixed
+     */
+    public function getAuthIdentifier()
+    {
+        return $this->getAttribute($this->getAuthIdentifierName());
+    }
+
+    /**
+     * Get the password for the user.
+     *
+     * @return string
+     */
+    public function getAuthPassword()
+    {
+        return $this->password;
+    }
+
+    /**
+     * Get the token value for the "remember me" session.
+     *
+     * @return string|null
+     */
+    public function getRememberToken()
+    {
+        return $this->remember_token;
+    }
+
+    /**
+     * Set the token value for the "remember me" session.
+     *
+     * @param  string  $value
+     * @return void
+     */
+    public function setRememberToken($value)
+    {
+        $this->remember_token = $value;
+    }
+
+    /**
+     * Get the column name for the "remember me" token.
+     *
+     * @return string
+     */
+    public function getRememberTokenName()
+    {
+        return 'remember_token';
+    }
     
     protected function casts(): array
     {
@@ -163,6 +214,14 @@ class Student extends Authenticatable
     public function sectionModel()
     {
         return $this->belongsTo(Section::class, 'section_id');
+    }
+
+    /**
+     * Get all payments for this student
+     */
+    public function payments()
+    {
+        return $this->morphMany(Payment::class, 'payable');
     }
 
     public function getFullNameAttribute()
@@ -313,9 +372,9 @@ class Student extends Authenticatable
                           ->with(['subject', 'teacher.user'])
                           ->get();
 
-        // If no final grades, check for approved grade submissions
+        // If no final grades, check for finalized grade submissions only
         if ($finalGrades->isEmpty()) {
-            $approvedSubmissions = \App\Models\GradeSubmission::where('status', 'approved')
+            $finalizedSubmissions = \App\Models\GradeSubmission::where('status', 'finalized')
                 ->where('academic_year', $academicYear)
                 ->where('quarter', $quarter)
                 ->whereHas('teacher', function($query) {
@@ -338,9 +397,9 @@ class Student extends Authenticatable
                 ->with(['subject', 'teacher.user'])
                 ->get();
 
-            // Convert approved submissions to grade format
+            // Convert finalized submissions to grade format
             $gradesFromSubmissions = collect();
-            foreach ($approvedSubmissions as $submission) {
+            foreach ($finalizedSubmissions as $submission) {
                 $gradesData = $submission->grades_data;
                 foreach ($gradesData as $gradeData) {
                     if ($gradeData['student_id'] == $this->id) {
@@ -453,81 +512,106 @@ class Student extends Authenticatable
             }
         }
 
-        // Get available sections for this grade level and academic year
-        $sectionsQuery = Section::where('grade_level', $gradeLevel)
-                               ->where('academic_year', $academicYear)
-                               ->where('is_active', true)
-                               ->orderBy('section_name'); // A, B, C order
+        // Get available sections for this grade level and academic year (should be pre-seeded)
+        $sections = Section::where('grade_level', $gradeLevel)
+                          ->where('academic_year', $academicYear)
+                          ->where('is_active', true)
+                          ->orderBy('section_name') // A, B, C order
+                          ->get();
 
-        $sections = $sectionsQuery->get();
-
-        // If no sections exist, create default sections
+        // If no sections exist (shouldn't happen with seeder), create default sections
         if ($sections->isEmpty()) {
-            $defaultSections = ['A', 'B', 'C', 'D', 'E', 'F'];
+            // Get max students per section based on grade level (from seeder config)
+            $maxStudentsConfig = [
+                'Nursery' => 20,
+                'Junior Casa' => 20,
+                'Senior Casa' => 25,
+                'Kinder' => 25,
+                'Grade 1' => 40,
+                'Grade 2' => 40,
+                'Grade 3' => 40,
+                'Grade 4' => 40,
+                'Grade 5' => 40,
+                'Grade 6' => 40,
+                'Grade 7' => 40,
+                'Grade 8' => 40,
+                'Grade 9' => 40,
+                'Grade 10' => 40,
+                'Grade 11' => 40,
+                'Grade 12' => 40,
+            ];
+            $maxStudents = $maxStudentsConfig[$gradeLevel] ?? 35;
+            
+            $defaultSections = ['A', 'B', 'C'];
             foreach ($defaultSections as $sectionName) {
                 Section::create([
                     'section_name' => $sectionName,
                     'grade_level' => $gradeLevel,
                     'academic_year' => $academicYear,
-                    'max_students' => 30, // Default capacity
+                    'max_students' => $maxStudents,
                     'current_students' => 0,
                     'is_active' => true,
                     'description' => "Section {$sectionName} for {$sectionDescription}"
                 ]);
             }
-            $sections = $sectionsQuery->get();
+            $sections = Section::where('grade_level', $gradeLevel)
+                              ->where('academic_year', $academicYear)
+                              ->where('is_active', true)
+                              ->orderBy('section_name')
+                              ->get();
         }
 
-        // Find first available section
+        // Sequential filling: Fill A first (up to 40), then B (up to 40), then C (up to 40)
         foreach ($sections as $section) {
             if ($section->hasAvailableSlots()) {
-                // For Senior High, check if we should group by strand/track
-                if ($isSeniorHigh && $strand) {
-                    // Count students with same strand/track in this section
-                    $sameStrandTrackCount = self::where('grade_level', $gradeLevel)
-                        ->where('section', $section->section_name)
-                        ->where('academic_year', $academicYear)
-                        ->where('strand', $strand)
-                        ->when($track, function($query) use ($track) {
-                            return $query->where('track', $track);
-                        })
-                        ->count();
-                    
-                    // If section has mixed strands/tracks and capacity allows, prefer grouping
-                    $totalInSection = self::where('grade_level', $gradeLevel)
-                        ->where('section', $section->section_name)
-                        ->where('academic_year', $academicYear)
-                        ->count();
-                    
-                    // If section is empty or has same strand/track students, use it
-                    if ($totalInSection === 0 || $sameStrandTrackCount > 0) {
-                        $section->addStudent();
-                        return [
-                            'section' => $section->section_name,
-                            'section_id' => $section->id
-                        ];
-                    }
-                } else {
-                    // For elementary/JHS, just use first available section
-                    $section->addStudent();
-                    return [
-                        'section' => $section->section_name,
-                        'section_id' => $section->id
-                    ];
-                }
+                $section->addStudent();
+                return [
+                    'section' => $section->section_name,
+                    'section_id' => $section->id
+                ];
             }
         }
 
-        // If all sections are full or no suitable section found, create a new one
-        $nextSectionLetter = chr(ord('A') + $sections->count());
+        // If all sections are full, assign to section A (overflow handling)
+        // This should rarely happen with 40 students per section limit
+        $overflowSection = $sections->first(); // Section A
+        if ($overflowSection) {
+            $overflowSection->addStudent(true); // Allow overflow
+            return [
+                'section' => $overflowSection->section_name,
+                'section_id' => $overflowSection->id
+            ];
+        }
+
+        // Fallback: create section A if somehow no sections exist
+        $maxStudentsConfig = [
+            'Nursery' => 20,
+            'Junior Casa' => 20,
+            'Senior Casa' => 25,
+            'Kinder' => 25,
+            'Grade 1' => 40,
+            'Grade 2' => 40,
+            'Grade 3' => 40,
+            'Grade 4' => 40,
+            'Grade 5' => 40,
+            'Grade 6' => 40,
+            'Grade 7' => 40,
+            'Grade 8' => 40,
+            'Grade 9' => 40,
+            'Grade 10' => 40,
+            'Grade 11' => 40,
+            'Grade 12' => 40,
+        ];
+        $maxStudents = $maxStudentsConfig[$gradeLevel] ?? 35;
+        
         $newSection = Section::create([
-            'section_name' => $nextSectionLetter,
+            'section_name' => 'A',
             'grade_level' => $gradeLevel,
             'academic_year' => $academicYear,
-            'max_students' => 30,
+            'max_students' => $maxStudents,
             'current_students' => 1, // This student will be the first
             'is_active' => true,
-            'description' => "Section {$nextSectionLetter} for {$sectionDescription}"
+            'description' => "Section A for {$sectionDescription}"
         ]);
 
         return [

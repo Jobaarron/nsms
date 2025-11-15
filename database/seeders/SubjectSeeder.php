@@ -52,12 +52,12 @@ class SubjectSeeder extends Seeder
                 'English',
                 'Mathematics',
                 'Araling Panlipunan (AP)',
-                'Edukasyon sa Pagpapakatao (EsP / Values)',
+                'Science',
                 'Music',
                 'Arts',
                 'Physical Education',
                 'Health',
-                'Science',
+                'Edukasyon sa Pagpapakatao (EsP / Values)',
             ];
 
             foreach ($subjects as $subjectName) {
@@ -450,7 +450,7 @@ class SubjectSeeder extends Seeder
         foreach ($g12HumssSecondSemSpecialized as $subjectName) {
             Subject::create([
                 'subject_name' => $subjectName,
-                'grade_level' => 'Grade 12',
+                'grade_level' => 'Grade 12',    
                 'strand' => 'HUMSS',
                 'semester' => 'Second Semester',
                 'academic_year' => $academicYear,
@@ -480,7 +480,7 @@ class SubjectSeeder extends Seeder
             ]);
         }
 
-        // Grade 11 STEM First Semester - Specialized Subjects
+        // Grade 11 STEM First Semester - Applied & Specialized Subjects
         $g11StemFirstSemSpecialized = [
             'Pre – Calculus',
             'General Chemistry 1',
@@ -517,7 +517,7 @@ class SubjectSeeder extends Seeder
             ]);
         }
 
-        // Grade 11 STEM Second Semester - Specialized Subjects
+        // Grade 11 STEM Second Semester - Applied & Specialized Subjects
         $g11StemSecondSemSpecialized = [
             'Research in Daily Life 1 (Qualitative Research)',
             'Empowerment Technologies',

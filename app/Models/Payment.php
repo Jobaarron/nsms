@@ -17,6 +17,11 @@ class Payment extends Model
         'payable_id',
         'payable_type',
         'amount',
+        'entrance_fee',
+        'miscellaneous_fee',
+        'tuition_fee',
+        'others_fee',
+        'total_fee',
         'status',
         'payment_method', // Now stores payment schedule: full, quarterly, monthly
         'reference_number',
@@ -53,7 +58,7 @@ class Payment extends Model
      */
     public function cashier()
     {
-        return $this->belongsTo(User::class, 'processed_by');
+        return $this->belongsTo(Cashier::class, 'processed_by');
     }
 
     /**
@@ -63,6 +68,12 @@ class Payment extends Model
         'paid_at' => 'datetime',
         'confirmed_at' => 'datetime',
         'scheduled_date' => 'date',
+        'amount' => 'decimal:2',
+        'entrance_fee' => 'decimal:2',
+        'miscellaneous_fee' => 'decimal:2',
+        'tuition_fee' => 'decimal:2',
+        'others_fee' => 'decimal:2',
+        'total_fee' => 'decimal:2',
         'amount_received' => 'decimal:2',
     ];
 
@@ -98,5 +109,34 @@ class Payment extends Model
     {
         return $query->where('status', 'paid')
                     ->where('confirmation_status', 'confirmed');
+    }
+
+    /**
+     * Generate a sequential transaction ID
+     */
+    public static function generateTransactionId($studentId)
+    {
+        // Get all existing transaction IDs and find the highest sequential number
+        $existingTransactions = self::where('transaction_id', 'LIKE', 'TXN-%')
+            ->pluck('transaction_id')
+            ->toArray();
+        
+        $maxSequential = -1;
+        
+        foreach ($existingTransactions as $transactionId) {
+            // Extract the last part of the transaction ID (after the last dash)
+            $parts = explode('-', $transactionId);
+            if (count($parts) >= 3) {
+                $sequential = (int) end($parts);
+                $maxSequential = max($maxSequential, $sequential);
+            }
+        }
+        
+        // Next sequential number
+        $sequentialNumber = $maxSequential + 1;
+        
+        // Format: TXN-{student_id}-{sequential_number_padded}
+        // Pad with zeros to make it 4 digits (0000, 0001, 0002, etc.)
+        return 'TXN-' . $studentId . '-' . str_pad($sequentialNumber, 4, '0', STR_PAD_LEFT);
     }
 }
