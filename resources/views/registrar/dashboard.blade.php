@@ -91,9 +91,17 @@
                                 <div class="row align-items-center">
                                     <div class="col-md-4">
                                         <div class="d-flex align-items-center">
-                                            <div class="bg-warning bg-opacity-10 rounded-circle p-3 me-3">
-                                                <i class="ri-user-line fs-4 text-warning"></i>
-                                            </div>
+                                            @if($application->id_photo_data_url)
+                                                <div class="me-3">
+                                                    <img src="{{ $application->id_photo_data_url }}" alt="{{ $application->first_name }}" 
+                                                         class="rounded-circle" 
+                                                         style="width: 50px; height: 50px; object-fit: cover; border: 2px solid #ffc107;">
+                                                </div>
+                                            @else
+                                                <div class="bg-warning bg-opacity-10 rounded-circle p-3 me-3">
+                                                    <i class="ri-user-line fs-4 text-warning"></i>
+                                                </div>
+                                            @endif
                                             <div>
                                                 <h5 class="mb-1">{{ $application->first_name }} {{ $application->last_name }}</h5>
                                                 <p class="mb-0 text-muted">Applying for {{ $application->grade_level_applied }}</p>
