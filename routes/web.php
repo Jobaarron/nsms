@@ -184,16 +184,15 @@ Route::get('/teacher/grades', [App\Http\Controllers\TeacherGradeController::clas
     ->name('teacher.grades')
     ->middleware(['auth', 'role:teacher|faculty_head']);
 
-// Teacher Counseling Recommendation Routes
+// Teacher Routes
 Route::middleware(['auth', 'role:teacher'])->prefix('teacher')->name('teacher.')->group(function () {
-    Route::get('/recommend-counseling', [TeacherController::class, 'showRecommendForm'])
-        ->name('recommend-counseling.form');
-    Route::post('/recommend-counseling', [TeacherController::class, 'recommendToCounseling'])
-        ->name('recommend-counseling');
-
-
     // Class Adviser Only Routes - Protected by teacher.adviser middleware
     Route::middleware(['teacher.adviser'])->group(function () {
+        // Teacher Counseling Recommendation Routes
+        Route::get('/recommend-counseling', [TeacherController::class, 'showRecommendForm'])
+            ->name('recommend-counseling.form');
+        Route::post('/recommend-counseling', [TeacherController::class, 'recommendToCounseling'])
+            ->name('recommend-counseling');
         // Route for the Teacher Observation Report page
         Route::get('/observationreport', [TeacherController::class, 'showObservationReport'])
             ->name('observationreport');

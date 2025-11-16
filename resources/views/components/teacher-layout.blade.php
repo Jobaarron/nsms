@@ -96,6 +96,12 @@
                 <i class="ri-user-star-line me-2"></i>Advisory
               </a>
             </li>
+            
+            <li class="nav-item mb-2">
+              <a class="nav-link {{ request()->routeIs('teacher.recommend-counseling.*') ? 'active' : '' }}" href="{{ route('teacher.recommend-counseling.form') }}">
+                <i class="ri-heart-pulse-line me-2"></i>Recommend Counseling
+              </a>
+            </li>
           @else
             <li class="nav-item mb-2">
               <span class="nav-link disabled" title="Only available for class advisers">
@@ -107,6 +113,13 @@
             <li class="nav-item mb-2">
               <span class="nav-link disabled" title="Only available for class advisers">
                 <i class="ri-user-star-line me-2"></i>Advisory
+                <i class="ri-lock-line ms-auto text-muted"></i>
+              </span>
+            </li>
+            
+            <li class="nav-item mb-2">
+              <span class="nav-link disabled" title="Only available for class advisers">
+                <i class="ri-heart-pulse-line me-2"></i>Recommend Counseling
                 <i class="ri-lock-line ms-auto text-muted"></i>
               </span>
             </li>
@@ -179,6 +192,12 @@
                   <i class="ri-user-star-line me-2"></i>Advisory
                 </a>
               </li>
+              
+              <li class="nav-item mb-2">
+                <a class="nav-link {{ request()->routeIs('teacher.recommend-counseling.*') ? 'active' : '' }}" href="{{ route('teacher.recommend-counseling.form') }}">
+                  <i class="ri-heart-pulse-line me-2"></i>Recommend Counseling
+                </a>
+              </li>
             @else
               <li class="nav-item mb-2">
                 <span class="nav-link disabled" title="Only available for class advisers">
@@ -190,6 +209,13 @@
               <li class="nav-item mb-2">
                 <span class="nav-link disabled" title="Only available for class advisers">
                   <i class="ri-user-star-line me-2"></i>Advisory
+                  <i class="ri-lock-line ms-auto text-muted"></i>
+                </span>
+              </li>
+              
+              <li class="nav-item mb-2">
+                <span class="nav-link disabled" title="Only available for class advisers">
+                  <i class="ri-heart-pulse-line me-2"></i>Recommend Counseling
                   <i class="ri-lock-line ms-auto text-muted"></i>
                 </span>
               </li>

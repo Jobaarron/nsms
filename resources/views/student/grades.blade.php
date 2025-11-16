@@ -1,26 +1,29 @@
 <x-student-layout>
-  <!-- MAIN CONTENT -->
-  <main class="col-12 col-md-10 px-4 py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <h1 class="section-title mb-0">My Grades</h1>
-      <div class="text-muted">
-        <i class="ri-file-text-line me-1"></i>{{ $currentAcademicYear }}
+  <!-- Page Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center">
+        <h1 class="section-title mb-0">My Grades</h1>
+        <div class="text-muted">
+          <i class="ri-file-text-line me-1"></i>{{ $currentAcademicYear }}
+        </div>
       </div>
     </div>
+  </div>
 
-    @if(session('success'))
-      <div class="alert alert-success alert-dismissible fade show" role="alert">
-        {{ session('success') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-      </div>
-    @endif
+  @if(session('success'))
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+      {{ session('success') }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  @endif
 
-    @if(session('error'))
-      <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        {{ session('error') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-      </div>
-    @endif
+  @if(session('error'))
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      {{ session('error') }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  @endif
 
     {{-- ACADEMIC PERFORMANCE OVERVIEW - COMMENTED OUT FOR TESTING --}}
     {{-- @if(isset($performance) && !empty($performance['quarters']))
@@ -191,5 +194,4 @@
         </div>
       </div>
     </div>
-  </main>
 </x-student-layout>
