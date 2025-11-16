@@ -405,14 +405,32 @@ class TeacherGradeController extends Controller
 
         try {
             // Get expected students for this submission using student_id (NS-25XXX format)
-            $expectedStudents = Student::where('grade_level', $submission->grade_level)
-                                     ->where('section', $submission->section)
-                                     ->where('academic_year', $submission->academic_year)
-                                     ->where('enrollment_status', 'enrolled')
-                                     ->where('is_paid', true)
-                                     ->where('is_active', true)
-                                     ->get()
-                                     ->keyBy('student_id'); // Key by student_id (NS-25XXX)
+            // Use the same filtering logic as the grade entry form
+            $studentsQuery = Student::where('grade_level', $submission->grade_level)
+                                   ->where('section', $submission->section)
+                                   ->where('academic_year', $submission->academic_year)
+                                   ->where('is_active', true);
+
+            // Get the faculty assignment to check for strand/track filtering
+            $assignment = FacultyAssignment::where('teacher_id', $submission->teacher_id)
+                                         ->where('subject_id', $submission->subject_id)
+                                         ->where('grade_level', $submission->grade_level)
+                                         ->where('section', $submission->section)
+                                         ->where('academic_year', $submission->academic_year)
+                                         ->first();
+
+            // For Senior High School, match strand and track if assignment has them
+            if ($assignment && in_array($submission->grade_level, ['Grade 11', 'Grade 12'])) {
+                if ($assignment->strand) {
+                    $studentsQuery->where('strand', $assignment->strand);
+                }
+                
+                if ($assignment->track) {
+                    $studentsQuery->where('track', $assignment->track);
+                }
+            }
+
+            $expectedStudents = $studentsQuery->get()->keyBy('student_id'); // Key by student_id (NS-25XXX)
 
             // Process Excel/CSV file
             $file = $request->file('grades_file');
@@ -471,7 +489,20 @@ class TeacherGradeController extends Controller
                 
                 // Check if student exists in expected list
                 if (!isset($expectedStudents[$studentId])) {
-                    $errors[] = "Row {$rowNumber}: Student ID '{$studentId}' not found in class {$submission->grade_level} - {$submission->section}";
+                    // Add more detailed error information
+                    $availableIds = $expectedStudents->keys()->take(5)->implode(', ');
+                    $totalStudents = $expectedStudents->count();
+                    $classInfo = $submission->grade_level . ' - ' . $submission->section;
+                    if ($assignment && $assignment->strand) {
+                        $classInfo .= ' - ' . $assignment->strand;
+                        if ($assignment->track) {
+                            $classInfo .= ' - ' . $assignment->track;
+                        }
+                    }
+                    
+                    $errors[] = "Row {$rowNumber}: Student ID '{$studentId}' not found in class {$classInfo}. " .
+                               "Found {$totalStudents} students. " .
+                               ($totalStudents > 0 ? "Sample IDs: {$availableIds}" . ($totalStudents > 5 ? '...' : '') : "No students found in this class.");
                     continue;
                 }
                 
@@ -520,9 +551,10 @@ class TeacherGradeController extends Controller
             if (!empty($errors)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'File contains errors',
+                    'message' => 'File contains errors. Please check the details below and correct your file.',
                     'errors' => $errors,
-                    'processed' => $processed
+                    'processed' => $processed,
+                    'total_rows' => count($data) - 1 // Exclude header row
                 ], 400);
             }
             

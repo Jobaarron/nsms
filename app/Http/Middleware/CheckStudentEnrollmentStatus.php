@@ -24,10 +24,10 @@ class CheckStudentEnrollmentStatus
 
         $student = Auth::guard('student')->user();
 
-        // Check if student has completed enrollment (pre_registered or enrolled)
-        if (!in_array($student->enrollment_status, ['enrolled', 'pre_registered'])) {
-            // Redirect to dashboard with message about completing enrollment
-            return redirect()->route('student.dashboard')->with('error', 
+        // Check if student is fully enrolled (not just pre_registered)
+        if ($student->enrollment_status !== 'enrolled') {
+            // Redirect to enrollment page with message about completing enrollment
+            return redirect()->route('student.enrollment')->with('error', 
                 'Please complete your enrollment first to access this feature.');
         }
 

@@ -166,6 +166,30 @@ document.addEventListener('DOMContentLoaded', function() {
     const scheduleDiv = document.getElementById('payment-schedule');
     const scheduleContent = document.getElementById('schedule-content');
     
+    // Add confirmation popup for enrollment form submission
+    const enrollBtn = document.getElementById('enrollBtn');
+    if (enrollBtn) {
+        enrollBtn.addEventListener('click', function(e) {
+            e.preventDefault(); // Prevent default form submission
+            
+            // Show confirmation dialog
+            const confirmed = confirm(
+                'Are you sure you want to confirm your payment schedule?\n\n' +
+                'Please review your payment dates and amounts carefully before confirming.\n\n' +
+                'Click OK to confirm or Cancel to review your schedule.'
+            );
+            
+            if (confirmed) {
+                // If confirmed, submit the form
+                const form = document.getElementById('enrollmentForm') || this.closest('form');
+                if (form) {
+                    form.submit();
+                }
+            }
+            // If not confirmed, do nothing (user can review and try again)
+        });
+    }
+    
     // Auto-populate payment dates based on preferred schedule
     window.populatePaymentDates();
     

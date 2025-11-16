@@ -703,8 +703,8 @@ window.displayPaymentScheduleModal = function(schedule) {
                                                         ${index === 0 || (schedule.payments[index - 1] && schedule.payments[index - 1].confirmation_status === 'confirmed') ? `
                                                             <button type="button" class="btn btn-success btn-sm" 
                                                                 onclick="processIndividualPayment(${payment.id}, 'approve')" 
-                                                                title="Approve this payment">
-                                                                <i class="ri-check-line"></i> Approve
+                                                                title="Confirm this payment">
+                                                                <i class="ri-check-line"></i> Confirm
                                                             </button>
                                                         ` : `
                                                             <span class="text-muted small">Pay previous first</span>
@@ -724,7 +724,7 @@ window.displayPaymentScheduleModal = function(schedule) {
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                         <div class="text-muted small">
                             <i class="ri-information-line me-1"></i>
-                            Approve payments individually. First quarter must be approved before others.
+                            Confirm payments individually. First quarter must be confirmed before others.
                         </div>
                     </div>
                 </div>

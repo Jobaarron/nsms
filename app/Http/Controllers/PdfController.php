@@ -8,9 +8,18 @@ use App\Models\FacultyAssignment;
 use App\Models\Subject;
 use App\Models\Grade;
 use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
 
 class PdfController extends Controller
 {
+    /**
+     * Get school time (Philippine Time)
+     */
+    private function schoolNow()
+    {
+        return Carbon::now('Asia/Manila');
+    }
+
     /**
      * Generate dynamic counseling session PDF using TCPDF.
      */
@@ -459,7 +468,7 @@ class PdfController extends Controller
         $pdf->useTemplate($tplId);
 
         // Fill in header information
-        $currentDate = now();
+        $currentDate = $this->schoolNow();
         $currentMonth = $currentDate->format('F'); // Full month name (January, February, etc.)
         $currentSchoolYear = $currentDate->format('Y') . '-' . ($currentDate->format('Y') + 1); // 2025-2026 format
         

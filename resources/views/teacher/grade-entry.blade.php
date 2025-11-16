@@ -185,6 +185,7 @@
                   <div class="col-md-8">
                     <input type="file" class="form-control" id="gradesFile" accept=".csv,.xlsx,.xls">
                     <div class="form-text">
+                      <strong>Tip:</strong> Click "Template" to download a pre-filled CSV with all students in this class!<br>
                       <strong>Required columns:</strong> student_id (NS-25XXX), last_name, first_name, middle_name (optional), grade, remarks (optional)
                     </div>
                   </div>
@@ -192,7 +193,7 @@
                     <button type="button" class="btn btn-outline-primary" onclick="uploadGradesFile()">
                       <i class="ri-upload-line me-2"></i>Upload Grades
                     </button>
-                    <button type="button" class="btn btn-outline-secondary ms-2" onclick="downloadTemplate()">
+                    <button type="button" class="btn btn-outline-success ms-2" onclick="downloadTemplate()" title="Download pre-filled template with all students in this class">
                       <i class="ri-download-line me-2"></i>Template
                     </button>
                   </div>
@@ -251,112 +252,39 @@
   </main>
 </x-teacher-layout>
 
+@php
+    
+    $gradeEntryData = [
+        'submissionId' => $submission->id,
+        'uploadRoute' => route('teacher.grades.upload'),
+        'templateData' => [
+            'students' => $students->map(function($student) use ($existingGrades) {
+                $existingGrade = isset($existingGrades[$student->id]) ? $existingGrades[$student->id]['grade'] : '';
+                $existingRemarks = isset($existingGrades[$student->id]) ? $existingGrades[$student->id]['remarks'] : '';
+                
+                return [
+                    'student_id' => $student->student_id,
+                    'last_name' => $student->last_name,
+                    'first_name' => $student->first_name,
+                    'middle_name' => $student->middle_name ?? '',
+                    'existing_grade' => $existingGrade,
+                    'existing_remarks' => $existingRemarks
+                ];
+            })->toArray(),
+            'className' => $assignment->grade_level . ' - ' . $assignment->section . 
+                          ($assignment->strand ? ' - ' . $assignment->strand : '') . 
+                          ($assignment->track ? ' - ' . $assignment->track : ''),
+            'fileName' => 'grades_template_' . str_replace(' ', '_', $assignment->grade_level) . '_' . 
+                         $assignment->section . 
+                         ($assignment->strand ? '_' . $assignment->strand : '') . 
+                         ($assignment->track ? '_' . $assignment->track : '') . '_' . 
+                         ($assignment->subject->subject_code ?? 'subject') . '.csv'
+        ]
+    ];
+@endphp
+
 <script>
-function validateGrade(input) {
-    const value = parseFloat(input.value);
-    if (value < 0 || value > 100) {
-        alert('Grade must be between 0 and 100');
-        input.focus();
-        return false;
-    }
-    
-    // Add visual feedback for passing/failing grades
-    if (value >= 75) {
-        input.classList.remove('border-danger');
-        input.classList.add('border-success');
-    } else if (value > 0) {
-        input.classList.remove('border-success');
-        input.classList.add('border-danger');
-    } else {
-        input.classList.remove('border-success', 'border-danger');
-    }
-}
 
-function confirmSubmission() {
-    const filledGrades = document.querySelectorAll('.grade-input').length;
-    const emptyGrades = Array.from(document.querySelectorAll('.grade-input')).filter(input => !input.value).length;
-    
-    if (emptyGrades > 0) {
-        return confirm(`You have ${emptyGrades} empty grades out of ${filledGrades} students. Are you sure you want to submit for review?`);
-    }
-    
-    return confirm('Are you sure you want to submit these grades for faculty head review? You won\'t be able to edit them once submitted.');
-}
-
-// Quarter loading function removed - quarter is now controlled by faculty head
-
-// Excel/CSV Upload Functions
-function uploadGradesFile() {
-    const fileInput = document.getElementById('gradesFile');
-    const file = fileInput.files[0];
-    
-    if (!file) {
-        alert('Please select a file to upload');
-        return;
-    }
-    
-    const formData = new FormData();
-    formData.append('grades_file', file);
-    formData.append('submission_id', {{ $submission->id }});
-    
-    // Show progress
-    document.getElementById('uploadProgress').style.display = 'block';
-    
-    fetch('{{ route("teacher.grades.upload") }}', {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        document.getElementById('uploadProgress').style.display = 'none';
-        
-        if (data.success) {
-            alert(`Success! Uploaded ${data.processed} grades out of ${data.total_expected} students`);
-            location.reload(); // Reload to show updated grades
-        } else {
-            let errorMsg = data.message;
-            if (data.errors) {
-                errorMsg += '\n\nErrors:\n' + data.errors.join('\n');
-            }
-            alert(errorMsg);
-        }
-    })
-    .catch(error => {
-        document.getElementById('uploadProgress').style.display = 'none';
-        alert('Upload failed: ' + error.message);
-    });
-}
-
-function downloadTemplate() {
-    // Create CSV template with sample data using NS-25XXX format
-    const csvContent = `student_id,last_name,first_name,middle_name,grade,remarks
-NS-25001,Dela Cruz,Juan,Santos,85.50,Good performance
-NS-25002,Garcia,Maria,Lopez,92.00,Excellent work
-NS-25003,Reyes,Pedro,,78.25,Needs improvement
-NS-25004,Santos,Ana,Cruz,95.75,Outstanding
-NS-25005,Mendoza,Carlos,,88.00,`;
-    
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'grade_upload_template.csv';
-    a.click();
-    window.URL.revokeObjectURL(url);
-}
-
-// Auto-save functionality (optional)
-let autoSaveTimer;
-document.addEventListener('input', function(e) {
-    if (e.target.classList.contains('grade-input')) {
-        clearTimeout(autoSaveTimer);
-        autoSaveTimer = setTimeout(() => {
-            // Could implement auto-save here
-            console.log('Auto-save triggered');
-        }, 2000);
-    }
-});
+window.gradeEntryData = {!! json_encode($gradeEntryData) !!};
+console.log('Grade entry data injected:', window.gradeEntryData);
 </script>

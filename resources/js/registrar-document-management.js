@@ -259,6 +259,26 @@ window.RegistrarDocumentManagement = (function() {
         statusBadge.textContent = docData.status === 'rejected' ? 'Revised' : docData.status;
         statusBadge.className = `badge ${getDocumentStatusBadge(docData.status)}`;
         
+        // Disable action buttons if document is in revised status
+        const acceptBtn = document.getElementById('accept-document-btn');
+        const rejectBtn = document.getElementById('reject-document-btn');
+        const isRevised = docData.status === 'rejected' || docData.status === 'revised';
+        
+        if (isRevised) {
+            // Disable buttons and show message
+            acceptBtn.disabled = true;
+            rejectBtn.disabled = true;
+            acceptBtn.innerHTML = '<i class="ri-time-line me-1"></i>Waiting for enrollee to replace document';
+            rejectBtn.style.display = 'none'; // Hide revised button since it's already revised
+        } else {
+            // Enable buttons with original text
+            acceptBtn.disabled = false;
+            rejectBtn.disabled = false;
+            acceptBtn.innerHTML = '<i class="ri-check-line me-1"></i>Accept Document';
+            rejectBtn.innerHTML = '<i class="ri-edit-line me-1"></i>Revised Document';
+            rejectBtn.style.display = 'block';
+        }
+        
         // Load document preview
         loadDocumentPreview(docData);
         
@@ -354,6 +374,26 @@ window.RegistrarDocumentManagement = (function() {
                 const statusBadge = document.getElementById('doc-status');
                 statusBadge.textContent = status === 'rejected' ? 'Revised' : status;
                 statusBadge.className = `badge ${getDocumentStatusBadge(status)}`;
+                
+                // Update button states based on new status
+                const acceptBtn = document.getElementById('accept-document-btn');
+                const rejectBtn = document.getElementById('reject-document-btn');
+                const isRevised = status === 'rejected' || status === 'revised';
+                
+                if (isRevised) {
+                    // Disable buttons and show message
+                    acceptBtn.disabled = true;
+                    rejectBtn.disabled = true;
+                    acceptBtn.innerHTML = '<i class="ri-time-line me-1"></i>Waiting for enrollee to replace document';
+                    rejectBtn.style.display = 'none';
+                } else {
+                    // Enable buttons with original text
+                    acceptBtn.disabled = false;
+                    rejectBtn.disabled = false;
+                    acceptBtn.innerHTML = '<i class="ri-check-line me-1"></i>Accept Document';
+                    rejectBtn.innerHTML = '<i class="ri-edit-line me-1"></i>Revised Document';
+                    rejectBtn.style.display = 'block';
+                }
                 
                 // Refresh documents list
                 displayDocuments(currentDocuments);

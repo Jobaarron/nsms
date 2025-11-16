@@ -66,6 +66,7 @@ export default defineConfig({
                 'resources/js/faculty-head-approve-grades.js',
                 'resources/js/grade-submission-checker.js',
                 'resources/js/teacher-grades.js',
+                'resources/js/teacher-grade-entry.js',
                 'resources/js/teacher-dashboard.js',
                 'resources/js/teacher-recommend-counseling.js',
                 'resources/js/teacher-advisory.js',

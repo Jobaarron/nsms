@@ -108,6 +108,9 @@
                   <td>
                     <strong>{{ $violation->title }}</strong>
                     <br><small class="text-muted">{{ Str::limit($violation->description, 50) }}</small>
+                    @if($violation->is_escalated ?? false)
+                      <br><span class="badge bg-danger mt-1"><i class="ri-arrow-up-line me-1"></i>Escalated ({{ $violation->occurrence_count }}x)</span>
+                    @endif
                   </td>
                   <td>
                     {{ $violation->violation_date->format('M d, Y') }}
@@ -152,7 +155,8 @@
                       </button>
                       <button type="button" class="btn btn-sm btn-outline-warning"
                               onclick="editViolation({{ $violation->id }})"
-                              title="Edit">
+                              title="Edit"
+                              @if(in_array($violation->status, ['resolved', 'dismissed'])) disabled @endif>
                         <i class="ri-edit-line"></i>
                       </button>
                       @php
@@ -160,7 +164,11 @@
                         $canForward = true;
                         $forwardTooltip = 'Forward to Case Meeting';
                         
-                        if ($violation->severity === 'major') {
+                        // Disable if already resolved or dismissed
+                        if (in_array($violation->status, ['resolved', 'dismissed', 'in_progress'])) {
+                            $canForward = false;
+                            $forwardTooltip = 'Cannot forward: Violation is already ' . $violation->status;
+                        } elseif ($violation->severity === 'major' || ($violation->effective_severity === 'major')) {
                             $hasStudentReply = !empty($violation->student_statement) || 
                                               !empty($violation->incident_feelings) || 
                                               !empty($violation->action_plan);
@@ -171,14 +179,16 @@
                             }
                         }
                       @endphp
-                      <button type="button" class="btn btn-sm btn-outline-info {{ !$canForward ? 'disabled' : '' }}"
+                      <button type="button" class="btn btn-sm btn-outline-info"
                               onclick="{{ $canForward ? 'forwardViolation(' . $violation->id . ')' : '' }}"
-                              title="{{ $forwardTooltip }}">
+                              title="{{ $forwardTooltip }}"
+                              @if(!$canForward) disabled @endif>
                         <i class="ri-send-plane-line"></i>
                       </button>
                       <button type="button" class="btn btn-sm btn-outline-danger"
                               onclick="deleteViolation({{ $violation->id }})"
-                              title="Delete">
+                              title="Delete"
+                              @if(in_array($violation->status, ['in_progress', 'resolved'])) disabled @endif>
                         <i class="ri-delete-bin-line"></i>
                       </button>
                     </div>

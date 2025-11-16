@@ -139,7 +139,15 @@ class FaceRecognitionController extends Controller
                     $matches[] = [
                         'student_id' => $registration->student_id,
                         'student_name' => $registration->student->full_name,
+                        'first_name' => $registration->student->first_name,
+                        'last_name' => $registration->student->last_name,
+                        'middle_name' => $registration->student->middle_name,
+                        'suffix' => $registration->student->suffix,
                         'student_number' => $registration->student->student_id,
+                        'student_section' => $registration->student->section,
+                        'student_grade_level' => $registration->student->grade_level,
+                        'strand' => $registration->student->strand,
+                        'lrn' => $registration->student->lrn,
                         'confidence_score' => $similarity,
                         'registration_id' => $registration->id
                     ];
