@@ -367,8 +367,10 @@ window.viewCaseMeeting = function(meetingId) {
     fetch(`/guidance/case-meetings/${meetingId}`, {
         headers: {
             'X-Requested-With': 'XMLHttpRequest',
-            'Accept': 'application/json'
-        }
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        },
+        credentials: 'same-origin'
     })
     .then(response => response.json())
     .then(data => {
@@ -849,14 +851,18 @@ window.editCaseMeeting = function(meetingId) {
         fetch(`/guidance/case-meetings/${meetingId}/edit`, {
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json'
-            }
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            credentials: 'same-origin'
         }).then(response => response.json()),
         fetch('/guidance/api/sanctions/list', {
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json'
-            }
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            credentials: 'same-origin'
         }).then(response => response.json())
     ]).then(([data, sanctionsData]) => {
         if (data.success && sanctionsData.success) {
@@ -999,8 +1005,10 @@ window.forwardToPresident = function(meetingId) {
     fetch(`/guidance/case-meetings/${meetingId}`, {
         headers: {
             'X-Requested-With': 'XMLHttpRequest',
-            'Accept': 'application/json'
-        }
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        },
+        credentials: 'same-origin'
     })
     .then(response => response.json())
     .then(data => {

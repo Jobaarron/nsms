@@ -615,47 +615,59 @@ class FacultyHeadController extends Controller
 
         $currentAcademicYear = date('Y') . '-' . (date('Y') + 1);
 
-        // If this is a replacement, deactivate the old assignment
-        if ($request->replace_assignment_id) {
-            $oldAssignment = FacultyAssignment::find($request->replace_assignment_id);
-            if ($oldAssignment) {
-                $oldAssignment->update([
-                    'status' => 'inactive',
-                    'end_date' => now()
+        try {
+            // If this is a replacement, deactivate the old assignment
+            if ($request->replace_assignment_id) {
+                $oldAssignment = FacultyAssignment::find($request->replace_assignment_id);
+                if ($oldAssignment) {
+                    $oldAssignment->update([
+                        'status' => 'inactive',
+                        'end_date' => now()
+                    ]);
+                }
+            }
+
+            // Create class adviser assignment
+            $assignment = FacultyAssignment::create([
+                'teacher_id' => $request->teacher_id,
+                'subject_id' => null, // Class adviser doesn't need specific subject
+                'assigned_by' => $currentUser->id,
+                'grade_level' => $request->grade_level,
+                'section' => $request->section,
+                'strand' => $request->strand,
+                'track' => $request->track,
+                'academic_year' => $currentAcademicYear,
+                'assignment_type' => 'class_adviser',
+                'status' => 'active',
+                'assigned_date' => now(),
+                'effective_date' => $request->effective_date,
+                'notes' => $request->notes
+            ]);
+
+            // Load relationships for response
+            $assignment->load(['teacher.user']);
+
+            // Return JSON response for AJAX requests
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Class adviser assigned successfully.',
+                    'assignment' => $assignment
                 ]);
             }
+
+            return redirect()->route('faculty-head.assign-faculty')->with('success', 'Class adviser assigned successfully.');
+        } catch (\Exception $e) {
+            // Return error response for AJAX requests
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage()
+                ], 422);
+            }
+
+            return redirect()->back()->with('error', $e->getMessage())->withInput();
         }
-
-        // Create class adviser assignment
-        $assignment = FacultyAssignment::create([
-            'teacher_id' => $request->teacher_id,
-            'subject_id' => null, // Class adviser doesn't need specific subject
-            'assigned_by' => $currentUser->id,
-            'grade_level' => $request->grade_level,
-            'section' => $request->section,
-            'strand' => $request->strand,
-            'track' => $request->track,
-            'academic_year' => $currentAcademicYear,
-            'assignment_type' => 'class_adviser',
-            'status' => 'active',
-            'assigned_date' => now(),
-            'effective_date' => $request->effective_date,
-            'notes' => $request->notes
-        ]);
-
-        // Load relationships for response
-        $assignment->load(['teacher.user']);
-
-        // Return JSON response for AJAX requests
-        if ($request->expectsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Class adviser assigned successfully.',
-                'assignment' => $assignment
-            ]);
-        }
-
-        return redirect()->route('faculty-head.assign-faculty')->with('success', 'Class adviser assigned successfully.');
     }
 
     /**

@@ -9,8 +9,8 @@ function initializeRecommendCounseling() {
         return;
     }
 
-    // Get students data from the page (will be populated by Laravel)
-    const students = window.studentsData || [];
+    // Get advisory students data from the page (will be populated by Laravel)
+    const students = window.advisoryStudentsData || [];
     
     // Get DOM elements
     const studentSearch = document.getElementById('studentSearch');
@@ -40,12 +40,12 @@ function initializeRecommendCounseling() {
         // Debounce the search
         searchTimeout = setTimeout(() => {
             const matches = students.filter(s =>
-                s.name.toLowerCase().includes(term) ||
-                s.student_id.toLowerCase().includes(term)
+                (s.name && s.name.toLowerCase().includes(term)) ||
+                (s.student_id && s.student_id.toLowerCase().includes(term))
             );
             
             if (matches.length === 0) {
-                studentSuggestions.innerHTML = '<div class="p-3 text-muted text-center"><i class="ri-search-line me-1"></i>No matches found</div>';
+                studentSuggestions.innerHTML = '<div class="p-3 text-muted text-center"><i class="ri-search-line me-1"></i>No matches found in your advisory class</div>';
             } else {
                 studentSuggestions.innerHTML = matches.map(s =>
                     `<div class='p-2 suggestion-item border-bottom' style='cursor:pointer; transition: background-color 0.2s;' 

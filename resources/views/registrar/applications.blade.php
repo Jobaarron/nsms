@@ -113,7 +113,7 @@
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="notices-tab" data-bs-toggle="tab" data-bs-target="#notices" type="button" role="tab">
-                    <i class="ri-notification-line me-2"></i>Notices
+                    <i class="ri-notification-line me-2"></i>Applicant Notices
                 </button>
             </li>
             <li class="nav-item" role="presentation">
@@ -314,7 +314,7 @@
                     <div class="card-header" style="background-color: var(--dark-green); color: white;">
                         <h5 class="mb-0">
                             <i class="ri-notification-line me-2"></i>
-                            Notice Management
+                            Applicant Notice Management
                         </h5>
                     </div>
                     <div class="card-body">
@@ -322,9 +322,9 @@
                         <div class="row mb-4">
                             <div class="col-md-8">
                                 <button class="btn btn-primary" onclick="openStudentSelectionModal()">
-                                    <i class="ri-user-search-line me-2"></i>Send Notice to Student
+                                    <i class="ri-user-search-line me-2"></i>Send Notice to Applicant
                                 </button>
-                                <small class="text-muted d-block mt-2">Select a student to send a personalized notice</small>
+                                <small class="text-muted d-block mt-2">Select a applicant to send a personalized notice</small>
                             </div>
                             <div class="col-md-4">
                                 <form method="GET" action="{{ route('registrar.applications') }}" class="d-flex">

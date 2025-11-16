@@ -22,8 +22,8 @@ return new class extends Migration
             // Targeting
             $table->foreignId('enrollee_id')->nullable()->constrained('enrollees')->onDelete('cascade');
             $table->boolean('is_global')->default(false); // For notices sent to multiple enrollees
-            $table->string('target_status')->nullable(); // Target specific enrollment status
-            $table->string('target_grade_level')->nullable(); // Target specific grade level
+            $table->string('target_status')->nullable(); // To be delete
+            $table->string('target_grade_level')->nullable(); // To be delete
             
             // Admin tracking
             $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
@@ -33,8 +33,8 @@ return new class extends Migration
             $table->timestamp('read_at')->nullable();
             
             // Email integration
-            $table->boolean('sent_via_email')->default(false);
-            $table->timestamp('email_sent_at')->nullable();
+            $table->boolean('sent_via_email')->default(false); // To be delete
+            $table->timestamp('email_sent_at')->nullable(); // To be delete
             
             $table->timestamps();
             

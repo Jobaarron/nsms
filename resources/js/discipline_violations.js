@@ -269,11 +269,14 @@ function setupEnhancedViolationSubmission() {
       return;
     }
 
-    // Validate school hours
+    // Validate school hours (convert from 12-hour to 24-hour format first)
     const violationTime = document.getElementById('violationTime').value;
-    if (violationTime && !validateSchoolHours(violationTime)) {
-      alert('Violation time must be within school hours (7:00 AM - 4:00 PM).');
-      return;
+    if (violationTime) {
+      const time24 = convertTo24Hour(violationTime);
+      if (!validateSchoolHours(time24)) {
+        alert('Violation time must be within school hours (7:00 AM - 4:00 PM).');
+        return;
+      }
     }
 
     const submitBtn = document.querySelector('#recordViolationModal button[type="submit"]');
@@ -920,11 +923,11 @@ window.editViolation = function(violationId) {
             <div class="row g-2">
                 <div class="col-6">
                     <label class="form-label fw-bold small">Date</label>
-                    <input type="date" class="form-control form-control-sm" id="edit_violation_date" name="violation_date" value="${violation.violation_date ? (violation.violation_date.includes('T') ? violation.violation_date.split('T')[0] : violation.violation_date) : ''}" required>
+                    <input type="text" class="form-control form-control-sm" id="edit_violation_date" name="violation_date" value="${violation.violation_date ? (violation.violation_date.includes('T') ? violation.violation_date.split('T')[0] : violation.violation_date) : ''}" required readonly>
                 </div>
                 <div class="col-6">
                     <label class="form-label fw-bold small">Time</label>
-                    <input type="time" class="form-control form-control-sm" id="edit_violation_time" name="violation_time" value="${violation.violation_time ? (violation.violation_time.length > 5 ? violation.violation_time.substring(0, 5) : violation.violation_time) : ''}">
+                    <input type="text" class="form-control form-control-sm" id="edit_violation_time" name="violation_time" value="${violation.violation_time ? (function() { const d = new Date('1970-01-01T' + (violation.violation_time.length > 5 ? violation.violation_time.substring(0, 5) : violation.violation_time)); return isNaN(d) ? violation.violation_time : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }); })() : '7:00 AM'}" readonly>
                 </div>
             </div>
         </div>
@@ -953,6 +956,39 @@ window.editViolation = function(violationId) {
 
 
             console.log('✅ Modal populated successfully');
+
+            // Initialize flatpickr for the edit modal inputs
+            const editModal = document.getElementById('editViolationModal');
+            if (editModal) {
+                // Initialize edit date picker
+                const editDateInput = editModal.querySelector('#edit_violation_date');
+                if (editDateInput && typeof flatpickr !== 'undefined') {
+                    flatpickr(editDateInput, {
+                        dateFormat: "Y-m-d",
+                        minDate: "today",
+                        allowInput: false,
+                        clickOpens: true
+                    });
+                }
+                
+                // Initialize edit time picker
+                const editTimeInput = editModal.querySelector('#edit_violation_time');
+                if (editTimeInput && typeof flatpickr !== 'undefined') {
+                    flatpickr(editTimeInput, {
+                        enableTime: true,
+                        noCalendar: true,
+                        dateFormat: "h:i K",
+                        time_24hr: false,
+                        minTime: "07:00",
+                        maxTime: "16:00",
+                        minuteIncrement: 15,
+                        defaultHour: 7,
+                        defaultMinute: 0,
+                        allowInput: false,
+                        clickOpens: true
+                    });
+                }
+            }
 
             // Add event listeners for dynamic form behavior
             const editStatusSelect = document.getElementById('edit_status');
@@ -1176,6 +1212,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         });
     }
+
+    // Initialize native HTML date and time inputs with school hours validation
+    initializeDateTimeInputs();
 
     const violationTitleSelect = document.getElementById('violationTitle');
 
@@ -2533,11 +2572,11 @@ function showIncidentForm() {
             <div class="row">
               <div class="col-md-6">
                 <label class="form-label fw-bold">Date</label>
-                <input type="date" class="form-control" id="incidentDate" required>
+                <input type="text" class="form-control" id="incidentDate" required readonly>
               </div>
               <div class="col-md-6">
                 <label class="form-label fw-bold">Time</label>
-                <input type="time" class="form-control" id="incidentTime" required>
+                <input type="text" class="form-control" id="incidentTime" required readonly>
               </div>
             </div>
             <div class="mb-3">
@@ -2663,10 +2702,13 @@ function showIncidentForm() {
   const details = document.getElementById('incidentDetails').value;
   const reporter = window.currentUser?.name || 'Unknown User';
 
-        // Validate school hours for incident time
-        if (time && !validateSchoolHours(time)) {
-            alert('Incident time must be within school hours (7:00 AM - 4:00 PM).');
-            return;
+        // Validate school hours for incident time (convert from 12-hour to 24-hour format first)
+        if (time) {
+            const time24 = convertTo24Hour(time);
+            if (!validateSchoolHours(time24)) {
+                alert('Incident time must be within school hours (7:00 AM - 4:00 PM).');
+                return;
+            }
         }
 
         const submitBtn = document.querySelector('#incidentFormModal button[type="submit"]');
@@ -2821,6 +2863,39 @@ function showIncidentForm() {
 
 
 
+    // Initialize flatpickr for incident form after modal is created
+    setTimeout(() => {
+        if (typeof flatpickr !== 'undefined') {
+            // Initialize incident date picker
+            flatpickr("#incidentDate", {
+                dateFormat: "Y-m-d",
+                minDate: "today",
+                allowInput: false,
+                clickOpens: true,
+                defaultDate: new Date()
+            });
+
+            // Initialize incident time picker
+            flatpickr("#incidentTime", {
+                enableTime: true,
+                noCalendar: true,
+                dateFormat: "h:i K",
+                time_24hr: false,
+                minTime: "07:00",
+                maxTime: "16:00",
+                minuteIncrement: 15,
+                defaultHour: 7,
+                defaultMinute: 0,
+                allowInput: false,
+                clickOpens: true
+            });
+            
+            console.log('Flatpickr initialized for incident form');
+        } else {
+            console.warn('Flatpickr not loaded for incident form');
+        }
+    }, 100);
+
     // Show modal
     window.ModalManager.show('incidentFormModal');
 }
@@ -2938,3 +3013,134 @@ window.generateIncidentForm = function() {
         }
     };
 };
+
+// Initialize flatpickr date and time pickers (similar to guidance_case-meetings.js)
+function initializeDateTimeInputs() {
+    console.log('Initializing flatpickr date and time inputs...');
+    
+    if (typeof flatpickr === 'undefined') {
+        console.warn('Flatpickr library not loaded');
+        return;
+    }
+
+    // Initialize date pickers for violation forms
+    flatpickr("#violationDate", {
+        dateFormat: "Y-m-d",
+        minDate: "today",
+        allowInput: false,
+        clickOpens: true
+    });
+
+    // Initialize time pickers with school hours (7 AM - 4 PM)
+    flatpickr("#violationTime", {
+        enableTime: true,
+        noCalendar: true,
+        dateFormat: "h:i K",
+        time_24hr: false,
+        minTime: "07:00",
+        maxTime: "16:00",
+        minuteIncrement: 15,
+        defaultHour: 7,
+        defaultMinute: 0,
+        allowInput: false,
+        clickOpens: true
+    });
+
+    // Note: Incident form flatpickr is initialized separately in showIncidentForm() 
+    // since the incident modal is dynamically created
+    
+    console.log('Flatpickr date/time inputs initialized successfully');
+}
+
+// Enhanced time validation for flatpickr time inputs
+function validateTimeInput(timeInput) {
+    if (!timeInput || !timeInput.value) return true;
+    
+    // Convert 12-hour format to 24-hour format for validation
+    const time24 = convertTo24Hour(timeInput.value);
+    if (!validateSchoolHours(time24)) {
+        timeInput.setCustomValidity('Time must be within school hours (7:00 AM - 4:00 PM)');
+        return false;
+    } else {
+        timeInput.setCustomValidity('');
+        return true;
+    }
+}
+
+// Format time display for flatpickr (convert to 12-hour format for display)
+function formatTimeDisplay(time24) {
+    if (!time24) return '';
+    
+    const [hours, minutes] = time24.split(':');
+    const hour12 = hours % 12 || 12;
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    return `${hour12}:${minutes} ${ampm}`;
+}
+
+// Convert 12-hour format to 24-hour format for server submission
+function convertTo24Hour(time12) {
+    if (!time12) return '';
+    
+    // If already in 24-hour format, return as is
+    if (!time12.includes('AM') && !time12.includes('PM')) {
+        return time12;
+    }
+    
+    const [timePart, period] = time12.split(' ');
+    const [hours, minutes] = timePart.split(':');
+    let hour24 = parseInt(hours);
+    
+    if (period === 'AM' && hour24 === 12) {
+        hour24 = 0;
+    } else if (period === 'PM' && hour24 !== 12) {
+        hour24 += 12;
+    }
+    
+    return `${hour24.toString().padStart(2, '0')}:${minutes || '00'}`;
+}
+
+// Helper function to reinitialize flatpickr after dynamic content loading
+function reinitializeFlatpickrForModal(modalId) {
+    console.log(`Reinitializing flatpickr for modal: ${modalId}`);
+    
+    if (typeof flatpickr === 'undefined') {
+        console.warn('Flatpickr library not loaded');
+        return;
+    }
+    
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+    
+    // Initialize any date inputs in the modal
+    const dateInputs = modal.querySelectorAll('input[name*="date"], input[id*="Date"]');
+    dateInputs.forEach(input => {
+        if (input.type === 'text' || !input.type) {
+            flatpickr(input, {
+                dateFormat: "Y-m-d",
+                minDate: "today",
+                allowInput: false,
+                clickOpens: true
+            });
+        }
+    });
+    
+    // Initialize any time inputs in the modal
+    const timeInputs = modal.querySelectorAll('input[name*="time"], input[id*="Time"]');
+    timeInputs.forEach(input => {
+        if (input.type === 'text' || !input.type) {
+            flatpickr(input, {
+                enableTime: true,
+                noCalendar: true,
+                dateFormat: "h:i K",
+                time_24hr: false,
+                minTime: "07:00",
+                maxTime: "16:00",
+                minuteIncrement: 15,
+                defaultHour: 7,
+                defaultMinute: 0,
+                allowInput: false,
+                clickOpens: true
+            });
+        }
+    });
+}

@@ -34,17 +34,19 @@
   <div class="d-md-none bg-white border-bottom p-3 fixed-top" style="z-index: 1030;">
     <div class="d-flex justify-content-between align-items-center">
       <img src="{{ Vite::asset('resources/assets/images/nms-logo.png') }}" alt="Nicolites Montessori School" style="height: 30px;">
-      <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#studentSidebar" aria-controls="studentSidebar">
-        <i class="ri-menu-line"></i>
-      </button>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#studentSidebar" aria-controls="studentSidebar">
+          <i class="ri-menu-line"></i>
+        </button>
+      </div>
     </div>
   </div>
 
-  <div class="container-fluid">
+  <div class="container-fluid" style="position: relative;">
     <div class="row">
 
       <!-- SIDEBAR -->
-      <nav class="col-12 col-md-2 sidebar d-none d-md-block py-4">
+      <nav class="col-12 col-md-2 sidebar d-none d-md-block py-4" style="position: relative;">
         <!-- School Logo -->
         <div class="text-center mb-3">
           <img src="{{ Vite::asset('resources/assets/images/nms-logo.png') }}" alt="Nicolites Montessori School" class="sidebar-logo">
@@ -313,8 +315,8 @@
       </div>
 
       <!-- MAIN CONTENT -->
-      <main class="col-12 col-md-10 ms-sm-auto px-3 px-md-4" style="margin-top: 70px;">
-        <div class="main-content py-4">
+      <main class="col-10 col-md-10 ms-sm-auto px-3 px-md-4" style="margin-top: 0; padding-top: 0;">  
+        <div class="main-content">
           {{ $slot }}
         </div>
       </main>

@@ -209,6 +209,7 @@ class FacultyAssignment extends Model
             
             // Validate class adviser uniqueness (only one adviser per class)
             if ($assignment->assignment_type === 'class_adviser') {
+                // Check if another class already has an adviser for this grade/section
                 $existingAdviser = self::where('grade_level', $assignment->grade_level)
                                      ->where('section', $assignment->section)
                                      ->where('academic_year', $assignment->academic_year)
@@ -219,6 +220,25 @@ class FacultyAssignment extends Model
                 
                 if ($existingAdviser) {
                     throw new \Exception("Class adviser conflict: {$existingAdviser->teacher->user->name} is already assigned as adviser for {$assignment->grade_level} - {$assignment->section}.");
+                }
+                
+                // Check if this teacher is already an adviser for another class
+                $teacherExistingAdviser = self::where('teacher_id', $assignment->teacher_id)
+                                            ->where('academic_year', $assignment->academic_year)
+                                            ->where('assignment_type', 'class_adviser')
+                                            ->where('status', 'active')
+                                            ->with(['teacher.user'])
+                                            ->first();
+                
+                if ($teacherExistingAdviser) {
+                    $existingClass = $teacherExistingAdviser->grade_level . ' - ' . $teacherExistingAdviser->section;
+                    if ($teacherExistingAdviser->strand) {
+                        $existingClass .= ' - ' . $teacherExistingAdviser->strand;
+                        if ($teacherExistingAdviser->track) {
+                            $existingClass .= ' - ' . $teacherExistingAdviser->track;
+                        }
+                    }
+                    throw new \Exception("Teacher conflict: {$teacherExistingAdviser->teacher->user->name} is already assigned as class adviser for {$existingClass}. A teacher can only be adviser to one class. Please remove them from the existing assignment first.");
                 }
             }
             
@@ -262,6 +282,7 @@ class FacultyAssignment extends Model
         static::updating(function ($assignment) {
             // Validate class adviser uniqueness on update
             if ($assignment->assignment_type === 'class_adviser') {
+                // Check if another class already has an adviser for this grade/section
                 $existingAdviser = self::where('grade_level', $assignment->grade_level)
                                      ->where('section', $assignment->section)
                                      ->where('academic_year', $assignment->academic_year)
@@ -273,6 +294,26 @@ class FacultyAssignment extends Model
                 
                 if ($existingAdviser) {
                     throw new \Exception("Class adviser conflict: {$existingAdviser->teacher->user->name} is already assigned as adviser for {$assignment->grade_level} - {$assignment->section}.");
+                }
+                
+                // Check if this teacher is already an adviser for another class
+                $teacherExistingAdviser = self::where('teacher_id', $assignment->teacher_id)
+                                            ->where('academic_year', $assignment->academic_year)
+                                            ->where('assignment_type', 'class_adviser')
+                                            ->where('status', 'active')
+                                            ->where('id', '!=', $assignment->id) // Exclude current record
+                                            ->with(['teacher.user'])
+                                            ->first();
+                
+                if ($teacherExistingAdviser) {
+                    $existingClass = $teacherExistingAdviser->grade_level . ' - ' . $teacherExistingAdviser->section;
+                    if ($teacherExistingAdviser->strand) {
+                        $existingClass .= ' - ' . $teacherExistingAdviser->strand;
+                        if ($teacherExistingAdviser->track) {
+                            $existingClass .= ' - ' . $teacherExistingAdviser->track;
+                        }
+                    }
+                    throw new \Exception("Teacher conflict: {$teacherExistingAdviser->teacher->user->name} is already assigned as class adviser for {$existingClass}. A teacher can only be adviser to one class. Please remove them from the existing assignment first.");
                 }
             }
             
