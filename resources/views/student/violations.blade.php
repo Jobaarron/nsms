@@ -16,7 +16,15 @@
 <x-student-layout>
   @vite(['resources/css/student_violations.css', 'resources/js/student-violation.js'])
 
-    @if(session('info'))
+  <!-- Page Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <h2 class="section-title mb-1">My Violations</h2>
+      <p class="text-muted mb-0">View your disciplinary records and violations</p>
+    </div>
+  </div>
+
+  @if(session('info'))
       <div class="alert alert-info alert-dismissible fade show" role="alert">
         {{ session('info') }}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>

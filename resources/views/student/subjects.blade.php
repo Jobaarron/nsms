@@ -1,89 +1,88 @@
 <x-student-layout>
     @vite(['resources/js/student-subjects.js'])
-    <div class="container-fluid px-4 py-4">
-        @push('styles')
-            @vite('resources/css/index_student.css')
-        @endpush
+    @push('styles')
+        @vite('resources/css/index_student.css')
+    @endpush
 
-        <!-- Page Header -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h2 class="section-title mb-1">My Subjects</h2>
-                        <p class="text-muted mb-0">View your subjects and academic information</p>
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="section-title mb-1">My Subjects</h2>
+                    <p class="text-muted mb-0">View your subjects and academic information</p>
+                </div>
+                <div class="text-end">
+                    <small class="text-muted">Student ID: <strong>{{ $student->student_id }}</strong></small><br>
+                    <small class="text-muted">Grade Level: <strong>{{ $student->grade_level }}</strong></small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Academic Info Summary -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm card-summary card-subjects h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="flex-shrink-0 me-3">
+                        <i class="ri-book-line fs-2"></i>
                     </div>
-                    <div class="text-end">
-                        <small class="text-muted">Student ID: <strong>{{ $student->student_id }}</strong></small><br>
-                        <small class="text-muted">Grade Level: <strong>{{ $student->grade_level }}</strong></small>
+                    <div class="flex-grow-1">
+                        @php
+                            // Use subjects filtered by controller (includes semester filtering for SHS)
+                            $subjects = $currentSubjects;
+                        @endphp
+                        <h3 class="fw-bold fs-4 mb-0 text-white">{{ $subjects->count() }}</h3>
+                        <small class="text-white">Total Subjects</small>
                     </div>
                 </div>
             </div>
         </div>
-
-        <!-- Academic Info Summary -->
-        <div class="row mb-4">
-            <div class="col-lg-3 col-md-6 mb-3">
-                <div class="card border-0 shadow-sm card-summary card-subjects h-100">
-                    <div class="card-body d-flex align-items-center">
-                        <div class="flex-shrink-0 me-3">
-                            <i class="ri-book-line fs-2"></i>
-                        </div>
-                        <div class="flex-grow-1">
-                            @php
-                                // Use subjects filtered by controller (includes semester filtering for SHS)
-                                $subjects = $currentSubjects;
-                            @endphp
-                            <h3 class="fw-bold fs-4 mb-0 text-white">{{ $subjects->count() }}</h3>
-                            <small class="text-white">Total Subjects</small>
-                        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm card-summary card-paid h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="flex-shrink-0 me-3">
+                        <i class="ri-star-line fs-2"></i>
                     </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6 mb-3">
-                <div class="card border-0 shadow-sm card-summary card-paid h-100">
-                    <div class="card-body d-flex align-items-center">
-                        <div class="flex-shrink-0 me-3">
-                            <i class="ri-star-line fs-2"></i>
-                        </div>
-                        <div class="flex-grow-1">
-                            <h3 class="fw-bold fs-4 mb-0 text-white">{{ $subjects->where('category', 'core')->count() }}</h3>
-                            <small class="text-white">Core Subjects</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6 mb-3">
-                <div class="card border-0 shadow-sm card-summary card-credits h-100">
-                    <div class="card-body d-flex align-items-center">
-                        <div class="flex-shrink-0 me-3">
-                            <i class="ri-focus-line fs-2"></i>
-                        </div>
-                        <div class="flex-grow-1">
-                            <h3 class="fw-bold fs-4 mb-0 text-white">{{ $subjects->where('category', 'specialized')->count() }}</h3>
-                            <small class="text-white">Specialized</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6 mb-3">
-                <div class="card border-0 shadow-sm card-summary card-gpa h-100">
-                    <div class="card-body d-flex align-items-center">
-                        <div class="flex-shrink-0 me-3">
-                            <i class="ri-graduation-cap-line fs-2"></i>
-                        </div>
-                        <div class="flex-grow-1">
-                            <h3 class="fw-bold fs-4 mb-0 text-white">{{ $student->grade_level }}</h3>
-                            <small class="text-white">Grade Level</small>
-                        </div>
+                    <div class="flex-grow-1">
+                        <h3 class="fw-bold fs-4 mb-0 text-white">{{ $subjects->where('category', 'core')->count() }}</h3>
+                        <small class="text-white">Core Subjects</small>
                     </div>
                 </div>
             </div>
         </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm card-summary card-credits h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="flex-shrink-0 me-3">
+                        <i class="ri-focus-line fs-2"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h3 class="fw-bold fs-4 mb-0 text-white">{{ $subjects->where('category', 'specialized')->count() }}</h3>
+                        <small class="text-white">Specialized</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm card-summary card-gpa h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="flex-shrink-0 me-3">
+                        <i class="ri-graduation-cap-line fs-2"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h3 class="fw-bold fs-4 mb-0 text-white">{{ $student->grade_level }}</h3>
+                        <small class="text-white">Grade Level</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        <div class="row">
-            <!-- Left Column - Subjects List -->
-            <div class="col-lg-8">
+    <div class="row">
+        <!-- Left Column - Subjects List -->
+        <div class="col-lg-8">
                 <!-- Subjects Table -->
                 <div class="card border-0 shadow-sm mb-4">
                     <div class="card-header bg-white border-0 pb-0">
