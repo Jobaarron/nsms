@@ -6,11 +6,14 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Pagination\LengthAwarePaginator;
 use App\Models\Guidance;
 use App\Models\User;
 use App\Models\Student;
 use App\Models\CaseMeeting;
 use App\Models\CounselingSession;
+use App\Models\ArchivedCounselingSession;
+use App\Models\ArchivedMeeting;
 use App\Models\Violation;
 use App\Models\FacultyAssignment;
 use App\Models\Sanction;
@@ -450,6 +453,53 @@ class GuidanceController extends Controller
     }
 
     /**
+     * View case summary for AJAX requests
+     */
+    public function viewCaseSummary(CaseMeeting $caseMeeting)
+    {
+        $caseMeeting->load(['student', 'counselor', 'sanctions', 'violation']);
+
+        return response()->json([
+            'success' => true,
+            'meeting' => [
+                'id' => $caseMeeting->id,
+                'student' => $caseMeeting->student ? [
+                    'id' => $caseMeeting->student->id,
+                    'full_name' => $caseMeeting->student->full_name,
+                    'student_id' => $caseMeeting->student->student_id,
+                    'grade_level' => $caseMeeting->student->grade_level,
+                ] : null,
+                'meeting_type' => $caseMeeting->meeting_type ?? 'case_meeting',
+                'scheduled_date' => $caseMeeting->scheduled_date,
+                'scheduled_time' => $caseMeeting->scheduled_time,
+                'violation_id' => $caseMeeting->violation_id,
+                'summary' => $caseMeeting->summary,
+                'recommendations' => $caseMeeting->recommendations,
+                'notes' => $caseMeeting->notes,
+                'president_notes' => $caseMeeting->president_notes,
+                'student_statement' => $caseMeeting->violation ? $caseMeeting->violation->student_statement : null,
+                'incident_feelings' => $caseMeeting->violation ? $caseMeeting->violation->incident_feelings : null,
+                'action_plan' => $caseMeeting->violation ? $caseMeeting->violation->action_plan : null,
+                'teacher_statement' => $caseMeeting->teacher_statement,
+                'violation' => $caseMeeting->violation ? [
+                    'student_attachment_path' => $caseMeeting->violation->student_attachment_path,
+                ] : null,
+                'sanctions' => $caseMeeting->sanctions->map(function ($sanction) {
+                    return [
+                        'id' => $sanction->id,
+                        'sanction' => $sanction->sanction,
+                        'deportment_grade_action' => $sanction->deportment_grade_action,
+                        'suspension' => $sanction->suspension,
+                        'notes' => $sanction->notes,
+                        'is_approved' => $sanction->is_approved,
+                        'approved_at' => $sanction->approved_at,
+                    ];
+                }),
+            ]
+        ]);
+    }
+
+    /**
      * Show case meeting details
      */
     public function showCaseMeeting(CaseMeeting $caseMeeting)
@@ -776,6 +826,7 @@ class GuidanceController extends Controller
     public function counselingSessionsIndex()
     {
         $counselingSessions = CounselingSession::with(['student', 'counselor', 'recommender'])
+            ->where('status', '!=', 'completed')
             ->orderByRaw("CASE WHEN status = 'recommended' THEN 0 ELSE 1 END, start_date DESC")
             ->paginate(20);
 
@@ -794,6 +845,130 @@ class GuidanceController extends Controller
             ->get();
 
         return view('guidance.counseling-sessions', compact('counselingSessions', 'scheduledSessions', 'students', 'counselors'));
+    }
+
+    /**
+     * Display archived counseling sessions and case meetings
+     */
+    public function archivedCounselingSessions()
+    {
+        // Get completed counseling sessions from main table
+        $completedSessions = CounselingSession::with(['student', 'counselor', 'recommender'])
+            ->where('status', 'completed')
+            ->get()
+            ->map(function ($session) {
+                return (object) [
+                    'id' => $session->id,
+                    'type' => 'counseling_session',
+                    'student_name' => $session->student ? ($session->student->first_name . ' ' . $session->student->last_name) : null,
+                    'student_id_number' => $session->student ? $session->student->student_id : null,
+                    'counselor_name' => $session->counselor ? ($session->counselor->first_name . ' ' . $session->counselor->last_name) : null,
+                    'recommended_by_name' => $session->recommender ? $session->recommender->name : null,
+                    'session_no' => $session->session_no,
+                    'start_date' => $session->start_date ? \Carbon\Carbon::parse($session->start_date) : null,
+                    'time' => $session->time,
+                    'status' => $session->status,
+                    'archived_at' => $session->completed_at ? \Carbon\Carbon::parse($session->completed_at) : $session->updated_at,
+                    'archive_reason' => 'completed',
+                    'archived_by' => 'System',
+                    'counseling_summary_report' => $session->session_summary,
+                    'original_session_id' => $session->id,
+                    'is_from_main_table' => true,
+                    'meeting_type' => null,
+                    'violation_description' => null
+                ];
+            });
+
+        // Get completed case meetings from main table
+        $completedMeetings = CaseMeeting::with(['student', 'counselor', 'violation'])
+            ->where('status', 'completed')
+            ->get()
+            ->map(function ($meeting) {
+                return (object) [
+                    'id' => $meeting->id,
+                    'type' => 'case_meeting',
+                    'student_name' => $meeting->student ? ($meeting->student->first_name . ' ' . $meeting->student->last_name) : null,
+                    'student_id_number' => $meeting->student ? $meeting->student->student_id : null,
+                    'counselor_name' => $meeting->counselor ? ($meeting->counselor->first_name . ' ' . $meeting->counselor->last_name) : null,
+                    'recommended_by_name' => null,
+                    'session_no' => null,
+                    'start_date' => $meeting->scheduled_date ? \Carbon\Carbon::parse($meeting->scheduled_date) : null,
+                    'time' => $meeting->scheduled_time,
+                    'status' => $meeting->status,
+                    'archived_at' => $meeting->completed_at ? \Carbon\Carbon::parse($meeting->completed_at) : $meeting->updated_at,
+                    'archive_reason' => 'completed',
+                    'archived_by' => 'System',
+                    'counseling_summary_report' => $meeting->summary,
+                    'original_session_id' => $meeting->id,
+                    'is_from_main_table' => true,
+                    'meeting_type' => $meeting->meeting_type ?? 'Case Meeting',
+                    'violation_description' => $meeting->violation ? $meeting->violation->description : null
+                ];
+            });
+
+        // Get archived sessions from archived table
+        $archivedSessions = ArchivedCounselingSession::orderBy('archived_at', 'desc')
+            ->get()
+            ->map(function ($session) {
+                $session->type = 'archived_counseling_session';
+                $session->meeting_type = null;
+                $session->violation_description = null;
+                return $session;
+            });
+
+        // Get archived meetings from archived table
+        $archivedMeetings = ArchivedMeeting::orderBy('archived_at', 'desc')
+            ->get()
+            ->map(function ($meeting) {
+                // Fetch related data using stored IDs
+                $student = $meeting->student_id ? Student::find($meeting->student_id) : null;
+                $counselor = $meeting->counselor_id ? Guidance::find($meeting->counselor_id) : null;
+                $violation = $meeting->violation_id ? Violation::find($meeting->violation_id) : null;
+                
+                return (object) [
+                    'id' => $meeting->id,
+                    'type' => 'archived_case_meeting',
+                    'student_name' => $student ? ($student->first_name . ' ' . $student->last_name) : null,
+                    'student_id_number' => $student ? $student->student_id : null,
+                    'counselor_name' => $counselor ? ($counselor->first_name . ' ' . $counselor->last_name) : null,
+                    'recommended_by_name' => null,
+                    'session_no' => null,
+                    'start_date' => $meeting->scheduled_date ? \Carbon\Carbon::parse($meeting->scheduled_date) : null,
+                    'time' => $meeting->scheduled_time,
+                    'status' => $meeting->status,
+                    'archived_at' => $meeting->archived_at,
+                    'archive_reason' => $meeting->archive_reason,
+                    'archived_by' => $meeting->archived_by,
+                    'counseling_summary_report' => $meeting->summary,
+                    'original_session_id' => $meeting->original_case_meeting_id,
+                    'is_from_main_table' => false,
+                    'meeting_type' => $meeting->meeting_type ?? 'Case Meeting',
+                    'violation_description' => $violation ? $violation->description : null
+                ];
+            });
+
+        // Combine all collections
+        $allRecords = $completedSessions->concat($completedMeetings)
+            ->concat($archivedSessions)
+            ->concat($archivedMeetings)
+            ->sortByDesc('archived_at')
+            ->values();
+
+        // Manual pagination
+        $perPage = 20;
+        $currentPage = request()->get('page', 1);
+        $offset = ($currentPage - 1) * $perPage;
+        $paginatedRecords = $allRecords->slice($offset, $perPage);
+        
+        $archivedSessions = new LengthAwarePaginator(
+            $paginatedRecords,
+            $allRecords->count(),
+            $perPage,
+            $currentPage,
+            ['path' => request()->url(), 'pageName' => 'page']
+        );
+
+        return view('guidance.archived-counseling-sessions', compact('archivedSessions'));
     }
 
     /**
@@ -1130,16 +1305,60 @@ class GuidanceController extends Controller
             'completed_at' => now(),
         ]);
 
+        // Optionally archive the session immediately (uncomment if you want immediate archiving)
+        // $this->archiveCompletedSession($counselingSession);
+
         if ($request->ajax()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Counseling session marked as completed.',
+                'message' => 'Counseling session marked as completed and will appear in archived sessions.',
                 'counselingSession' => $counselingSession
             ]);
         }
 
         return redirect()->route('guidance.counseling-sessions.index')
-            ->with('success', 'Counseling session marked as completed.');
+            ->with('success', 'Counseling session marked as completed and will appear in archived sessions.');
+    }
+
+    /**
+     * Archive a completed counseling session
+     */
+    private function archiveCompletedSession(CounselingSession $session)
+    {
+        $archivedData = [
+            'original_session_id' => $session->id,
+            'counseling_summary_report' => $session->session_summary,
+            'student_id' => $session->student_id,
+            'counselor_id' => $session->counselor_id,
+            'recommended_by' => $session->recommended_by,
+            'start_date' => $session->start_date,
+            'end_date' => $session->end_date,
+            'frequency' => $session->frequency,
+            'time_limit' => $session->time_limit,
+            'time' => $session->time,
+            'session_no' => $session->session_no,
+            'status' => $session->status,
+            'referral_academic' => $session->referral_academic,
+            'referral_academic_other' => $session->referral_academic_other,
+            'referral_social' => $session->referral_social,
+            'referral_social_other' => $session->referral_social_other,
+            'incident_description' => $session->incident_description,
+            'archived_at' => now(),
+            'archive_reason' => 'completed',
+            'archive_notes' => 'Automatically archived upon completion',
+            'archived_by' => 'System',
+            'student_name' => $session->student ? ($session->student->first_name . ' ' . $session->student->last_name) : null,
+            'student_id_number' => $session->student ? $session->student->student_id : null,
+            'counselor_name' => $session->counselor ? ($session->counselor->first_name . ' ' . $session->counselor->last_name) : null,
+            'recommended_by_name' => $session->recommender ? $session->recommender->name : null,
+            'original_created_at' => $session->created_at,
+            'original_updated_at' => $session->updated_at,
+        ];
+
+        ArchivedCounselingSession::create($archivedData);
+
+        // Optionally delete the original session after archiving
+        // $session->delete();
     }
 
     /**
@@ -1402,7 +1621,7 @@ class GuidanceController extends Controller
     public function apiShowCounselingSession($id)
     {
         try {
-            $session = \App\Models\CounselingSession::with(['student', 'counselor'])
+            $session = \App\Models\CounselingSession::with(['student', 'counselor', 'recommender'])
                 ->find($id);
             if (!$session) {
                 return response()->json(['success' => false, 'message' => 'Session not found.']);
@@ -1410,6 +1629,22 @@ class GuidanceController extends Controller
             $student = $session->student;
             $counselor = $session->counselor;
             $documentsHtml = '';
+            
+            // Build documents HTML with available PDF reports
+            $documents = [];
+            
+            // Student Profile Recommendation Letter (Counseling Session PDF)
+            $documents[] = '<a href="/pdf/counseling-session?session_id=' . $session->id . '" target="_blank" class="btn btn-outline-success btn-sm"><i class="ri-download-2-line me-2"></i>Student Profile Recommendation Letter</a>';
+            
+            // Counseling Summary (if session has summary/notes)
+            if (!empty($session->summary) || !empty($session->notes)) {
+                $documents[] = '<a href="#" onclick="alert(\'Counseling Summary: ' . addslashes($session->summary ?? $session->notes ?? '') . '\')" class="btn btn-outline-info btn-sm"><i class="ri-file-text-line me-2"></i>Counseling Summary</a>';
+            }
+            
+            // Join documents with line breaks
+            if (!empty($documents)) {
+                $documentsHtml = implode('<br>', $documents);
+            }
             
             // Calculate all scheduled dates based on frequency
             $scheduledDates = [];
@@ -1461,7 +1696,7 @@ class GuidanceController extends Controller
                     'scheduled_dates' => $scheduledDates,
                     'scheduled_time' => $session->time ? $session->time->format('H:i') : null,
                     'location' => $session->location ?? null,
-                    'counselor_name' => $counselor ? trim(($counselor->first_name ?? '') . ' ' . ($counselor->last_name ?? '')) : null,
+                    'recommended_by_name' => $session->recommender ? $session->recommender->name : null,
                     'student_full_name' => $studentFullName,
                     'student_lrn' => $student ? $student->lrn : null,
                     'student_birthdate' => ($student && $student->date_of_birth) ? (method_exists($student->date_of_birth, 'format') ? $student->date_of_birth->format('F j, Y') : (string)$student->date_of_birth) : null,
@@ -1470,6 +1705,13 @@ class GuidanceController extends Controller
                     'student_religion' => $student ? $student->religion : null,
                     'student_photo_url' => $student && $student->photo_url ? $student->photo_url : null,
                     'student_age' => $student && $student->date_of_birth ? \Carbon\Carbon::parse($student->date_of_birth)->age : null,
+                    'student' => $student ? [
+                        'student_id' => $student->student_id,
+                        'grade_level' => $student->grade_level,
+                        'id' => $student->id,
+                        'lrn' => $student->lrn,
+                        'full_name' => $studentFullName
+                    ] : null,
                     'student_type_badge' => 'New',
                     'student_type_desc' => '',
                     'documents_html' => $documentsHtml,

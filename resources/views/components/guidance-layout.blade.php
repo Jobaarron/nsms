@@ -70,8 +70,14 @@
           </li>
           
           <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('guidance.counseling-sessions.*') ? 'active' : '' }}" href="{{ route('guidance.counseling-sessions.index') }}">
+            <a class="nav-link {{ request()->routeIs('guidance.counseling-sessions.*') && !request()->routeIs('guidance.counseling-sessions.archived') ? 'active' : '' }}" href="{{ route('guidance.counseling-sessions.index') }}">
               <i class="ri-heart-pulse-line me-2"></i>Counseling Sessions
+            </a>
+          </li>
+          
+          <li class="nav-item mb-2">
+            <a class="nav-link {{ request()->routeIs('guidance.counseling-sessions.archived') ? 'active' : '' }}" href="{{ route('guidance.counseling-sessions.archived') }}">
+              <i class="ri-archive-line me-2"></i>Archive Center
             </a>
           </li>
           
@@ -122,8 +128,13 @@
               </a>
             </li>
             <li class="nav-item mb-2">
-              <a class="nav-link {{ request()->routeIs('guidance.counseling-sessions*') ? 'active' : '' }}" href="{{ route('guidance.counseling-sessions.index') }}">
+              <a class="nav-link {{ request()->routeIs('guidance.counseling-sessions*') && !request()->routeIs('guidance.counseling-sessions.archived') ? 'active' : '' }}" href="{{ route('guidance.counseling-sessions.index') }}">
                 <i class="ri-heart-pulse-line me-2"></i>Counseling Sessions
+              </a>
+            </li>
+            <li class="nav-item mb-2">
+              <a class="nav-link {{ request()->routeIs('guidance.counseling-sessions.archived') ? 'active' : '' }}" href="{{ route('guidance.counseling-sessions.archived') }}">
+                <i class="ri-archive-line me-2"></i>Archive Center
               </a>
             </li>
             <li class="nav-item mt-3">

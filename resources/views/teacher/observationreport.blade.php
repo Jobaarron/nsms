@@ -65,7 +65,7 @@
                                     }
 
                                     if ($report->scheduled_time instanceof \Carbon\Carbon) {
-                                        $time = $report->scheduled_time->format('H:i:s');
+                                        $time = $report->scheduled_time->format('g:i A');
                                     } elseif (is_string($report->scheduled_time)) {
                                         $parts = preg_split('/\s+/', $report->scheduled_time);
                                         $timePart = count($parts) > 1 ? $parts[1] : $parts[0];
@@ -122,13 +122,13 @@
 </div>
                                     <button 
                                         type="button" 
-                                        class="btn btn-sm btn-outline-info reply-btn" 
-                                        data-bs-toggle="modal" 
-                                        data-bs-target="#replyModal" 
+                                        class="btn btn-sm btn-outline-info reply-btn {{ ($report->teacher_statement && $report->action_plan) ? 'disabled' : '' }}" 
+                                        {{ ($report->teacher_statement && $report->action_plan) ? '' : 'data-bs-toggle=modal data-bs-target=#replyModal' }}
                                         data-id="{{ $report->id }}" 
                                         data-teacher_statement="{{ $report->teacher_statement ?? '' }}"
                                         data-action_plan="{{ $report->action_plan ?? '' }}"
-                                        title="Reply"
+                                        title="{{ ($report->teacher_statement && $report->action_plan) ? 'Reply already submitted' : 'Reply' }}"
+                                        {{ ($report->teacher_statement && $report->action_plan) ? 'disabled' : '' }}
                                     >
                                         <i class="ri-chat-1-line"></i>
                                     </button>

@@ -1,5 +1,11 @@
 <x-discipline-layout>
     @vite(['resources/js/app.js', 'resources/css/index_discipline.css', 'resources/js/discipline_violations.js'])
+    
+    <!-- Flatpickr CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    
+    <!-- Flatpickr JS -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
     <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -270,14 +276,13 @@
             <div class="col-md-6">
               <div class="mb-3">
                 <label class="form-label fw-bold">Violation Date</label>
-                <input type="date" class="form-control" name="violation_date" id="violationDate" value="{{ now()->toDateString() }}" required>
+                <input type="text" class="form-control" name="violation_date" id="violationDate" value="{{ now()->toDateString() }}" required readonly>
               </div>
 
               <div class="mb-3">
                 <label class="form-label fw-bold">Violation Time</label>
-                <input type="time" class="form-control" id="violationTime" name="violation_time" 
-                       min="07:00" max="16:00" 
-                       value="{{ now()->between(today()->setTime(7, 0), today()->setTime(16, 0)) ? now()->format('H:i') : '07:00' }}">
+                <input type="text" class="form-control" id="violationTime" name="violation_time" 
+                       value="7:00 AM" readonly placeholder="Select time...">
                 <small class="text-muted">School hours: 7:00 AM - 4:00 PM</small>
               </div>
             </div>
