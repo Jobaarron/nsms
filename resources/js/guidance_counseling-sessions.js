@@ -160,6 +160,22 @@ function submitApproveSession(event) {
         freqHidden.value = freqSelect.value;
     }
 
+    // Convert time format from 12-hour to 24-hour for server
+    const sessionTime = formData.get('time');
+    if (sessionTime) {
+        // Validate school hours first
+        if (!validateSchoolHours(sessionTime)) {
+            showModalError('approveSessionModal', 'Session time must be within school hours (7:00 AM - 4:00 PM)', 'warning');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Approve';
+            return;
+        }
+        
+        // Convert to 24-hour format for server
+        const time24Hour = convertTo24HourFormat(sessionTime);
+        formData.set('time', time24Hour);
+    }
+
     // Debug: log form data
     for (let [key, value] of formData.entries()) {
         console.log(key + ':', value);
@@ -270,9 +286,110 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Guidance Counseling Sessions JavaScript
 document.addEventListener('DOMContentLoaded', function() {
+    // Add CSS styles for enhanced UI
+    const style = document.createElement('style');
+    style.textContent = `
+        /* Enhanced counseling session styles */
+        .session-summary {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #198754;
+        }
+        
+        .session-summary .row {
+            margin-bottom: 0.5rem;
+        }
+        
+        .alert-success.position-fixed {
+            animation: slideInRight 0.3s ease-out;
+        }
+        
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .progress-bar-animated {
+            animation: progress-bar-stripes 1s linear infinite;
+        }
+        
+        @keyframes progress-bar-stripes {
+            0% { background-position: 1rem 0; }
+            100% { background-position: 0 0; }
+        }
+        
+        .notification-status .small {
+            font-size: 0.825rem;
+        }
+        
+        .modal-content {
+            border: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .modal-header.bg-success {
+            border-top-left-radius: 0.375rem;
+            border-top-right-radius: 0.375rem;
+        }
+        
+        /* Custom color scheme - green, white, black */
+        .btn-primary {
+            background-color: #198754 !important;
+            border-color: #198754 !important;
+        }
+        
+        .btn-primary:hover {
+            background-color: #146c43 !important;
+            border-color: #146c43 !important;
+        }
+        
+        .text-primary {
+            color: #198754 !important;
+        }
+        
+        .border-primary {
+            border-color: #198754 !important;
+        }
+    `;
+    document.head.appendChild(style);
+
     console.log('Counseling Sessions page loaded');
     // Initialize page functionality
     initializeCounselingSessions();
+    
+    // Initialize comprehensive flatpickr configurations
+    initializeDateTimePickers();
+    
+    // Reinitialize time picker when approve modal is shown
+    const approveModal = document.getElementById('approveSessionModal');
+    if (approveModal) {
+        approveModal.addEventListener('shown.bs.modal', function() {
+            // Reinitialize time picker for the modal
+            setTimeout(() => {
+                const timeInput = document.querySelector('#approveSessionModal input[name="time"]');
+                if (timeInput && typeof flatpickr !== 'undefined') {
+                    flatpickr(timeInput, {
+                        enableTime: true,
+                        noCalendar: true,
+                        dateFormat: "h:i K",
+                        time_24hr: false,
+                        minTime: "07:00",
+                        maxTime: "16:00",
+                        minuteIncrement: 15,
+                        defaultHour: 7,
+                        defaultMinute: 0
+                    });
+                }
+            }, 100);
+        });
+    }
 
     // Instant search for counseling sessions table
     const searchInput = document.getElementById('search-filter');
@@ -336,24 +453,78 @@ function setupDateTimeConstraints() {
         const today = new Date().toISOString().split('T')[0];
         followUpDateInput.min = today;
     }
+}
 
-    // Initialize Flatpickr for time inputs with school hours (7 AM - 4 PM)
-    const timeInputs = document.querySelectorAll('input[name="scheduled_time"]');
-    if (typeof flatpickr !== 'undefined' && timeInputs.length > 0) {
-        timeInputs.forEach(input => {
-            flatpickr(input, {
-                enableTime: true,
-                noCalendar: true,
-                dateFormat: "h:i K",
-                time_24hr: false,
-                minTime: "07:00",
-                maxTime: "16:00",
-                minuteIncrement: 15,
-                defaultHour: 7,
-                defaultMinute: 0
-            });
-        });
+// Initialize comprehensive flatpickr date and time pickers
+function initializeDateTimePickers() {
+    if (typeof flatpickr === 'undefined') {
+        console.warn('Flatpickr library not loaded');
+        return;
     }
+
+    // Initialize date pickers for counseling sessions
+    flatpickr("input[name='scheduled_date']", {
+        dateFormat: "Y-m-d",
+        minDate: "today",
+        allowInput: true,
+    });
+
+    flatpickr("input[name='follow_up_date']", {
+        dateFormat: "Y-m-d",
+        minDate: "today",
+        allowInput: true,
+    });
+
+    flatpickr("input[name='start_date']", {
+        dateFormat: "Y-m-d",
+        minDate: "today",
+        allowInput: true,
+    });
+
+    flatpickr("input[name='end_date']", {
+        dateFormat: "Y-m-d",
+        minDate: "today",
+        allowInput: true,
+    });
+
+    // Initialize time pickers with school hours (7 AM - 4 PM)
+    flatpickr("input[name='scheduled_time']", {
+        enableTime: true,
+        noCalendar: true,
+        dateFormat: "h:i K",
+        time_24hr: false,
+        minTime: "07:00",
+        maxTime: "16:00",
+        minuteIncrement: 15,
+        defaultHour: 7,
+        defaultMinute: 0
+    });
+
+    // Initialize time pickers for modals
+    flatpickr(".schedule-time-picker", {
+        enableTime: true,
+        noCalendar: true,
+        dateFormat: "h:i K",
+        time_24hr: false,
+        minTime: "07:00",
+        maxTime: "16:00",
+        minuteIncrement: 15,
+        defaultHour: 7,
+        defaultMinute: 0
+    });
+
+    // Initialize time picker for approve counseling session modal with school hours (7 AM - 4 PM)
+    flatpickr("#approveSessionModal input[name='time']", {
+        enableTime: true,
+        noCalendar: true,
+        dateFormat: "h:i K",
+        time_24hr: false,
+        minTime: "07:00",
+        maxTime: "16:00",
+        minuteIncrement: 15,
+        defaultHour: 7,
+        defaultMinute: 0
+    });
 }
 
 // Setup follow-up toggle functionality
@@ -550,6 +721,7 @@ function scheduleRecommendedSession(sessionId) {
     setTimeout(() => {
         const timeInput = document.querySelector('#scheduleRecommendedModal .schedule-time-picker');
         if (timeInput && typeof flatpickr !== 'undefined') {
+            // Re-initialize with standard school hours configuration
             flatpickr(timeInput, {
                 enableTime: true,
                 noCalendar: true,
@@ -560,6 +732,16 @@ function scheduleRecommendedSession(sessionId) {
                 minuteIncrement: 15,
                 defaultHour: 7,
                 defaultMinute: 0
+            });
+        }
+        
+        // Also initialize date picker for the modal
+        const dateInput = document.querySelector('#scheduleRecommendedModal input[name="scheduled_date"]');
+        if (dateInput && typeof flatpickr !== 'undefined') {
+            flatpickr(dateInput, {
+                dateFormat: "Y-m-d",
+                minDate: "today",
+                allowInput: true,
             });
         }
     }, 100);
@@ -1075,3 +1257,130 @@ window.startInlineScheduling = startInlineScheduling;
 window.saveInlineScheduling = saveInlineScheduling;
 window.cancelInlineScheduling = cancelInlineScheduling;
 window.showApproveCounselingModal = showApproveCounselingModal;
+
+// Utility Functions for Enhanced Counseling Session Scheduling
+
+// Format time to 12-hour format
+function formatTime12Hour(time24) {
+    const [hours, minutes] = time24.split(':');
+    const hour12 = hours % 12 || 12;
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    return `${hour12}:${minutes} ${ampm}`;
+}
+
+// Show scheduling progress indicator
+function showSchedulingProgress() {
+    const progressHtml = `
+        <div class="modal fade show" id="schedulingProgressModal" style="display: block; background: rgba(0,0,0,0.5);" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered modal-sm">
+                <div class="modal-content">
+                    <div class="modal-body text-center py-4">
+                        <div class="spinner-border text-primary mb-3" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <h6 class="mb-2">Scheduling Counseling Session</h6>
+                        <p class="text-muted mb-0 small">Please wait while we process your request...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', progressHtml);
+}
+
+// Hide scheduling progress
+function hideSchedulingProgress() {
+    const progressModal = document.getElementById('schedulingProgressModal');
+    if (progressModal) {
+        progressModal.remove();
+    }
+}
+
+// Convert 12-hour format to 24-hour format for server submission
+function convertTo24HourFormat(timeString) {
+    if (!timeString) return '';
+    
+    // If already in 24-hour format, return as is
+    if (!timeString.includes('AM') && !timeString.includes('PM')) {
+        return timeString;
+    }
+    
+    const [timePart, period] = timeString.split(' ');
+    const [hours, minutes] = timePart.split(':');
+    let hour24 = parseInt(hours);
+    
+    if (period === 'AM') {
+        if (hour24 === 12) hour24 = 0;
+    } else { // PM
+        if (hour24 !== 12) hour24 += 12;
+    }
+    
+    return `${hour24.toString().padStart(2, '0')}:${minutes || '00'}`;
+}
+
+// Validate time is within school hours (7 AM - 4 PM)
+function validateSchoolHours(timeString) {
+    if (!timeString) return false;
+    
+    let hours, minutes;
+    
+    // Handle 12-hour format with AM/PM (e.g., "7:00 AM", "2:30 PM")
+    if (timeString.includes('AM') || timeString.includes('PM')) {
+        const [timePart, period] = timeString.split(' ');
+        const [h, m] = timePart.split(':').map(Number);
+        
+        // Convert to 24-hour format
+        if (period === 'AM') {
+            hours = h === 12 ? 0 : h;
+        } else { // PM
+            hours = h === 12 ? 12 : h + 12;
+        }
+        minutes = m || 0;
+    } else {
+        // Handle 24-hour format (e.g., "07:00", "14:30")
+        const parts = timeString.split(':');
+        hours = parseInt(parts[0]);
+        minutes = parseInt(parts[1]) || 0;
+    }
+    
+    const timeInMinutes = hours * 60 + minutes;
+    const schoolStart = 7 * 60; // 7:00 AM
+    const schoolEnd = 16 * 60; // 4:00 PM
+    
+    return timeInMinutes >= schoolStart && timeInMinutes <= schoolEnd;
+}
+
+// Enhanced alert function with better styling
+function showEnhancedAlert(type, message, title = '') {
+    const alertId = 'enhanced-alert-' + Date.now();
+    const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show position-fixed shadow-sm" 
+             style="top: 20px; right: 20px; z-index: 9999; min-width: 300px; max-width: 500px;" 
+             id="${alertId}" role="alert">
+            <div class="d-flex align-items-start">
+                <div class="flex-shrink-0">
+                    <i class="ri-${type === 'success' ? 'check-circle' : type === 'warning' ? 'alert' : type === 'danger' ? 'error-warning' : 'information'}-line fs-4"></i>
+                </div>
+                <div class="flex-grow-1 ms-3">
+                    ${title ? `<h6 class="alert-heading mb-1">${title}</h6>` : ''}
+                    <p class="mb-0">${message}</p>
+                </div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    // Remove any existing enhanced alerts
+    document.querySelectorAll('[id^="enhanced-alert-"]').forEach(alert => alert.remove());
+    
+    document.body.insertAdjacentHTML('beforeend', alertHtml);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        const alert = document.getElementById(alertId);
+        if (alert) {
+            alert.remove();
+        }
+    }, 5000);
+}

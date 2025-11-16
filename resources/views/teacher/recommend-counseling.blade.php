@@ -33,6 +33,13 @@
       </div>
     @endif
 
+    @if(isset($message))
+      <div class="alert {{ $students->count() > 0 ? 'alert-info' : 'alert-warning' }} alert-dismissible fade show" role="alert">
+        <i class="ri-information-line me-2"></i>{{ $message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    @endif
+
     <!-- Main Form Section -->
     <div class="row justify-content-center">
       <div class="col-lg-8">
@@ -44,6 +51,7 @@
             </div>
           </div>
           <div class="card-body p-4">
+            @if($students->count() > 0)
             <form action="{{ route('teacher.recommend-counseling') }}" method="POST">
               @csrf
 
@@ -51,6 +59,7 @@
               <div class="mb-4">
                 <label for="studentSearch" class="form-label fw-semibold">
                   <i class="ri-search-line me-1"></i>Search Student <span class="text-danger">*</span>
+                  <small class="text-muted">({{ $students->count() }} student{{ $students->count() != 1 ? 's' : '' }} in your advisory)</small>
                 </label>
                 <div class="position-relative">
                   <div class="input-group">
@@ -59,8 +68,8 @@
                     </span>
                     <input type="text" class="form-control @error('student_id') is-invalid @enderror" 
                            id="studentSearch" name="studentSearch" 
-                           placeholder="Type student name or ID..." 
-                           autocomplete="off" required>
+                           placeholder="{{ $students->count() > 0 ? 'Type student name or ID...' : 'No students available' }}" 
+                           autocomplete="off" {{ $students->count() > 0 ? 'required' : 'disabled' }}>
                   </div>
                   <input type="hidden" id="student_id" name="student_id" value="{{ old('student_id') }}">
                   <div id="studentSuggestions" class="suggestions-list shadow-sm" 
@@ -72,15 +81,15 @@
                   <div class="invalid-feedback">{{ $error }}</div>
                 @enderror
               </div>
-                <!-- Students data for JavaScript -->
+                <!-- Advisory students data for JavaScript -->
                 <script>
-                window.studentsData = [
+                window.advisoryStudentsData = [
                   @foreach($students as $student)
                     {
                       id: {{ $student->id }},
-                      name: "{{ addslashes($student->full_name) }}",
+                      name: "{{ $student->first_name }} {{ $student->last_name }}",
                       student_id: "{{ addslashes($student->student_id) }}"
-                    },
+                    }@if(!$loop->last),@endif
                   @endforeach
                 ];
                 </script>
@@ -228,6 +237,21 @@
                 </button>
               </div>
             </form>
+            @else
+            <div class="text-center py-5">
+              <div class="mb-4">
+                <i class="ri-user-unfollow-line display-4 text-muted"></i>
+              </div>
+              <h5 class="text-muted">No Advisory Students Available</h5>
+              <p class="text-muted mb-4">
+                You can only recommend students from your advisory class for counseling. 
+                Please contact the administrator if you believe this is an error.
+              </p>
+              <a href="{{ route('teacher.dashboard') }}" class="btn btn-outline-primary">
+                <i class="ri-arrow-left-line me-2"></i>Back to Dashboard
+              </a>
+            </div>
+            @endif
           </div>
         </div>
       </div>
