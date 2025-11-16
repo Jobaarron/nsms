@@ -33,7 +33,7 @@
   <!-- Mobile Navigation Toggle -->
   <div class="d-md-none bg-white border-bottom p-3 fixed-top" style="z-index: 1030;">
     <div class="d-flex justify-content-between align-items-center">
-      <img src="{{ Vite::asset('resources/assets/images/nms logo.png') }}" alt="Nicolites Montessori School" style="height: 30px;">
+      <img src="{{ Vite::asset('resources/assets/images/nms-logo.png') }}" alt="Nicolites Montessori School" style="height: 30px;">
       <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#guidanceSidebar" aria-controls="guidanceSidebar">
         <i class="ri-menu-line"></i>
       </button>
@@ -47,7 +47,7 @@
       <nav class="col-12 col-md-2 sidebar d-none d-md-block py-4">
         <!-- School Logo -->
         <div class="text-center mb-3">
-          <img src="{{ Vite::asset('resources/assets/images/nms logo.png') }}" alt="Nicolites Montessori School" class="sidebar-logo">
+          <img src="{{ Vite::asset('resources/assets/images/nms-logo.png') }}" alt="Nicolites Montessori School" class="sidebar-logo">
         </div>
         
         <!-- User Info -->
@@ -104,7 +104,7 @@
       <div class="offcanvas offcanvas-start d-md-none" tabindex="-1" id="guidanceSidebar" aria-labelledby="guidanceSidebarLabel">
         <div class="offcanvas-header border-bottom">
           <div class="d-flex align-items-center">
-            <img src="{{ Vite::asset('resources/assets/images/nms logo.png') }}" alt="Nicolites Montessori School" style="height: 30px;" class="me-2">
+            <img src="{{ Vite::asset('resources/assets/images/nms-logo.png') }}" alt="Nicolites Montessori School" style="height: 30px;" class="me-2">
             <h5 class="offcanvas-title mb-0" id="guidanceSidebarLabel">Guidance Portal</h5>
           </div>
           <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
