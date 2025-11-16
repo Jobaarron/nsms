@@ -27,7 +27,6 @@
   
   @vite('resources/sass/app.scss')
   @vite(['resources/css/index_registrar.css'])
-  @vite(['resources/css/registrar-dashboard.css'])
   @vite(['resources/js/app.js'])
   @vite(['resources/js/registrar-class-lists.js'])
   @vite(['resources/js/registrar-dashboard.js'])

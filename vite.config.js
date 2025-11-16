@@ -22,10 +22,12 @@ function getFilesFromDirectory(dir) {
     return files;
 }
 
-// Get all image and PDF assets
+// Get all CSS and JS files
+const cssFiles = getFilesFromDirectory('resources/css');
+const jsFiles = getFilesFromDirectory('resources/js');
 const imageAssets = getFilesFromDirectory('resources/assets/images');
 const pdfAssets = getFilesFromDirectory('resources/assets/pdf-forms-generation');
-const allAssets = [...imageAssets, ...pdfAssets];
+const allAssets = [...cssFiles, ...jsFiles, ...imageAssets, ...pdfAssets];
 
 export default defineConfig({
     plugins: [
