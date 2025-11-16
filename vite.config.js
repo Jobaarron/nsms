@@ -1,5 +1,31 @@
 import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
+import fs from 'fs';
+import path from 'path';
+
+// Function to get all files from a directory
+function getFilesFromDirectory(dir) {
+    const files = [];
+    try {
+        if (fs.existsSync(dir)) {
+            fs.readdirSync(dir).forEach(file => {
+                const fullPath = path.join(dir, file);
+                const stat = fs.statSync(fullPath);
+                if (stat.isFile()) {
+                    files.push(fullPath.replace(/\\/g, '/').replace(process.cwd() + '/', ''));
+                }
+            });
+        }
+    } catch (error) {
+        console.warn(`Warning: Could not read directory ${dir}`);
+    }
+    return files;
+}
+
+// Get all image and PDF assets
+const imageAssets = getFilesFromDirectory('resources/assets/images');
+const pdfAssets = getFilesFromDirectory('resources/assets/pdf-forms-generation');
+const allAssets = [...imageAssets, ...pdfAssets];
 
 export default defineConfig({
     plugins: [
@@ -79,7 +105,8 @@ export default defineConfig({
                 'resources/js/guidance-dashboard.js',
                 'resources/js/cashier-dashboard.js',
                 'resources/js/registrar-class-lists.js',
-                'resources/js/registrar-applicant-archives.js'
+                'resources/js/registrar-applicant-archives.js',
+                ...allAssets,
             ],
             refresh: true,
         }),
