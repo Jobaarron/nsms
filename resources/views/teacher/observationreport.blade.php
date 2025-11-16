@@ -5,6 +5,22 @@
 <div class="container-fluid py-4">
     <h2 class="mb-4" style="color:#198754;">Observation Reports</h2>
 
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="ri-check-circle-line me-2"></i>
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="ri-error-warning-line me-2"></i>
+            {{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
     <!-- Search Reports -->
     <div class="mb-4">
         <input 
@@ -156,26 +172,177 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-success">Submit</button>
+                    <button type="button" id="submitReplyBtn" class="btn btn-success">Submit Reply</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmationModalLabel">Confirm Submission</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="ri-alert-triangle-line me-2"></i>
+                    <strong>Please Review Your Response</strong>
+                </div>
+                <p>Are you sure you want to submit your observation report reply? Please review the information below:</p>
+                
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Teacher Statement:</label>
+                    <div class="border p-2 rounded bg-light" id="confirmTeacherStatement" style="min-height: 60px; white-space: pre-wrap;"></div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Action Plan:</label>
+                    <div class="border p-2 rounded bg-light" id="confirmActionPlan" style="min-height: 60px; white-space: pre-wrap;"></div>
+                </div>
+                
+                <div class="alert alert-info">
+                    <i class="ri-information-line me-2"></i>
+                    Once submitted, this reply cannot be edited.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" id="confirmSubmitBtn" class="btn btn-success">
+                    <span id="submitBtnText">Yes, Submit Reply</span>
+                    <span id="submitSpinner" class="spinner-border spinner-border-sm ms-2" style="display: none;"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    let currentCaseMeetingId = null;
+    
+
+    
     // Handle Reply button click to populate modal and set form action
     document.querySelectorAll('.reply-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
-            const caseMeetingId = btn.getAttribute('data-id');
+            currentCaseMeetingId = btn.getAttribute('data-id');
             const teacherStatement = btn.getAttribute('data-teacher_statement') || '';
             const actionPlan = btn.getAttribute('data-action_plan') || '';
+            
+            // Populate form fields
             document.getElementById('teacher_statement').value = teacherStatement;
             document.getElementById('action_plan').value = actionPlan;
-            document.getElementById('replyForm').action = '/teacher/observationreport/reply/' + caseMeetingId;
+            
+            // Reset button states
+            resetButtonStates();
+            
+            // Check if already replied (has existing data)
+            if (teacherStatement || actionPlan) {
+                document.getElementById('submitReplyBtn').textContent = 'Update Reply';
+            } else {
+                document.getElementById('submitReplyBtn').textContent = 'Submit Reply';
+            }
         });
     });
+
+    // Handle Submit Reply button click - show confirmation
+    document.getElementById('submitReplyBtn').addEventListener('click', function() {
+        const teacherStatement = document.getElementById('teacher_statement').value.trim();
+        const actionPlan = document.getElementById('action_plan').value.trim();
+        
+        // Validate required fields
+        if (!teacherStatement || !actionPlan) {
+            alert('Please fill in both Teacher Statement and Action Plan before submitting.');
+            return;
+        }
+        
+        // Populate confirmation modal
+        document.getElementById('confirmTeacherStatement').textContent = teacherStatement;
+        document.getElementById('confirmActionPlan').textContent = actionPlan;
+        
+        // Hide reply modal and show confirmation
+        const replyModal = bootstrap.Modal.getInstance(document.getElementById('replyModal'));
+        const confirmationModal = new bootstrap.Modal(document.getElementById('confirmationModal'));
+        
+        replyModal.hide();
+        setTimeout(() => {
+            confirmationModal.show();
+        }, 300);
+    });
+
+    // Handle final confirmation submit
+    document.getElementById('confirmSubmitBtn').addEventListener('click', function() {
+        if (!currentCaseMeetingId) {
+            alert('Error: No case meeting ID found. Please try again.');
+            return;
+        }
+        
+        // Disable button and show spinner
+        const submitBtn = document.getElementById('confirmSubmitBtn');
+        const submitBtnText = document.getElementById('submitBtnText');
+        const submitSpinner = document.getElementById('submitSpinner');
+        
+        submitBtn.disabled = true;
+        submitBtnText.textContent = 'Submitting...';
+        submitSpinner.style.display = 'inline-block';
+        
+        // Create and submit form
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/teacher/observationreport/reply/' + currentCaseMeetingId;
+        
+        // Add CSRF token
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || 
+                         document.querySelector('input[name="_token"]')?.value;
+        if (csrfToken) {
+            const tokenInput = document.createElement('input');
+            tokenInput.type = 'hidden';
+            tokenInput.name = '_token';
+            tokenInput.value = csrfToken;
+            form.appendChild(tokenInput);
+        }
+        
+        // Add form data
+        const teacherStatementInput = document.createElement('input');
+        teacherStatementInput.type = 'hidden';
+        teacherStatementInput.name = 'teacher_statement';
+        teacherStatementInput.value = document.getElementById('teacher_statement').value;
+        form.appendChild(teacherStatementInput);
+        
+        const actionPlanInput = document.createElement('input');
+        actionPlanInput.type = 'hidden';
+        actionPlanInput.name = 'action_plan';
+        actionPlanInput.value = document.getElementById('action_plan').value;
+        form.appendChild(actionPlanInput);
+        
+        // Submit form with success handling
+        document.body.appendChild(form);
+        
+        form.submit();
+    });
+
+    // Reset button states when modals are hidden
+    document.getElementById('confirmationModal').addEventListener('hidden.bs.modal', function() {
+        resetButtonStates();
+    });
+    
+    document.getElementById('replyModal').addEventListener('hidden.bs.modal', function() {
+        resetButtonStates();
+    });
+    
+    function resetButtonStates() {
+        const submitBtn = document.getElementById('confirmSubmitBtn');
+        const submitBtnText = document.getElementById('submitBtnText');
+        const submitSpinner = document.getElementById('submitSpinner');
+        
+        submitBtn.disabled = false;
+        submitBtnText.textContent = 'Yes, Submit Reply';
+        submitSpinner.style.display = 'none';
+    }
 
     // Handle View Report button to show PDF in modal
     document.querySelectorAll('.view-pdf-btn').forEach(function(btn) {
@@ -190,6 +357,26 @@ document.addEventListener('DOMContentLoaded', function() {
     if (pdfModal) {
         pdfModal.addEventListener('hidden.bs.modal', function () {
             document.getElementById('pdfFrame').src = '';
+        });
+    }
+    
+    // Add search functionality
+    const searchInput = document.getElementById('reportSearch');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const rows = document.querySelectorAll('.report-row');
+            
+            rows.forEach(function(row) {
+                const studentName = row.getAttribute('data-student');
+                const violationTitle = row.getAttribute('data-violation');
+                
+                if (studentName.includes(searchTerm) || violationTitle.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
         });
     }
 });

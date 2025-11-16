@@ -359,10 +359,59 @@ class TeacherController extends Controller
             }
         }
 
-        $caseMeeting->teacher_statement = $request->teacher_statement;
-        $caseMeeting->action_plan = $request->action_plan;
-        $caseMeeting->save();
+        try {
+            // Log the attempt for debugging
+            \Log::info('Attempting to submit teacher observation reply', [
+                'case_meeting_id' => $caseMeetingId,
+                'teacher_id' => $currentUser->id,
+                'teacher_statement_length' => strlen($request->teacher_statement),
+                'action_plan_length' => strlen($request->action_plan)
+            ]);
 
-        return redirect()->back()->with('success', 'Your reply has been submitted.');
+            $caseMeeting->teacher_statement = $request->teacher_statement;
+            $caseMeeting->action_plan = $request->action_plan;
+            
+            // Only set timestamp if the column exists in the table
+            if (\Schema::hasColumn('case_meetings', 'teacher_reply_submitted_at')) {
+                $caseMeeting->teacher_reply_submitted_at = now();
+            }
+            
+            // Check if the case meeting can be saved
+            if (!$caseMeeting->save()) {
+                throw new \Exception('Failed to save case meeting - save() returned false');
+            }
+
+            \Log::info('Teacher observation reply submitted successfully', [
+                'case_meeting_id' => $caseMeetingId,
+                'teacher_id' => $currentUser->id
+            ]);
+
+            return redirect()->back()->with('success', 'Your observation report reply has been successfully submitted. The guidance office will review your response .');
+            
+        } catch (\Illuminate\Database\QueryException $e) {
+            \Log::error('Database error while submitting teacher observation reply', [
+                'case_meeting_id' => $caseMeetingId,
+                'teacher_id' => $currentUser->id,
+                'error' => $e->getMessage(),
+                'sql_code' => $e->getCode()
+            ]);
+            
+            return redirect()->back()->with('error', 'Database error occurred. Please check if all required fields are properly filled and try again.');
+            
+        } catch (\Exception $e) {
+            \Log::error('Failed to submit teacher observation reply', [
+                'case_meeting_id' => $caseMeetingId,
+                'teacher_id' => $currentUser->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            // In development, show detailed error; in production, show generic message
+            if (config('app.debug')) {
+                return redirect()->back()->with('error', 'Error: ' . $e->getMessage());
+            } else {
+                return redirect()->back()->with('error', 'Failed to submit your reply. Please try again or contact the administrator if the problem persists.');
+            }
+        }
     }
 }
