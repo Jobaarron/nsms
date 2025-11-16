@@ -47,7 +47,6 @@
                         <option value="Grade 12">Grade 12</option>
                     </select>
                 </div>
-                {{-- Removed Face Filter Column --}}
             </div>
         </div>
 
@@ -64,7 +63,6 @@
                                 <th>Photo</th>
                                 <th>Student Info</th>
                                 <th>Grade</th>
-                                {{-- Removed Face Registration Column --}}
                                 <th>Actions</th>
                             </tr>
                         </thead>

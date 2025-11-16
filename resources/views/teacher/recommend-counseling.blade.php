@@ -84,6 +84,10 @@
                   @endforeach
                 ];
                 </script>
+                
+                <!-- Include JavaScript for student search functionality -->
+                @vite(['resources/js/teacher-recommend-counseling.js'])
+                
                 <!-- Reason for referral checklist -->
                 <div class="mt-4">
                   <label class="form-label fw-semibold">

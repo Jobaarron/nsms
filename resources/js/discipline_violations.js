@@ -1439,7 +1439,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
       const suggestionsHtml = students.map(student => `
         <div class="suggestion-item" data-student-id="${student.id}" data-student-name="${student.first_name} ${student.last_name} (${student.student_id || 'No ID'})">
-          <div class="suggestion-name">${student.first_name} ${student.last_name}</div>
+          <div class="suggestion-name">${student.first_name} ${student.last_name} <span class="badge bg-success ms-1">Enrolled</span></div>
           <div class="suggestion-details">ID: ${student.student_id || 'No ID'} | Grade: ${student.grade_level || 'N/A'} | Section: ${student.section || 'N/A'}</div>
         </div>
       `).join('');
@@ -1758,9 +1758,15 @@ window.viewViolation = function(violationId) {
 
 
 window.deleteViolation = function(violationId) {
+    // Check if button is disabled (client-side check)
+    const button = event.target.closest('button');
+    if (button.disabled) {
+      alert('Only pending violations can be deleted.');
+      return;
+    }
+    
     if (confirm('Are you sure you want to delete this violation? This action cannot be undone.')) {
       // Show loading state
-      const button = event.target.closest('button');
       const originalHTML = button.innerHTML;
       button.innerHTML = '<i class="ri-loader-line spinner-border spinner-border-sm"></i>';
       button.disabled = true;

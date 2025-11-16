@@ -151,6 +151,7 @@ class DisciplineController extends Controller
         // }
 
         $students = Student::with('activeFaceRegistration')
+            ->where('enrollment_status', 'enrolled') // Only show enrolled students
             ->orderBy('last_name', 'asc')
             ->paginate(20);
 
@@ -320,6 +321,18 @@ class DisciplineController extends Controller
             'force_duplicate_type' => gettype($request->input('force_duplicate')),
             'all_request_data' => $request->all()
         ]);
+
+        // Check if student is fully enrolled
+        $student = Student::find($validatedData['student_id']);
+        if (!$student || $student->enrollment_status !== 'enrolled') {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Violations can only be recorded for fully enrolled students.'
+                ], 422);
+            }
+            return back()->withErrors(['student_id' => 'Violations can only be recorded for fully enrolled students.']);
+        }
 
         // Check for duplicate violation unless force_duplicate is true
         $forceDuplicate = $request->input('force_duplicate', false);
@@ -708,6 +721,19 @@ class DisciplineController extends Controller
      */
     public function destroyViolation(Request $request, Violation $violation)
     {
+        // Check if violation status allows deletion
+        if ($violation->status !== 'pending') {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Only pending violations can be deleted. Current status: ' . $violation->status
+                ], 400);
+            }
+            
+            return redirect()->route('discipline.violations.index')
+                ->with('error', 'Only pending violations can be deleted.');
+        }
+        
         try {
             $violationId = $violation->id;
 
@@ -892,13 +918,14 @@ class DisciplineController extends Controller
         $query = $request->input('q', '');
 
         $students = Student::query()
+            ->where('enrollment_status', 'enrolled') // Only show enrolled students
             ->where(function ($q) use ($query) {
                 $q->where('first_name', 'like', "%{$query}%")
                   ->orWhere('last_name', 'like', "%{$query}%")
                   ->orWhere('student_id', 'like', "%{$query}%");
             })
             ->limit(10)
-            ->get(['id', 'first_name', 'last_name', 'student_id', 'grade_level', 'section']);
+            ->get(['id', 'first_name', 'last_name', 'student_id', 'grade_level', 'section', 'enrollment_status']);
 
         return response()->json($students);
     }
