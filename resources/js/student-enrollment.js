@@ -180,10 +180,12 @@ document.addEventListener('DOMContentLoaded', function() {
             );
             
             if (confirmed) {
-                // If confirmed, submit the form
-                const form = document.getElementById('enrollmentForm') || this.closest('form');
-                if (form) {
-                    form.submit();
+                // If confirmed, call the AJAX submission function
+                if (typeof window.submitEnrollmentForm === 'function') {
+                    window.submitEnrollmentForm();
+                } else {
+                    console.error('submitEnrollmentForm function not found');
+                    alert('Submission function not available. Please refresh the page and try again.');
                 }
             }
             // If not confirmed, do nothing (user can review and try again)
@@ -387,90 +389,94 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Custom form submission to show PDF modal after payment
+// Form submission function with PDF modal integration
 window.submitEnrollmentForm = function() {
+    console.log('submitEnrollmentForm called');
+    
     const form = document.getElementById('enrollmentForm');
     if (!form) {
         console.error('Enrollment form not found');
-        return;
+        alert('Form not found. Please refresh the page and try again.');
+        return false;
     }
     
-    const formData = new FormData(form);
-    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    // Validate payment method is selected
+    const paymentMethod = form.querySelector('input[name="payment_method"]:checked');
+    if (!paymentMethod) {
+        alert('Please select a payment method before submitting.');
+        return false;
+    }
     
+    console.log('Form validated, preparing submission...');
+    const formData = new FormData(form);
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    
+    if (!csrfToken) {
+        console.error('CSRF token not found');
+        alert('Security token not found. Please refresh the page and try again.');
+        return false;
+    }
+    
+    console.log('Sending AJAX request to:', form.action);
     fetch(form.action, {
         method: 'POST',
         headers: {
             'X-CSRF-TOKEN': csrfToken,
             'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
         },
         body: formData
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('Response status:', response.status);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
+        console.log('Response data:', data);
+        
         if (data.success && data.transaction_id) {
-            if (window.showPDFModal) {
+            console.log('Success! Transaction ID:', data.transaction_id);
+            
+            if (typeof window.showPDFModal === 'function') {
+                console.log('Calling showPDFModal...');
                 window.showPDFModal({
                     transactionId: data.transaction_id,
                     onClose: function() {
+                        console.log('Modal closed, redirecting to:', data.redirect_url);
                         window.location.href = data.redirect_url || '/student/dashboard';
                     }
                 });
             } else {
-                // Fallback if PDF modal not available
-                window.location.href = data.redirect_url || '/student/dashboard';
+                console.warn('showPDFModal function not found, redirecting directly');
+                if (window.showAlert) {
+                    window.showAlert(data.message || 'Payment schedule submitted successfully!', 'success');
+                } else {
+                    alert(data.message || 'Payment schedule submitted successfully!');
+                }
+                setTimeout(() => {
+                    window.location.href = data.redirect_url || '/student/dashboard';
+                }, 2000);
             }
         } else {
+            console.error('Submission failed:', data.message);
             if (window.showAlert) {
-                window.showAlert(data.message || 'Failed to submit payment.', 'danger');
+                window.showAlert(data.message || 'Failed to submit payment schedule.', 'danger');
             } else {
-                alert(data.message || 'Failed to submit payment.');
+                alert(data.message || 'Failed to submit payment schedule.');
             }
         }
     })
     .catch(error => {
         console.error('Error submitting enrollment:', error);
         if (window.showAlert) {
-            window.showAlert('An error occurred while submitting payment.', 'danger');
+            window.showAlert('An error occurred while submitting. Please check your internet connection and try again.', 'danger');
         } else {
-            alert('An error occurred while submitting payment.');
+            alert('An error occurred while submitting. Please check your internet connection and try again.');
         }
     });
-};
-
-// Form submission function for PDF modal integration
-function submitEnrollmentForm() {
-    const form = document.getElementById('enrollmentForm');
-    const formData = new FormData(form);
-    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     
-    fetch(form.action, {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': csrfToken,
-            'Accept': 'application/json',
-        },
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success && data.transaction_id) {
-            if (window.showPDFModal) {
-                window.showPDFModal({
-                    transactionId: data.transaction_id,
-                    onClose: function() {
-                        window.location.href = data.redirect_url || '/student/dashboard';
-                    }
-                });
-            }
-        } else {
-            if (window.showAlert) window.showAlert(data.message || 'Failed to submit payment.', 'danger');
-        }
-    })
-    .catch(() => {
-        if (window.showAlert) window.showAlert('An error occurred while submitting payment.', 'danger');
-    });
-}
-
-// Export function for global access
-window.submitEnrollmentForm = submitEnrollmentForm;
+    return false;
+};

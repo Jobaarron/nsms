@@ -526,6 +526,9 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
             Route::post('/{caseMeeting}/complete', [App\Http\Controllers\GuidanceController::class, 'completeCaseMeeting'])
                 ->name('complete');
 
+            Route::get('/{caseMeeting}/summary', [App\Http\Controllers\GuidanceController::class, 'viewCaseSummary'])
+                ->name('view-summary');
+
             Route::post('/{caseMeeting}/summary', [App\Http\Controllers\GuidanceController::class, 'createCaseSummary'])
                 ->name('summary');
 
@@ -548,14 +551,14 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
         // PDF route for disciplinary conference report
         Route::get('/case-meetings/{caseMeeting}/disciplinary-conference-report/pdf', [PdfController::class, 'DisciplinaryConReports'])->name('case-meetings.disciplinary-conference-report.pdf');
         
+        // Counseling session detail API for modal (outside the prefix group)
+        Route::get('/api/counseling-sessions/{id}', [App\Http\Controllers\GuidanceController::class, 'apiShowCounselingSession'])->middleware(['auth'])->name('api.counseling-sessions.show');
+
         // Counseling Session Routes
     Route::prefix('counseling-sessions')->name('counseling-sessions.')->group(function () {
 
     // AJAX: Store counseling summary report
     Route::post('/{counselingSession}/summary-report', [App\Http\Controllers\GuidanceController::class, 'createCounselingSummaryReport'])->name('summary-report');
-
-    // Counseling session detail API for modal (now inside counseling-sessions group)
-    Route::get('/api/counseling-sessions/{id}', [App\Http\Controllers\GuidanceController::class, 'apiShowCounselingSession'])->middleware(['auth'])->name('api.show');
         
 
             // Show create summary form
@@ -563,6 +566,7 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
               // Approve counseling session (AJAX)
               Route::post('/approve', [App\Http\Controllers\GuidanceController::class, 'approveCounselingSession'])->name('approve');
             Route::get('/', [App\Http\Controllers\GuidanceController::class, 'counselingSessionsIndex'])->name('index');
+            Route::get('/archived', [App\Http\Controllers\GuidanceController::class, 'archivedCounselingSessions'])->name('archived');
             Route::post('/', [App\Http\Controllers\GuidanceController::class, 'scheduleCounselingSession'])->name('schedule');
             Route::get('/{counselingSession}', [App\Http\Controllers\GuidanceController::class, 'showCounselingSession'])->name('show');
             Route::get('/{counselingSession}/edit', [App\Http\Controllers\GuidanceController::class, 'editCounselingSession'])->name('edit');

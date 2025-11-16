@@ -414,15 +414,17 @@
                                                 <i class="ri-calendar-event-line"></i>
                                             </button>
 
-                                            <!-- Summary Button - Permanently disabled after summary is added -->
-                                            <button class="btn btn-outline-info {{ $meeting->summary ? 'disabled' : '' }}"
-                                                onclick="{{ !$meeting->summary ? 'openCreateSummaryModal(' . $meeting->id . ')' : '' }}"
-                                                title="{{ $meeting->summary ? 'Summary already added' : 'Add Summary' }}">
+                                            <!-- Summary Button - Disabled when summary exists or status is in_progress -->
+                                            <button class="btn btn-outline-info {{ ($meeting->summary || $meeting->status === 'in_progress') ? 'disabled' : '' }}"
+                                                onclick="{{ (!$meeting->summary && $meeting->status !== 'in_progress') ? 'openCreateSummaryModal(' . $meeting->id . ')' : '' }}"
+                                                title="{{ $meeting->summary ? 'Summary already added' : ($meeting->status === 'in_progress' ? 'Cannot add summary while meeting is in progress' : 'Add Summary') }}">
                                                 <i class="ri-file-text-line"></i>
                                             </button>
 
-                                            <!-- Edit Button - Always enabled -->
-                                            <button class="btn btn-outline-secondary" onclick="editCaseMeeting({{ $meeting->id }})" title="Edit">
+                                            <!-- Edit Button - Disabled when status is submitted -->
+                                            <button class="btn btn-outline-secondary {{ $meeting->status === 'submitted' ? 'disabled' : '' }}" 
+                                                onclick="{{ $meeting->status !== 'submitted' ? 'editCaseMeeting(' . $meeting->id . ')' : '' }}" 
+                                                title="{{ $meeting->status === 'submitted' ? 'Cannot edit submitted meeting' : 'Edit' }}">
                                                 <i class="ri-edit-line"></i>
                                             </button>
 

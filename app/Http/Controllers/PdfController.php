@@ -481,6 +481,7 @@ class PdfController extends Controller
         $rowHeight = 6; // Height of each row
         $maxRowsPerPage = 25; // Adjust based on your template
         $currentRow = 0;
+        $sequentialNumber = 1; // Sequential numbering starting from 1
 
         foreach ($caseMeetings as $caseMeeting) {
             $student = $caseMeeting->student;
@@ -502,16 +503,17 @@ class PdfController extends Controller
             // Write each column (adjust X positions and widths as needed)
             $pdf->SetFont('dejavusans', '', 8);
             $pdf->SetXY(22, $y); // No.
-            $pdf->Write(0, $caseMeeting->id);
+            $pdf->Write(0, $sequentialNumber);
             $pdf->SetXY(30, $y); // Name
             $pdf->Write(0, $student->full_name ?? '');
             $pdf->SetXY(84, $y); // Grade/Section
             $pdf->Write(0, ($student->grade_level ?? '') . ' - ' . ($student->section ?? ''));
             $pdf->SetXY(122, $y); // DCR Case No.
-            $pdf->Write(0, $caseMeeting->id);
+            $pdf->Write(0, $sequentialNumber);
             // Issues/Concerns and Remarks left blank, but no border/cell
 
             $currentRow++;
+            $sequentialNumber++; // Increment sequential number for next record
         }
 
         return response($pdf->Output('Disciplinary-Conference-Summary-Report-All.pdf', 'S'))

@@ -227,11 +227,67 @@ class TeacherController extends Controller
      */
     public function showRecommendForm()
     {
-        $students = Student::select('id', 'first_name', 'last_name', 'student_id')
-            ->orderBy('last_name', 'asc')
-            ->get();
+        $teacher = Auth::user();
+        $currentAcademicYear = date('Y') . '-' . (date('Y') + 1);
+        
+        // Get teacher record
+        $teacherRecord = Teacher::where('user_id', $teacher->id)->first();
+        
+        if (!$teacherRecord) {
+            return view('teacher.recommend-counseling', [
+                'students' => collect(),
+                'message' => 'Teacher record not found.'
+            ]);
+        }
+        
+        // Get teacher's advisory assignment (class adviser)
+        $advisoryAssignment = FacultyAssignment::where('teacher_id', $teacherRecord->id)
+            ->where('assignment_type', 'class_adviser')
+            ->where('academic_year', $currentAcademicYear)
+            ->where('status', 'active')
+            ->first();
+        
+        $students = collect();
+        $message = '';
+        
+        if ($advisoryAssignment) {
+            // Get students in advisory class only
+            $studentsQuery = Student::select('id', 'first_name', 'last_name', 'student_id')
+                ->where('grade_level', $advisoryAssignment->grade_level)
+                ->where('section', $advisoryAssignment->section)
+                ->where('academic_year', $currentAcademicYear)
+                ->where('is_active', true)
+                ->where('enrollment_status', 'enrolled');
+            
+            // Add strand filter if assignment has strand
+            if ($advisoryAssignment->strand) {
+                $studentsQuery->where('strand', $advisoryAssignment->strand);
+            }
+            
+            // Add track filter if assignment has track
+            if ($advisoryAssignment->track) {
+                $studentsQuery->where('track', $advisoryAssignment->track);
+            }
+            
+            $students = $studentsQuery->orderBy('last_name', 'asc')
+                ->orderBy('first_name', 'asc')
+                ->get();
+                
+            // Build class name for display
+            $className = $advisoryAssignment->grade_level . ' - ' . $advisoryAssignment->section;
+            if ($advisoryAssignment->strand) {
+                $className .= ' - ' . $advisoryAssignment->strand;
+                if ($advisoryAssignment->track) {
+                    $className .= ' - ' . $advisoryAssignment->track;
+                }
+            }
+            
+            $message = "Showing students from your advisory class: {$className}";
+        } else {
+            $message = 'You are not assigned as a class adviser for the current academic year.';
+        }
 
-        return view('teacher.recommend-counseling', compact('students'));
+        return view('teacher.recommend-counseling', compact('students', 'message'));
     }
 
     /**
