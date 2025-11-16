@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const rows = document.querySelectorAll('#studentsTable tbody tr');
       
       rows.forEach(row => {
-        if (row.cells.length < 5) return;
+        if (row.cells.length < 4) return;
         
         const studentInfo = row.cells[1].textContent.toLowerCase();
         const grade = row.cells[2].textContent;

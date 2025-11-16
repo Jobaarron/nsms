@@ -164,8 +164,8 @@
                         $canForward = true;
                         $forwardTooltip = 'Forward to Case Meeting';
                         
-                        // Disable if already resolved or dismissed
-                        if (in_array($violation->status, ['resolved', 'dismissed', 'in_progress'])) {
+                        // Disable if already resolved, dismissed, in_progress, or case_closed
+                        if (in_array($violation->status, ['resolved', 'dismissed', 'in_progress', 'case_closed'])) {
                             $canForward = false;
                             $forwardTooltip = 'Cannot forward: Violation is already ' . $violation->status;
                         } elseif ($violation->severity === 'major' || ($violation->effective_severity === 'major')) {
@@ -187,8 +187,8 @@
                       </button>
                       <button type="button" class="btn btn-sm btn-outline-danger"
                               onclick="deleteViolation({{ $violation->id }})"
-                              title="Delete"
-                              @if(in_array($violation->status, ['in_progress', 'resolved'])) disabled @endif>
+                              title="{{ $violation->status === 'pending' ? 'Delete' : 'Can only delete pending violations' }}"
+                              @if($violation->status !== 'pending') disabled @endif>
                         <i class="ri-delete-bin-line"></i>
                       </button>
                     </div>
@@ -260,6 +260,10 @@
                   <!-- Selected students will be added here -->
                 </div>
                 <small class="text-muted">Start typing to search for students</small>
+                <div class="alert alert-info mt-2 mb-0" style="font-size: 0.875em;">
+                  <i class="ri-information-line me-1"></i>
+                  <strong>Note:</strong> Only fully enrolled students can have violations recorded.
+                </div>
               </div>
             </div>
 
