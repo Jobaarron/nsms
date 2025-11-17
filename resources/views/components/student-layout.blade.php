@@ -28,6 +28,7 @@
   @vite(['resources/sass/app.scss','resources/js/app.js'])
   @vite(['resources/js/student-grades.js'])
   @vite(['resources/css/index_student.css'])
+  @vite('resources/js/face-registration.js')
 </head>
 <body>
   <!-- Mobile Navigation Toggle -->
