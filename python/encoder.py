@@ -76,8 +76,8 @@ if __name__ == '__main__':
     # Use adhoc SSL for self-signed certificates (requires pyopenssl)
     # For production, use proper certificates
     try:
-        app.run(host='0.0.0.0', port=5000, ssl_context='adhoc')
+        app.run(host='0.0.0.0', port=8000, ssl_context='adhoc')
     except Exception as e:
         print(f"HTTPS failed: {e}")
         print("Falling back to HTTP...")
-        app.run(host='0.0.0.0', port=5000)
+        app.run(host='0.0.0.0', port=8000)
