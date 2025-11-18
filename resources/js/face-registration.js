@@ -23,6 +23,14 @@ document.addEventListener('DOMContentLoaded', function() {
     let faceData = { landmarks: null, confidence: 0, encoding: null };
     let encodingPhoto = false;
 
+    // Initialize URLs with fallback
+    if (!window.faceRegistrationSaveUrl) {
+        window.faceRegistrationSaveUrl = '/student/face-registration/save';
+    }
+    if (!window.faceRegistrationDeleteUrl) {
+        window.faceRegistrationDeleteUrl = '/student/face-registration/delete';
+    }
+
     // Debug: Test all endpoints on load
     async function testEndpoints() {
         console.log('=== DEBUG: Testing Endpoints ===');
