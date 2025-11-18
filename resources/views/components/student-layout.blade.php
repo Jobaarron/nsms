@@ -29,9 +29,6 @@
   @vite(['resources/js/student-grades.js'])
   @vite(['resources/css/index_student.css'])
   @vite('resources/js/face-registration.js')
-  <script>
-    window.FLASK_SERVER_URL = '{{ env("FLASK_SERVER_URL", "https://143.198.208.141:5000") }}';
-  </script>
 </head>
 <body>
   <!-- Mobile Navigation Toggle -->
