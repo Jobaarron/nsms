@@ -13,29 +13,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const clearPhotosBtn = document.getElementById('clearPhotos');
     const faceStatus = document.getElementById('faceStatus');
 
-    // Configuration - Detect environment
+    // Configuration
     const FLASK_SERVER_URL = '/api/face';
     let isFlaskServerAvailable = false;
-
 
     // State variables
     let stream = null;
     let capturedPhoto = null;
     let faceData = { landmarks: null, confidence: 0, encoding: null };
     let encodingPhoto = false;
-
-    // Initialize URLs from meta tags or fallback
-    function getUrlFromMeta(metaName, fallback) {
-        const meta = document.querySelector(`meta[name="${metaName}"]`);
-        return meta ? meta.getAttribute('content') : fallback;
-    }
-    
-    if (!window.faceRegistrationSaveUrl) {
-        window.faceRegistrationSaveUrl = getUrlFromMeta('face-registration-save-url', '/student/face-registration/save');
-    }
-    if (!window.faceRegistrationDeleteUrl) {
-        window.faceRegistrationDeleteUrl = getUrlFromMeta('face-registration-delete-url', '/student/face-registration/delete');
-    }
 
     // Debug: Test all endpoints on load
     async function testEndpoints() {
@@ -78,21 +64,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check Flask server availability
     checkFlaskServer();
 
-   async function checkFlaskServer() {
-    try {
-        const response = await fetch(`${FLASK_SERVER_URL}/`, { 
-            method: 'GET', 
-            signal: AbortSignal.timeout(5000) 
-        });
-        isFlaskServerAvailable = response.ok;
-        if (isFlaskServerAvailable) console.log('Flask server is available');
-    } catch (error) {
-        isFlaskServerAvailable = false;
-        console.warn('Flask server is not available:', error.message);
-        faceStatus.textContent = 'Note: AI face encoding unavailable';
-        faceStatus.style.background = 'rgba(255,193,7,0.8)';
+    async function checkFlaskServer() {
+        try {
+            const response = await fetch(`${FLASK_SERVER_URL}/`, { method: 'GET', signal: AbortSignal.timeout(5000) });
+            isFlaskServerAvailable = response.ok;
+            if (isFlaskServerAvailable) console.log('Flask server is available');
+        } catch (error) {
+            isFlaskServerAvailable = false;
+            console.warn('Flask server is not available:', error.message);
+            faceStatus.textContent = 'Note: AI face encoding unavailable';
+            faceStatus.style.background = 'rgba(255,193,7,0.8)';
+        }
     }
-}
 
     // Start camera
     startCameraBtn.addEventListener('click', async function() {
