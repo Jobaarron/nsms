@@ -1,14 +1,14 @@
-// Enrollee Notices JavaScript
+// Enrollee Notifications JavaScript
 document.addEventListener('DOMContentLoaded', function() {
-    initializeNoticesPage();
+    initializeNotificationsPage();
 });
 
 // Global variables
-let currentNoticeId = null;
+let currentNotificationId = null;
 
-// Initialize notices functionality
-function initializeNoticesPage() {
-    console.log('Enrollee notices page initialized');
+// Initialize notifications functionality
+function initializeNotificationsPage() {
+    console.log('Enrollee notifications page initialized');
     
     // Auto-refresh notices every 2 minutes
     setInterval(function() {
@@ -17,43 +17,38 @@ function initializeNoticesPage() {
     }, 120000);
 }
 
-// View notice in modal
-function viewNotice(noticeId) {
-    currentNoticeId = noticeId;
+// View notification in modal
+function viewNotification(notificationId) {
+    currentNotificationId = notificationId;
     
-    // Fetch notice details
-    fetch(`/enrollee/notices/${noticeId}`)
+    // Fetch notification details
+    fetch(`/enrollee/notices/${notificationId}`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                populateNoticeModal(data.notice);
-                new bootstrap.Modal(document.getElementById('noticeViewModal')).show();
+                populateNotificationModal(data.notice);
+                new bootstrap.Modal(document.getElementById('notificationViewModal')).show();
                 
                 // Mark as read when viewed
                 if (!data.notice.is_read) {
-                    markAsRead(noticeId, false);
+                    markAsRead(notificationId, false);
                 }
             } else {
-                showAlert('Error loading notice details', 'danger');
+                showAlert('Error loading notification details', 'danger');
             }
         })
         .catch(error => {
-            console.error('Error fetching notice:', error);
-            showAlert('Error loading notice', 'danger');
+            console.error('Error fetching notification:', error);
+            showAlert('Error loading notification', 'danger');
         });
 }
 
-// Populate notice modal with data
-function populateNoticeModal(notice) {
-    document.getElementById('notice-modal-title').textContent = notice.title;
-    document.getElementById('notice-modal-message').innerHTML = notice.message.replace(/\n/g, '<br>');
+// Populate notification modal with data
+function populateNotificationModal(notice) {
+    document.getElementById('notification-modal-title').textContent = notice.title;
+    document.getElementById('notification-modal-message').innerHTML = notice.message.replace(/\n/g, '<br>');
     document.getElementById('notice-modal-date').textContent = notice.formatted_date;
     document.getElementById('notice-modal-from').textContent = notice.creator_name || 'Registrar';
-    
-    // Set priority badge
-    const priorityBadge = document.getElementById('notice-modal-priority');
-    priorityBadge.textContent = notice.priority.charAt(0).toUpperCase() + notice.priority.slice(1);
-    priorityBadge.className = `badge ${notice.priority_badge}`;
     
     // Set status badge
     const statusBadge = document.getElementById('notice-modal-status');
@@ -222,8 +217,8 @@ function updateUnreadCount() {
     }
 }
 
-// Refresh notices
-function refreshNotices() {
+// Refresh notifications
+function refreshNotifications() {
     location.reload();
 }
 
@@ -250,8 +245,8 @@ function showAlert(message, type = 'info') {
 }
 
 // Make functions globally available
-window.viewNotice = viewNotice;
+window.viewNotification = viewNotification;
 window.markAsRead = markAsRead;
 window.markAsReadFromModal = markAsReadFromModal;
 window.markAllAsRead = markAllAsRead;
-window.refreshNotices = refreshNotices;
+window.refreshNotifications = refreshNotifications;

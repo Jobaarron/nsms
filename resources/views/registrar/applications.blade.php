@@ -113,7 +113,7 @@
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="notices-tab" data-bs-toggle="tab" data-bs-target="#notices" type="button" role="tab">
-                    <i class="ri-notification-line me-2"></i>Applicant Notices
+                    <i class="ri-notification-line me-2"></i>Applicant Notifications
                 </button>
             </li>
             <li class="nav-item" role="presentation">
@@ -240,8 +240,8 @@
                                                         </button>
                                                     @endif
                                                     
-                                                    <!-- Send Notice (available for all applications) -->
-                                                    <button type="button" class="btn btn-sm btn-outline-info" onclick="sendNoticeToApplicant('{{ $application->application_id }}')" title="Send Notice">
+                                                    <!-- Send Notification (available for all applications) -->
+                                                    <button type="button" class="btn btn-sm btn-outline-info" onclick="sendNotificationToApplicant('{{ $application->application_id }}')" title="Send Notification">
                                                         <i class="ri-mail-send-line"></i>
                                                     </button>
                                                 </div>
@@ -308,37 +308,28 @@
 
 
 
-            <!-- Notices Tab -->
+            <!-- Notifications Tab -->
             <div class="tab-pane fade" id="notices" role="tabpanel">
                 <div class="card shadow">
                     <div class="card-header" style="background-color: var(--dark-green); color: white;">
                         <h5 class="mb-0">
                             <i class="ri-notification-line me-2"></i>
-                            Applicant Notice Management
+                            Applicant Notification Management
                         </h5>
                     </div>
                     <div class="card-body">
-                        <!-- Notice Actions -->
+                        <!-- Notification Actions -->
                         <div class="row mb-4">
                             <div class="col-md-8">
                                 <button class="btn btn-primary" onclick="openStudentSelectionModal()">
-                                    <i class="ri-user-search-line me-2"></i>Send Notice to Applicant
+                                    <i class="ri-user-search-line me-2"></i>Send Notification to Applicant
                                 </button>
-                                <small class="text-muted d-block mt-2">Select a applicant to send a personalized notice</small>
+                                <small class="text-muted d-block mt-2">Select a applicant to send a personalized notification</small>
                             </div>
                             <div class="col-md-4">
-                                <form method="GET" action="{{ route('registrar.applications') }}" class="d-flex">
-                                    <input type="hidden" name="tab" value="notices">
-                                    <select class="form-select me-2" name="notice_priority" onchange="this.form.submit()">
-                                        <option value="">All Priorities</option>
-                                        <option value="normal" {{ request('notice_priority') === 'normal' ? 'selected' : '' }}>Normal</option>
-                                        <option value="high" {{ request('notice_priority') === 'high' ? 'selected' : '' }}>High</option>
-                                        <option value="urgent" {{ request('notice_priority') === 'urgent' ? 'selected' : '' }}>Urgent</option>
-                                    </select>
-                                    <a href="{{ route('registrar.applications') }}?tab=notices" class="btn btn-outline-secondary">
-                                        <i class="ri-refresh-line"></i>
-                                    </a>
-                                </form>
+                                <a href="{{ route('registrar.applications') }}?tab=notices" class="btn btn-outline-secondary">
+                                    <i class="ri-refresh-line me-1"></i>Refresh
+                                </a>
                             </div>
                         </div>
 
@@ -347,10 +338,10 @@
                             <div class="spinner-border text-primary" role="status">
                                 <span class="visually-hidden">Loading...</span>
                             </div>
-                            <p class="text-muted mt-2">Loading notices...</p>
+                            <p class="text-muted mt-2">Loading notifications...</p>
                         </div>
 
-                        <!-- Notices Content -->
+                        <!-- Notifications Content -->
                         <div id="notices-content" style="display: none;">
                             <div class="table-responsive">
                                 <table class="table table-hover">
@@ -358,14 +349,13 @@
                                         <tr>
                                             <th>Title</th>
                                             <th>Recipient</th>
-                                            <th>Priority</th>
                                             <th>Date Sent</th>
                                             <th>Status</th>
                                             <th>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody id="notices-table-body">
-                                        <!-- Notices will be loaded here -->
+                                        <!-- Notifications will be loaded here -->
                                     </tbody>
                                 </table>
                             </div>
@@ -374,8 +364,8 @@
                         <!-- Empty State -->
                         <div id="notices-empty" class="text-center py-4" style="display: none;">
                             <i class="ri-notification-line fs-1 text-muted d-block mb-2"></i>
-                            <p class="text-muted">No notices sent yet</p>
-                            <small class="text-muted">Notices sent to students will appear here</small>
+                            <p class="text-muted">No notifications sent yet</p>
+                            <small class="text-muted">Notifications sent to students will appear here</small>
                         </div>
                     </div>
                 </div>

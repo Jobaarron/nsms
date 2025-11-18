@@ -1077,14 +1077,14 @@ function setupTabEventListeners() {
     
     if (noticesTab) {
         noticesTab.addEventListener('click', function() {
-            loadNoticesData();
+            loadNotificationsData();
         });
     }
 }
 
-// Load notices data
-function loadNoticesData() {
-    console.log('Loading notices data...');
+// Load notifications data
+function loadNotificationsData() {
+    console.log('Loading notifications data...');
     const loadingDiv = document.getElementById('notices-loading');
     const contentDiv = document.getElementById('notices-content');
     const emptyDiv = document.getElementById('notices-empty');
@@ -1104,14 +1104,14 @@ function loadNoticesData() {
         }
     })
         .then(response => {
-            console.log('Notices response status:', response.status);
+            console.log('Notifications response status:', response.status);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             return response.json();
         })
         .then(data => {
-            console.log('Notices data received:', data);
+            console.log('Notifications data received:', data);
             if (loadingDiv) loadingDiv.style.display = 'none';
             
             if (data.success && data.notices && data.notices.length > 0) {
@@ -1130,7 +1130,6 @@ function loadNoticesData() {
                                         '<span class="text-muted">Unknown</span>'
                                 }
                             </td>
-                            <td><span class="badge bg-${getPriorityColor(notice.priority)}">${escapeHtml(notice.priority || 'normal')}</span></td>
                             <td>${escapeHtml(notice.created_at || 'N/A')}</td>
                             <td><span class="badge bg-${notice.read_at ? 'success' : 'warning text-dark'}">${notice.read_at ? 'Read' : 'Unread'}</span></td>
                             <td>
@@ -1155,15 +1154,15 @@ function loadNoticesData() {
                 }
                 if (contentDiv) contentDiv.style.display = 'block';
             } else {
-                console.log('No notices found or empty response');
+                console.log('No notifications found or empty response');
                 if (emptyDiv) emptyDiv.style.display = 'block';
             }
         })
         .catch(error => {
-            console.error('Error loading notices:', error);
+            console.error('Error loading notifications:', error);
             if (loadingDiv) loadingDiv.style.display = 'none';
             if (emptyDiv) emptyDiv.style.display = 'block';
-            showAlert('Failed to load notices: ' + error.message, 'error');
+            showAlert('Failed to load notifications: ' + error.message, 'error');
         });
 }
 
@@ -1180,14 +1179,6 @@ function getStatusColor(status) {
     }
 }
 
-function getPriorityColor(priority) {
-    switch(priority) {
-        case 'urgent': return 'danger';
-        case 'high': return 'warning';
-        case 'normal': return 'secondary';
-        default: return 'secondary';
-    }
-}
 
 function getNoticeTypeColor(type) {
     switch(type) {
@@ -1419,7 +1410,7 @@ function updateDocumentStatus(documentIndex, status, notes = '') {
 }
 
 // Send notice to applicant
-function sendNoticeToApplicant(applicationId) {
+function sendNotificationToApplicant(applicationId) {
     console.log('sendNoticeToApplicant called with:', applicationId);
     console.log('Call stack:', new Error().stack);
     
@@ -1439,7 +1430,6 @@ function sendNoticeToApplicant(applicationId) {
         setTimeout(() => {
             const subjectEl = document.getElementById('notice-subject');
             const messageEl = document.getElementById('simple-notice-message');
-            const priorityEl = document.getElementById('notice-priority');
             
             // Initialize storage for form values if not exists
             if (!window.currentFormValues) {
@@ -1463,14 +1453,6 @@ function sendNoticeToApplicant(applicationId) {
                 messageEl.setAttribute('data-listener-added', 'true');
             }
             
-            if (priorityEl && !priorityEl.hasAttribute('data-listener-added')) {
-                priorityEl.addEventListener('change', function() {
-                    window.currentFormValues.priority = this.value;
-                    console.log('Priority updated:', this.value);
-                });
-                priorityEl.setAttribute('data-listener-added', 'true');
-            }
-            
             console.log('Event listeners ensured for reused modal');
         }, 100);
         
@@ -1485,24 +1467,22 @@ function sendNoticeToApplicant(applicationId) {
     if (existingModal) {
         const subjectEl = document.getElementById('notice-subject');
         const messageEl = document.getElementById('simple-notice-message');
-        const priorityEl = document.getElementById('notice-priority');
         
         existingValues = {
             subject: subjectEl?.value || '',
-            message: messageEl?.value || '',
-            priority: priorityEl?.value || 'normal'
+            message: messageEl?.value || ''
         };
         
         console.log('Preserving existing form values:', existingValues);
     }
     
-    // Create a simple notice modal
+    // Create a simple notification modal
     const modalHtml = `
         <div class="modal fade" id="noticeModal" tabindex="-1">
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">Send Notice to Applicant (${applicationId})</h5>
+                        <h5 class="modal-title">Send Notification to Applicant (${applicationId})</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
@@ -1515,19 +1495,11 @@ function sendNoticeToApplicant(applicationId) {
                                 <label for="simple-notice-message" class="form-label">Message</label>
                                 <input type="text" class="form-control" id="simple-notice-message" value="${existingValues.message || ''}" required placeholder="Enter your notice message...">
                             </div>
-                            <div class="mb-3">
-                                <label for="notice-priority" class="form-label">Priority</label>
-                                <select class="form-select" id="notice-priority" required>
-                                    <option value="normal" ${(existingValues.priority || 'normal') === 'normal' ? 'selected' : ''}>Normal</option>
-                                    <option value="high" ${existingValues.priority === 'high' ? 'selected' : ''}>High</option>
-                                    <option value="urgent" ${existingValues.priority === 'urgent' ? 'selected' : ''}>Urgent</option>
-                                </select>
-                            </div>
                         </form>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" class="btn btn-primary" id="submit-notice-btn" onclick="submitNotice()">Send Notice</button>
+                        <button type="button" class="btn btn-primary" id="submit-notice-btn" onclick="submitNotification()">Send Notification</button>
                     </div>
                 </div>
             </div>
@@ -1549,11 +1521,9 @@ function sendNoticeToApplicant(applicationId) {
     document.getElementById('noticeModal').addEventListener('hidden.bs.modal', function() {
         const subjectEl = document.getElementById('notice-subject');
         const messageEl = document.getElementById('simple-notice-message');
-        const priorityEl = document.getElementById('notice-priority');
         
         if (subjectEl) subjectEl.value = '';
         if (messageEl) messageEl.value = '';
-        if (priorityEl) priorityEl.value = 'normal';
         
         // Clear stored values
         window.currentFormValues = {};
@@ -1567,7 +1537,6 @@ function sendNoticeToApplicant(applicationId) {
     setTimeout(() => {
         const subjectEl = document.getElementById('notice-subject');
         const messageEl = document.getElementById('simple-notice-message');
-        const priorityEl = document.getElementById('notice-priority');
         
         // Initialize storage for form values
         if (!window.currentFormValues) {
@@ -1618,14 +1587,6 @@ function sendNoticeToApplicant(applicationId) {
             });
         }
         
-        // Track priority changes
-        if (priorityEl) {
-            priorityEl.addEventListener('change', function() {
-                window.currentFormValues.priority = this.value;
-                console.log('Priority updated:', this.value);
-            });
-        }
-        
         console.log('Real-time value tracking enabled');
     }, 100);
     
@@ -1633,7 +1594,6 @@ function sendNoticeToApplicant(applicationId) {
     setTimeout(() => {
         const newSubjectEl = document.getElementById('notice-subject');
         const newMessageEl = document.getElementById('simple-notice-message');
-        const newPriorityEl = document.getElementById('notice-priority');
         
         if (existingValues.subject && newSubjectEl) {
             newSubjectEl.value = existingValues.subject;
@@ -1641,22 +1601,13 @@ function sendNoticeToApplicant(applicationId) {
         if (existingValues.message && newMessageEl) {
             newMessageEl.value = existingValues.message;
         }
-        if (existingValues.priority && newPriorityEl) {
-            newPriorityEl.value = existingValues.priority;
-        }
         
         console.log('Values set after modal creation:', {
             subject: newSubjectEl?.value,
-            message: newMessageEl?.value,
-            priority: newPriorityEl?.value
+            message: newMessageEl?.value
         });
     }, 100);
     
-    console.log('Modal created and shown with preserved values');
-}
-
-// Test function to debug textarea issues
-function testTextareaValue() {
     const messageEl = document.getElementById('simple-notice-message');
     if (messageEl) {
         console.log('Testing textarea manipulation:');
@@ -1706,17 +1657,14 @@ function checkFormState() {
     
     const subjectEl = document.getElementById('notice-subject');
     const messageEl = document.getElementById('simple-notice-message');
-    const priorityEl = document.getElementById('notice-priority');
     
     console.log('Form elements:', {
         subject: !!subjectEl,
-        message: !!messageEl,
-        priority: !!priorityEl
+        message: !!messageEl
     });
     
     if (subjectEl) console.log('Subject value:', `"${subjectEl.value}"`);
     if (messageEl) console.log('Message value:', `"${messageEl.value}"`);
-    if (priorityEl) console.log('Priority value:', `"${priorityEl.value}"`);
     
     console.log('Tracked values:', window.currentFormValues);
     console.log('Current application ID:', currentApplicationId);
@@ -1725,8 +1673,8 @@ function checkFormState() {
 }
 
 
-// Submit notice
-function submitNotice() {
+// Submit notification
+function submitNotification() {
     // Prevent multiple submissions
     const submitBtn = document.querySelector('#noticeModal .btn-primary');
     if (submitBtn && submitBtn.disabled) {
@@ -1734,32 +1682,28 @@ function submitNotice() {
         return;
     }
     
-    // Check if this is the simple notice modal (Send Notice to Applicant)
+    // Check if this is the simple notification modal (Send Notification to Applicant)
     const isSimpleModal = document.getElementById('notice-subject') !== null;
     
-    let title, message, priority, type, recipients, specificApplicant;
+    let title, message, type, recipients, specificApplicant;
     
     if (isSimpleModal) {
-        // Simple notice modal fields
+        // Simple notification modal fields
         const subjectElement = document.getElementById('notice-subject');
         const messageElement = document.getElementById('simple-notice-message');
-        const priorityElement = document.getElementById('notice-priority');
         
         console.log('Form elements found:', {
             subjectElement: !!subjectElement,
-            messageElement: !!messageElement,
-            priorityElement: !!priorityElement
+            messageElement: !!messageElement
         });
         
         // Manually capture current values right before validation
         const currentSubject = subjectElement?.value?.trim() || '';
         const currentMessage = messageElement?.value?.trim() || '';
-        const currentPriority = priorityElement?.value?.trim() || 'normal';
         
         console.log('Current DOM values at submit time:', {
             subject: currentSubject,
-            message: currentMessage,
-            priority: currentPriority
+            message: currentMessage
         });
         
         // Force update tracked values with current DOM values
@@ -1770,16 +1714,13 @@ function submitNotice() {
         // Always use the most current DOM values
         window.currentFormValues.subject = currentSubject;
         window.currentFormValues.message = currentMessage;
-        window.currentFormValues.priority = currentPriority;
         
         title = currentSubject;
         message = currentMessage;
-        priority = currentPriority;
         
         console.log('Using current DOM values (forced sync):', {
             subject: title,
-            message: message,
-            priority: priority
+            message: message
         });
         
         // Additional debugging for message field
@@ -1809,22 +1750,19 @@ function submitNotice() {
         console.log('Simple modal values:', { 
             title: `"${title}"`, 
             message: `"${message}"`, 
-            priority: `"${priority}"`, 
             specificApplicant 
         });
         
-        if (!title || !message || !priority) {
+        if (!title || !message) {
             console.log('Validation failed - missing fields:', {
                 titleEmpty: !title,
-                messageEmpty: !message,
-                priorityEmpty: !priority
+                messageEmpty: !message
             });
             
             // Show specific field that's missing
             let missingFields = [];
             if (!title) missingFields.push('Subject');
             if (!message) missingFields.push('Message');
-            if (!priority) missingFields.push('Priority');
             
             showAlert(`Please fill in the following required fields: ${missingFields.join(', ')}`, 'error');
             
@@ -1833,8 +1771,6 @@ function submitNotice() {
                 subjectElement.focus();
             } else if (!message && messageElement) {
                 messageElement.focus();
-            } else if (!priority && priorityElement) {
-                priorityElement.focus();
             }
             
             return;
@@ -1855,15 +1791,14 @@ function submitNotice() {
             submitBtn.innerHTML = '<i class="ri-loader-4-line ri-spin me-1"></i>Sending...';
         }
     } else {
-        // Comprehensive create notice modal fields
+        // Comprehensive create notification modal fields
         title = document.getElementById('notice-title')?.value;
         message = document.getElementById('notice-message')?.value;
-        priority = document.getElementById('notice-priority')?.value;
         type = document.getElementById('notice-type')?.value;
         recipients = document.getElementById('notice-recipients')?.value;
         specificApplicant = document.getElementById('specific-applicant')?.value;
         
-        if (!title || !message || !priority || !type || !recipients) {
+        if (!title || !message || !type || !recipients) {
             showAlert('Please fill in all required fields', 'error');
             return;
         }
@@ -1880,21 +1815,19 @@ function submitNotice() {
     let url, method, requestData;
     
     if (isSimpleModal) {
-        // Simple notice modal - send to specific applicant
+        // Simple notification modal - send to specific applicant
         url = `/registrar/applications/${specificApplicant}/notice`;
         method = 'POST';
         requestData = {
             subject: title,
-            message: message,
-            priority: priority
+            message: message
         };
         console.log('Simple modal request:', { url, method, requestData });
     } else {
-        // Complex notice modal - use the original logic
+        // Complex notification modal - use the original logic
         requestData = {
             title: title,
             message: message,
-            priority: priority,
             type: type,
             recipients: recipients
         };

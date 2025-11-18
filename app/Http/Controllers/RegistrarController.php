@@ -205,8 +205,6 @@ class RegistrarController extends Controller
                 'enrollee_id' => $application->id,
                 'title' => 'Application Approved',
                 'message' => 'Congratulations! Your enrollment application has been approved. You can now proceed to the student portal for enrollment completion.',
-                'type' => 'success',
-                'priority' => 'high',
                 'is_global' => false,
                 'created_by' => Auth::id(),
             ]);
@@ -259,8 +257,6 @@ class RegistrarController extends Controller
                 'enrollee_id' => $application->id,
                 'title' => 'Application Declined',
                 'message' => 'We regret to inform you that your enrollment application has been declined. Reason: ' . $request->reason,
-                'type' => 'error',
-                'priority' => 'high',
                 'is_global' => false,
                 'created_by' => Auth::id(),
             ]);
@@ -299,8 +295,6 @@ class RegistrarController extends Controller
                         'id' => $notice->id,
                         'title' => $notice->title,
                         'message' => $notice->message,
-                        'type' => $notice->type,
-                        'priority' => $notice->priority,
                         'is_global' => $notice->is_global,
                         'enrollee' => $notice->enrollee ? [
                             'application_id' => $notice->enrollee->application_id,
@@ -527,8 +521,6 @@ class RegistrarController extends Controller
                 'enrollee_id' => $application->id,
                 'title' => 'Application Reconsidered',
                 'message' => "Your application has been reconsidered and is now under review again. Reason: {$request->reason}",
-                'type' => 'info',
-                'priority' => 'normal',
                 'is_global' => false,
                 'created_by' => auth()->id(),
             ]);
@@ -654,8 +646,6 @@ class RegistrarController extends Controller
                 'title' => 'Document ' . ucfirst($request->status),
                 'message' => "Your document '{$documents[$request->document_index]['type']}' has been {$request->status}." . 
                            ($request->notes ? " Notes: {$request->notes}" : ''),
-                'type' => $request->status === 'approved' ? 'success' : ($request->status === 'rejected' ? 'error' : 'info'),
-                'priority' => 'normal',
                 'is_global' => false,
                 'created_by' => Auth::guard('registrar')->id(),
             ]);
@@ -721,14 +711,12 @@ class RegistrarController extends Controller
             'id' => $id,
             'request_data' => $request->all(),
             'subject' => $request->get('subject'),
-            'message' => $request->get('message'),
-            'priority' => $request->get('priority')
+            'message' => $request->get('message')
         ]);
 
         $request->validate([
             'subject' => 'required|string|max:255',
-            'message' => 'required|string|max:1000',
-            'priority' => 'required|in:normal,high,urgent'
+            'message' => 'required|string|max:1000'
         ]);
 
         try {
@@ -742,7 +730,6 @@ class RegistrarController extends Controller
                 'enrollee_id' => $application->id,
                 'title' => $request->subject,
                 'message' => $request->message,
-                'priority' => $request->priority,
                 'is_global' => false,
                 'created_by' => Auth::id(),
             ]);
@@ -794,8 +781,6 @@ class RegistrarController extends Controller
                     'enrollee_id' => $application->id,
                     'title' => 'Application Approved',
                     'message' => 'Congratulations! Your enrollment application has been approved. You can now proceed to the student portal for enrollment completion.',
-                    'type' => 'success',
-                    'priority' => 'high',
                     'is_global' => false,
                     'created_by' => Auth::id(),
                 ]);
@@ -846,8 +831,6 @@ class RegistrarController extends Controller
                     'enrollee_id' => $application->id,
                     'title' => 'Application Declined',
                     'message' => 'We regret to inform you that your enrollment application has been declined. Reason: ' . $request->reason,
-                    'type' => 'error',
-                    'priority' => 'high',
                     'is_global' => false,
                     'created_by' => Auth::id(),
                 ]);
@@ -917,8 +900,6 @@ class RegistrarController extends Controller
                     'enrollee_id' => $request->specific_applicant,
                     'title' => $request->title,
                     'message' => $request->message,
-                    'type' => $request->type,
-                    'priority' => $request->priority,
                     'is_global' => false,
                     'created_by' => Auth::id(),
                 ]);
@@ -939,8 +920,6 @@ class RegistrarController extends Controller
                         'enrollee_id' => $enrollee->id,
                         'title' => $request->title,
                         'message' => $request->message,
-                        'type' => $request->type,
-                        'priority' => $request->priority,
                         'is_global' => $request->recipients === 'all',
                         'created_by' => Auth::id(),
                     ]);
@@ -968,8 +947,6 @@ class RegistrarController extends Controller
         $request->validate([
             'title' => 'required|string|max:255',
             'message' => 'required|string',
-            'type' => 'required|in:info,success,warning,error',
-            'priority' => 'required|in:normal,high,urgent',
             'recipients' => 'required|in:all,pending,approved,specific',
             'specific_applicant' => 'required_if:recipients,specific|exists:enrollees,id'
         ]);
@@ -981,8 +958,6 @@ class RegistrarController extends Controller
             $notice->update([
                 'title' => $request->title,
                 'message' => $request->message,
-                'type' => $request->type,
-                'priority' => $request->priority,
             ]);
 
             // Handle recipient changes if needed
@@ -1024,7 +999,6 @@ class RegistrarController extends Controller
                 'application_ids.*' => 'required|string',
                 'title' => 'required|string|max:255',
                 'message' => 'required|string',
-                'priority' => 'required|in:normal,high,urgent',
                 'type' => 'nullable|in:info,success,warning,error'
             ]);
 
@@ -1038,8 +1012,6 @@ class RegistrarController extends Controller
                         'enrollee_id' => $enrollee->id,
                         'title' => $request->title,
                         'message' => $request->message,
-                        'type' => $request->type ?? 'info',
-                        'priority' => $request->priority,
                         'is_global' => false,
                         'created_by' => Auth::id(),
                     ]);
@@ -1062,8 +1034,6 @@ class RegistrarController extends Controller
             $request->validate([
                 'title' => 'required|string|max:255',
                 'message' => 'required|string',
-                'type' => 'required|in:info,success,warning,error',
-                'priority' => 'required|in:normal,high,urgent',
                 'status_filter' => 'nullable|in:pending,approved,rejected',
                 'grade_filter' => 'nullable|string'
             ]);
@@ -1087,8 +1057,6 @@ class RegistrarController extends Controller
                         'enrollee_id' => $enrollee->id,
                         'title' => $request->title,
                         'message' => $request->message,
-                        'type' => $request->type,
-                        'priority' => $request->priority,
                         'is_global' => !$request->status_filter && !$request->grade_filter,
                         'created_by' => Auth::id(),
                     ]);

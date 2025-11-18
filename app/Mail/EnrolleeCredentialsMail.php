@@ -31,7 +31,7 @@ class EnrolleeCredentialsMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Nicolites Portal | Enrollment Application Credentials',
+            subject: 'Nicolites Portal | Adminssion Application Credentials',
         );
     }
 

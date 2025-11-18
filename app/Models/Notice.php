@@ -13,7 +13,6 @@ class Notice extends Model
     protected $fillable = [
         'title',
         'message',
-        'priority',
         'enrollee_id',
         'created_by',
         'is_read',
@@ -114,29 +113,6 @@ class Notice extends Model
         });
     }
 
-    /**
-     * Scope for priority notices
-     */
-    public function scopePriority($query, $priority)
-    {
-        return $query->where('priority', $priority);
-    }
-
-    /**
-     * Scope for urgent notices
-     */
-    public function scopeUrgent($query)
-    {
-        return $query->where('priority', 'urgent');
-    }
-
-    /**
-     * Scope for high priority notices
-     */
-    public function scopeHigh($query)
-    {
-        return $query->where('priority', 'high');
-    }
 
     /**
      * Mark notice as read
@@ -160,19 +136,6 @@ class Notice extends Model
         ]);
     }
 
-    /**
-     * Get priority badge class
-     */
-    public function getPriorityBadgeAttribute()
-    {
-        $classes = [
-            'normal' => 'bg-secondary',
-            'high' => 'bg-warning',
-            'urgent' => 'bg-danger'
-        ];
-
-        return $classes[$this->priority] ?? 'bg-secondary';
-    }
 
     /**
      * Get formatted created date
@@ -211,12 +174,11 @@ class Notice extends Model
     /**
      * Static method to create a notice for specific enrollee
      */
-    public static function createForEnrollee($enrolleeId, $title, $message, $priority = 'normal', $createdBy = null)
+    public static function createForEnrollee($enrolleeId, $title, $message, $createdBy = null)
     {
         return static::create([
             'title' => $title,
             'message' => $message,
-            'priority' => $priority,
             'enrollee_id' => $enrolleeId,
             'created_by' => $createdBy,
             'is_global' => false,
@@ -227,12 +189,11 @@ class Notice extends Model
     /**
      * Static method to create a global notice
      */
-    public static function createGlobal($title, $message, $priority = 'normal', $createdBy = null, $targetStatus = null, $targetGradeLevel = null)
+    public static function createGlobal($title, $message, $createdBy = null, $targetStatus = null, $targetGradeLevel = null)
     {
         return static::create([
             'title' => $title,
             'message' => $message,
-            'priority' => $priority,
             'created_by' => $createdBy,
             'is_global' => true,
             'target_status' => $targetStatus,
@@ -247,7 +208,6 @@ class Notice extends Model
     public static function getForEnrollee($enrolleeId, $limit = null)
     {
         $query = static::forEnrollee($enrolleeId)
-            ->orderBy('priority', 'desc')
             ->orderBy('created_at', 'desc');
 
         if ($limit) {

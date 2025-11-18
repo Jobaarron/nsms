@@ -104,7 +104,7 @@
           @endphp
           <li class="nav-item mb-2">
             <a class="nav-link {{ request()->routeIs('enrollee.notices') ? 'active' : '' }} position-relative" href="{{ route('enrollee.notices') }}">
-              <i class="ri-notification-line me-2"></i>Notices
+              <i class="ri-notification-line me-2"></i>Notifications
               @if($unreadCount > 0)
                 <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem; padding: 0.25rem 0.4rem;">
                   {{ $unreadCount }}
@@ -157,7 +157,7 @@
             @endphp
             <li class="nav-item mb-2">
               <a class="nav-link {{ request()->routeIs('enrollee.notices') ? 'active' : '' }} position-relative" href="{{ route('enrollee.notices') }}">
-                <i class="ri-notification-line me-2"></i>Notices
+                <i class="ri-notification-line me-2"></i>Notifications
                 @if($unreadCount > 0)
                   <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem; padding: 0.25rem 0.4rem;">
                     {{ $unreadCount }}

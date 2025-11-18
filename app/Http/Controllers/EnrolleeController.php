@@ -563,11 +563,9 @@ class EnrolleeController extends Controller
                     'id' => $notice->id,
                     'title' => $notice->title,
                     'message' => $notice->message,
-                    'priority' => $notice->priority,
-                    'priority_badge' => $notice->priority_badge,
                     'is_read' => $notice->is_read,
                     'formatted_date' => $notice->formatted_date,
-                    'created_by_name' => $notice->createdBy->name ?? 'School Administration'
+                    'creator_name' => $notice->creator_name ?? 'Registrar'
                 ]
             ]);
 
