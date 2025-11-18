@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const faceStatus = document.getElementById('faceStatus');
 
     // Configuration
-    const FLASK_SERVER_URL = '/api/face/';
+    const FLASK_SERVER_URL = 'https://143.198.208.141:5000';
     let isFlaskServerAvailable = false;
 
     // State variables
