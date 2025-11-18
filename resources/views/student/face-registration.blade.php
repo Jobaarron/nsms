@@ -292,8 +292,8 @@
     @push('scripts')
         @vite('resources/js/face-registration.js')
     <script>
-        window.faceRegistrationSaveUrl = "{{ route('student.face.save') }}"; // or hardcoded URL
-        window.faceRegistrationDeleteUrl = "{{ route('student.face.delete') }}";
+        window.faceRegistrationSaveUrl = "{{ route('student.face-registration.save') }}";
+        window.faceRegistrationDeleteUrl = "{{ route('student.face-registration.delete') }}";
     </script>
     @endpush
 </x-student-layout>
