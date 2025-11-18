@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const faceStatus = document.getElementById('faceStatus');
 
     // Configuration
-    const FLASK_SERVER_URL = 'https://edusphere-nsms.com/api/face';
+    const FLASK_SERVER_URL = '/api/face/';
     let isFlaskServerAvailable = false;
 
     // State variables
