@@ -482,7 +482,6 @@ class FacultyHeadController extends Controller
             'grade_level' => 'required|string',
             'section' => 'required|string',
             'assignment_type' => 'required|in:subject_teacher,class_adviser',
-            'effective_date' => 'required|date',
             'notes' => 'nullable|string|max:500'
         ]);
 
@@ -512,7 +511,7 @@ class FacultyHeadController extends Controller
             'assignment_type' => $request->assignment_type,
             'status' => 'active',
             'assigned_date' => now(),
-            'effective_date' => $request->effective_date,
+            'effective_date' => now(),
             'notes' => $request->notes
         ]);
 
@@ -608,7 +607,6 @@ class FacultyHeadController extends Controller
             'section' => 'required|string',
             'strand' => 'nullable|string|in:STEM,ABM,HUMSS,TVL',
             'track' => 'nullable|string|in:ICT,H.E.',
-            'effective_date' => 'required|date',
             'notes' => 'nullable|string|max:500',
             'replace_assignment_id' => 'nullable|exists:faculty_assignments,id'
         ]);
@@ -640,7 +638,7 @@ class FacultyHeadController extends Controller
                 'assignment_type' => 'class_adviser',
                 'status' => 'active',
                 'assigned_date' => now(),
-                'effective_date' => $request->effective_date,
+                'effective_date' => now(),
                 'notes' => $request->notes
             ]);
 
@@ -684,7 +682,6 @@ class FacultyHeadController extends Controller
             'section' => 'required|string',
             'strand' => 'nullable|string|in:STEM,ABM,HUMSS,TVL',
             'track' => 'nullable|string|in:ICT,H.E.',
-            'effective_date' => 'required|date',
             'notes' => 'nullable|string|max:500',
             'replace_assignment_id' => 'nullable|exists:faculty_assignments,id'
         ]);
@@ -728,7 +725,7 @@ class FacultyHeadController extends Controller
                 'assignment_type' => 'subject_teacher',
                 'status' => 'active',
                 'assigned_date' => now(),
-                'effective_date' => $request->effective_date,
+                'effective_date' => now(),
                 'notes' => $request->notes
             ]);
 

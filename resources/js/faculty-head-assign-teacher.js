@@ -1288,10 +1288,6 @@ function showSectionDetailsAccordion(sectionId, grade, section, strand, track) {
                                         `).join('')}
                                     </select>
                                 </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Effective Date</label>
-                                    <input type="date" name="effective_date" class="form-control" value="${new Date().toISOString().split('T')[0]}" required>
-                                </div>
                                 <div class="col-md-2">
                                     <label class="form-label">&nbsp;</label>
                                     <button type="submit" class="btn btn-success w-100">
@@ -1324,10 +1320,6 @@ function showSectionDetailsAccordion(sectionId, grade, section, strand, track) {
                                             <option value="${t.teacher?.id || ''}">${t.name}</option>
                                         `).join('')}
                                     </select>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Effective Date</label>
-                                    <input type="date" name="effective_date" class="form-control" value="${new Date().toISOString().split('T')[0]}" required>
                                 </div>
                                 <div class="col-md-2">
                                     <label class="form-label">&nbsp;</label>
@@ -1389,10 +1381,6 @@ function showSectionDetailsAccordion(sectionId, grade, section, strand, track) {
                                                             `).join('')}
                                                         </select>
                                                     </div>
-                                                    <div class="col-md-4">
-                                                        <label class="form-label">Effective Date</label>
-                                                        <input type="date" name="effective_date" class="form-control" value="${new Date().toISOString().split('T')[0]}" required>
-                                                    </div>
                                                     <div class="col-md-2">
                                                         <label class="form-label">&nbsp;</label>
                                                         <button type="submit" class="btn btn-success w-100">
@@ -1446,10 +1434,6 @@ function showSectionDetailsAccordion(sectionId, grade, section, strand, track) {
                                                                         <option value="${t.teacher?.id || ''}">${t.name}</option>
                                                                     `).join('')}
                                                                 </select>
-                                                            </div>
-                                                            <div class="mb-3">
-                                                                <label class="form-label">Effective Date</label>
-                                                                <input type="date" name="effective_date" class="form-control" value="${new Date().toISOString().split('T')[0]}" required>
                                                             </div>
                                                         </div>
                                                         <div class="modal-footer">
