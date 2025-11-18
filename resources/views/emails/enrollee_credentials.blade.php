@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enrollment Application Submitted - Nicolites Portal: School Management System</title>
+    <title>Admission Application Submitted - Nicolites Portal: School Management System</title>
     <style>
         @media only screen and (max-width: 600px) {
             .container { width: 100% !important; }
@@ -23,7 +23,7 @@
         <tr>
             <td style="background-color: #014421; color: white; padding: 40px 30px; text-align: center;" class="mobile-padding">
                 <h1 style="font-size: 32px; font-weight: 700; margin: 0; color: white;" class="mobile-title">
-                    📝 Enrollment Application Submitted
+                    📝 Admission Application Submitted
                 </h1>
                 <p style="font-size: 18px; margin: 10px 0 0 0; color: #d0d8c3;" class="mobile-font">
                     Nicolites Portal: School Management System
@@ -38,7 +38,7 @@
                 <!-- Welcome Message -->
                 <p style="font-size: 18px; color: #012d17; margin-bottom: 30px; line-height: 1.6;" class="mobile-font">
                     Hello, {{ $enrollee->first_name }}!<br>
-                    Thank you for submitting your enrollment application to Nicolites School. Your application has been successfully received and is now being processed.
+                    Thank you for submitting your admission application to Nicolites School. Your application has been successfully received and is now being processed.
                 </p>
 
                 <!-- Application Status -->

@@ -17,7 +17,6 @@ return new class extends Migration
             // Notice content
             $table->string('title');
             $table->text('message');
-            $table->enum('priority', ['normal', 'high', 'urgent'])->default('normal');
             
             // Targeting
             $table->foreignId('enrollee_id')->nullable()->constrained('enrollees')->onDelete('cascade');
@@ -41,7 +40,6 @@ return new class extends Migration
             // Indexes for better performance
             $table->index(['enrollee_id', 'is_read']);
             $table->index(['is_global', 'target_status']);
-            $table->index(['priority', 'created_at']);
             $table->index('created_at');
         });
     }

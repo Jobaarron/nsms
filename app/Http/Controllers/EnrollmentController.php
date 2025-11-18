@@ -216,15 +216,15 @@ class EnrollmentController extends Controller
         // 8) Send enrollment credentials email
         try {
             Mail::to($enrollee->email)->send(new EnrolleeCredentialsMail($enrollee));
-            Log::info('Enrollment credentials email sent to: ' . $enrollee->email . ' with Application ID: ' . $enrollee->application_id);
+            Log::info('Applicant credentials email sent to: ' . $enrollee->email . ' with Application ID: ' . $enrollee->application_id);
         } catch (\Exception $e) {
-            Log::error('Failed to send enrollment credentials email: ' . $e->getMessage());
+            Log::error('Failed to send applicant credentials email: ' . $e->getMessage());
         }
 
         // 9) Redirect back with success message
         return redirect()
             ->route('enroll.create')
-            ->with('success', 'Enrollment application submitted successfully! Please check your email for your login credentials.');
+            ->with('success', 'Admission Application submitted successfully! Please check your email for your login credentials.');
     }
 
     /**

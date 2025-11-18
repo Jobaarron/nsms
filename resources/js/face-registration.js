@@ -14,7 +14,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const faceStatus = document.getElementById('faceStatus');
 
     // Configuration
-    const FLASK_SERVER_URL = 'https://143.198.208.141:5000';
+    // Use environment variable or fallback to localhost
+    const FLASK_SERVER_URL = window.FLASK_SERVER_URL || 'https://143.198.208.141:5000';
     let isFlaskServerAvailable = false;
 
     // State variables
@@ -66,12 +67,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
     async function checkFlaskServer() {
         try {
-            const response = await fetch(`${FLASK_SERVER_URL}/`, { method: 'GET', signal: AbortSignal.timeout(5000) });
+            const response = await fetch(`${FLASK_SERVER_URL}/`, { 
+                method: 'GET', 
+                signal: AbortSignal.timeout(5000),
+                // Allow self-signed certificates
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
             isFlaskServerAvailable = response.ok;
-            if (isFlaskServerAvailable) console.log('Flask server is available');
+            if (isFlaskServerAvailable) console.log('✅ Flask server is available');
         } catch (error) {
             isFlaskServerAvailable = false;
-            console.warn('Flask server is not available:', error.message);
+            console.warn('⚠️ Flask server is not available:', error.message);
+            console.warn('Flask URL:', FLASK_SERVER_URL);
             faceStatus.textContent = 'Note: AI face encoding unavailable';
             faceStatus.style.background = 'rgba(255,193,7,0.8)';
         }
