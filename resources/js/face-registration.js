@@ -78,18 +78,21 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check Flask server availability
     checkFlaskServer();
 
-    async function checkFlaskServer() {
+   async function checkFlaskServer() {
     try {
-        const response = await fetch(`${FLASK_SERVER_URL}/health`, { method: 'GET', signal: AbortSignal.timeout(5000) });
+        const response = await fetch(`${FLASK_SERVER_URL}/`, { 
+            method: 'GET', 
+            signal: AbortSignal.timeout(5000) 
+        });
         isFlaskServerAvailable = response.ok;
         if (isFlaskServerAvailable) console.log('Flask server is available');
-        } catch (error) {
+    } catch (error) {
         isFlaskServerAvailable = false;
         console.warn('Flask server is not available:', error.message);
         faceStatus.textContent = 'Note: AI face encoding unavailable';
         faceStatus.style.background = 'rgba(255,193,7,0.8)';
     }
-    }
+}
 
     // Start camera
     startCameraBtn.addEventListener('click', async function() {
