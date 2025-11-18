@@ -290,20 +290,6 @@
     </div>
 
     @push('scripts')
-        <script>
-            window.faceRegistrationSaveUrl = '{{ route("student.face-registration.save") }}';
-            window.faceRegistrationDeleteUrl = '{{ route("student.face-registration.delete") }}';
-        </script>
         @vite('resources/js/face-registration.js')
-        <script>
-        // Call this function after a successful face registration save
-        function updateCurrentFaceImage(newImageUrl) {
-            const img = document.getElementById('currentFaceImage');
-            if (img && newImageUrl) {
-                img.src = newImageUrl;
-            }
-        }
-        // Example usage: updateCurrentFaceImage('data:image/jpeg;base64,...')
-        </script>
     @endpush
 </x-student-layout>

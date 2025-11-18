@@ -1,3 +1,16 @@
+// Global Configuration
+window.faceRegistrationSaveUrl = '/student/face-registration/save';
+window.faceRegistrationDeleteUrl = '/student/face-registration/delete';
+window.FLASK_SERVER_URL = '/api/face';
+
+// Update current face image after successful registration
+function updateCurrentFaceImage(newImageUrl) {
+    const img = document.getElementById('currentFaceImage');
+    if (img && newImageUrl) {
+        img.src = newImageUrl;
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Face registration JS loaded');
 
@@ -13,8 +26,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const clearPhotosBtn = document.getElementById('clearPhotos');
     const faceStatus = document.getElementById('faceStatus');
 
-    // Configuration
-    const FLASK_SERVER_URL = '/api/face';
+    // Configuration (already set globally above)
+    const FLASK_SERVER_URL = window.FLASK_SERVER_URL;
     let isFlaskServerAvailable = false;
 
     // State variables
