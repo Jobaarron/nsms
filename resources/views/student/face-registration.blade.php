@@ -290,10 +290,10 @@
     </div>
 
     @push('scripts')
-        @vite(['resources/js/face-registration.js'])
     <script>
         window.faceRegistrationSaveUrl = "{{ route('student.face-registration.save') }}";
         window.faceRegistrationDeleteUrl = "{{ route('student.face-registration.delete') }}";
     </script>
+        @vite(['resources/js/face-registration.js'])
     @endpush
 </x-student-layout>
