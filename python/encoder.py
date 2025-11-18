@@ -19,6 +19,10 @@ model.prepare(ctx_id=-1)  # CPU only
 def health_check():
     return jsonify({'status': 'Face encoding server is running', 'version': '1.0'}), 200
 
+@app.route('/health', methods=['GET'])
+def health():
+    return jsonify({'status': 'Face encoding server is running', 'version': '1.0'}), 200
+
 @app.route('/encode-face', methods=['POST'])
 def encode_face():
     try:
@@ -70,6 +74,11 @@ def encode_face():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/encode', methods=['POST'])
+def encode():
+    """Alias for /encode-face endpoint for compatibility"""
+    return encode_face()
 
 if __name__ == '__main__':
     print("Starting Flask server with InsightFace (CPU)...")
