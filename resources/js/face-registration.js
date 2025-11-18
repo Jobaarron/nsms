@@ -14,21 +14,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const faceStatus = document.getElementById('faceStatus');
 
     // Configuration
-    const FLASK_SERVER_URL = '/api/face';
+    const FLASK_SERVER_URL = 'http://10.135.254.46:5000';
     let isFlaskServerAvailable = false;
-
-    // Initialize URLs from meta tags or fallback
-    function getUrlFromMeta(metaName, fallback) {
-        const meta = document.querySelector(`meta[name="${metaName}"]`);
-        return meta ? meta.getAttribute('content') : fallback;
-    }
-    
-    if (!window.faceRegistrationSaveUrl) {
-        window.faceRegistrationSaveUrl = getUrlFromMeta('face-registration-save-url', '/student/face-registration/save');
-    }
-    if (!window.faceRegistrationDeleteUrl) {
-        window.faceRegistrationDeleteUrl = getUrlFromMeta('face-registration-delete-url', '/student/face-registration/delete');
-    }
 
     // State variables
     let stream = null;
