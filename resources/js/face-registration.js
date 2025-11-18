@@ -13,9 +13,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const clearPhotosBtn = document.getElementById('clearPhotos');
     const faceStatus = document.getElementById('faceStatus');
 
-    // Configuration
-    const FLASK_SERVER_URL = '/api/face';
+    // Configuration - Detect environment
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const FLASK_SERVER_URL = isLocalhost ? 'http://localhost:5000' : '/api/face';
     let isFlaskServerAvailable = false;
+    
+    console.log('🔧 Environment:', isLocalhost ? 'LOCAL' : 'PRODUCTION');
+    console.log('🔧 Flask URL:', FLASK_SERVER_URL);
 
     // State variables
     let stream = null;
