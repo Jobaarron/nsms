@@ -23,12 +23,17 @@ document.addEventListener('DOMContentLoaded', function() {
     let faceData = { landmarks: null, confidence: 0, encoding: null };
     let encodingPhoto = false;
 
-    // Initialize URLs with fallback
+    // Initialize URLs from meta tags or fallback
+    function getUrlFromMeta(metaName, fallback) {
+        const meta = document.querySelector(`meta[name="${metaName}"]`);
+        return meta ? meta.getAttribute('content') : fallback;
+    }
+    
     if (!window.faceRegistrationSaveUrl) {
-        window.faceRegistrationSaveUrl = '/student/face-registration/save';
+        window.faceRegistrationSaveUrl = getUrlFromMeta('face-registration-save-url', '/student/face-registration/save');
     }
     if (!window.faceRegistrationDeleteUrl) {
-        window.faceRegistrationDeleteUrl = '/student/face-registration/delete';
+        window.faceRegistrationDeleteUrl = getUrlFromMeta('face-registration-delete-url', '/student/face-registration/delete');
     }
 
     // Debug: Test all endpoints on load
