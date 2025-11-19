@@ -1,5 +1,4 @@
 <x-student-layout>
-    @vite(['resources/js/student-subjects.js'])
     @push('styles')
         @vite('resources/css/index_student.css')
     @endpush

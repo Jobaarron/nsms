@@ -3,6 +3,9 @@
 let totalAmount = 0;
 let preferredScheduleDate = '';
 
+// Log when script loads
+console.log('student-enrollment.js loaded, totalAmount:', totalAmount);
+
 // Global variables will be initialized by initializeEnrollmentData() function called from PHP
 
 // Define functions globally so they can be accessed by onclick handlers
@@ -79,11 +82,16 @@ window.populatePaymentDates = function() {
 }
 
 window.populatePaymentAmounts = function() {
+    console.log('populatePaymentAmounts called, totalAmount:', totalAmount);
+    
     // Full payment amount
     const fullPaymentAmount = document.querySelector('input[name="full_payment_amount"]');
     if (fullPaymentAmount) {
         fullPaymentAmount.value = totalAmount.toFixed(2);
+        console.log('Set full payment amount to:', totalAmount.toFixed(2));
         fullPaymentAmount.readOnly = true;
+    } else {
+        console.log('Full payment amount input NOT found');
     }
     
     // Quarterly amounts
@@ -122,8 +130,15 @@ window.populatePaymentAmounts = function() {
     const monthlyTotalElement = document.getElementById('monthly-total-amount');
     const monthlyPerPaymentElement = document.getElementById('monthly-per-payment');
     
-    if (fullTotalElement) fullTotalElement.textContent = totalAmount.toLocaleString('en-US', {minimumFractionDigits: 2});
-    if (quarterlyTotalElement) quarterlyTotalElement.textContent = totalAmount.toLocaleString('en-US', {minimumFractionDigits: 2});
+    console.log('Updating breakdown totals with totalAmount:', totalAmount);
+    if (fullTotalElement) {
+        fullTotalElement.textContent = totalAmount.toLocaleString('en-US', {minimumFractionDigits: 2});
+        console.log('Updated full-total-amount to:', totalAmount);
+    }
+    if (quarterlyTotalElement) {
+        quarterlyTotalElement.textContent = totalAmount.toLocaleString('en-US', {minimumFractionDigits: 2});
+        console.log('Updated quarterly-total-amount to:', totalAmount);
+    }
     if (quarterlyPerPaymentElement) quarterlyPerPaymentElement.textContent = parseFloat(quarterlyAmount).toLocaleString('en-US', {minimumFractionDigits: 2});
     if (monthlyTotalElement) monthlyTotalElement.textContent = totalAmount.toLocaleString('en-US', {minimumFractionDigits: 2});
     if (monthlyPerPaymentElement) monthlyPerPaymentElement.textContent = parseFloat(monthlyAmount).toLocaleString('en-US', {minimumFractionDigits: 2});
@@ -150,13 +165,25 @@ window.showPaymentScheduleCard = function(mode) {
 
 // Initialize global variables from Laravel data
 window.initializeEnrollmentData = function(amount, scheduleDate) {
+    console.log('initializeEnrollmentData called with:', { amount, scheduleDate });
     totalAmount = amount;
     preferredScheduleDate = scheduleDate;
-    console.log('Enrollment data initialized:', { totalAmount, preferredScheduleDate });
+    console.log('Enrollment data initialized, totalAmount is now:', totalAmount);
     
     // Update amount displays immediately
     if (typeof window.populatePaymentAmounts === 'function') {
+        console.log('Calling populatePaymentAmounts immediately');
         window.populatePaymentAmounts();
+    } else {
+        console.log('populatePaymentAmounts function NOT available');
+    }
+    
+    // If DOM is already loaded, populate dates immediately
+    if (document.readyState === 'loading') {
+        console.log('DOM still loading, will wait for DOMContentLoaded');
+    } else {
+        console.log('DOM already loaded, calling populatePaymentDates immediately');
+        window.populatePaymentDates();
     }
 }
 
@@ -198,6 +225,26 @@ document.addEventListener('DOMContentLoaded', function() {
     paymentOptions.forEach(option => {
         option.addEventListener('change', function() {
             console.log('Payment mode changed to:', this.value);
+            
+            // Show confirmation for payment method selection
+            const paymentModeNames = {
+                'full': 'Full Payment',
+                'quarterly': 'Quarterly Payment (4 payments)',
+                'monthly': 'Monthly Payment (10 payments)'
+            };
+            
+            const modeName = paymentModeNames[this.value] || this.value;
+            const confirmed = confirm(`You have selected: ${modeName}\n\nClick OK to confirm this payment method or Cancel to choose another.`);
+            
+            if (!confirmed) {
+                // Revert to previous selection
+                const previousOption = document.querySelector('input[name="payment_method"]:not([value="' + this.value + '"])');
+                if (previousOption) {
+                    previousOption.checked = true;
+                }
+                return;
+            }
+            
             updatePaymentSchedule(this.value);
             updatePaymentOptionStyles();
             window.showPaymentScheduleCard(this.value);

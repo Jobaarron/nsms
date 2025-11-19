@@ -1,9 +1,16 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Face registration JS loaded');
 
-    // DOM Elements
+    // Check if we're on the face registration page
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
+    
+    // Exit early if face registration elements don't exist
+    if (!video || !canvas) {
+        console.log('Face registration elements not found on this page, skipping initialization');
+        return;
+    }
+    
     const ctx = canvas.getContext('2d');
 
     const startCameraBtn = document.getElementById('startCamera');

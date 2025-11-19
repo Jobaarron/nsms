@@ -14,7 +14,7 @@
   }
 </style>
 <x-student-layout>
-  @vite(['resources/css/student_violations.css', 'resources/js/student-violation.js'])
+  @vite(['resources/css/student_violations.css'])
 
   <!-- Page Header -->
   <div class="row mb-4">

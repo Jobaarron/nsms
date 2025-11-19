@@ -71,40 +71,54 @@ class StudentScheduleController extends Controller
      */
     public function getScheduleData(Request $request)
     {
-        $student = Auth::guard('student')->user();
-        
-        if (!$student) {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
-
-        $weeklySchedule = $student->getWeeklySchedule();
-        
-        // Format for calendar display
-        $events = [];
-        foreach ($weeklySchedule as $day => $schedules) {
-            foreach ($schedules as $schedule) {
-                $events[] = [
-                    'id' => $schedule->id,
-                    'title' => $schedule->subject->subject_name,
-                    'teacher' => $schedule->teacher->name,
-                    'room' => $schedule->room,
-                    'day' => $day,
-                    'start_time' => $schedule->start_time->format('g:i A'),
-                    'end_time' => $schedule->end_time->format('g:i A'),
-                    'time_range' => $schedule->start_time->format('g:i A') . ' - ' . $schedule->end_time->format('g:i A'),
-                    'color' => $this->getSubjectColor($schedule->subject->category)
-                ];
+        try {
+            $student = Auth::guard('student')->user();
+            
+            if (!$student) {
+                return response()->json(['error' => 'Unauthorized'], 401);
             }
-        }
 
-        return response()->json([
-            'events' => $events,
-            'student_info' => [
-                'grade_level' => $student->grade_level,
-                'section' => $student->section,
-                'academic_year' => $student->academic_year
-            ]
-        ]);
+            $weeklySchedule = $student->getWeeklySchedule();
+            
+            // Format for calendar display
+            $events = [];
+            foreach ($weeklySchedule as $day => $schedules) {
+                foreach ($schedules as $schedule) {
+                    // Skip if relationships don't exist
+                    if (!$schedule->subject || !$schedule->teacher) {
+                        continue;
+                    }
+                    
+                    $events[] = [
+                        'id' => $schedule->id,
+                        'title' => $schedule->subject->subject_name ?? 'Unknown Subject',
+                        'teacher' => $schedule->teacher->name ?? 'Unknown Teacher',
+                        'room' => $schedule->room ?? 'TBA',
+                        'day' => $day,
+                        'start_time' => $schedule->start_time->format('g:i A'),
+                        'end_time' => $schedule->end_time->format('g:i A'),
+                        'time_range' => $schedule->start_time->format('g:i A') . ' - ' . $schedule->end_time->format('g:i A'),
+                        'color' => $this->getSubjectColor($schedule->subject->category ?? 'default')
+                    ];
+                }
+            }
+
+            return response()->json([
+                'events' => $events,
+                'student_info' => [
+                    'grade_level' => $student->grade_level,
+                    'section' => $student->section,
+                    'academic_year' => $student->academic_year
+                ]
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error in getScheduleData: ' . $e->getMessage());
+            return response()->json([
+                'events' => [],
+                'error' => 'Failed to load schedule data',
+                'student_info' => []
+            ], 200);
+        }
     }
 
     /**

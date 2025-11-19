@@ -2,12 +2,12 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     
     @php
-        // Calculate total fees at the top so it's available for JavaScript
-        $academicYear = $student->academic_year ?? (date('Y') . '-' . (date('Y') + 1));
-        $feeCalculation = \App\Models\Fee::calculateTotalFeesForGrade($student->grade_level, $academicYear);
-        $fees = $feeCalculation['fees'];
-        $totalAmount = $feeCalculation['total_amount'];
-        $breakdown = $feeCalculation['breakdown'];
+    // $totalAmount is passed from the controller
+    // Calculate fees breakdown if not already available
+    $academicYear = $student->academic_year ?? (date('Y') . '-' . (date('Y') + 1));
+    $feeCalculation = \App\Models\Fee::calculateTotalFeesForGrade($student->grade_level, $academicYear);
+    $fees = $feeCalculation['fees'];
+    $breakdown = $feeCalculation['breakdown'];
     @endphp
     
     <div class="container-fluid px-4 py-4">
@@ -524,16 +524,20 @@
         </form>
 
     @push('scripts')
+        <script>
+            window.enrollmentTotalAmount = {{ $totalAmount ?? 0 }};
+            window.enrollmentScheduleDate = '{{ now()->addDays(7)->format('Y-m-d') }}';
+        </script>
         @vite('resources/js/student-enrollment.js')
         <script>
-            document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
                 if (typeof window.initializeEnrollmentData === 'function') {
                     window.initializeEnrollmentData(
-                        {{ $totalAmount ?? 0 }},
-                        '{{ now()->addDays(7)->format('Y-m-d') }}'
+                        window.enrollmentTotalAmount,
+                        window.enrollmentScheduleDate
                     );
                 }
-            });
+            }, 100);
         </script>
     @endpush
 </x-student-layout>

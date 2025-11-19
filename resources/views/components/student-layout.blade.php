@@ -26,9 +26,14 @@
 
 
   @vite(['resources/sass/app.scss','resources/js/app.js'])
-  @vite(['resources/js/student-grades.js'])
   @vite(['resources/css/index_student.css'])
   @vite(['resources/js/face-registration.js'])
+  @vite(['resources/js/student-dashboard.js'])
+  @vite(['resources/js/student-grades.js'])
+  @vite(['resources/js/student-schedule.js'])
+  @vite(['resources/js/student-subjects.js'])
+  @vite(['resources/js/student-violation.js'])
+  @vite(['resources/js/student-enrollment.js'])
 </head>
 <body>
   <!-- Mobile Navigation Toggle -->
@@ -323,5 +328,6 @@
       </main>
     </div>
   </div>
+  @stack('scripts')
 </body>
 </html>
