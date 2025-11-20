@@ -155,7 +155,7 @@
               of {{ $archivedViolations->total() }} archived violations
             </small>
           </div>
-          {{ $archivedViolations->links() }}
+          {{ $archivedViolations->links('pagination.custom') }}
         </div>
         @endif
       </div>

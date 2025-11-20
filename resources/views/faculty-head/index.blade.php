@@ -325,9 +325,28 @@
                   <div class="card-header">
                     <h6 class="mb-0">
                       <i class="ri-group-line me-2"></i>Student List
+                      <span class="badge bg-primary ms-2" id="studentCount">0 Students</span>
                     </h6>
                   </div>
-                  <div class="card-body">
+                  <div class="card-body border-bottom">
+                    <div class="row align-items-center mb-3">
+                      <div class="col-md-8">
+                        <div class="input-group">
+                          <span class="input-group-text">
+                            <i class="ri-search-line"></i>
+                          </span>
+                          <input type="text" class="form-control" id="searchStudents" placeholder="Search by student ID, name, or contact...">
+                          <button class="btn btn-outline-secondary" type="button" id="clearSearchStudents">
+                            <i class="ri-close-line"></i>
+                          </button>
+                        </div>
+                      </div>
+                      <div class="col-md-4 text-end">
+                        <small class="text-muted">Found: <span id="foundStudents">0</span> students</small>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="card-body pt-0">
                     <div class="table-responsive">
                       <table class="table table-hover align-middle">
                         <thead class="table-light">
@@ -344,7 +363,7 @@
                           </tr>
                         </thead>
                         <tbody id="studentTableBody">
-                          <!-- Dynamic student rows -->
+                          <!-- Dynamic student rows with search data attributes -->
                         </tbody>
                       </table>
                     </div>
@@ -356,6 +375,14 @@
                   <i class="ri-group-line display-1 text-muted mb-3"></i>
                   <h5 class="text-muted">No Students Found</h5>
                   <p class="text-muted">No students are enrolled in this class.</p>
+                </div>
+                
+                <!-- Search Empty State -->
+                <div id="studentsSearchEmptyState" class="text-center py-5" style="display: none;">
+                  <i class="ri-search-line display-1 text-muted mb-3"></i>
+                  <h5 class="text-muted">No Students Found</h5>
+                  <p class="text-muted">No students match your search criteria.</p>
+                  <small class="text-muted">Try searching with different keywords</small>
                 </div>
               </div>
             </div>

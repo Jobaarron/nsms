@@ -143,6 +143,26 @@
         </button>
       </div>
     </div>
+
+    <!-- Search Template -->
+    <div id="search-template" class="p-3 border-bottom bg-light">
+      <div class="row">
+        <div class="col-md-8">
+          <div class="input-group">
+            <span class="input-group-text"><i class="ri-search-line"></i></span>
+            <input type="text" class="form-control search-input" placeholder="Search by name or student ID..." autocomplete="off">
+            <button class="btn btn-outline-secondary clear-search" type="button" title="Clear search">
+              <i class="ri-close-line"></i>
+            </button>
+          </div>
+        </div>
+        <div class="col-md-4 text-end">
+          <div class="text-muted mt-2 student-count-info">
+            <span class="total-students">0</span> students found
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   @vite('resources/js/registrar-class-lists.js')

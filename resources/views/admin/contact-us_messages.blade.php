@@ -169,7 +169,7 @@
 
                 <!-- Pagination -->
                 <div class="card-footer bg-transparent">
-                    {{ $messages->appends(request()->query())->links() }}
+                    {{ $messages->appends(request()->query())->links('pagination.custom') }}
                 </div>
             @else
                 <div class="text-center py-5">

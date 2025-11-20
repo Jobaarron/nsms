@@ -188,7 +188,7 @@
                     </div>
                     <div class="d-flex gap-2">
                         <a href="{{ route('guidance.counseling-sessions.index') }}" class="btn btn-outline-secondary">
-                            <i class="ri-arrow-left-line me-2"></i>Back to Counseling Sessions
+                            Back to Counseling Sessions
                         </a>
                         <button class="btn btn-outline-danger" onclick="lockArchive()">
                             <i class="ri-lock-line me-2"></i>Lock Archive
@@ -451,9 +451,18 @@
                             </div>
                         </div>
                     </div>
-                    @if($archivedSessions->hasPages())
+                    @if($archivedSessions->hasPages() || $archivedSessions->count() > 0)
                     <div class="card-footer bg-white border-0">
-                        {{ $archivedSessions->links() }}
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="text-muted">
+                                Showing {{ $archivedSessions->firstItem() ?? 0 }} to {{ $archivedSessions->lastItem() ?? 0 }} of {{ $archivedSessions->total() }} {{ Str::plural('archived record', $archivedSessions->total()) }}
+                            </div>
+                            @if($archivedSessions->hasPages())
+                                <div>
+                                    {{ $archivedSessions->links('pagination.custom') }}
+                                </div>
+                            @endif
+                        </div>
                     </div>
                     @endif
                 </div>
@@ -553,7 +562,7 @@
                             Contact your system administrator if you need immediate access.
                         </p>
                         <button class="btn btn-outline-dark mt-3" onclick="location.href='{{ route('guidance.counseling-sessions.index') }}'">
-                            <i class="ri-arrow-left-line me-2"></i>Back to Counseling Sessions
+                            Back to Counseling Sessions
                         </button>
                     </div>
                 </div>

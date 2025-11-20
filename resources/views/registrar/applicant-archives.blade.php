@@ -253,15 +253,15 @@
         <!-- PAGINATION -->
         @if(request('status') === 'approved' && isset($approvedApplications))
             <div class="d-flex justify-content-center mt-4">
-                {{ $approvedApplications->appends(request()->query())->links() }}
+                {{ $approvedApplications->appends(request()->query())->links('pagination.custom') }}
             </div>
         @elseif(request('status') === 'declined' && isset($declinedApplications))
             <div class="d-flex justify-content-center mt-4">
-                {{ $declinedApplications->appends(request()->query())->links() }}
+                {{ $declinedApplications->appends(request()->query())->links('pagination.custom') }}
             </div>
         @elseif(!request('status') && isset($allArchives))
             <div class="d-flex justify-content-center mt-4">
-                {{ $allArchives->appends(request()->query())->links() }}
+                {{ $allArchives->appends(request()->query())->links('pagination.custom') }}
             </div>
         @endif
     </div>

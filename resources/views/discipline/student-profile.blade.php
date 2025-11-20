@@ -124,7 +124,7 @@
                             of {{ $students->total() }} students
                         </small>
                     </div>
-                    {{ $students->links() }}
+                    {{ $students->links('pagination.custom') }}
                 </div>
                 @endif
             </div>

@@ -277,7 +277,7 @@
                                 Showing {{ $applications->firstItem() ?? 0 }} to {{ $applications->lastItem() ?? 0 }} of {{ $applications->total() }} applications
                             </div>
                             <div>
-                                {{ $applications->appends(request()->query())->links() }}
+                                {{ $applications->appends(request()->query())->links('pagination.custom') }}
                             </div>
                         </div>
                         @endif

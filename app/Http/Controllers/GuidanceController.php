@@ -122,7 +122,7 @@ class GuidanceController extends Controller
             ->orderByRaw('CASE WHEN student_violations.reported_by IS NOT NULL THEN 0 ELSE 1 END')
             ->orderBy('case_meetings.created_at', 'desc')
             ->select('case_meetings.*')
-            ->paginate(20);
+            ->paginate(10);
 
         $students = Student::select('id', 'first_name', 'last_name', 'student_id')
             ->orderBy('last_name', 'asc')
@@ -560,7 +560,7 @@ class GuidanceController extends Controller
 
         $caseMeetings = CaseMeeting::with(['student', 'counselor', 'sanctions'])
             ->orderBy('scheduled_date', 'desc')
-            ->paginate(20);
+            ->paginate(10);
 
         $students = Student::select('id', 'first_name', 'last_name', 'student_id')
             ->orderBy('last_name', 'asc')
@@ -828,12 +828,12 @@ class GuidanceController extends Controller
         $counselingSessions = CounselingSession::with(['student', 'counselor', 'recommender'])
             ->where('status', '!=', 'completed')
             ->orderByRaw("CASE WHEN status = 'recommended' THEN 0 ELSE 1 END, start_date DESC")
-            ->paginate(20);
+            ->paginate(10);
 
         $scheduledSessions = CounselingSession::with('student')
             ->where('status', 'scheduled')
             ->orderBy('start_date', 'desc')
-            ->get();
+            ->paginate(10, ['*'], 'scheduled_page');
 
         $students = Student::select('id', 'first_name', 'last_name', 'student_id')
             ->orderBy('last_name', 'asc')
@@ -955,7 +955,7 @@ class GuidanceController extends Controller
             ->values();
 
         // Manual pagination
-        $perPage = 20;
+        $perPage = 10;
         $currentPage = request()->get('page', 1);
         $offset = ($currentPage - 1) * $perPage;
         $paginatedRecords = $allRecords->slice($offset, $perPage);

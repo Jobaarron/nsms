@@ -151,9 +151,18 @@
                             </tbody>
                         </table>
                     </div>
-                    @if($counselingSessions->hasPages())
+                    @if($counselingSessions->hasPages() || $counselingSessions->count() > 0)
                     <div class="card-footer bg-white border-0">
-                        {{ $counselingSessions->links() }}
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="text-muted">
+                                Showing {{ $counselingSessions->firstItem() ?? 0 }} to {{ $counselingSessions->lastItem() ?? 0 }} of {{ $counselingSessions->total() }} {{ Str::plural('counseling session', $counselingSessions->total()) }}
+                            </div>
+                            @if($counselingSessions->hasPages())
+                                <div>
+                                    {{ $counselingSessions->links('pagination.custom') }}
+                                </div>
+                            @endif
+                        </div>
                     </div>
                     @endif
                 </div>
@@ -193,6 +202,20 @@
                             </tbody>
                         </table>
                     </div>
+                    @if($scheduledSessions->hasPages() || $scheduledSessions->count() > 0)
+                    <div class="card-footer bg-white border-0">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="text-muted">
+                                Showing {{ $scheduledSessions->firstItem() ?? 0 }} to {{ $scheduledSessions->lastItem() ?? 0 }} of {{ $scheduledSessions->total() }} {{ Str::plural('scheduled session', $scheduledSessions->total()) }}
+                            </div>
+                            @if($scheduledSessions->hasPages())
+                                <div>
+                                    {{ $scheduledSessions->appends(request()->query())->links('pagination.custom') }}
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                    @endif
                 </div>
             </div>
 
