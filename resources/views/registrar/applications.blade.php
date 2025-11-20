@@ -41,67 +41,46 @@
         @endif
 
         <!-- Summary Cards -->
-        <div class="row g-3 mb-4">
-            <div class="col-6 col-lg-3">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0">
-                                <i class="ri-file-list-line fs-2 text-primary"></i>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <div class="fw-bold fs-4">{{ $totalApplications ?? 0 }}</div>
-                                <div class="text-muted small">Total Applications</div>
-                            </div>
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid var(--primary-color, #2B7A3B) !important;">
+                    <div class="card-body d-flex align-items-center py-3">
+                        <div class="me-3">
+                            <i class="ri-file-list-line" style="font-size: 2.5rem; color: var(--primary-color, #2B7A3B);"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h2 class="mb-0 fw-bold" style="font-size: 2rem;">{{ $totalApplications ?? 0 }}</h2>
+                            <p class="text-muted mb-0">Total Applications</p>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-6 col-lg-3">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0">
-                                <i class="ri-time-line fs-2 text-warning"></i>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <div class="fw-bold fs-4">{{ $pendingApplications ?? 0 }}</div>
-                                <div class="text-muted small">Pending Review</div>
-                            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #FFA500 !important;">
+                    <div class="card-body d-flex align-items-center py-3">
+                        <div class="me-3">
+                            <i class="ri-time-line" style="font-size: 2.5rem; color: #FFA500;"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h2 class="mb-0 fw-bold" style="font-size: 2rem;">{{ $pendingApplications ?? 0 }}</h2>
+                            <p class="text-muted mb-0">Pending Review</p>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-6 col-lg-3">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0">
-                                <i class="ri-close-line fs-2 text-danger"></i>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <div class="fw-bold fs-4">{{ $declinedApplications ?? 0 }}</div>
-                                <div class="text-muted small">Declined</div>
-                            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #dc3545 !important;">
+                    <div class="card-body d-flex align-items-center py-3">
+                        <div class="me-3">
+                            <i class="ri-close-line" style="font-size: 2.5rem; color: #dc3545;"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h2 class="mb-0 fw-bold" style="font-size: 2rem;">{{ $declinedApplications ?? 0 }}</h2>
+                            <p class="text-muted mb-0">Declined</p>
                         </div>
                     </div>
                 </div>
             </div>
-            <!-- <div class="col-6 col-lg-3">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0">
-                                <i class="ri-calendar-check-line fs-2 text-info"></i>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <div class="fw-bold fs-4">{{ $scheduledAppointments ?? 0 }}</div>
-                                <div class="text-muted small">Scheduled</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div> -->
         </div>
 
         <!-- Navigation Tabs -->
@@ -319,18 +298,11 @@
                     </div>
                     <div class="card-body">
                         <!-- Notification Actions -->
-                        <div class="row mb-4">
-                            <div class="col-md-8">
-                                <button class="btn btn-primary" onclick="openStudentSelectionModal()">
-                                    <i class="ri-user-search-line me-2"></i>Send Notification to Applicant
-                                </button>
-                                <small class="text-muted d-block mt-2">Select a applicant to send a personalized notification</small>
-                            </div>
-                            <div class="col-md-4">
-                                <a href="{{ route('registrar.applications') }}?tab=notices" class="btn btn-outline-secondary">
-                                    <i class="ri-refresh-line me-1"></i>Refresh
-                                </a>
-                            </div>
+                        <div class="mb-4">
+                            <button class="btn btn-primary" onclick="openStudentSelectionModal()">
+                                <i class="ri-user-search-line me-2"></i>Send Notification to Applicant
+                            </button>
+                            <small class="text-muted d-block mt-2">Select a applicant to send a personalized notification</small>
                         </div>
 
                         <!-- Loading State -->
@@ -558,23 +530,9 @@
                 </div>
                 <div class="modal-body">
                     <form id="create-notice-form">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="notice-title" class="form-label">Notice Title</label>
-                                    <input type="text" class="form-control" id="notice-title" required>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="notice-priority" class="form-label">Priority</label>
-                                    <select class="form-select" id="notice-priority" required>
-                                        <option value="normal">Normal</option>
-                                        <option value="high">High</option>
-                                        <option value="urgent">Urgent</option>
-                                    </select>
-                                </div>
-                            </div>
+                        <div class="mb-3">
+                            <label for="notice-title" class="form-label">Notice Title</label>
+                            <input type="text" class="form-control" id="notice-title" required>
                         </div>
 
                         <div class="mb-3">
@@ -627,23 +585,9 @@
                 </div>
                 <div class="modal-body">
                     <form id="bulk-notice-form">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="bulk-notice-title" class="form-label">Notice Title</label>
-                                    <input type="text" class="form-control" id="bulk-notice-title" required>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="bulk-notice-priority" class="form-label">Priority</label>
-                                    <select class="form-select" id="bulk-notice-priority" required>
-                                        <option value="normal">Normal</option>
-                                        <option value="high">High</option>
-                                        <option value="urgent">Urgent</option>
-                                    </select>
-                                </div>
-                            </div>
+                        <div class="mb-3">
+                            <label for="bulk-notice-title" class="form-label">Notice Title</label>
+                            <input type="text" class="form-control" id="bulk-notice-title" required>
                         </div>
 
                         <div class="mb-3">
@@ -719,10 +663,7 @@
                         </div>
                         <div class="card-body">
                             <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <p><strong>Priority:</strong> <span id="view-notice-priority" class="badge"></span></p>
-                                </div>
-                                <div class="col-md-6">
+                                <div class="col-md-12">
                                     <p><strong>Sent:</strong> <span id="view-notice-date"></span></p>
                                     <p><strong>Status:</strong> <span id="view-notice-status" class="badge"></span></p>
                                 </div>

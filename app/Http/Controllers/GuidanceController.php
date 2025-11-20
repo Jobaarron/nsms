@@ -968,7 +968,10 @@ class GuidanceController extends Controller
             ['path' => request()->url(), 'pageName' => 'page']
         );
 
-        return view('guidance.archived-counseling-sessions', compact('archivedSessions'));
+        // Archive password
+        $archivePassword = 'nsmsguidance';
+
+        return view('guidance.archived-counseling-sessions', compact('archivedSessions', 'archivePassword'));
     }
 
     /**
@@ -2280,25 +2283,26 @@ public function getDisciplineVsTotalStats(Request $request)
                 ];
             });
 
-        // Overdue follow-ups
-        $overdueFollowups = \App\Models\CounselingSession::with(['student'])
-            ->whereNotNull('follow_up_date')
-            ->where('follow_up_date', '<', $this->schoolNow())
-            ->where('status', '!=', 'completed')
-            ->orderBy('follow_up_date', 'asc')
+        // Upcoming counseling sessions
+        $upcomingSessions = \App\Models\CounselingSession::with(['student'])
+            ->where('status', 'scheduled')
+            ->where('start_date', '>=', $this->schoolNow())
+            ->where('start_date', '<=', $this->schoolNow()->addWeek())
+            ->orderBy('start_date', 'asc')
             ->get()
             ->map(function($session) {
                 return [
-                    'type' => 'followup',
-                    'title' => 'Follow-up Required',
+                    'type' => 'counseling',
+                    'title' => 'Counseling Session',
                     'student' => ($session->student->first_name ?? 'Unknown') . ' ' . ($session->student->last_name ?? ''),
-                    'date' => $session->follow_up_date,
-                    'priority' => 'high',
-                    'status' => 'overdue'
+                    'date' => $session->start_date,
+                    'time' => $session->time,
+                    'priority' => 'medium',
+                    'status' => $session->status
                 ];
             });
 
-        $tasks = $tasks->concat($upcomingMeetings)->concat($overdueFollowups)->sortBy('date');
+        $tasks = $tasks->concat($upcomingMeetings)->concat($upcomingSessions)->sortBy('date');
 
         return response()->json([
             'success' => true,

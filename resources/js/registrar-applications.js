@@ -73,7 +73,7 @@ function initializeSystem() {
                     loadDocumentsData();
                     break;
                 case '#notices':
-                    loadNoticesData();
+                    loadNotificationsData();
                     break;
                 case '#data-change-requests':
                     // Data change requests are handled by their own dedicated script
@@ -1239,6 +1239,16 @@ function getNoticeTypeColor(type) {
     }
 }
 
+function getPriorityColor(priority) {
+    switch(priority) {
+        case 'urgent': return 'danger';
+        case 'high': return 'warning';
+        case 'normal': return 'info';
+        case 'low': return 'secondary';
+        default: return 'primary';
+    }
+}
+
 function escapeHtml(text) {
     if (!text) return '';
     const div = document.createElement('div');
@@ -1946,6 +1956,9 @@ function submitNotification() {
     });
 }
 
+// Create alias for sendNoticeToApplicant (naming consistency)
+const sendNoticeToApplicant = sendNotificationToApplicant;
+
 // Bulk approve applications
 function bulkApprove() {
     if (selectedApplications.length === 0) {
@@ -2288,9 +2301,8 @@ function showStudentsError(message) {
 function submitBulkNotice() {
     const subject = document.getElementById('bulk-notice-subject')?.value;
     const message = document.getElementById('bulk-notice-message')?.value;
-    const priority = document.getElementById('bulk-notice-priority')?.value;
     
-    if (!subject || !message || !priority) {
+    if (!subject || !message) {
         showAlert('Please fill in all required fields', 'error');
         return;
     }
@@ -2317,7 +2329,6 @@ function submitBulkNotice() {
             application_ids: selectedApplications,
             title: subject,
             message: message,
-            priority: priority,
             type: 'info'
         })
     })
@@ -2578,18 +2589,16 @@ function sendNotice() {
     }
 
     const title = document.getElementById('notice-title')?.value;
-    const priority = document.getElementById('notice-priority')?.value;
     const message = document.getElementById('notice-message')?.value;
 
-    if (!title || !priority || !message) {
+    if (!title || !message) {
         showAlert('Please fill in all required fields', 'warning');
         return;
     }
 
     const data = {
         subject: title,
-        message: message,
-        priority: priority
+        message: message
     };
 
     // Use the existing sendNoticeToApplicant function if we have a current application
@@ -2690,7 +2699,6 @@ function viewNotice(noticeId) {
             // Populate modal with null checks
             const titleEl = document.getElementById('view-notice-title');
             const typeEl = document.getElementById('view-notice-type');
-            const priorityEl = document.getElementById('view-notice-priority');
             const dateEl = document.getElementById('view-notice-date');
             const statusEl = document.getElementById('view-notice-status');
             const recipientEl = document.getElementById('view-notice-recipient');
@@ -2700,10 +2708,6 @@ function viewNotice(noticeId) {
             if (typeEl) {
                 typeEl.textContent = notice.type || 'N/A';
                 typeEl.className = `badge bg-${getNoticeTypeColor(notice.type)}`;
-            }
-            if (priorityEl) {
-                priorityEl.textContent = notice.priority || 'N/A';
-                priorityEl.className = `badge bg-${getPriorityColor(notice.priority)}`;
             }
             if (dateEl) dateEl.textContent = notice.created_at || 'N/A';
             if (statusEl) {
@@ -2830,17 +2834,18 @@ function updateApplicationsCount(counts) {
 
 
 // Global function assignments for onclick handlers
+// Expose viewNotice first as it's being called from dynamically generated content
+window.viewNotice = viewNotice;
 window.viewApplication = viewApplication;
 window.approveApplication = approveApplication;
 window.declineApplication = declineApplication;
 window.sendNoticeToApplicant = sendNoticeToApplicant;
 window.approveAppointment = approveAppointment;
 window.rejectAppointment = rejectAppointment;
-window.viewNotice = viewNotice;
 window.openBulkNoticeModal = openBulkNoticeModal;
 window.openCreateNoticeModal = openCreateNoticeModal;
 window.editNotice = editNotice;
-window.submitNotice = submitNotice;
+// window.submitNotice is defined later as alias to sendNotice
 window.sendBulkNotice = sendBulkNotice;
 window.previewRecipients = previewRecipients;
 window.approveDocument = approveDocument;
@@ -2854,7 +2859,7 @@ window.submitBulkNotice = submitBulkNotice;
 window.openStudentSelectionModal = openStudentSelectionModal;
 window.loadStudentsForSelection = loadStudentsForSelection;
 window.selectStudentForNotice = selectStudentForNotice;
-window.testTextareaValue = testTextareaValue;
+window.submitNotification = submitNotification;
 window.checkFormState = checkFormState;
 window.bulkDelete = bulkDelete;
 window.exportSelected = exportSelected;
@@ -3001,13 +3006,15 @@ window.submitDecline = submitDecline;
 window.refreshApplications = refreshApplications;
 window.exportApplications = exportApplications;
 window.loadAppointmentsData = loadAppointmentsData;
-window.loadNoticesData = loadNoticesData;
+window.loadNoticesData = loadNotificationsData; // Alias for loadNotificationsData
+window.loadNotificationsData = loadNotificationsData;
+window.submitNotice = sendNotice; // Alias for sendNotice
+window.sendNotice = sendNotice;
 window.populateDocumentsModal = populateDocumentsModal;
 window.getDocumentStatusBadge = getDocumentStatusBadge;
 window.getFileIcon = getFileIcon;
 window.formatDateTime = formatDateTime;
 window.getStatusColor = getStatusColor;
-window.getAppointmentStatusColor = getAppointmentStatusColor;
 window.getPriorityColor = getPriorityColor;
 window.viewDocumentInTab = viewDocumentInTab;
 window.approveDocumentInTab = approveDocumentInTab;

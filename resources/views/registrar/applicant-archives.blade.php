@@ -226,18 +226,11 @@
                                         <button class="btn btn-outline-primary" onclick="viewArchiveApplication({{ $application->id }})" title="View Details">
                                             <i class="ri-eye-line"></i>
                                         </button>
-                                        @if($application->enrollment_status === 'approved' && !$application->student)
-                                        <button class="btn btn-outline-success" onclick="generateStudentCredentials({{ $application->id }})" title="Generate Student Credentials">
-                                            <i class="ri-key-line"></i>
-                                        </button>
-                                        @elseif($application->enrollment_status === 'rejected')
+                                        @if($application->enrollment_status === 'rejected')
                                         <button class="btn btn-outline-warning" onclick="reconsiderApplication({{ $application->id }})" title="Reconsider Application">
                                             <i class="ri-refresh-line"></i>
                                         </button>
                                         @endif
-                                        <button class="btn btn-outline-info" onclick="sendNoticeToApplicant('{{ $application->application_id }}')" title="Send Notice">
-                                            <i class="ri-mail-send-line"></i>
-                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -319,30 +312,6 @@
                     <button type="button" class="btn btn-warning" onclick="confirmReconsider()">
                         <i class="ri-refresh-line me-1"></i>Reconsider Application
                     </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- STUDENT CREDENTIALS MODAL -->
-    <div class="modal fade" id="credentialsModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Student Credentials Generated</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="alert alert-success">
-                        <h6><i class="ri-check-circle-line me-2"></i>Credentials Successfully Sent!</h6>
-                        <p class="mb-0">Student portal credentials have been sent to the applicant's email address.</p>
-                    </div>
-                    <div id="credentials-details">
-                        <!-- Credentials details will be shown here -->
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>

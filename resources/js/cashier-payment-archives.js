@@ -77,7 +77,6 @@ let currentTransactionId = null;
 
             function createPaymentRow(payment, index) {
                 const student = payment.payable || payment.student;
-                const priorityBadge = getPriorityBadge(index + 1);
                 
                 // Get cashier name (first_name + last_name)
                 let processedBy = '<span class="text-muted">System</span>';
@@ -91,7 +90,6 @@ let currentTransactionId = null;
                 
                 return `
                     <tr>
-                        <td>${priorityBadge}</td>
                         <td>
                             <div class="fw-semibold">${payment.transaction_id}</div>
                             <small class="text-muted">${getPaymentMethodDisplay(payment.payment_method)} - ${payment.period_name || 'Payment'}</small>
@@ -148,11 +146,6 @@ let currentTransactionId = null;
             }
 
             // Utility functions
-            function getPriorityBadge(priority) {
-                if (priority <= 3) return `<span class="badge bg-danger">${priority}</span>`;
-                if (priority <= 10) return `<span class="badge bg-warning">${priority}</span>`;
-                return `<span class="badge bg-secondary">${priority}</span>`;
-            }
 
             function getStatusBadge(status) {
                 switch(status) {

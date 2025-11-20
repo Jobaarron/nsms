@@ -91,25 +91,13 @@ function setupModalActions(application) {
     const actionsContainer = document.getElementById('modal-actions');
     let actions = '';
     
-    if (application.enrollment_status === 'approved' && !application.student) {
-        actions += `
-            <button type="button" class="btn btn-success" onclick="generateStudentCredentials(${application.id})">
-                <i class="ri-key-line me-1"></i>Generate Credentials
-            </button>
-        `;
-    } else if (application.enrollment_status === 'rejected') {
+    if (application.enrollment_status === 'rejected') {
         actions += `
             <button type="button" class="btn btn-warning" onclick="reconsiderApplication(${application.id})">
                 <i class="ri-refresh-line me-1"></i>Reconsider
             </button>
         `;
     }
-    
-    actions += `
-        <button type="button" class="btn btn-info" onclick="sendNoticeToApplicant('${application.application_id}')">
-            <i class="ri-mail-send-line me-1"></i>Send Notice
-        </button>
-    `;
     
     actionsContainer.innerHTML = actions;
 }
@@ -173,18 +161,6 @@ function confirmReconsider() {
     });
 }
 
-function generateStudentCredentials(applicationId) {
-    // Implementation for generating student credentials
-    // This would likely be similar to existing functionality
-    console.log('Generating credentials for application:', applicationId);
-}
-
-function sendNoticeToApplicant(applicationId) {
-    // Implementation for sending notice
-    // This would likely open a notice modal
-    console.log('Sending notice to applicant:', applicationId);
-}
-
 // Helper functions
 function getStatusBadge(status) {
     const badges = {
@@ -229,5 +205,3 @@ function debounce(func, wait) {
 window.viewArchiveApplication = viewArchiveApplication;
 window.reconsiderApplication = reconsiderApplication;
 window.confirmReconsider = confirmReconsider;
-window.generateStudentCredentials = generateStudentCredentials;
-window.sendNoticeToApplicant = sendNoticeToApplicant;

@@ -488,7 +488,7 @@
 
     <script>
         // Archive password configuration
-        const ARCHIVE_PASSWORD = 'NSMS_Archive_2024!'; // Strong default password - change this to your desired password
+        const ARCHIVE_PASSWORD = '{{ $archivePassword ?? "nsmsguidance" }}'; // Password from controller
         const PASSWORD_SESSION_KEY = 'archive_access_granted';
         const PASSWORD_TIMEOUT = 30 * 60 * 1000; // 30 minutes in milliseconds
         const MAX_FAILED_ATTEMPTS = 3;
