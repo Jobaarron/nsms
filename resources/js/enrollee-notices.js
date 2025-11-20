@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Global variables
-let currentNotificationId = null;
+let currentNoticeId = null;
 
 // Initialize notifications functionality
 function initializeNotificationsPage() {
@@ -19,7 +19,7 @@ function initializeNotificationsPage() {
 
 // View notification in modal
 function viewNotification(notificationId) {
-    currentNotificationId = notificationId;
+    currentNoticeId = notificationId;
     
     // Fetch notification details
     fetch(`/enrollee/notices/${notificationId}`)
@@ -65,7 +65,7 @@ function populateNotificationModal(notice) {
 }
 
 // Mark single notice as read
-function markAsRead(noticeId, showAlert = true) {
+function markAsRead(noticeId, showMessage = true) {
     const csrfToken = document.querySelector('meta[name="csrf-token"]');
     if (!csrfToken) {
         showAlert('CSRF token not found. Please refresh the page.', 'danger');
@@ -95,7 +95,7 @@ function markAsRead(noticeId, showAlert = true) {
             updateNoticeRowAsRead(noticeId);
             updateUnreadCount();
             
-            if (showAlert) {
+            if (showMessage) {
                 showAlert('Notice marked as read', 'success');
             }
         } else {
@@ -180,7 +180,7 @@ function markAllAsRead() {
 function updateNoticeRowAsRead(noticeId) {
     const rows = document.querySelectorAll('tr');
     rows.forEach(row => {
-        const viewBtn = row.querySelector(`button[onclick="viewNotice(${noticeId})"]`);
+        const viewBtn = row.querySelector(`button[onclick="viewNotification(${noticeId})"]`);
         if (viewBtn) {
             row.classList.remove('table-warning');
             
