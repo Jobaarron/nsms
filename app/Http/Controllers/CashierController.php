@@ -527,11 +527,19 @@ class CashierController extends Controller
                 $query->where(function ($q) use ($search) {
                     $q->where('transaction_id', 'like', "%{$search}%")
                       ->orWhere('reference_number', 'like', "%{$search}%")
-                      ->orWhereHas('payable', function ($subQ) use ($search) {
-                          $subQ->where('first_name', 'like', "%{$search}%")
-                               ->orWhere('last_name', 'like', "%{$search}%")
-                               ->orWhere('student_id', 'like', "%{$search}%")
-                               ->orWhere('application_id', 'like', "%{$search}%");
+                      // Search in related Student or Enrollee records
+                      ->orWhereHasMorph('payable', ['App\\Models\\Student', 'App\\Models\\Enrollee'], function ($morphQuery, $type) use ($search) {
+                          $morphQuery->where(function ($subQ) use ($search, $type) {
+                              $subQ->where('first_name', 'like', "%{$search}%")
+                                   ->orWhere('last_name', 'like', "%{$search}%");
+                              
+                              // Add type-specific fields
+                              if ($type === 'App\\Models\\Student') {
+                                  $subQ->orWhere('student_id', 'like', "%{$search}%");
+                              } elseif ($type === 'App\\Models\\Enrollee') {
+                                  $subQ->orWhere('application_id', 'like', "%{$search}%");
+                              }
+                          });
                       });
                 });
             }
