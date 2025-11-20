@@ -63,22 +63,22 @@
         <ul class="nav flex-column">
           <li class="nav-item mb-2">
             <a class="nav-link {{ request()->routeIs('registrar.dashboard') ? 'active' : '' }}" href="{{ route('registrar.dashboard') }}">
-              <i class="ri-dashboard-line me-2"></i>Dashboard
+              <i class="ri-home-line me-2"></i>Dashboard
             </a>
           </li>
           <li class="nav-item mb-2">
             <a class="nav-link {{ request()->routeIs('registrar.applications') ? 'active' : '' }}" href="{{ route('registrar.applications') }}">
-              <i class="ri-file-list-line me-2"></i>Applications
+              <i class="ri-file-text-line me-2"></i>Applications
             </a>
           </li>
           <li class="nav-item mb-2">
             <a class="nav-link {{ request()->routeIs('registrar.class-lists') ? 'active' : '' }}" href="{{ route('registrar.class-lists') }}">
-              <i class="ri-group-line me-2"></i>Class Lists
+              <i class="ri-user-line me-2"></i>Class Lists
             </a>
           </li>
            <li class="nav-item mb-2">
             <a class="nav-link {{ request()->routeIs('registrar.applicant-archives') ? 'active' : '' }}" href="{{ route('registrar.applicant-archives') }}">
-              <i class="ri-archive-line me-2"></i>Applicant Archives
+              <i class="ri-folder-line me-2"></i>Applicant Archives
             </a>
           </li> 
         </ul>
@@ -88,7 +88,7 @@
           <form action="{{ route('registrar.logout') }}" method="POST">
             @csrf
             <button type="submit" class="nav-link text-danger border-0 bg-transparent w-100 text-start d-flex align-items-center" style="font-weight: 600;">
-              <i class="ri-logout-circle-line me-2"></i>Logout
+              <i class="ri-logout-box-line me-2"></i>Logout
             </button>
           </form>
         </div>
@@ -107,22 +107,22 @@
           <ul class="nav flex-column">
             <li class="nav-item mb-2">
               <a class="nav-link {{ request()->routeIs('registrar.dashboard') ? 'active' : '' }}" href="{{ route('registrar.dashboard') }}">
-                <i class="ri-dashboard-line me-2"></i>Dashboard
+                <i class="ri-home-line me-2"></i>Dashboard
               </a>
             </li>
             <li class="nav-item mb-2">
               <a class="nav-link {{ request()->routeIs('registrar.applications') ? 'active' : '' }}" href="{{ route('registrar.applications') }}">
-                <i class="ri-file-list-3-line me-2"></i>Applications
+                <i class="ri-file-text-line me-2"></i>Applications
               </a>
             </li>
             <li class="nav-item mb-2">
               <a class="nav-link {{ request()->routeIs('registrar.class-lists') ? 'active' : '' }}" href="{{ route('registrar.class-lists') }}">
-                <i class="ri-group-line me-2"></i>Class Lists
+                <i class="ri-user-line me-2"></i>Class Lists
               </a>
             </li>
             <li class="nav-item mb-2">
               <a class="nav-link {{ request()->routeIs('registrar.applicant-archives') ? 'active' : '' }}" href="{{ route('registrar.applicant-archives') }}">
-                <i class="ri-archive-line me-2"></i>Applicant Archives
+                <i class="ri-folder-line me-2"></i>Applicant Archives
               </a>
             </li>
             <li class="nav-item mt-3">

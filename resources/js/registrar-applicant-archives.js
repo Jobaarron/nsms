@@ -69,7 +69,7 @@ function displayApplicationDetails(application) {
                 <table class="table table-sm">
                     <tr><td><strong>Applied:</strong></td><td>${formatDate(application.created_at)}</td></tr>
                     ${application.approved_at ? `<tr><td><strong>Approved:</strong></td><td>${formatDate(application.approved_at)}</td></tr>` : ''}
-                    ${application.declined_at ? `<tr><td><strong>Declined:</strong></td><td>${formatDate(application.declined_at)}</td></tr>` : ''}
+                    ${application.rejected_at ? `<tr><td><strong>Declined:</strong></td><td>${formatDate(application.rejected_at)}</td></tr>` : ''}
                     ${application.reconsidered_at ? `<tr><td><strong>Reconsidered:</strong></td><td>${formatDate(application.reconsidered_at)}</td></tr>` : ''}
                 </table>
                 
@@ -97,7 +97,7 @@ function setupModalActions(application) {
                 <i class="ri-key-line me-1"></i>Generate Credentials
             </button>
         `;
-    } else if (application.enrollment_status === 'declined') {
+    } else if (application.enrollment_status === 'rejected') {
         actions += `
             <button type="button" class="btn btn-warning" onclick="reconsiderApplication(${application.id})">
                 <i class="ri-refresh-line me-1"></i>Reconsider
@@ -189,7 +189,7 @@ function sendNoticeToApplicant(applicationId) {
 function getStatusBadge(status) {
     const badges = {
         'approved': '<span class="badge bg-success">Approved</span>',
-        'declined': '<span class="badge bg-danger">Declined</span>',
+        'rejected': '<span class="badge bg-danger">Declined</span>',
         'pending': '<span class="badge bg-warning text-dark">Pending</span>'
     };
     return badges[status] || '<span class="badge bg-secondary">Unknown</span>';

@@ -5,6 +5,7 @@
             <div>
                 <h1 class="section-title mb-2">Student Applications Dashboard</h1>
                 <p class="text-muted mb-0">Review and manage student enrollment applications</p>
+                <small class="text-muted d-block" id="dashboard-last-updated">Last updated: {{ now()->format('M d, Y H:i:s') }}</small>
             </div>
             <div>
                 <a href="{{ route('registrar.applications') }}" class="btn btn-registrar btn-lg">

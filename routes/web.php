@@ -770,6 +770,7 @@ Route::prefix('registrar')->name('registrar.')->group(function () {
     Route::middleware(['auth:registrar'])->group(function () {
         // Dashboard
         Route::get('/', [RegistrarController::class, 'dashboard'])->name('dashboard');
+        Route::get('/dashboard/stats', [RegistrarController::class, 'getDashboardStats'])->name('dashboard.stats');
         
         // Applications management
         Route::get('/applications', [RegistrarController::class, 'applications'])->name('applications');

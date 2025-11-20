@@ -7,6 +7,12 @@ let currentDocumentIndex = null;
 let selectedApplications = [];
 let currentBulkAction = null;
 
+// Real-time update variables
+let autoRefreshInterval = null;
+let isAutoRefreshEnabled = true;
+const REFRESH_INTERVAL = 5000; // 5 seconds for seamless updates
+let lastUpdateTimestamp = null;
+
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Registrar Applications Management: DOM loaded, initializing...');
@@ -16,6 +22,7 @@ document.addEventListener('DOMContentLoaded', function() {
         initializeSystem();
         setupEventListeners();
         setupCSRFToken();
+        initializeRealTimeUpdates();
     }
     
     // Initialize filters
@@ -790,15 +797,6 @@ function populateApplicationModal(application) {
     window.currentApplicationId = application.id;
 }
 
-// Approve application
-function approveApplication(applicationId) {
-    if (!confirm('Are you sure you want to approve this application?')) {
-        return;
-    }
-    
-    processApplicationAction(applicationId, 'approve');
-}
-
 // Approve application from modal
 function approveApplicationFromModal(applicationId) {
     // Close modal first
@@ -806,13 +804,6 @@ function approveApplicationFromModal(applicationId) {
     if (modal) modal.hide();
     
     approveApplication(applicationId || currentApplicationId);
-}
-
-// Decline application
-function declineApplication(applicationId) {
-    currentApplicationId = applicationId;
-    const modal = new bootstrap.Modal(document.getElementById('declineModal'));
-    modal.show();
 }
 
 // Decline application from modal
@@ -2883,6 +2874,128 @@ function loadAppointmentsData() {
     // For now, it's a placeholder to prevent errors
 }
 
+/**
+ * Initialize real-time updates
+ */
+function initializeRealTimeUpdates() {
+    console.log('Initializing real-time updates for applications page');
+    
+    // Start seamless auto-refresh
+    startApplicationsAutoRefresh();
+    
+    // Handle page visibility changes
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            stopApplicationsAutoRefresh();
+        } else if (isAutoRefreshEnabled) {
+            startApplicationsAutoRefresh();
+        }
+    });
+}
+
+/**
+ * Start auto-refresh functionality for applications
+ */
+function startApplicationsAutoRefresh() {
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+    }
+    
+    if (isAutoRefreshEnabled) {
+        autoRefreshInterval = setInterval(() => {
+            refreshApplicationsData();
+        }, REFRESH_INTERVAL);
+        
+        console.log('Applications auto-refresh started (every 30 seconds)');
+    }
+}
+
+/**
+ * Stop auto-refresh functionality
+ */
+function stopApplicationsAutoRefresh() {
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+        autoRefreshInterval = null;
+        console.log('Applications auto-refresh stopped');
+    }
+}
+
+
+
+/**
+ * Refresh applications data silently via AJAX
+ */
+function refreshApplicationsData() {
+    // Get current filters
+    const currentUrl = new URL(window.location);
+    const params = new URLSearchParams(currentUrl.search);
+    
+    fetch('/registrar/applications/data?' + params.toString(), {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            updateApplicationsStats(data);
+            updateApplicationsTable(data.applications);
+            updateLastUpdatedTimestamp('applications-last-updated');
+            lastUpdateTimestamp = new Date();
+        } else {
+            console.error('Failed to refresh applications:', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error refreshing applications:', error);
+    });
+}
+
+/**
+ * Update applications statistics cards
+ */
+function updateApplicationsStats(data) {
+    // Update summary cards
+    const totalElement = document.querySelector('.col-6.col-lg-3:nth-child(1) .fw-bold.fs-4');
+    if (totalElement && data.totalApplications !== undefined) {
+        totalElement.textContent = data.totalApplications;
+    }
+    
+    const pendingElement = document.querySelector('.col-6.col-lg-3:nth-child(2) .fw-bold.fs-4');
+    if (pendingElement && data.pendingApplications !== undefined) {
+        pendingElement.textContent = data.pendingApplications;
+    }
+    
+    const declinedElement = document.querySelector('.col-6.col-lg-3:nth-child(3) .fw-bold.fs-4');
+    if (declinedElement && data.declinedApplications !== undefined) {
+        declinedElement.textContent = data.declinedApplications;
+    }
+}
+
+/**
+ * Update last updated timestamp
+ */
+function updateLastUpdatedTimestamp(elementId) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        const now = new Date();
+        const formatted = now.toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric', 
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+        element.textContent = `Last updated: ${formatted}`;
+    }
+}
+
+
+
 // Additional utility functions
 window.submitDecline = submitDecline;
 window.refreshApplications = refreshApplications;
@@ -2908,3 +3021,10 @@ window.updateApplicationsTable = updateApplicationsTable;
 window.createApplicationRow = createApplicationRow;
 window.updateApplicationsCount = updateApplicationsCount;
 window.processApplicationAction = processApplicationAction;
+
+// Real-time update functions
+window.initializeRealTimeUpdates = initializeRealTimeUpdates;
+window.updateApplicationsTable = updateApplicationsTable;
+window.createApplicationRow = createApplicationRow;
+window.updateLastUpdatedTimestamp = updateLastUpdatedTimestamp;
+window.populateApplicationModal = populateApplicationModal;

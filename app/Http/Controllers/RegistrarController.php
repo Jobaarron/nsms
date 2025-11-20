@@ -52,15 +52,47 @@ class RegistrarController extends Controller
     }
 
     /**
+     * Get dashboard statistics for AJAX requests
+     */
+    public function getDashboardStats(): JsonResponse
+    {
+        try {
+            $stats = [
+                'total_applications' => Enrollee::count(),
+                'pending_applications' => Enrollee::where('enrollment_status', 'pending')->count(),
+                'approved_applications' => Enrollee::where('enrollment_status', 'approved')->count(),
+                'declined_applications' => Enrollee::where('enrollment_status', 'rejected')->count(),
+            ];
+
+            $recent_applications = Enrollee::latest()
+                ->take(5)
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'stats' => $stats,
+                'recent_applications' => $recent_applications,
+                'timestamp' => now()->toISOString()
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching dashboard stats: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch dashboard statistics'
+            ], 500);
+        }
+    }
+
+    /**
      * Show all applications
      */
     public function applications(Request $request)
     {
-        // Only show pending and rejected applications (approved ones go to archives)
-        $query = Enrollee::whereIn('enrollment_status', ['pending', 'rejected']);
+        // Only show pending applications (approved/declined ones go to archives)
+        $query = Enrollee::where('enrollment_status', 'pending');
 
-        // Apply filters
-        if ($request->filled('status')) {
+        // Apply filters - only pending status filter is relevant now
+        if ($request->filled('status') && $request->status === 'pending') {
             $query->where('enrollment_status', $request->status);
         }
 
@@ -80,20 +112,24 @@ class RegistrarController extends Controller
 
         $applications = $query->orderBy('created_at', 'desc')->paginate(20);
 
-        // Calculate summary statistics (only for pending and rejected)
-        $totalApplications = Enrollee::whereIn('enrollment_status', ['pending', 'rejected'])->count();
+        // Calculate summary statistics (only for pending applications - declined/approved go to archives)
+        $totalApplications = Enrollee::count(); // All applications ever submitted
         $pendingApplications = Enrollee::where('enrollment_status', 'pending')->count();
-        $declinedApplications = Enrollee::where('enrollment_status', 'rejected')->count();
+        $declinedApplications = Enrollee::where('enrollment_status', 'rejected')->count(); // For display only, these are in archives
 
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
-                'applications' => $applications->items(),
+                'applications' => $applications->items(), // Only pending applications
+                'totalApplications' => $totalApplications,
+                'pendingApplications' => $pendingApplications,
+                'declinedApplications' => $declinedApplications, // For stats display only
                 'pagination' => [
                     'current_page' => $applications->currentPage(),
                     'last_page' => $applications->lastPage(),
                     'total' => $applications->total(),
-                ]
+                ],
+                'timestamp' => now()->toISOString()
             ]);
         }
 
@@ -403,11 +439,11 @@ class RegistrarController extends Controller
             ->where('enrollment_status', 'approved');
         
         // Get declined applications
-        $declinedQuery = Enrollee::where('enrollment_status', 'declined');
+        $declinedQuery = Enrollee::where('enrollment_status', 'rejected');
         
-        // Get all archived applications (approved + declined)
+        // Get all archived applications (approved + rejected)
         $allArchivesQuery = Enrollee::with('student')
-            ->whereIn('enrollment_status', ['approved', 'declined']);
+            ->whereIn('enrollment_status', ['approved', 'rejected']);
 
         // Apply filters to all queries
         $queries = [$approvedQuery, $declinedQuery, $allArchivesQuery];
@@ -417,7 +453,7 @@ class RegistrarController extends Controller
                 if ($request->status === 'approved') {
                     $query->where('enrollment_status', 'approved');
                 } elseif ($request->status === 'declined') {
-                    $query->where('enrollment_status', 'declined');
+                    $query->where('enrollment_status', 'rejected');
                 }
             }
             
@@ -438,12 +474,12 @@ class RegistrarController extends Controller
 
         // Get paginated results
         $approvedApplications = $approvedQuery->orderBy('approved_at', 'desc')->paginate(20, ['*'], 'approved_page');
-        $declinedApplications = $declinedQuery->orderBy('declined_at', 'desc')->paginate(20, ['*'], 'declined_page');
+        $declinedApplications = $declinedQuery->orderBy('rejected_at', 'desc')->paginate(20, ['*'], 'declined_page');
         $allArchives = $allArchivesQuery->orderBy('updated_at', 'desc')->paginate(20, ['*'], 'all_page');
 
         // Calculate counts
         $approvedCount = Enrollee::where('enrollment_status', 'approved')->count();
-        $declinedCount = Enrollee::where('enrollment_status', 'declined')->count();
+        $declinedCount = Enrollee::where('enrollment_status', 'rejected')->count();
         $enrolledCount = \App\Models\Student::where('enrollment_status', 'enrolled')->count();
 
         if ($request->expectsJson()) {
