@@ -9,14 +9,14 @@
     <div class="py-4">
         <!-- Page Header -->
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1 class="section-title">
-                <i class="ri-graduation-cap-line me-2"></i>
-                Application Management
-            </h1>
+            <div>
+                <h1 class="section-title">
+                    <i class="ri-graduation-cap-line me-2"></i>
+                    Application Management
+                </h1>
+                <small class="text-muted" id="applications-last-updated">Last updated: {{ now()->format('M d, Y H:i:s') }}</small>
+            </div>
             <div class="d-flex gap-2">
-                <button class="btn btn-outline-secondary" onclick="refreshData()">
-                    <i class="ri-refresh-line me-1"></i>Refresh
-                </button>
                 {{-- <button class="btn btn-registrar" onclick="exportData()">
                     <i class="ri-download-line me-1"></i>Export
                 </button> --}}
@@ -141,9 +141,8 @@
                             <div class="row">
                                 <div class="col-md-3">
                                     <select class="form-select" name="status" onchange="this.form.submit()">
-                                        <option value="">All Status</option>
-                                        <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending</option>
-                                        <option value="rejected" {{ request('status') === 'rejected' ? 'selected' : '' }}>Declined</option>
+                                        <option value="">All Pending</option>
+                                        <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending Review</option>
                                     </select>
                                 </div>
                                 <div class="col-md-3">

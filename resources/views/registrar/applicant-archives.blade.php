@@ -202,13 +202,13 @@
                                     @php
                                         $statusClasses = [
                                             'approved' => 'bg-success',
-                                            'declined' => 'bg-danger'
+                                            'rejected' => 'bg-danger'
                                         ];
                                         $statusClass = $statusClasses[$application->enrollment_status] ?? 'bg-secondary';
                                     @endphp
                                     <span class="badge {{ $statusClass }}">
                                         <i class="ri-{{ $application->enrollment_status === 'approved' ? 'check' : 'close' }}-line me-1"></i>
-                                        {{ ucfirst($application->enrollment_status) }}
+                                        {{ $application->enrollment_status === 'rejected' ? 'Declined' : ucfirst($application->enrollment_status) }}
                                     </span>
                                     @if($application->enrollment_status === 'approved' && $application->student)
                                         <br><small class="text-success">Admitted</small>
@@ -218,7 +218,7 @@
                                     @if($application->enrollment_status === 'approved')
                                         {{ $application->approved_at ? $application->approved_at->format('M d, Y') : 'N/A' }}
                                     @else
-                                        {{ $application->declined_at ? $application->declined_at->format('M d, Y') : 'N/A' }}
+                                        {{ $application->rejected_at ? $application->rejected_at->format('M d, Y') : 'N/A' }}
                                     @endif
                                 </td>
                                 <td>
@@ -230,7 +230,7 @@
                                         <button class="btn btn-outline-success" onclick="generateStudentCredentials({{ $application->id }})" title="Generate Student Credentials">
                                             <i class="ri-key-line"></i>
                                         </button>
-                                        @elseif($application->enrollment_status === 'declined')
+                                        @elseif($application->enrollment_status === 'rejected')
                                         <button class="btn btn-outline-warning" onclick="reconsiderApplication({{ $application->id }})" title="Reconsider Application">
                                             <i class="ri-refresh-line"></i>
                                         </button>
