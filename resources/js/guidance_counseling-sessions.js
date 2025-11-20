@@ -13,7 +13,7 @@ function showSessionDetailModal(sessionId) {
     const modal = bootstrap.Modal.getOrCreateInstance(modalElem);
     modal.show();
     // Fetch session details via AJAX
-        fetch(`/guidance/counseling-sessions/api/counseling-sessions/${sessionId}`)
+        fetch(`/guidance/api/counseling-sessions/${sessionId}`)
                 .then(response => response.json())
                 .then(data => {
                         if (data.success && data.session) {
