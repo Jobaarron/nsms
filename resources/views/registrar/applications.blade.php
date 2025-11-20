@@ -143,7 +143,7 @@
                                     <select class="form-select" name="status" onchange="this.form.submit()">
                                         <option value="">All Status</option>
                                         <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending</option>
-                                        <option value="declined" {{ request('status') === 'declined' ? 'selected' : '' }}>Declined</option>
+                                        <option value="rejected" {{ request('status') === 'rejected' ? 'selected' : '' }}>Declined</option>
                                     </select>
                                 </div>
                                 <div class="col-md-3">
@@ -214,12 +214,13 @@
                                                     $statusClasses = [
                                                         'pending' => 'bg-warning text-dark',
                                                         'approved' => 'bg-success',
-                                                        'declined' => 'bg-danger'
+                                                        'rejected' => 'bg-danger'
                                                     ];
                                                     $statusClass = $statusClasses[$application->enrollment_status] ?? 'bg-secondary';
+                                                    $statusDisplay = $application->enrollment_status === 'rejected' ? 'Declined' : ucfirst($application->enrollment_status);
                                                 @endphp
                                                 <span class="badge {{ $statusClass }}">
-                                                    {{ ucfirst($application->enrollment_status) }}
+                                                    {{ $statusDisplay }}
                                                 </span>
                                             </td>
                                             <td>{{ $application->created_at->format('M d, Y') }}</td>

@@ -392,6 +392,64 @@ function setupDocumentFilters() {
 }
 
 
+/**
+ * Approve application from applications page
+ */
+function approveApplication(applicationId) {
+    if (confirm('Are you sure you want to approve this application?')) {
+        fetch(`/registrar/applications/${applicationId}/approve`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Application approved successfully!');
+                location.reload(); // Reload the page to show updated status
+            } else {
+                alert('Error approving application. Please try again.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error approving application. Please try again.');
+        });
+    }
+}
+
+/**
+ * Decline application from applications page
+ */
+function declineApplication(applicationId) {
+    const reason = prompt('Please provide a reason for declining this application:');
+    if (reason && reason.trim() !== '') {
+        fetch(`/registrar/applications/${applicationId}/decline`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ reason: reason })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Application declined successfully!');
+                location.reload(); // Reload the page to show updated status
+            } else {
+                alert('Error declining application. Please try again.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error declining application. Please try again.');
+        });
+    }
+}
+
 // Apply filters to applications table
 function applyFilters() {
     const status = document.getElementById('status-filter')?.value || '';

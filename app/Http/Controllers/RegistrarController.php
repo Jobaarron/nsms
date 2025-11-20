@@ -27,7 +27,7 @@ class RegistrarController extends Controller
             'total_applications' => Enrollee::count(),
             'pending_applications' => Enrollee::where('enrollment_status', 'pending')->count(),
             'approved_applications' => Enrollee::where('enrollment_status', 'approved')->count(),
-            'declined_applications' => Enrollee::where('enrollment_status', 'declined')->count(),
+            'declined_applications' => Enrollee::where('enrollment_status', 'rejected')->count(),
         ];
 
         $recent_applications = Enrollee::latest()
@@ -56,8 +56,8 @@ class RegistrarController extends Controller
      */
     public function applications(Request $request)
     {
-        // Only show pending and declined applications (approved ones go to archives)
-        $query = Enrollee::whereIn('enrollment_status', ['pending', 'declined']);
+        // Only show pending and rejected applications (approved ones go to archives)
+        $query = Enrollee::whereIn('enrollment_status', ['pending', 'rejected']);
 
         // Apply filters
         if ($request->filled('status')) {
@@ -80,10 +80,10 @@ class RegistrarController extends Controller
 
         $applications = $query->orderBy('created_at', 'desc')->paginate(20);
 
-        // Calculate summary statistics (only for pending and declined)
-        $totalApplications = Enrollee::whereIn('enrollment_status', ['pending', 'declined'])->count();
+        // Calculate summary statistics (only for pending and rejected)
+        $totalApplications = Enrollee::whereIn('enrollment_status', ['pending', 'rejected'])->count();
         $pendingApplications = Enrollee::where('enrollment_status', 'pending')->count();
-        $declinedApplications = Enrollee::where('enrollment_status', 'declined')->count();
+        $declinedApplications = Enrollee::where('enrollment_status', 'rejected')->count();
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -206,12 +206,12 @@ class RegistrarController extends Controller
                 'title' => 'Application Approved',
                 'message' => 'Congratulations! Your enrollment application has been approved. You can now proceed to the student portal for enrollment completion.',
                 'is_global' => false,
-                'created_by' => Auth::id(),
+                'created_by' => Auth::guard('registrar')->id(),
             ]);
 
             Log::info('Application approved', [
                 'application_id' => $application->application_id,
-                'approved_by' => Auth::id()
+                'approved_by' => Auth::guard('registrar')->id()
             ]);
 
             return response()->json([
@@ -244,10 +244,10 @@ class RegistrarController extends Controller
             }
 
             $application->update([
-                'enrollment_status' => 'declined',
-                'declined_at' => now(),
-                'declined_by' => Auth::guard('registrar')->id(),
-                'decline_reason' => $request->reason,
+                'enrollment_status' => 'rejected',
+                'rejected_at' => now(),
+                'rejected_by' => Auth::guard('registrar')->id(),
+                'status_reason' => $request->reason,
                 'evaluation_completed_at' => now(),
                 'evaluation_completed_by' => Auth::guard('registrar')->id(),
             ]);
@@ -258,12 +258,12 @@ class RegistrarController extends Controller
                 'title' => 'Application Declined',
                 'message' => 'We regret to inform you that your enrollment application has been declined. Reason: ' . $request->reason,
                 'is_global' => false,
-                'created_by' => Auth::id(),
+                'created_by' => Auth::guard('registrar')->id(),
             ]);
 
             Log::info('Application declined', [
                 'application_id' => $application->application_id,
-                'declined_by' => Auth::id(),
+                'declined_by' => Auth::guard('registrar')->id(),
                 'reason' => $request->reason
             ]);
 
