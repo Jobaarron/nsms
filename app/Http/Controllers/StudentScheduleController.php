@@ -89,15 +89,19 @@ class StudentScheduleController extends Controller
                         continue;
                     }
                     
+                    // Parse time strings to Carbon instances
+                    $startTime = \Carbon\Carbon::parse($schedule->start_time);
+                    $endTime = \Carbon\Carbon::parse($schedule->end_time);
+                    
                     $events[] = [
                         'id' => $schedule->id,
                         'title' => $schedule->subject->subject_name ?? 'Unknown Subject',
                         'teacher' => $schedule->teacher->name ?? 'Unknown Teacher',
                         'room' => $schedule->room ?? 'TBA',
                         'day' => $day,
-                        'start_time' => $schedule->start_time->format('g:i A'),
-                        'end_time' => $schedule->end_time->format('g:i A'),
-                        'time_range' => $schedule->start_time->format('g:i A') . ' - ' . $schedule->end_time->format('g:i A'),
+                        'start_time' => $startTime->format('H:i'), // 24-hour format for JS comparison
+                        'end_time' => $endTime->format('H:i'),
+                        'time_range' => $startTime->format('g:i A') . ' - ' . $endTime->format('g:i A'),
                         'color' => $this->getSubjectColor($schedule->subject->category ?? 'default')
                     ];
                 }

@@ -30,7 +30,6 @@
   @vite(['resources/js/face-registration.js'])
   @vite(['resources/js/student-dashboard.js'])
   @vite(['resources/js/student-grades.js'])
-  @vite(['resources/js/student-schedule.js'])
   @vite(['resources/js/student-subjects.js'])
   @vite(['resources/js/student-violation.js'])
   @vite(['resources/js/student-enrollment.js'])

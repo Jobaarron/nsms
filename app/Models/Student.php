@@ -442,15 +442,17 @@ class Student extends Authenticatable
      */
     public function getWeeklySchedule()
     {
+        // Get all schedules as a collection
         $schedules = $this->classSchedules();
         $weeklySchedule = [];
         
         $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
         
         foreach ($days as $day) {
-            $weeklySchedule[$day] = $schedules->where('day_of_week', $day)
-                                            ->sortBy('start_time')
-                                            ->values();
+            // Filter collection by day_of_week and sort by start_time
+            $weeklySchedule[$day] = $schedules->filter(function($schedule) use ($day) {
+                return $schedule->day_of_week === $day;
+            })->sortBy('start_time')->values();
         }
         
         return $weeklySchedule;
