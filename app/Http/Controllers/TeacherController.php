@@ -287,7 +287,14 @@ class TeacherController extends Controller
             $message = 'You are not assigned as a class adviser for the current academic year.';
         }
 
-        return view('teacher.recommend-counseling', compact('students', 'message'));
+        // Get scheduled counseling sessions recommended by this teacher
+        $scheduledSessions = CounselingSession::with(['student', 'counselor'])
+            ->where('recommended_by', $teacher->id)
+            ->where('status', 'scheduled')
+            ->orderBy('start_date', 'desc')
+            ->get();
+
+        return view('teacher.recommend-counseling', compact('students', 'message', 'scheduledSessions'));
     }
 
     /**

@@ -10,9 +10,21 @@
         </h1>
         <p class="text-muted mb-0">Submit a counseling recommendation for student support</p>
       </div>
-      <a href="{{ route('teacher.dashboard') }}" class="btn btn-outline-success">
-        <i class="ri-arrow-left-line me-2"></i>Back to Dashboard
-      </a>
+      <div class="d-flex gap-2">
+        <!-- Notification Bell -->
+        <button class="btn btn-outline-info position-relative" data-bs-toggle="modal" data-bs-target="#counselingNotificationsModal" title="Counseling Session Notifications">
+          <i class="ri-notification-3-line"></i>
+          @if(isset($scheduledSessions) && $scheduledSessions->count() > 0)
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+              {{ $scheduledSessions->count() }}
+            </span>
+          @endif
+        </button>
+        
+        <a href="{{ route('teacher.dashboard') }}" class="btn btn-outline-success">
+          <i class="ri-arrow-left-line me-2"></i>Back to Dashboard
+        </a>
+      </div>
     </div>
 
     @if(session('success'))
@@ -257,4 +269,131 @@
       </div>
     </div>
   </main>
+
+  <!-- Counseling Notifications Modal -->
+  <div class="modal fade" id="counselingNotificationsModal" tabindex="-1" aria-labelledby="counselingNotificationsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title" id="counselingNotificationsModalLabel">
+            <i class="ri-notification-3-line me-2"></i>Counseling Session Notifications
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          @if(isset($scheduledSessions) && $scheduledSessions->count() > 0)
+            <div class="alert alert-info border-0 bg-info bg-opacity-10">
+              <div class="d-flex align-items-start">
+                <i class="ri-information-line me-2 text-info fs-5 mt-1"></i>
+                <div>
+                  <strong class="text-info">Scheduled Sessions</strong>
+                  <p class="mb-0 mt-1">
+                    The following counseling sessions you recommended have been scheduled by the Guidance Department.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="list-group">
+              @foreach($scheduledSessions as $session)
+                <div class="list-group-item border-start border-success border-3">
+                  <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                      <h6 class="mb-2 text-success">
+                        <i class="ri-user-heart-line me-1"></i>
+                        {{ $session->student->first_name ?? '' }} {{ $session->student->last_name ?? '' }}
+                      </h6>
+                      
+                      @if($session->student && $session->student->student_id)
+                        <p class="text-muted small mb-2">
+                          <strong>Student ID:</strong> {{ $session->student->student_id }}
+                        </p>
+                      @endif
+                      
+                      <div class="row g-2">
+                        @if($session->start_date)
+                          <div class="col-md-6">
+                            <small class="text-muted d-block"><strong>Start Date:</strong></small>
+                            <span class="badge bg-primary">{{ $session->start_date->format('M j, Y') }}</span>
+                          </div>
+                        @endif
+                        
+                        @if($session->end_date)
+                          <div class="col-md-6">
+                            <small class="text-muted d-block"><strong>End Date:</strong></small>
+                            <span class="badge bg-primary">{{ $session->end_date->format('M j, Y') }}</span>
+                          </div>
+                        @endif
+                        
+                        @if($session->time)
+                          <div class="col-md-6">
+                            <small class="text-muted d-block"><strong>Time:</strong></small>
+                            <span class="badge bg-info">{{ $session->time instanceof \Carbon\Carbon ? $session->time->format('g:i A') : $session->time }}</span>
+                          </div>
+                        @endif
+                        
+                        @if($session->frequency)
+                          <div class="col-md-6">
+                            <small class="text-muted d-block"><strong>Frequency:</strong></small>
+                            <span class="badge bg-secondary">{{ ucfirst(str_replace('_', ' ', $session->frequency)) }}</span>
+                          </div>
+                        @endif
+                        
+                        @if($session->time_limit)
+                          <div class="col-md-6">
+                            <small class="text-muted d-block"><strong>Duration:</strong></small>
+                            <span class="badge bg-warning text-dark">{{ $session->time_limit }} minutes</span>
+                          </div>
+                        @endif
+                        
+                        @if($session->session_no)
+                          <div class="col-md-6">
+                            <small class="text-muted d-block"><strong>Session #:</strong></small>
+                            <span class="badge bg-success">{{ $session->session_no }}</span>
+                          </div>
+                        @endif
+                      </div>
+                      
+                      @if($session->incident_description)
+                        <div class="mt-3">
+                          <small class="text-muted d-block"><strong>Original Recommendation:</strong></small>
+                          <p class="small text-secondary mt-1 mb-0" style="font-style: italic;">
+                            {{ Str::limit($session->incident_description, 150) }}
+                          </p>
+                        </div>
+                      @endif
+                    </div>
+                    
+                    <div class="text-end">
+                      <span class="badge bg-success">{{ ucfirst($session->status) }}</span>
+                      @if($session->counselor)
+                        <p class="text-muted small mt-2 mb-0">
+                          <strong>Counselor:</strong><br>
+                          {{ $session->counselor->name ?? 'Guidance Department' }}
+                        </p>
+                      @endif
+                    </div>
+                  </div>
+                </div>
+              @endforeach
+            </div>
+          @else
+            <div class="text-center py-4">
+              <div class="mb-3">
+                <i class="ri-notification-off-line display-4 text-muted"></i>
+              </div>
+              <h5 class="text-muted mb-2">No Scheduled Sessions</h5>
+              <p class="text-muted mb-0">
+                You don't have any scheduled counseling sessions at the moment.<br>
+                Sessions you recommend will appear here once they're scheduled by the Guidance Department.
+              </p>
+            </div>
+          @endif
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </x-teacher-layout>
