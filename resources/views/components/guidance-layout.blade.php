@@ -27,28 +27,22 @@
   <!-- App CSS (includes Bootstrap 5 via Vite) -->
   @vite(['resources/sass/app.scss','resources/js/app.js'])
   @vite(['resources/css/index_guidance.css'])
+  @vite(['resources/css/collapsible-sidebar.css'])
+  @vite(['resources/js/collapsible-sidebar.js'])
   
 </head>
 <body>
-  <!-- Mobile Navigation Toggle -->
-  <div class="d-md-none bg-white border-bottom p-3 fixed-top" style="z-index: 1030;">
-    <div class="d-flex justify-content-between align-items-center">
-      <img src="{{ Vite::asset('resources/assets/images/nms-logo.png') }}" alt="Nicolites Montessori School" style="height: 30px;">
-      <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#guidanceSidebar" aria-controls="guidanceSidebar">
-        <i class="ri-menu-line"></i>
-      </button>
+  <!-- Sidebar Toggle Button (Desktop & Mobile) -->
+  <button class="sidebar-toggle d-md-block" type="button" title="Toggle Sidebar">
+    <i class="ri-menu-fold-line"></i>
+  </button>
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar py-4 bg-white border-end">
+    <!-- School Logo -->
+    <div class="text-center mb-3">
+      <img src="{{ Vite::asset('resources/assets/images/edusphere-logo.png.png') }}" alt="logo" class="sidebar-logo nav__logo" style="height: 50px; transition: all 0.3s ease;">
     </div>
-  </div>
-
-  <div class="container-fluid">
-    <div class="row">
-
-      <!-- SIDEBAR -->
-      <nav class="col-12 col-md-2 sidebar d-none d-md-block py-4">
-        <!-- School Logo -->
-        <div class="text-center mb-3">
-          <img src="{{ Vite::asset('resources/assets/images/nms-logo.png') }}" alt="Nicolites Montessori School" class="sidebar-logo">
-        </div>
         
         <!-- User Info -->
         {{-- <div class="user-info">
@@ -58,26 +52,26 @@
 
         <ul class="nav flex-column">
           <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('guidance.dashboard') ? 'active' : '' }}" href="{{ route('guidance.dashboard') }}">
-              <i class="ri-dashboard-line me-2"></i>Dashboard
+            <a class="nav-link {{ request()->routeIs('guidance.dashboard') ? 'active' : '' }}" href="{{ route('guidance.dashboard') }}" title="Dashboard">
+              <i class="ri-dashboard-line me-2"></i><span>Dashboard</span>
             </a>
           </li>
           
           <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('guidance.case-meetings.*') ? 'active' : '' }}" href="{{ route('guidance.case-meetings.index') }}">
-              <i class="ri-calendar-event-line me-2"></i>Case Management
+            <a class="nav-link {{ request()->routeIs('guidance.case-meetings.*') ? 'active' : '' }}" href="{{ route('guidance.case-meetings.index') }}" title="Case Management">
+              <i class="ri-calendar-event-line me-2"></i><span>Case Management</span>
             </a>
           </li>
           
           <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('guidance.counseling-sessions.*') && !request()->routeIs('guidance.counseling-sessions.archived') ? 'active' : '' }}" href="{{ route('guidance.counseling-sessions.index') }}">
-              <i class="ri-heart-pulse-line me-2"></i>Counseling Sessions
+            <a class="nav-link {{ request()->routeIs('guidance.counseling-sessions.*') && !request()->routeIs('guidance.counseling-sessions.archived') ? 'active' : '' }}" href="{{ route('guidance.counseling-sessions.index') }}" title="Counseling Sessions">
+              <i class="ri-heart-pulse-line me-2"></i><span>Counseling Sessions</span>
             </a>
           </li>
           
           <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('guidance.counseling-sessions.archived') ? 'active' : '' }}" href="{{ route('guidance.counseling-sessions.archived') }}">
-              <i class="ri-archive-line me-2"></i>Archive Center
+            <a class="nav-link {{ request()->routeIs('guidance.counseling-sessions.archived') ? 'active' : '' }}" href="{{ route('guidance.counseling-sessions.archived') }}" title="Archive Center">
+              <i class="ri-archive-line me-2"></i><span>Archive Center</span>
             </a>
           </li>
           
@@ -96,64 +90,20 @@
           </li> --}}
           
           <li class="nav-item mt-3">
-            <form method="POST" action="{{ route('guidance.logout') }}">
+            <form class="logout-form" method="POST" action="{{ route('guidance.logout') }}">
               @csrf
-              <button type="submit" class="btn btn-logout w-100">
-                <i class="ri-logout-circle-line me-2"></i>Logout
+              <button type="submit" class="btn btn-logout w-100" title="Logout">
+                <i class="ri-logout-circle-line me-2"></i><span>Logout</span>
               </button>
             </form>
           </li>
         </ul>
       </nav>
-
-      <!-- MOBILE SIDEBAR (Offcanvas) -->
-      <div class="offcanvas offcanvas-start d-md-none" tabindex="-1" id="guidanceSidebar" aria-labelledby="guidanceSidebarLabel">
-        <div class="offcanvas-header border-bottom">
-          <div class="d-flex align-items-center">
-            <img src="{{ Vite::asset('resources/assets/images/nms-logo.png') }}" alt="Nicolites Montessori School" style="height: 30px;" class="me-2">
-            <h5 class="offcanvas-title mb-0" id="guidanceSidebarLabel">Guidance Portal</h5>
-          </div>
-          <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-        </div>
-        <div class="offcanvas-body p-0">
-          <ul class="nav flex-column">
-            <li class="nav-item mb-2">
-              <a class="nav-link {{ request()->routeIs('guidance.dashboard') ? 'active' : '' }}" href="{{ route('guidance.dashboard') }}">
-                <i class="ri-dashboard-line me-2"></i>Dashboard
-              </a>
-            </li>
-            <li class="nav-item mb-2">
-              <a class="nav-link {{ request()->routeIs('guidance.case-meetings*') ? 'active' : '' }}" href="{{ route('guidance.case-meetings.index') }}">
-                <i class="ri-folder-user-line me-2"></i>Case Management
-              </a>
-            </li>
-            <li class="nav-item mb-2">
-              <a class="nav-link {{ request()->routeIs('guidance.counseling-sessions*') && !request()->routeIs('guidance.counseling-sessions.archived') ? 'active' : '' }}" href="{{ route('guidance.counseling-sessions.index') }}">
-                <i class="ri-heart-pulse-line me-2"></i>Counseling Sessions
-              </a>
-            </li>
-            <li class="nav-item mb-2">
-              <a class="nav-link {{ request()->routeIs('guidance.counseling-sessions.archived') ? 'active' : '' }}" href="{{ route('guidance.counseling-sessions.archived') }}">
-                <i class="ri-archive-line me-2"></i>Archive Center
-              </a>
-            </li>
-            <li class="nav-item mt-3">
-              <form method="POST" action="{{ route('guidance.logout') }}">
-                @csrf
-                <button type="submit" class="btn btn-outline-danger w-100">
-                  <i class="ri-logout-box-line me-2"></i>Logout
-                </button>
-              </form>
-            </li>
-          </ul>
-        </div>
-      </div>
       
-      <!-- MAIN CONTENT -->
-      <main class="col-12 col-md-10 px-3 px-md-4 py-3">
-        {{ $slot }}
-      </main>
-    </div>
+  <div class="main-content-wrapper">
+    <main class="px-3 px-md-4 py-4">
+      {{ $slot }}
+    </main>
   </div>
 </body>
 </html>
