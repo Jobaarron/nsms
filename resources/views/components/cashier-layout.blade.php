@@ -26,8 +26,10 @@
   @vite('resources/sass/app.scss')
   @vite(['resources/js/app.js'])
   @vite(['resources/css/index_cashier.css'])
+  @vite(['resources/css/collapsible-sidebar.css'])
   @vite(['resources/js/cashier-dashboard.js'])
   @vite(['resources/js/cashier-payment-archives.js'])
+  @vite(['resources/js/collapsible-sidebar.js'])
   @stack('scripts')
   @stack('styles')
 
@@ -54,25 +56,17 @@
   </style>
 </head>
 <body>
-  <!-- Mobile Navigation Toggle -->
-  <div class="d-md-none bg-white border-bottom p-3 fixed-top" style="z-index: 1030;">
-    <div class="d-flex justify-content-between align-items-center">
-      <img src="{{ Vite::asset('resources/assets/images/nms-logo.png') }}" alt="Nicolites Montessori School" style="height: 30px;">
-      <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#cashierSidebar" aria-controls="cashierSidebar">
-        <i class="ri-menu-line"></i>
-      </button>
+  <!-- Sidebar Toggle Button (Desktop & Mobile) -->
+  <button class="sidebar-toggle d-md-block" type="button" title="Toggle Sidebar">
+    <i class="ri-menu-fold-line"></i>
+  </button>
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar py-4 bg-white border-end">
+    <!-- School Logo -->
+    <div class="text-center mb-3">
+      <img src="{{ Vite::asset('resources/assets/images/nms-logo.png') }}" alt="Nicolites Montessori School" class="sidebar-logo">
     </div>
-  </div>
-
-  <div class="container-fluid">
-    <div class="row">
-
-      <!-- SIDEBAR -->
-      <nav class="col-12 col-md-2 sidebar d-none d-md-block py-4">
-        <!-- School Logo -->
-        <div class="text-center mb-3">
-          <img src="{{ Vite::asset('resources/assets/images/nms-logo.png') }}" alt="Nicolites Montessori School" class="sidebar-logo">
-        </div>
         
         <!-- User Info -->
         {{-- <div class="user-info mb-4 p-3 bg-light rounded">
@@ -89,93 +83,49 @@
 
         <ul class="nav flex-column">
           <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('cashier.dashboard') ? 'active' : '' }}" href="{{ route('cashier.dashboard') }}">
-              <i class="ri-dashboard-line me-2"></i>Dashboard
+            <a class="nav-link {{ request()->routeIs('cashier.dashboard') ? 'active' : '' }}" href="{{ route('cashier.dashboard') }}" title="Dashboard">
+              <i class="ri-dashboard-line me-2"></i><span>Dashboard</span>
             </a>
           </li>
           
           <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('cashier.payments') ? 'active' : '' }}" href="{{ route('cashier.payments') }}">
-              <i class="ri-time-line me-2"></i>Payments
+            <a class="nav-link {{ request()->routeIs('cashier.payments') ? 'active' : '' }}" href="{{ route('cashier.payments') }}" title="Payments">
+              <i class="ri-time-line me-2"></i><span>Payments</span>
             </a>
           </li>
           
           <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('cashier.payment-archives') ? 'active' : '' }}" href="{{ route('cashier.payment-archives') }}">
-              <i class="ri-archive-line me-2"></i>Payment Archives
+            <a class="nav-link {{ request()->routeIs('cashier.payment-archives') ? 'active' : '' }}" href="{{ route('cashier.payment-archives') }}" title="Payment Archives">
+              <i class="ri-archive-line me-2"></i><span>Payment Archives</span>
             </a>
           </li>
           
           <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('cashier.fees*') ? 'active' : '' }}" href="{{ route('cashier.fees') }}">
-              <i class="ri-money-dollar-circle-line me-2"></i>Fee Management
+            <a class="nav-link {{ request()->routeIs('cashier.fees*') ? 'active' : '' }}" href="{{ route('cashier.fees') }}" title="Fee Management">
+              <i class="ri-money-dollar-circle-line me-2"></i><span>Fee Management</span>
             </a>
           </li>
          
         </ul>
         
         <!-- LOGOUT SECTION -->
-        <div class="mt-auto pt-3">
+        <div class="mt-auto pt-3 logout-form">
           <form action="{{ route('cashier.logout') }}" method="POST">
             @csrf
-            <button type="submit" class="nav-link text-danger border-0 bg-transparent w-100 text-start d-flex align-items-center" style="font-weight: 600;">
-              <i class="ri-logout-circle-line me-2"></i>Logout
+            <button type="submit" class="nav-link text-danger border-0 bg-transparent w-100 text-start d-flex align-items-center" style="font-weight: 600;" title="Logout">
+              <i class="ri-logout-circle-line me-2"></i><span>Logout</span>
             </button>
           </form>
         </div>
       </nav>
 
-      <!-- MOBILE SIDEBAR (Offcanvas) -->
-      <div class="offcanvas offcanvas-start d-md-none" tabindex="-1" id="cashierSidebar" aria-labelledby="cashierSidebarLabel">
-        <div class="offcanvas-header border-bottom">
-          <div class="d-flex align-items-center">
-            <img src="{{ Vite::asset('resources/assets/images/nms-logo.png') }}" alt="Nicolites Montessori School" style="height: 30px;" class="me-2">
-            <h5 class="offcanvas-title mb-0" id="cashierSidebarLabel">Cashier Portal</h5>
-          </div>
-          <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-        </div>
-        <div class="offcanvas-body p-0">
-          <ul class="nav flex-column">
-            <li class="nav-item mb-2">
-              <a class="nav-link {{ request()->routeIs('cashier.dashboard') ? 'active' : '' }}" href="{{ route('cashier.dashboard') }}">
-                <i class="ri-dashboard-line me-2"></i>Dashboard
-              </a>
-            </li>
-            <li class="nav-item mb-2">
-              <a class="nav-link {{ request()->routeIs('cashier.payments*') ? 'active' : '' }}" href="{{ route('cashier.payments') }}">
-                <i class="ri-money-dollar-circle-line me-2"></i>Payments
-              </a>
-            </li>
-            <li class="nav-item mb-2">
-              <a class="nav-link {{ request()->routeIs('cashier.payment-archives') ? 'active' : '' }}" href="{{ route('cashier.payment-archives') }}">
-                <i class="ri-archive-line me-2"></i>Payment Archives
-              </a>
-            </li>
-            <li class="nav-item mb-2">
-              <a class="nav-link {{ request()->routeIs('cashier.fees*') ? 'active' : '' }}" href="{{ route('cashier.fees') }}">
-                <i class="ri-money-dollar-circle-line me-2"></i>Fee Management
-              </a>
-            </li>
-            <li class="nav-item mt-3">
-              <form method="POST" action="{{ route('cashier.logout') }}">
-                @csrf
-                <button type="submit" class="btn btn-outline-danger w-100">
-                  <i class="ri-logout-box-line me-2"></i>Logout
-                </button>
-              </form>
-            </li>
-          </ul>
-        </div>
+  <!-- MAIN CONTENT -->
+  <div class="main-content-wrapper">
+    <main class="px-3 px-md-4 py-4">
+      <div class="main-content">
+        {{ $slot }}
       </div>
-
-      <!-- MAIN CONTENT -->
-      <main class="col-12 col-md-10 ms-sm-auto px-3 px-md-4" style="margin-top: 70px;">
-        <div class="d-md-none mb-3"></div>
-        <div class="main-content py-4">
-          {{ $slot }}
-        </div>
-      </main>
-    </div>
+    </main>
   </div>
 </body>
 </html>

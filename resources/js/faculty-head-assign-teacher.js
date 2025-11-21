@@ -1511,17 +1511,76 @@ function loadStudentsForSection(sectionId, grade, section, strand, track) {
                     badge.textContent = students.length;
                     badge.className = 'badge bg-primary ms-2';
                     
-                    let html = '<div class="table-responsive"><table class="table table-sm table-hover"><thead><tr><th>#</th><th>Student ID</th><th>Name</th><th>Contact</th></tr></thead><tbody>';
+                    // Build HTML with search functionality
+                    let html = `
+                        <!-- Search Section -->
+                        <div class="mb-3">
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="ri-search-line"></i>
+                                        </span>
+                                        <input type="text" class="form-control" id="searchStudents${sectionId}" placeholder="Search by student ID, name, or contact...">
+                                        <button class="btn btn-outline-secondary" type="button" id="clearSearchStudents${sectionId}">
+                                            <i class="ri-close-line"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    <small class="text-muted">Found: <span id="foundStudents${sectionId}">${students.length}</span> students</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Student Table -->
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Student ID</th>
+                                        <th>Name</th>
+                                        <th>Contact</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="studentTableBody${sectionId}">`;
+                    
                     students.forEach((s, i) => {
-                        html += `<tr>
+                        const fullName = `${s.first_name} ${s.last_name}`;
+                        const contactDisplay = s.contact_number || 'N/A';
+                        
+                        html += `<tr class="student-row" 
+                            data-student-id="${(s.student_id || '').toLowerCase()}"
+                            data-full-name="${fullName.toLowerCase()}"
+                            data-first-name="${(s.first_name || '').toLowerCase()}"
+                            data-last-name="${(s.last_name || '').toLowerCase()}"
+                            data-contact="${contactDisplay.toLowerCase()}">
                             <td>${i+1}</td>
                             <td><strong>${s.student_id || 'N/A'}</strong></td>
-                            <td>${s.first_name} ${s.last_name}</td>
-                            <td>${s.contact_number || 'N/A'}</td>
+                            <td>${fullName}</td>
+                            <td>${contactDisplay}</td>
                         </tr>`;
                     });
-                    html += '</tbody></table></div>';
+                    
+                    html += `</tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Search Empty State -->
+                        <div id="studentsSearchEmptyState${sectionId}" class="text-center py-4" style="display: none;">
+                            <i class="ri-search-line display-6 text-muted mb-2"></i>
+                            <h6 class="text-muted">No Students Found</h6>
+                            <p class="text-muted">No students match your search criteria.</p>
+                            <small class="text-muted">Try searching with different keywords</small>
+                        </div>`;
+                    
                     container.innerHTML = html;
+                    
+                    // Initialize search functionality for this specific section
+                    setTimeout(() => {
+                        initializeSectionStudentSearch(sectionId);
+                    }, 100);
                 } else {
                     badge.textContent = '0';
                     badge.className = 'badge bg-secondary ms-2';
@@ -1928,7 +1987,9 @@ function stopAutoRefresh() {
 // Start auto-refresh when page loads
 document.addEventListener('DOMContentLoaded', function() {
     startAutoRefresh();
+    initializeSearchFunctionality();
     console.log('Auto-refresh started - faculty data will refresh every 30 seconds');
+    console.log('Search functionality initialized');
 });
 
 // Stop auto-refresh when page is about to unload
@@ -1955,3 +2016,540 @@ window.loadGradeSectionsForAssignment = loadGradeSectionsForAssignment;
 window.loadSeniorHighStrandsForAssignment = loadSeniorHighStrandsForAssignment;
 window.loadElementaryJuniorSectionsForAssignment = loadElementaryJuniorSectionsForAssignment;
 window.resetAccordionToInitialState = resetAccordionToInitialState;
+
+// =============================================================================
+// SEARCH FUNCTIONALITY
+// =============================================================================
+
+let assignmentSearchHandler = null;
+let adviserSearchHandler = null;
+
+// Function to perform search on assignments
+function performAssignmentSearch(searchTerm) {
+    console.log('=== ASSIGNMENT SEARCH ===', searchTerm);
+    
+    const assignmentItems = document.querySelectorAll('.assignment-item');
+    const searchTermLower = searchTerm.toLowerCase().trim();
+    let visibleCount = 0;
+    
+    assignmentItems.forEach(item => {
+        if (!searchTermLower) {
+            item.style.display = 'block';
+            visibleCount++;
+            return;
+        }
+        
+        const teacher = item.dataset.teacher || '';
+        const subject = item.dataset.subject || '';
+        const grade = item.dataset.grade || '';
+        const section = item.dataset.section || '';
+        const strand = item.dataset.strand || '';
+        const track = item.dataset.track || '';
+        
+        const searchText = `${teacher} ${subject} ${grade} ${section} ${strand} ${track}`.toLowerCase();
+        
+        if (searchText.includes(searchTermLower)) {
+            item.style.display = 'block';
+            visibleCount++;
+        } else {
+            item.style.display = 'none';
+        }
+    });
+    
+    // Update found count
+    const foundElement = document.getElementById('foundAssignments');
+    if (foundElement) {
+        foundElement.textContent = visibleCount;
+    }
+    
+    // Show empty state if no results
+    const emptyState = document.getElementById('assignmentsEmptyState');
+    if (visibleCount === 0 && searchTermLower) {
+        if (!emptyState) {
+            const container = document.querySelector('.assignment-item')?.parentElement;
+            if (container) {
+                const emptyDiv = document.createElement('div');
+                emptyDiv.id = 'assignmentsEmptyState';
+                emptyDiv.className = 'text-center text-muted py-4';
+                emptyDiv.innerHTML = `
+                    <i class="ri-search-line display-6 mb-2 d-block"></i>
+                    <p>No assignments found matching "${searchTerm}"</p>
+                    <small>Try searching with different keywords</small>
+                `;
+                container.appendChild(emptyDiv);
+            }
+        } else {
+            emptyState.style.display = 'block';
+            emptyState.querySelector('p').textContent = `No assignments found matching "${searchTerm}"`;
+        }
+    } else if (emptyState) {
+        emptyState.style.display = 'none';
+    }
+}
+
+// Function to perform search on advisers
+function performAdviserSearch(searchTerm) {
+    console.log('=== ADVISER SEARCH ===', searchTerm);
+    
+    const adviserItems = document.querySelectorAll('.adviser-item');
+    const searchTermLower = searchTerm.toLowerCase().trim();
+    let visibleCount = 0;
+    
+    adviserItems.forEach(item => {
+        if (!searchTermLower) {
+            item.style.display = 'block';
+            visibleCount++;
+            return;
+        }
+        
+        const teacher = item.dataset.teacher || '';
+        const grade = item.dataset.grade || '';
+        const section = item.dataset.section || '';
+        const strand = item.dataset.strand || '';
+        const track = item.dataset.track || '';
+        
+        const searchText = `${teacher} ${grade} ${section} ${strand} ${track}`.toLowerCase();
+        
+        if (searchText.includes(searchTermLower)) {
+            item.style.display = 'block';
+            visibleCount++;
+        } else {
+            item.style.display = 'none';
+        }
+    });
+    
+    // Update found count
+    const foundElement = document.getElementById('foundAdvisers');
+    if (foundElement) {
+        foundElement.textContent = visibleCount;
+    }
+    
+    // Show empty state if no results
+    const emptyState = document.getElementById('advisersEmptyState');
+    if (visibleCount === 0 && searchTermLower) {
+        if (!emptyState) {
+            const container = document.querySelector('.adviser-item')?.parentElement;
+            if (container) {
+                const emptyDiv = document.createElement('div');
+                emptyDiv.id = 'advisersEmptyState';
+                emptyDiv.className = 'text-center text-muted py-4';
+                emptyDiv.innerHTML = `
+                    <i class="ri-search-line display-6 mb-2 d-block"></i>
+                    <p>No advisers found matching "${searchTerm}"</p>
+                    <small>Try searching with different keywords</small>
+                `;
+                container.appendChild(emptyDiv);
+            }
+        } else {
+            emptyState.style.display = 'block';
+            emptyState.querySelector('p').textContent = `No advisers found matching "${searchTerm}"`;
+        }
+    } else if (emptyState) {
+        emptyState.style.display = 'none';
+    }
+}
+
+// Initialize search functionality
+function initializeSearchFunctionality() {
+    console.log('=== INITIALIZING SEARCH FUNCTIONALITY ===');
+    
+    // Assignment search
+    const assignmentSearchInput = document.getElementById('searchAssignments');
+    const clearAssignmentSearch = document.getElementById('clearSearchAssignments');
+    
+    if (assignmentSearchInput) {
+        // Remove existing event listener
+        if (assignmentSearchHandler) {
+            assignmentSearchInput.removeEventListener('input', assignmentSearchHandler);
+        }
+        
+        // Create new debounced search handler
+        assignmentSearchHandler = debounce((e) => {
+            performAssignmentSearch(e.target.value);
+        }, 300);
+        
+        assignmentSearchInput.addEventListener('input', assignmentSearchHandler);
+        console.log('Assignment search input listener attached');
+    }
+    
+    if (clearAssignmentSearch) {
+        clearAssignmentSearch.addEventListener('click', () => {
+            if (assignmentSearchInput) {
+                assignmentSearchInput.value = '';
+                performAssignmentSearch('');
+                assignmentSearchInput.focus();
+            }
+        });
+        console.log('Assignment clear button listener attached');
+    }
+    
+    // Adviser search
+    const adviserSearchInput = document.getElementById('searchAdvisers');
+    const clearAdviserSearch = document.getElementById('clearSearchAdvisers');
+    
+    if (adviserSearchInput) {
+        // Remove existing event listener
+        if (adviserSearchHandler) {
+            adviserSearchInput.removeEventListener('input', adviserSearchHandler);
+        }
+        
+        // Create new debounced search handler
+        adviserSearchHandler = debounce((e) => {
+            performAdviserSearch(e.target.value);
+        }, 300);
+        
+        adviserSearchInput.addEventListener('input', adviserSearchHandler);
+        console.log('Adviser search input listener attached');
+    }
+    
+    if (clearAdviserSearch) {
+        clearAdviserSearch.addEventListener('click', () => {
+            if (adviserSearchInput) {
+                adviserSearchInput.value = '';
+                performAdviserSearch('');
+                adviserSearchInput.focus();
+            }
+        });
+        console.log('Adviser clear button listener attached');
+    }
+}
+
+// Debounce function to limit search frequency
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// =============================================================================
+// STUDENT SEARCH FUNCTIONALITY
+// =============================================================================
+
+let studentSearchHandler = null;
+
+// Function to perform search on students
+function performStudentSearch(searchTerm) {
+    console.log('=== STUDENT SEARCH ===', searchTerm);
+    
+    const studentRows = document.querySelectorAll('.student-row');
+    const searchTermLower = searchTerm.toLowerCase().trim();
+    let visibleCount = 0;
+    let rowIndex = 1;
+    
+    studentRows.forEach(row => {
+        if (!searchTermLower) {
+            row.style.display = 'table-row';
+            // Update row number
+            const numberCell = row.querySelector('td:first-child');
+            if (numberCell) {
+                numberCell.textContent = rowIndex++;
+            }
+            visibleCount++;
+            return;
+        }
+        
+        const studentId = row.dataset.studentId || '';
+        const fullName = row.dataset.fullName || '';
+        const firstName = row.dataset.firstName || '';
+        const lastName = row.dataset.lastName || '';
+        const contact = row.dataset.contact || '';
+        
+        const searchText = `${studentId} ${fullName} ${firstName} ${lastName} ${contact}`.toLowerCase();
+        
+        if (searchText.includes(searchTermLower)) {
+            row.style.display = 'table-row';
+            // Update row number
+            const numberCell = row.querySelector('td:first-child');
+            if (numberCell) {
+                numberCell.textContent = rowIndex++;
+            }
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    
+    // Update found count
+    const foundElement = document.getElementById('foundStudents');
+    if (foundElement) {
+        foundElement.textContent = visibleCount;
+    }
+    
+    // Show/hide empty states
+    const emptyState = document.getElementById('emptyState');
+    const searchEmptyState = document.getElementById('studentsSearchEmptyState');
+    const tableContainer = document.querySelector('#studentTableBody').closest('.table-responsive');
+    
+    if (visibleCount === 0 && searchTermLower && studentRows.length > 0) {
+        // Show search empty state
+        if (tableContainer) tableContainer.style.display = 'none';
+        if (emptyState) emptyState.style.display = 'none';
+        if (searchEmptyState) {
+            searchEmptyState.style.display = 'block';
+            const searchMessage = searchEmptyState.querySelector('p');
+            if (searchMessage) {
+                searchMessage.textContent = `No students found matching "${searchTerm}"`;
+            }
+        }
+    } else if (visibleCount === 0 && !searchTermLower && studentRows.length === 0) {
+        // Show regular empty state
+        if (tableContainer) tableContainer.style.display = 'none';
+        if (emptyState) emptyState.style.display = 'block';
+        if (searchEmptyState) searchEmptyState.style.display = 'none';
+    } else {
+        // Show table
+        if (tableContainer) tableContainer.style.display = 'block';
+        if (emptyState) emptyState.style.display = 'none';
+        if (searchEmptyState) searchEmptyState.style.display = 'none';
+    }
+}
+
+// Initialize student search functionality
+function initializeStudentSearch() {
+    console.log('=== INITIALIZING STUDENT SEARCH ===');
+    
+    const studentSearchInput = document.getElementById('searchStudents');
+    const clearStudentSearch = document.getElementById('clearSearchStudents');
+    const foundStudentsElement = document.getElementById('foundStudents');
+    
+    // Initialize found count
+    const studentRows = document.querySelectorAll('.student-row');
+    if (foundStudentsElement) {
+        foundStudentsElement.textContent = studentRows.length;
+    }
+    
+    if (studentSearchInput) {
+        // Remove existing event listener
+        if (studentSearchHandler) {
+            studentSearchInput.removeEventListener('input', studentSearchHandler);
+        }
+        
+        // Create new debounced search handler
+        studentSearchHandler = debounce((e) => {
+            performStudentSearch(e.target.value);
+        }, 300);
+        
+        studentSearchInput.addEventListener('input', studentSearchHandler);
+        console.log('Student search input listener attached');
+        
+        // Clear any existing search
+        studentSearchInput.value = '';
+    }
+    
+    if (clearStudentSearch) {
+        // Remove existing event listener
+        clearStudentSearch.removeEventListener('click', clearStudentSearchHandler);
+        
+        clearStudentSearch.addEventListener('click', clearStudentSearchHandler);
+        console.log('Student clear button listener attached');
+    }
+}
+
+// Clear search handler
+function clearStudentSearchHandler() {
+    const studentSearchInput = document.getElementById('searchStudents');
+    if (studentSearchInput) {
+        studentSearchInput.value = '';
+        performStudentSearch('');
+        studentSearchInput.focus();
+    }
+}
+
+// Function to add search attributes to existing student rows
+function addSearchAttributesToStudentRows() {
+    const studentTable = document.getElementById('studentTableBody');
+    if (!studentTable) return;
+    
+    const rows = studentTable.querySelectorAll('tr');
+    rows.forEach((row, index) => {
+        if (row.classList.contains('student-row')) return; // Already has attributes
+        
+        const cells = row.querySelectorAll('td');
+        if (cells.length < 3) return; // Not a valid student row
+        
+        const studentId = cells[1]?.textContent?.trim() || '';
+        const nameCell = cells[2];
+        const nameParts = nameCell?.textContent?.trim().split(/\s+/) || [];
+        const contact = cells[cells.length - 2]?.textContent?.trim() || '';
+        
+        // Extract name parts
+        let firstName = '', lastName = '';
+        if (nameParts.length > 0) {
+            // Assume format: "LASTNAME, FIRSTNAME MIDDLENAME"
+            const nameText = nameParts.join(' ');
+            if (nameText.includes(',')) {
+                const parts = nameText.split(',');
+                lastName = parts[0]?.trim() || '';
+                firstName = parts[1]?.trim().split(' ')[0] || '';
+            } else {
+                lastName = nameParts[0] || '';
+                firstName = nameParts[1] || '';
+            }
+        }
+        
+        const fullName = nameCell?.textContent?.trim() || '';
+        
+        // Add search attributes
+        row.classList.add('student-row');
+        row.setAttribute('data-student-id', studentId.toLowerCase());
+        row.setAttribute('data-full-name', fullName.toLowerCase());
+        row.setAttribute('data-first-name', firstName.toLowerCase());
+        row.setAttribute('data-last-name', lastName.toLowerCase());
+        row.setAttribute('data-contact', contact.toLowerCase());
+    });
+    
+    // Initialize search after adding attributes
+    initializeStudentSearch();
+}
+
+// Auto-initialize search when student table changes
+function observeStudentTableChanges() {
+    const studentTable = document.getElementById('studentTableBody');
+    if (!studentTable) return;
+    
+    // Create observer to watch for changes
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                // New rows added, add search attributes
+                setTimeout(() => {
+                    addSearchAttributesToStudentRows();
+                }, 50);
+            }
+        });
+    });
+    
+    // Start observing
+    observer.observe(studentTable, {
+        childList: true,
+        subtree: true
+    });
+}
+
+// Initialize search for individual section student tables
+function initializeSectionStudentSearch(sectionId) {
+    console.log('=== INITIALIZING SECTION STUDENT SEARCH ===', sectionId);
+    
+    const searchInput = document.getElementById(`searchStudents${sectionId}`);
+    const clearButton = document.getElementById(`clearSearchStudents${sectionId}`);
+    const foundElement = document.getElementById(`foundStudents${sectionId}`);
+    
+    if (!searchInput) return;
+    
+    // Initialize found count
+    const studentRows = document.querySelectorAll(`#studentTableBody${sectionId} .student-row`);
+    if (foundElement) {
+        foundElement.textContent = studentRows.length;
+    }
+    
+    // Remove existing listeners
+    const newSearchInput = searchInput.cloneNode(true);
+    searchInput.parentNode.replaceChild(newSearchInput, searchInput);
+    
+    const newClearButton = clearButton.cloneNode(true);
+    clearButton.parentNode.replaceChild(newClearButton, clearButton);
+    
+    // Add search functionality
+    newSearchInput.addEventListener('input', debounce((e) => {
+        performSectionStudentSearch(sectionId, e.target.value);
+    }, 300));
+    
+    newClearButton.addEventListener('click', () => {
+        newSearchInput.value = '';
+        performSectionStudentSearch(sectionId, '');
+        newSearchInput.focus();
+    });
+    
+    console.log('Section student search initialized for:', sectionId);
+}
+
+// Perform search on section student table
+function performSectionStudentSearch(sectionId, searchTerm) {
+    console.log('=== SECTION STUDENT SEARCH ===', sectionId, searchTerm);
+    
+    const studentRows = document.querySelectorAll(`#studentTableBody${sectionId} .student-row`);
+    const searchTermLower = searchTerm.toLowerCase().trim();
+    const foundElement = document.getElementById(`foundStudents${sectionId}`);
+    const tableContainer = document.querySelector(`#studentTableBody${sectionId}`).closest('.table-responsive');
+    const searchEmptyState = document.getElementById(`studentsSearchEmptyState${sectionId}`);
+    
+    let visibleCount = 0;
+    let rowIndex = 1;
+    
+    studentRows.forEach(row => {
+        if (!searchTermLower) {
+            row.style.display = 'table-row';
+            // Update row number
+            const numberCell = row.querySelector('td:first-child');
+            if (numberCell) {
+                numberCell.textContent = rowIndex++;
+            }
+            visibleCount++;
+            return;
+        }
+        
+        const studentId = row.dataset.studentId || '';
+        const fullName = row.dataset.fullName || '';
+        const firstName = row.dataset.firstName || '';
+        const lastName = row.dataset.lastName || '';
+        const contact = row.dataset.contact || '';
+        
+        const searchText = `${studentId} ${fullName} ${firstName} ${lastName} ${contact}`.toLowerCase();
+        
+        if (searchText.includes(searchTermLower)) {
+            row.style.display = 'table-row';
+            // Update row number
+            const numberCell = row.querySelector('td:first-child');
+            if (numberCell) {
+                numberCell.textContent = rowIndex++;
+            }
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    
+    // Update found count
+    if (foundElement) {
+        foundElement.textContent = visibleCount;
+    }
+    
+    // Show/hide empty states
+    if (visibleCount === 0 && searchTermLower && studentRows.length > 0) {
+        // Show search empty state
+        if (tableContainer) tableContainer.style.display = 'none';
+        if (searchEmptyState) {
+            searchEmptyState.style.display = 'block';
+            const searchMessage = searchEmptyState.querySelector('p');
+            if (searchMessage) {
+                searchMessage.textContent = `No students found matching "${searchTerm}"`;
+            }
+        }
+    } else {
+        // Show table
+        if (tableContainer) tableContainer.style.display = 'block';
+        if (searchEmptyState) searchEmptyState.style.display = 'none';
+    }
+}
+
+// Initialize everything when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    observeStudentTableChanges();
+    addSearchAttributesToStudentRows(); // For any existing rows
+});
+
+// Make search functions globally available
+window.performAssignmentSearch = performAssignmentSearch;
+window.performAdviserSearch = performAdviserSearch;
+window.performStudentSearch = performStudentSearch;
+window.initializeSearchFunctionality = initializeSearchFunctionality;
+window.initializeStudentSearch = initializeStudentSearch;
+window.addSearchAttributesToStudentRows = addSearchAttributesToStudentRows;
+window.initializeSectionStudentSearch = initializeSectionStudentSearch;
+window.performSectionStudentSearch = performSectionStudentSearch;

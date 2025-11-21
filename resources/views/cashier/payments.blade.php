@@ -50,7 +50,6 @@
                         <table class="table table-hover" id="payment-schedules-table">
                             <thead>
                                 <tr>
-                                    <th>Priority</th>
                                     <th>Transaction ID</th>
                                     <th>Student ID</th>
                                     <th>Amount</th>

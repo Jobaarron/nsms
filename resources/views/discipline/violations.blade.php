@@ -222,7 +222,7 @@
               of {{ $violations->total() }} violations
             </small>
           </div>
-          {{ $violations->links() }}
+          {{ $violations->links('pagination.custom') }}
         </div>
         @endif
       </div>

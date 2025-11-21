@@ -27,32 +27,26 @@
   
   @vite('resources/sass/app.scss')
   @vite(['resources/css/index_registrar.css'])
+  @vite(['resources/css/collapsible-sidebar.css'])
   @vite(['resources/js/app.js'])
   @vite(['resources/js/registrar-class-lists.js'])
   @vite(['resources/js/registrar-dashboard.js'])
   @vite(['resources/js/registrar-applicant-archives.js'])
+  @vite(['resources/js/collapsible-sidebar.js'])
 
 </head>
 <body>
-  <!-- Mobile Navigation Toggle -->
-  <div class="d-md-none bg-white border-bottom p-3 fixed-top" style="z-index: 1030;">
-    <div class="d-flex justify-content-between align-items-center">
-      <img src="{{ Vite::asset('resources/assets/images/nms-logo.png') }}" alt="Nicolites Montessori School" style="height: 30px;">
-      <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#registrarSidebar" aria-controls="registrarSidebar">
-        <i class="ri-menu-line"></i>
-      </button>
-    </div>
-  </div>
+  <!-- Sidebar Toggle Button (Desktop & Mobile) -->
+  <button class="sidebar-toggle d-block" type="button" title="Toggle Sidebar">
+    <i class="ri-menu-line"></i>
+  </button>
 
-  <div class="container-fluid">
-    <div class="row">
-      
-      <!-- SIDEBAR -->
-      <nav class="col-12 col-md-2 sidebar d-none d-md-block py-4">
-        <!-- School Logo -->
-        <div class="text-center mb-3">
-          <img src="{{ Vite::asset('resources/assets/images/nms-logo.png') }}" alt="Nicolites Montessori School" class="sidebar-logo">
-        </div>
+  <!-- SIDEBAR -->
+  <nav class="sidebar py-4 bg-white border-end">
+    <!-- School Logo -->
+    <div class="text-center mb-3">
+      <img src="{{ Vite::asset('resources/assets/images/nms-logo.png') }}" alt="Nicolites Montessori School" class="sidebar-logo">
+    </div>
         
         <!-- User Info -->
         {{-- <div class="user-info">
@@ -60,103 +54,61 @@
           <div class="user-role">Registrar</div>
         </div> --}}
 
-        <ul class="nav flex-column">
-          <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('registrar.dashboard') ? 'active' : '' }}" href="{{ route('registrar.dashboard') }}">
-              <i class="ri-home-line me-2"></i>Dashboard
+        <ul class="nav flex-column px-3">
+          <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('registrar.dashboard') ? 'active' : '' }}" href="{{ route('registrar.dashboard') }}" title="Dashboard">
+              <i class="ri-home-line"></i><span>Dashboard</span>
             </a>
           </li>
           <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('registrar.applications') ? 'active' : '' }}" href="{{ route('registrar.applications') }}">
-              <i class="ri-file-text-line me-2"></i>Applications
+            <a class="nav-link {{ request()->routeIs('registrar.applications') ? 'active' : '' }}" href="{{ route('registrar.applications') }}" title="Applications">
+              <i class="ri-file-text-line me-2"></i><span>Applications</span>
             </a>
           </li>
           <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('registrar.class-lists') ? 'active' : '' }}" href="{{ route('registrar.class-lists') }}">
-              <i class="ri-user-line me-2"></i>Class Lists
+            <a class="nav-link {{ request()->routeIs('registrar.class-lists') ? 'active' : '' }}" href="{{ route('registrar.class-lists') }}" title="Class Lists">
+              <i class="ri-user-line me-2"></i><span>Class Lists</span>
             </a>
           </li>
            <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('registrar.applicant-archives') ? 'active' : '' }}" href="{{ route('registrar.applicant-archives') }}">
-              <i class="ri-folder-line me-2"></i>Applicant Archives
+            <a class="nav-link {{ request()->routeIs('registrar.applicant-archives') ? 'active' : '' }}" href="{{ route('registrar.applicant-archives') }}" title="Applicant Archives">
+              <i class="ri-folder-line me-2"></i><span>Applicant Archives</span>
             </a>
-          </li> 
+          </li>
+          
+          <!-- LOGOUT SECTION -->
+          <li class="nav-item mb-2">
+            <form class="logout-form" action="{{ route('registrar.logout') }}" method="POST">
+              @csrf
+              <button type="submit" class="nav-link text-danger border-0 bg-transparent w-100 text-start d-flex align-items-center" style="font-weight: 600;" title="Logout">
+                <i class="ri-logout-box-line me-2"></i><span>Logout</span>
+              </button>
+            </form>
+          </li>
         </ul>
-        
-        <!-- LOGOUT SECTION -->
-        <div class="mt-auto pt-3">
-          <form action="{{ route('registrar.logout') }}" method="POST">
-            @csrf
-            <button type="submit" class="nav-link text-danger border-0 bg-transparent w-100 text-start d-flex align-items-center" style="font-weight: 600;">
-              <i class="ri-logout-box-line me-2"></i>Logout
-            </button>
-          </form>
-        </div>
       </nav>
 
-      <!-- MOBILE SIDEBAR (Offcanvas) -->
-      <div class="offcanvas offcanvas-start d-md-none" tabindex="-1" id="registrarSidebar" aria-labelledby="registrarSidebarLabel">
-        <div class="offcanvas-header border-bottom">
-          <div class="d-flex align-items-center">
-            <img src="{{ Vite::asset('resources/assets/images/nms-logo.png') }}" alt="Nicolites Montessori School" style="height: 30px;" class="me-2">
-            <h5 class="offcanvas-title mb-0" id="registrarSidebarLabel">Registrar Portal</h5>
+  <!-- Mobile Overlay -->
+  <div class="mobile-overlay"></div>
+
+  <div class="main-content-wrapper">
+    <main class="px-3 px-md-4 py-4">
+      <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2 section-title">
+          <i class="ri-building-line me-2"></i>
+          Registrar Portal
+        </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+          <div class="btn-group me-2">
+            <span class="badge bg-primary">
+              {{ now()->format('M d, Y') }}
+            </span>
           </div>
-          <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-        </div>
-        <div class="offcanvas-body p-0">
-          <ul class="nav flex-column">
-            <li class="nav-item mb-2">
-              <a class="nav-link {{ request()->routeIs('registrar.dashboard') ? 'active' : '' }}" href="{{ route('registrar.dashboard') }}">
-                <i class="ri-home-line me-2"></i>Dashboard
-              </a>
-            </li>
-            <li class="nav-item mb-2">
-              <a class="nav-link {{ request()->routeIs('registrar.applications') ? 'active' : '' }}" href="{{ route('registrar.applications') }}">
-                <i class="ri-file-text-line me-2"></i>Applications
-              </a>
-            </li>
-            <li class="nav-item mb-2">
-              <a class="nav-link {{ request()->routeIs('registrar.class-lists') ? 'active' : '' }}" href="{{ route('registrar.class-lists') }}">
-                <i class="ri-user-line me-2"></i>Class Lists
-              </a>
-            </li>
-            <li class="nav-item mb-2">
-              <a class="nav-link {{ request()->routeIs('registrar.applicant-archives') ? 'active' : '' }}" href="{{ route('registrar.applicant-archives') }}">
-                <i class="ri-folder-line me-2"></i>Applicant Archives
-              </a>
-            </li>
-            <li class="nav-item mt-3">
-              <form method="POST" action="{{ route('registrar.logout') }}">
-                @csrf
-                <button type="submit" class="btn btn-outline-danger w-100">
-                  <i class="ri-logout-box-line me-2"></i>Logout
-                </button>
-              </form>
-            </li>
-          </ul>
         </div>
       </div>
 
-      <!-- MAIN CONTENT -->
-      <main class="col-12 col-md-10 px-3 px-md-4 py-4" style="margin-top: 70px;">
-        <div class="d-md-none mb-3"></div>
-        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-          <h1 class="h2 section-title">
-            <i class="ri-building-line me-2"></i>
-            Registrar Portal
-          </h1>
-          <div class="btn-toolbar mb-2 mb-md-0">
-            <div class="btn-group me-2">
-              <span class="badge bg-primary">
-                {{ now()->format('M d, Y') }}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {{ $slot }}
-      </main>
-    </div>
+      {{ $slot }}
+    </main>
   </div>
 </body>
 </html>

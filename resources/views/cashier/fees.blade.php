@@ -214,7 +214,7 @@
                         <!-- Pagination -->
                         @if($fees->hasPages())
                             <div class="d-flex justify-content-center mt-4">
-                                {{ $fees->links() }}
+                                {{ $fees->links('pagination.custom') }}
                             </div>
                         @endif
                     @else

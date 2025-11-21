@@ -1621,6 +1621,17 @@ class RegistrarController extends Controller
             $studentsQuery->where('track', $track);
         }
         
+        // Add search functionality
+        $search = $request->get('search');
+        if ($search) {
+            $studentsQuery->where(function($query) use ($search) {
+                $query->where('first_name', 'LIKE', '%' . $search . '%')
+                      ->orWhere('last_name', 'LIKE', '%' . $search . '%')
+                      ->orWhere('student_id', 'LIKE', '%' . $search . '%')
+                      ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ['%' . $search . '%']);
+            });
+        }
+        
         $students = $studentsQuery->orderBy('last_name')
                                  ->orderBy('first_name')
                                  ->get();
@@ -1638,7 +1649,8 @@ class RegistrarController extends Controller
             'success' => true,
             'students' => $students,
             'class_info' => $classInfo,
-            'count' => $students->count()
+            'count' => $students->count(),
+            'search' => $search
         ]);
     }
     

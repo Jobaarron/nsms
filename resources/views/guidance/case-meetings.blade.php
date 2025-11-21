@@ -67,7 +67,7 @@
     }
     </script>
                     <a href="{{ route('guidance.case-meetings.index') }}" class="btn btn-outline-secondary">
-                        <i class="ri-arrow-left-line me-2"></i>Back to List
+                        Back to List
                     </a>
                     @if($caseMeeting->status !== 'completed' && $caseMeeting->status !== 'forwarded')
                         <button class="btn btn-success" onclick="completeCaseMeeting({{ $caseMeeting->id }})">
@@ -459,16 +459,24 @@
                         </table>
                     </div>
                 </div>
-                @if($caseMeetings->hasPages())
+                @if($caseMeetings->hasPages() || $caseMeetings->count() > 0)
                 <div class="card-footer bg-white border-0">
-                    {{ $caseMeetings->links() }}
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="text-muted">
+                            Showing {{ $caseMeetings->firstItem() ?? 0 }} to {{ $caseMeetings->lastItem() ?? 0 }} of {{ $caseMeetings->total() }} {{ Str::plural('case meeting', $caseMeetings->total()) }}
+                        </div>
+                        @if($caseMeetings->hasPages())
+                            <div>
+                                {{ $caseMeetings->links('pagination.custom') }}
+                            </div>
+                        @endif
+                    </div>
                 </div>
                 @endif
             </div>
         </div>
     </div>
 
-    Schedule Case Meeting Modal
     <div class="modal fade" id="scheduleCaseMeetingModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">

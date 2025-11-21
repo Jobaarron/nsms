@@ -50,7 +50,6 @@
                         <table class="table table-hover" id="payment-archives-table">
                             <thead>
                                 <tr>
-                                    <th>Priority</th>
                                     <th>Transaction ID</th>
                                     <th>Student Info</th>
                                     <th>Amount</th>

@@ -120,7 +120,6 @@ function updatePaymentSchedulesTable(payments) {
 function createPaymentRow(payment) {
     const student = payment.payable;
     const statusBadge = getStatusBadge(payment.confirmation_status);
-    const priorityBadge = getPriorityBadge(payment.scheduled_date);
     const isDue = isDuePayment(payment.scheduled_date);
     const rowClass = isDue ? 'table-danger' : '';
     
@@ -137,7 +136,6 @@ function createPaymentRow(payment) {
     
     return `
         <tr class="${rowClass}">
-            <td>${priorityBadge}</td>
             <td>
                 <span class="fw-bold">${payment.transaction_id}</span><br>
                 <small class="text-muted">${paymentMethodDisplay}</small>
@@ -203,26 +201,7 @@ function getStatusBadge(status) {
     return badges[status] || '<span class="badge bg-warning">Not yet paid</span>';
 }
 
-function getPriorityBadge(scheduledDate) {
-    const today = new Date();
-    const scheduled = new Date(scheduledDate);
-    const diffDays = Math.ceil((scheduled - today) / (1000 * 60 * 60 * 24));
-    
-    if (diffDays < 0) {
-        const overdueDays = Math.abs(diffDays);
-        if (overdueDays > 7) {
-            return '<span class="badge bg-danger">Critical</span>';
-        } else if (overdueDays > 3) {
-            return '<span class="badge bg-warning">High</span>';
-        } else {
-            return '<span class="badge bg-info">Medium</span>';
-        }
-    } else if (diffDays === 0) {
-        return '<span class="badge bg-warning">Due Today</span>';
-    } else {
-        return '<span class="badge bg-secondary">Scheduled</span>';
-    }
-}
+
 
 function isDuePayment(scheduledDate) {
     const today = new Date();
@@ -490,14 +469,8 @@ function displayPaymentDetailsModal(payment) {
     if (content) {
         const student = payment.payable;
         const daysOverdue = calculateDaysOverdue(payment.scheduled_date);
-        const priorityClass = daysOverdue > 7 ? 'danger' : (daysOverdue > 3 ? 'warning' : 'info');
         
         content.innerHTML = `
-            <div class="alert alert-${priorityClass}">
-                <i class="ri-alarm-warning-line me-2"></i>
-                <strong>Priority:</strong> ${daysOverdue > 7 ? 'Critical' : (daysOverdue > 3 ? 'High' : 'Medium')} 
-                ${daysOverdue > 0 ? `(${daysOverdue} days overdue)` : daysOverdue === 0 ? '(Due today)' : `(Due in ${Math.abs(daysOverdue)} days)`}
-            </div>
             <div class="row">
                 <div class="col-md-6">
                     <h6>Student Information</h6>

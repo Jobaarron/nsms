@@ -15,8 +15,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add hover effects and styling
     addCustomStyles();
     
-    // Auto-load all grade sections on page load
-    autoLoadAllGrades();
+    // Auto-load all grade sections on page load (disabled to prevent search interference)
+    // autoLoadAllGrades();
 });
 
 // Auto-load all grade sections on page load
@@ -38,7 +38,7 @@ function autoLoadAllGrades() {
 }
 
 // Load sections for a grade level
-async function loadGradeSections(grade) {
+window.loadGradeSections = async function(grade) {
     const sectionsContainer = document.getElementById(`sections${grade.replace(' ', '')}`);
     const badge = document.getElementById(`badge${grade.replace(' ', '')}`);
     
@@ -60,7 +60,7 @@ async function loadGradeSections(grade) {
 }
 
 // Load strands for Senior High School
-async function loadSeniorHighStrands(grade, sectionsContainer, badge) {
+window.loadSeniorHighStrands = async function(grade, sectionsContainer, badge) {
     const strands = ['STEM', 'ABM', 'HUMSS', 'TVL'];
     
     let strandsHtml = `
@@ -99,7 +99,7 @@ async function loadSeniorHighStrands(grade, sectionsContainer, badge) {
 }
 
 // Load sections for a specific strand
-async function loadStrandSections(grade, strand) {
+window.loadStrandSections = async function(grade, strand) {
     const sectionsContainer = document.getElementById(`sections${grade.replace(' ', '')}`);
     const badge = document.getElementById(`badge${grade.replace(' ', '')}`);
     
@@ -118,7 +118,7 @@ async function loadStrandSections(grade, strand) {
 }
 
 // Load tracks for TVL strand
-async function loadTVLTracks(grade, strand, sectionsContainer, badge) {
+window.loadTVLTracks = async function(grade, strand, sectionsContainer, badge) {
     const tracks = ['ICT', 'H.E'];
     
     let tracksHtml = `
@@ -157,7 +157,7 @@ async function loadTVLTracks(grade, strand, sectionsContainer, badge) {
 }
 
 // Load sections for Elementary/Junior High or specific strand/track
-async function loadSectionsForStrand(grade, strand = null, track = null, sectionsContainer, badge) {
+window.loadSectionsForStrand = async function(grade, strand = null, track = null, sectionsContainer, badge) {
     try {
         let url = `/registrar/class-lists/get-sections?grade_level=${encodeURIComponent(grade)}`;
         if (strand) url += `&strand=${encodeURIComponent(strand)}`;
@@ -243,11 +243,12 @@ async function loadSectionsForStrand(grade, strand = null, track = null, section
 }
 
 // Load students for a specific section (with strand/track support)
-async function loadSectionStudents(grade, section, strand = null, track = null) {
+window.loadSectionStudents = async function(grade, section, strand = null, track = null, search = '') {
     try {
         let url = `/registrar/class-lists/get-students?grade_level=${encodeURIComponent(grade)}&section=${encodeURIComponent(section)}`;
         if (strand) url += `&strand=${encodeURIComponent(strand)}`;
         if (track) url += `&track=${encodeURIComponent(track)}`;
+        if (search) url += `&search=${encodeURIComponent(search)}`;
         
         const response = await fetch(url, {
             headers: {
@@ -259,7 +260,7 @@ async function loadSectionStudents(grade, section, strand = null, track = null) 
         const data = await response.json();
         
         if (data.success && data.students) {
-            showStudentsList(grade, section, data.students, data.class_info, strand, track);
+            showStudentsList(grade, section, data.students, data.class_info, strand, track, search);
         } else {
             alert('Failed to load students for this section');
         }
@@ -270,7 +271,7 @@ async function loadSectionStudents(grade, section, strand = null, track = null) 
 }
 
 // Show students list in expanded section
-function showStudentsList(grade, section, students, classInfo, strand = null, track = null) {
+function showStudentsList(grade, section, students, classInfo, strand = null, track = null, currentSearch = '') {
     const sectionsContainer = document.getElementById(`sections${grade.replace(' ', '')}`);
     const badge = document.getElementById(`badge${grade.replace(' ', '')}`);
     
@@ -303,6 +304,40 @@ function showStudentsList(grade, section, students, classInfo, strand = null, tr
                 <span class="badge bg-light text-dark">${students.length} students</span>
             </div>
         </div>
+        
+        <!-- Search Section -->
+        <div class="p-3 border-bottom bg-light">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="ri-search-line"></i></span>
+                        <input type="text" class="form-control search-input" 
+                               placeholder="Search by name or student ID..." 
+                               value="${currentSearch}" 
+                               autocomplete="off"
+                               data-grade="${grade}"
+                               data-section="${section}" 
+                               data-strand="${strand || ''}"
+                               data-track="${track || ''}"
+                        <button class="btn btn-outline-secondary clear-search" 
+                                type="button" 
+                                title="Clear search"
+                                data-grade="${grade}"
+                                data-section="${section}" 
+                                data-strand="${strand || ''}"
+                                data-track="${track || ''}"
+                            <i class="ri-close-line"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="text-muted mt-2">
+                        <span class="total-students">${students.length}</span> student${students.length !== 1 ? 's' : ''} found
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <div class="students-list p-3">
     `;
     
@@ -313,8 +348,8 @@ function showStudentsList(grade, section, students, classInfo, strand = null, tr
                     <div class="d-flex align-items-center">
                         <span class="student-number me-3 text-muted">${index + 1}.</span>
                         <div>
-                            <h6 class="mb-0">${student.first_name} ${student.last_name}</h6>
-                            <small class="text-muted">${student.student_id || 'N/A'}</small>
+                            <h6 class="mb-0">${highlightSearchTerm(student.first_name + ' ' + student.last_name, currentSearch)}</h6>
+                            <small class="text-muted">${highlightSearchTerm(student.student_id || 'N/A', currentSearch)}</small>
                         </div>
                     </div>
                     <div class="student-actions">
@@ -326,20 +361,190 @@ function showStudentsList(grade, section, students, classInfo, strand = null, tr
             `;
         });
     } else {
+        const noResultsMessage = currentSearch ? 
+            `No students found matching "${currentSearch}"` : 
+            'No students found in this section';
         studentsHtml += `
             <div class="text-center py-4">
-                <i class="ri-user-line fs-1 text-muted"></i>
-                <p class="text-muted mt-2">No students found in this section</p>
+                <i class="ri-${currentSearch ? 'search' : 'user'}-line fs-1 text-muted"></i>
+                <p class="text-muted mt-2">${noResultsMessage}</p>
+                ${currentSearch ? '<button class="btn btn-sm btn-outline-primary" onclick="clearSearch(\''+grade+'\', \''+section+'\', \''+strand+'\', \''+track+'\')">Clear Search</button>' : ''}
             </div>
         `;
     }
     
     studentsHtml += '</div>';
     sectionsContainer.innerHTML = studentsHtml;
+    
+    // Set up search input event listener to avoid rebuilding issues
+    const searchInput = sectionsContainer.querySelector('.search-input');
+    if (searchInput) {
+        let localSearchTimeout;
+        
+        // Remove any existing event listeners to prevent duplicates
+        searchInput.removeEventListener('input', searchInput._searchHandler);
+        
+        // Create new event handler
+        searchInput._searchHandler = function() {
+            const grade = this.dataset.grade;
+            const section = this.dataset.section;
+            const strand = this.dataset.strand || null;
+            const track = this.dataset.track || null;
+            const searchValue = this.value;
+            
+            // Store current search parameters
+            currentSearchParams = { grade, section, strand, track, searchValue };
+            
+            clearTimeout(localSearchTimeout);
+            localSearchTimeout = setTimeout(() => {
+                performSearch(grade, section, strand, track, searchValue.trim());
+            }, 300);
+        };
+        
+        searchInput.addEventListener('input', searchInput._searchHandler);
+        
+        // Focus the search input if there was a previous search
+        if (currentSearch) {
+            setTimeout(() => {
+                searchInput.focus();
+                searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
+            }, 100);
+        }
+    }
+    
+    // Set up clear button event listener
+    const clearButton = sectionsContainer.querySelector('.clear-search');
+    if (clearButton) {
+        clearButton.addEventListener('click', function() {
+            const grade = this.dataset.grade;
+            const section = this.dataset.section;
+            const strand = this.dataset.strand || null;
+            const track = this.dataset.track || null;
+            
+            const searchInput = this.previousElementSibling;
+            searchInput.value = '';
+            currentSearchParams = { grade, section, strand, track, searchValue: '' };
+            performSearch(grade, section, strand, track, '');
+        });
+    }
 }
 
+// Handle search input with debouncing
+let searchTimeout;
+let currentSearchParams = {};
+window.handleSearch = function(grade, section, strand, track, searchValue) {
+    console.log('Search triggered:', { grade, section, strand, track, searchValue });
+    
+    // Store current search parameters
+    currentSearchParams = { grade, section, strand, track, searchValue };
+    
+    // Don't perform search if input is being rebuilt
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        console.log('Executing search after debounce:', searchValue.trim());
+        performSearch(grade, section, strand || null, track || null, searchValue.trim());
+    }, 300); // Wait 300ms after user stops typing
+};
+
+// Perform search without rebuilding input
+async function performSearch(grade, section, strand, track, search) {
+    try {
+        let url = `/registrar/class-lists/get-students?grade_level=${encodeURIComponent(grade)}&section=${encodeURIComponent(section)}`;
+        if (strand) url += `&strand=${encodeURIComponent(strand)}`;
+        if (track) url += `&track=${encodeURIComponent(track)}`;
+        if (search) url += `&search=${encodeURIComponent(search)}`;
+        
+        const response = await fetch(url, {
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.students) {
+            updateStudentsList(data.students, search);
+        } else {
+            console.error('Search failed:', data.message);
+        }
+    } catch (error) {
+        console.error('Error performing search:', error);
+    }
+}
+
+// Update only the students list and count, preserve search input
+function updateStudentsList(students, currentSearch) {
+    const studentsContainer = document.querySelector('.students-list');
+    const countElement = document.querySelector('.total-students');
+    
+    if (!studentsContainer || !countElement) {
+        console.error('Students container or count element not found');
+        return;
+    }
+    
+    // Update count
+    countElement.textContent = students.length;
+    
+    // Update students list
+    let studentsHtml = '';
+    
+    if (students.length > 0) {
+        students.forEach((student, index) => {
+            studentsHtml += `
+                <div class="student-item d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <div class="d-flex align-items-center">
+                        <span class="student-number me-3 text-muted">${index + 1}.</span>
+                        <div>
+                            <h6 class="mb-0">${highlightSearchTerm(student.first_name + ' ' + student.last_name, currentSearch)}</h6>
+                            <small class="text-muted">${highlightSearchTerm(student.student_id || 'N/A', currentSearch)}</small>
+                        </div>
+                    </div>
+                    <div class="student-actions">
+                        <button class="btn btn-sm btn-outline-primary" onclick="viewStudentDetails('${student.id}')">
+                            <i class="ri-eye-line"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+    } else {
+        const noResultsMessage = currentSearch ? 
+            `No students found matching "${currentSearch}"` : 
+            'No students found in this section';
+        studentsHtml = `
+            <div class="text-center py-4">
+                <i class="ri-${currentSearch ? 'search' : 'user'}-line fs-1 text-muted"></i>
+                <p class="text-muted mt-2">${noResultsMessage}</p>
+                ${currentSearch ? `<button class="btn btn-sm btn-outline-primary" onclick="clearSearch('${currentSearchParams.grade}', '${currentSearchParams.section}', '${currentSearchParams.strand || ''}', '${currentSearchParams.track || ''}')">Clear Search</button>` : ''}
+            </div>
+        `;
+    }
+    
+    studentsContainer.innerHTML = studentsHtml;
+}
+
+// Clear search
+window.clearSearch = function(grade, section, strand, track) {
+    const searchInput = document.querySelector('.search-input');
+    if (searchInput) {
+        searchInput.value = '';
+    }
+    loadSectionStudents(grade, section, strand || null, track || null, '');
+};
+
+// Highlight search terms in text
+function highlightSearchTerm(text, searchTerm) {
+    if (!searchTerm || !text) return text;
+    
+    const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    return text.replace(regex, '<mark class="bg-warning text-dark">$1</mark>');
+}
+
+
+
 // View student details
-async function viewStudentDetails(studentId) {
+window.viewStudentDetails = async function(studentId) {
     try {
         const response = await fetch(`/registrar/class-lists/student/${studentId}`, {
             headers: {
@@ -389,7 +594,7 @@ async function viewStudentDetails(studentId) {
 }
 
 // Load sections for Elementary and Junior High
-async function loadElementaryJuniorSections(grade, sectionsContainer, badge) {
+window.loadElementaryJuniorSections = async function(grade, sectionsContainer, badge) {
     await loadSectionsForStrand(grade, null, null, sectionsContainer, badge);
 }
 
@@ -429,13 +634,4 @@ function addCustomStyles() {
     // Keep minimal - most styling will be in the view file
 }
 
-// Expose functions globally
-window.loadGradeSections = loadGradeSections;
-window.loadStrandSections = loadStrandSections;
-window.loadSectionStudents = loadSectionStudents;
-window.viewStudentDetails = viewStudentDetails;
-window.loadSeniorHighStrands = loadSeniorHighStrands;
-window.loadTVLTracks = loadTVLTracks;
-window.loadSectionsForStrand = loadSectionsForStrand;
-window.showStudentsList = showStudentsList;
-window.loadElementaryJuniorSections = loadElementaryJuniorSections;
+// Functions are now globally available via window.functionName declarations

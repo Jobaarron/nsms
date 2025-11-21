@@ -20,32 +20,27 @@
   <!-- App CSS & JS (includes Bootstrap 5 via Vite) -->
   @vite(['resources/sass/app.scss','resources/js/app.js'])
   @vite(['resources/css/index_faculty_head.css'])
+  @vite(['resources/css/collapsible-sidebar.css'])
   
   <!-- Faculty Head JavaScript - Load in HEAD for onclick handlers -->
   @vite(['resources/js/faculty-head-assign-teacher.js'])
   @vite(['resources/js/faculty-head-activate-submission.js'])
   @vite(['resources/js/faculty-head-view-grades.js'])
+  @vite(['resources/js/collapsible-sidebar.js'])
 
 </head>
 <body>
-  <!-- Mobile Navigation Toggle -->
-  <div class="d-md-none bg-white border-bottom p-3 fixed-top" style="z-index: 1030;">
-    <div class="d-flex justify-content-between align-items-center">
-      <img src="{{ Vite::asset('resources/assets/images/nms-logo.png') }}" alt="Nicolites Montessori School" style="height: 30px;">
-      <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#facultyHeadSidebar" aria-controls="facultyHeadSidebar">
-        <i class="ri-menu-line"></i>
-      </button>
-    </div>
-  </div>
+  <!-- Sidebar Toggle Button (Desktop & Mobile) -->
+  <button class="sidebar-toggle d-md-block" type="button" title="Toggle Sidebar">
+    <i class="ri-menu-fold-line"></i>
+  </button>
 
-  <div class="container-fluid">
-    <div class="row">
-      <!-- SIDEBAR -->
-      <nav class="col-12 col-md-2 sidebar d-none d-md-block py-4">
-        <!-- School Logo -->
-        <div class="text-center mb-3">
-          <img src="{{ Vite::asset('resources/assets/images/nms-logo.png') }}" alt="Nicolites Montessori School" class="sidebar-logo">
-        </div>
+  <!-- SIDEBAR -->
+  <nav class="sidebar py-4 bg-white border-end">
+    <!-- School Logo -->
+    <div class="text-center mb-3">
+      <img src="{{ Vite::asset('resources/assets/images/nms-logo.png') }}" alt="Nicolites Montessori School" class="sidebar-logo">
+    </div>
         
         <!-- User Info -->
         <!-- <div class="user-info">
@@ -55,91 +50,44 @@
         
         <ul class="nav flex-column">
           <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('faculty-head.dashboard') ? 'active' : '' }}" href="{{ route('faculty-head.dashboard') }}">
-              <i class="ri-dashboard-line me-2"></i>Dashboard
+            <a class="nav-link {{ request()->routeIs('faculty-head.dashboard') ? 'active' : '' }}" href="{{ route('faculty-head.dashboard') }}" title="Dashboard">
+              <i class="ri-dashboard-line me-2"></i><span>Dashboard</span>
             </a>
           </li>
           
           <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('faculty-head.assign-faculty') || request()->routeIs('faculty-head.assign-teacher.*') || request()->routeIs('faculty-head.assign-adviser.*') ? 'active' : '' }}" href="{{ route('faculty-head.assign-faculty') }}">
-              <i class="ri-team-line me-2"></i>Faculty Assignments
+            <a class="nav-link {{ request()->routeIs('faculty-head.assign-faculty') || request()->routeIs('faculty-head.assign-teacher.*') || request()->routeIs('faculty-head.assign-adviser.*') ? 'active' : '' }}" href="{{ route('faculty-head.assign-faculty') }}" title="Faculty Assignments">
+              <i class="ri-team-line me-2"></i><span>Faculty Assignments</span>
             </a>
           </li>
           
           <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('faculty-head.view-grades.*') || request()->routeIs('faculty-head.approve-grades.*') ? 'active' : '' }}" href="{{ route('faculty-head.view-grades') }}">
-              <i class="ri-file-list-3-line me-2"></i>Review & Approve Grades
+            <a class="nav-link {{ request()->routeIs('faculty-head.view-grades.*') || request()->routeIs('faculty-head.approve-grades.*') ? 'active' : '' }}" href="{{ route('faculty-head.view-grades') }}" title="Review & Approve Grades">
+              <i class="ri-file-list-3-line me-2"></i><span>Review & Approve Grades</span>
             </a>
           </li>
           
           <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('faculty-head.activate-submission.*') ? 'active' : '' }}" href="{{ route('faculty-head.activate-submission') }}">
-              <i class="ri-play-circle-line me-2"></i>Activate Grade Submission
+            <a class="nav-link {{ request()->routeIs('faculty-head.activate-submission.*') ? 'active' : '' }}" href="{{ route('faculty-head.activate-submission') }}" title="Activate Grade Submission">
+              <i class="ri-play-circle-line me-2"></i><span>Activate Grade Submission</span>
             </a>
           </li>
 
           <li class="nav-item mt-3">
-            <form method="POST" action="{{ route('faculty-head.logout') }}">
+            <form class="logout-form" method="POST" action="{{ route('faculty-head.logout') }}">
               @csrf
-              <button type="submit" class="btn btn-logout w-100">
-                <i class="ri-logout-circle-line me-2"></i>Logout
+              <button type="submit" class="btn btn-logout w-100" title="Logout">
+                <i class="ri-logout-circle-line me-2"></i><span>Logout</span>
               </button>
             </form>
           </li>
         </ul>
       </nav>
 
-      <!-- MOBILE SIDEBAR (Offcanvas) -->
-      <div class="offcanvas offcanvas-start d-md-none" tabindex="-1" id="facultyHeadSidebar" aria-labelledby="facultyHeadSidebarLabel">
-        <div class="offcanvas-header border-bottom">
-          <div class="d-flex align-items-center">
-            <img src="{{ Vite::asset('resources/assets/images/nms-logo.png') }}" alt="Nicolites Montessori School" style="height: 30px;" class="me-2">
-            <h5 class="offcanvas-title mb-0" id="facultyHeadSidebarLabel">Faculty Head Portal</h5>
-          </div>
-          <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-        </div>
-        <div class="offcanvas-body p-0">
-          <ul class="nav flex-column">
-            <li class="nav-item mb-2">
-              <a class="nav-link {{ request()->routeIs('faculty-head.dashboard') ? 'active' : '' }}" href="{{ route('faculty-head.dashboard') }}">
-                <i class="ri-dashboard-line me-2"></i>Dashboard
-              </a>
-            </li>
-            <li class="nav-item mb-2">
-              <a class="nav-link {{ request()->routeIs('faculty-head.assign-faculty') ? 'active' : '' }}" href="{{ route('faculty-head.assign-faculty') }}">
-                <i class="ri-user-add-line me-2"></i>Faculty Assignments
-              </a>
-            </li>
-            <li class="nav-item mb-2">
-              <a class="nav-link {{ request()->routeIs('faculty-head.approve-grades') ? 'active' : '' }}" href="{{ route('faculty-head.approve-grades') }}">
-                <i class="ri-file-list-3-line me-2"></i>Review & Approve Grades
-              </a>
-            </li>
-            <li class="nav-item mb-2">
-              <a class="nav-link {{ request()->routeIs('faculty-head.activate-submission') ? 'active' : '' }}" href="{{ route('faculty-head.activate-submission') }}">
-                <i class="ri-play-circle-line me-2"></i>Activate Grade Submission
-              </a>
-            </li>
-            <li class="nav-item mt-3">
-              <form method="POST" action="{{ route('faculty-head.logout') }}">
-                @csrf
-                <button type="submit" class="btn btn-outline-danger w-100">
-                  <i class="ri-logout-box-line me-2"></i>Logout
-                </button>
-              </form>
-            </li>
-          </ul>
-        </div>
-      </div>
-
-      <!-- MAIN CONTENT -->
-      <main class="col-12 col-md-10 ms-sm-auto px-3 px-md-4" style="margin-top: 70px;">
-        <div class="d-md-none mb-3"></div>
-        <div class="main-content py-4">
-          {{ $slot }}
-        </div>
-      </main>
-    </div>
+  <div class="main-content-wrapper">
+    <main class="px-3 px-md-4 py-4">
+      {{ $slot }}
+    </main>
   </div>
 
   @stack('scripts')

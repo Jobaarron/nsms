@@ -25,26 +25,21 @@
   <!-- App CSS (includes Bootstrap 5 via Vite) -->
   @vite(['resources/sass/app.scss','resources/js/app.js'])
   @vite(['resources/css/index_discipline.css'])
+  @vite(['resources/css/collapsible-sidebar.css'])
+  @vite(['resources/js/collapsible-sidebar.js'])
 </head>
 <body>
-  <!-- Mobile Navigation Toggle -->
-  <div class="d-md-none bg-white border-bottom p-3 fixed-top" style="z-index: 1030;">
-    <div class="d-flex justify-content-between align-items-center">
-      <img src="{{ Vite::asset('resources/assets/images/nms-logo.png') }}" alt="Nicolites Montessori School" style="height: 30px;">
-      <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#disciplineSidebar" aria-controls="disciplineSidebar">
-        <i class="ri-menu-line"></i>
-      </button>
-    </div>
-  </div>
+  <!-- Sidebar Toggle Button (Desktop & Mobile) -->
+  <button class="sidebar-toggle d-md-block" type="button" title="Toggle Sidebar">
+    <i class="ri-menu-fold-line"></i>
+  </button>
 
-  <div class="container-fluid">
-    <div class="row">
-      <!-- SIDEBAR -->
-      <nav class="col-12 col-md-2 sidebar d-none d-md-block py-4">
-        <!-- School Logo -->
-        <div class="text-center mb-4">
-          <img src="{{ Vite::asset('resources/assets/images/nms-logo.png') }}" alt="Nicolites Montessori School" class="sidebar-logo">
-        </div>
+  <!-- SIDEBAR -->
+  <nav class="sidebar py-4 bg-white border-end">
+    <!-- School Logo -->
+    <div class="text-center mb-4">
+      <img src="{{ Vite::asset('resources/assets/images/nms-logo.png') }}" alt="Nicolites Montessori School" class="sidebar-logo">
+    </div>
         
         <!-- User Info -->
         {{-- <div class="user-info">
@@ -55,79 +50,42 @@
         <!-- Navigation -->
         <ul class="nav flex-column">
           <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('discipline.dashboard') ? 'active' : '' }}" href="{{ route('discipline.dashboard') }}">
-              <i class="ri-dashboard-line me-2"></i>Dashboard
+            <a class="nav-link {{ request()->routeIs('discipline.dashboard') ? 'active' : '' }}" href="{{ route('discipline.dashboard') }}" title="Dashboard">
+              <i class="ri-dashboard-line me-2"></i><span>Dashboard</span>
             </a>
           </li>
           
           <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('discipline.students.*') ? 'active' : '' }}" href="{{ route('discipline.students.index') }}">
-              <i class="ri-team-line me-2"></i>Student Profiles
+            <a class="nav-link {{ request()->routeIs('discipline.students.*') ? 'active' : '' }}" href="{{ route('discipline.students.index') }}" title="Student Profiles">
+              <i class="ri-team-line me-2"></i><span>Student Profiles</span>
             </a>
           </li>
           
           <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('discipline.violations.*') ? 'active' : '' }}" href="{{ route('discipline.violations.index') }}">
-              <i class="ri-alert-line me-2"></i>Violations Management
+            <a class="nav-link {{ request()->routeIs('discipline.violations.*') ? 'active' : '' }}" href="{{ route('discipline.violations.index') }}" title="Violations Management">
+              <i class="ri-alert-line me-2"></i><span>Violations Management</span>
             </a>
           </li>
           
           
           <li class="nav-item mt-3">
-            <form method="POST" action="{{ route('discipline.logout') }}">
+            <form class="logout-form" method="POST" action="{{ route('discipline.logout') }}">
               @csrf
-              <button type="submit" class="btn btn-logout w-100">
-                <i class="ri-logout-circle-line me-2"></i>Logout
+              <button type="submit" class="btn btn-logout w-100" title="Logout">
+                <i class="ri-logout-circle-line me-2"></i><span>Logout</span>
               </button>
             </form>
           </li>
         </ul>
       </nav>
       
-      <!-- MOBILE SIDEBAR (Offcanvas) -->
-      <div class="offcanvas offcanvas-start d-md-none" tabindex="-1" id="disciplineSidebar" aria-labelledby="disciplineSidebarLabel">
-        <div class="offcanvas-header border-bottom">
-          <div class="d-flex align-items-center">
-            <img src="{{ Vite::asset('resources/assets/images/nms-logo.png') }}" alt="Nicolites Montessori School" style="height: 30px;" class="me-2">
-            <h5 class="offcanvas-title mb-0" id="disciplineSidebarLabel">Discipline Portal</h5>
-          </div>
-          <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-        </div>
-        <div class="offcanvas-body">
-          <ul class="nav flex-column">
-            <li class="nav-item mb-2">
-              <a class="nav-link {{ request()->routeIs('discipline.dashboard') ? 'active' : '' }}" href="{{ route('discipline.dashboard') }}">
-                <i class="ri-dashboard-line me-2"></i>Dashboard
-              </a>
-            </li>
-            <li class="nav-item mb-2">
-              <a class="nav-link {{ request()->routeIs('discipline.students.*') ? 'active' : '' }}" href="{{ route('discipline.students.index') }}">
-                <i class="ri-team-line me-2"></i>Student Profiles
-              </a>
-            </li>
-            <li class="nav-item mb-2">
-              <a class="nav-link {{ request()->routeIs('discipline.violations.*') ? 'active' : '' }}" href="{{ route('discipline.violations.index') }}">
-                <i class="ri-alert-line me-2"></i>Violations Management
-              </a>
-            </li>
-            <li class="nav-item mt-3">
-              <form method="POST" action="{{ route('discipline.logout') }}">
-                @csrf
-                <button type="submit" class="btn btn-logout w-100">
-                  <i class="ri-logout-circle-line me-2"></i>Logout
-                </button>
-              </form>
-            </li>
-          </ul>
-        </div>
-      </div>
       
-      <!-- MAIN CONTENT -->
-      <main class="col-12 col-md-10 ms-auto px-4 py-3">
-        {{ $slot }}
-        @stack('scripts')
-      </main>
-    </div>
+  <!-- MAIN CONTENT -->
+  <div class="main-content-wrapper">
+    <main class="px-3 px-md-4 py-4">
+      {{ $slot }}
+      @stack('scripts')
+    </main>
   </div>
 </body>
 </html>

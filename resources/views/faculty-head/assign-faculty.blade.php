@@ -75,11 +75,35 @@
             <h5 class="mb-0">
               <i class="ri-book-open-line me-2"></i>Subject Teacher Assignments
             </h5>
-            <span class="badge bg-primary">{{ $assignments->count() }}</span>
+            <span class="badge bg-primary" id="assignmentsCount">{{ $assignments->count() }}</span>
+          </div>
+          <div class="card-body border-bottom">
+            <div class="row align-items-center">
+              <div class="col-md-6">
+                <div class="input-group">
+                  <span class="input-group-text">
+                    <i class="ri-search-line"></i>
+                  </span>
+                  <input type="text" class="form-control" id="searchAssignments" placeholder="Search by teacher name, subject, class, or strand...">
+                  <button class="btn btn-outline-secondary" type="button" id="clearSearchAssignments">
+                    <i class="ri-close-line"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="col-md-6 text-end">
+                <small class="text-muted">Found: <span id="foundAssignments">{{ $assignments->count() }}</span> assignments</small>
+              </div>
+            </div>
           </div>
           <div class="card-body">
             @forelse($assignments as $assignment)
-              <div class="card mb-3">
+              <div class="card mb-3 assignment-item" 
+                   data-teacher="{{ strtolower($assignment->teacher->user->name) }}"
+                   data-subject="{{ strtolower($assignment->subject->subject_name) }}"
+                   data-grade="{{ strtolower($assignment->grade_level) }}"
+                   data-section="{{ strtolower($assignment->section) }}"
+                   data-strand="{{ strtolower($assignment->strand ?? '') }}"
+                   data-track="{{ strtolower($assignment->track ?? '') }}">
                 <div class="card-body">
                   <div class="row align-items-center">
                     <div class="col-md-3">
@@ -141,11 +165,34 @@
             <h5 class="mb-0">
               <i class="ri-user-star-line me-2"></i>Class Adviser Assignments
             </h5>
-            <span class="badge bg-primary">{{ $advisers->count() }}</span>
+            <span class="badge bg-primary" id="advisersCount">{{ $advisers->count() }}</span>
+          </div>
+          <div class="card-body border-bottom">
+            <div class="row align-items-center">
+              <div class="col-md-6">
+                <div class="input-group">
+                  <span class="input-group-text">
+                    <i class="ri-search-line"></i>
+                  </span>
+                  <input type="text" class="form-control" id="searchAdvisers" placeholder="Search by teacher name, class, or strand...">
+                  <button class="btn btn-outline-secondary" type="button" id="clearSearchAdvisers">
+                    <i class="ri-close-line"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="col-md-6 text-end">
+                <small class="text-muted">Found: <span id="foundAdvisers">{{ $advisers->count() }}</span> advisers</small>
+              </div>
+            </div>
           </div>
           <div class="card-body">
             @forelse($advisers as $adviser)
-              <div class="card mb-3">
+              <div class="card mb-3 adviser-item" 
+                   data-teacher="{{ strtolower($adviser->teacher->user->name) }}"
+                   data-grade="{{ strtolower($adviser->grade_level) }}"
+                   data-section="{{ strtolower($adviser->section) }}"
+                   data-strand="{{ strtolower($adviser->strand ?? '') }}"
+                   data-track="{{ strtolower($adviser->track ?? '') }}">
                 <div class="card-body">
                   <div class="row align-items-center">
                     <div class="col-md-3">
