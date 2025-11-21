@@ -33,7 +33,7 @@
   <!-- Mobile Navigation Toggle (Hidden - using sidebar-toggle instead) -->
   <div class="d-none bg-white border-bottom p-3 fixed-top" style="z-index: 1030;">
     <div class="d-flex justify-content-between align-items-center">
-      <img src="{{ Vite::asset('resources/assets/images/edusphere-logo.png.png') }}" alt="logo" class="nav__logo" style="height: 30px;">
+      <img src="{{ Vite::asset('resources/assets/images/nms-logo.png') }}" alt="Nicolites Montessori School" class="sidebar-logo">    </div>
       <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#adminSidebar" aria-controls="adminSidebar">
         <i class="ri-menu-line"></i>
       </button>
@@ -44,7 +44,7 @@
   <nav class="sidebar py-4 bg-white border-end">
         <!-- School Logo -->
         <div class="text-center mb-3">
-          <img src="{{ Vite::asset('resources/assets/images/edusphere-logo.png.png') }}" alt="logo" class="sidebar-logo nav__logo" style="height: 50px; transition: all 0.3s ease;">
+          <img src="{{ Vite::asset('resources/assets/images/nms-logo.png') }}" alt="Nicolites Montessori School" class="sidebar-logo">
         </div>
         
         <!-- User Info -->

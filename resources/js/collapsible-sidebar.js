@@ -11,15 +11,54 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
     
-    // Get stored sidebar state or default to expanded
+    // Get stored sidebar state or default to expanded (desktop only)
     const sidebarState = localStorage.getItem('sidebarState') || 'expanded';
     
-    // Apply initial state
-    if (sidebarState === 'collapsed') {
+    // Apply initial state only on desktop
+    if (window.innerWidth > 767.98 && sidebarState === 'collapsed') {
         collapseSidebar();
     }
     
-    // Toggle sidebar on button click (handled in handleMobileToggle function)
+    // Main toggle event listener
+    sidebarToggle.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        if (window.innerWidth <= 767.98) {
+            // Mobile behavior - toggle show/hide
+            sidebar.classList.toggle('show');
+            updateToggleIcon();
+        } else {
+            // Desktop behavior - toggle collapse/expand
+            if (sidebar.classList.contains('collapsed')) {
+                expandSidebar();
+            } else {
+                collapseSidebar();
+            }
+        }
+    });
+    
+    // Update toggle button icon based on state
+    function updateToggleIcon() {
+        const icon = sidebarToggle.querySelector('i');
+        if (!icon) return;
+        
+        if (window.innerWidth <= 767.98) {
+            // Mobile: hamburger/close icon
+            if (sidebar.classList.contains('show')) {
+                icon.className = 'ri-close-line';
+            } else {
+                icon.className = 'ri-menu-line';
+            }
+        } else {
+            // Desktop: fold/unfold icon
+            if (sidebar.classList.contains('collapsed')) {
+                icon.className = 'ri-menu-unfold-line';
+            } else {
+                icon.className = 'ri-menu-fold-line';
+            }
+        }
+    }
     
     function collapseSidebar() {
         sidebar.classList.add('collapsed');
@@ -35,6 +74,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
+        updateToggleIcon();
         localStorage.setItem('sidebarState', 'collapsed');
     }
     
@@ -49,53 +89,48 @@ document.addEventListener('DOMContentLoaded', function() {
             link.removeAttribute('title');
         });
         
+        updateToggleIcon();
         localStorage.setItem('sidebarState', 'expanded');
     }
     
     // Handle window resize
     function handleResize() {
         if (window.innerWidth <= 767.98) {
-            // Mobile view - always show toggle button in default position
+            // Mobile view - reset states
+            sidebar.classList.remove('collapsed');
+            sidebar.classList.remove('show');
             sidebarToggle.classList.remove('collapsed');
+            mainContent.classList.remove('sidebar-collapsed');
         } else {
-            // Desktop view - maintain current state
-            if (sidebar.classList.contains('collapsed')) {
-                sidebarToggle.classList.add('collapsed');
+            // Desktop view - restore saved state
+            sidebar.classList.remove('show');
+            const savedState = localStorage.getItem('sidebarState');
+            if (savedState === 'collapsed') {
+                collapseSidebar();
+            } else {
+                expandSidebar();
             }
         }
+        updateToggleIcon();
     }
     
     // Listen for window resize
-    window.addEventListener('resize', function() {
-        handleResize();
-        handleMobileToggle();
-    });
+    window.addEventListener('resize', handleResize);
     
     // Initial check
     handleResize();
     
-    // Handle mobile sidebar toggle
-    function handleMobileToggle() {
-        if (window.innerWidth <= 767.98) {
-            // Override desktop behavior for mobile
-            sidebarToggle.removeEventListener('click', toggleSidebar);
-            sidebarToggle.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                sidebar.classList.toggle('show');
-            });
-        } else {
-            // Desktop behavior
-            sidebarToggle.addEventListener('click', toggleSidebar);
-        }
-    }
+    // Get mobile overlay
+    const mobileOverlay = document.querySelector('.mobile-overlay');
     
-    function toggleSidebar() {
-        if (sidebar.classList.contains('collapsed')) {
-            expandSidebar();
-        } else {
-            collapseSidebar();
-        }
+    // Close sidebar when clicking overlay on mobile
+    if (mobileOverlay) {
+        mobileOverlay.addEventListener('click', function() {
+            if (window.innerWidth <= 767.98 && sidebar.classList.contains('show')) {
+                sidebar.classList.remove('show');
+                updateToggleIcon();
+            }
+        });
     }
     
     // Close sidebar when clicking outside on mobile
@@ -103,13 +138,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (window.innerWidth <= 767.98 && 
             !sidebar.contains(e.target) && 
             !sidebarToggle.contains(e.target) &&
+            !mobileOverlay.contains(e.target) &&
             sidebar.classList.contains('show')) {
             sidebar.classList.remove('show');
+            updateToggleIcon();
         }
     });
-    
-    // Initial mobile setup
-    handleMobileToggle();
 });
 
 // Export functions for potential external use

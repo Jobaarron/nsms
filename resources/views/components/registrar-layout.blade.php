@@ -37,15 +37,15 @@
 </head>
 <body>
   <!-- Sidebar Toggle Button (Desktop & Mobile) -->
-  <button class="sidebar-toggle d-md-block" type="button" title="Toggle Sidebar">
-    <i class="ri-menu-fold-line"></i>
+  <button class="sidebar-toggle d-block" type="button" title="Toggle Sidebar">
+    <i class="ri-menu-line"></i>
   </button>
 
   <!-- SIDEBAR -->
   <nav class="sidebar py-4 bg-white border-end">
     <!-- School Logo -->
     <div class="text-center mb-3">
-      <img src="{{ Vite::asset('resources/assets/images/edusphere-logo.png.png') }}" alt="logo" class="sidebar-logo nav__logo" style="height: 50px; transition: all 0.3s ease;">
+      <img src="{{ Vite::asset('resources/assets/images/nms-logo.png') }}" alt="Nicolites Montessori School" class="sidebar-logo">
     </div>
         
         <!-- User Info -->
@@ -87,6 +87,9 @@
           </li>
         </ul>
       </nav>
+
+  <!-- Mobile Overlay -->
+  <div class="mobile-overlay"></div>
 
   <div class="main-content-wrapper">
     <main class="px-3 px-md-4 py-4">
