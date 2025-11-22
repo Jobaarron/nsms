@@ -189,7 +189,6 @@
                                             <th>Amount</th>
                                             <th>Scheduled Date</th>
                                             <th>Payment Status</th>
-                                            <th>Cashier Status</th>
                                             <th>Transaction ID</th>
                                         </tr>
                                     </thead>
@@ -204,21 +203,6 @@
                                                         <span class="badge bg-success">Paid</span>
                                                     @else
                                                         <span class="badge bg-warning">Pending</span>
-                                                    @endif
-                                                </td>
-                                                <td>
-                                                    @if($payment->confirmation_status === 'confirmed')
-                                                        <span class="badge bg-success">
-                                                            <i class="ri-check-line me-1"></i>Confirmed
-                                                        </span>
-                                                    @elseif($payment->confirmation_status === 'rejected')
-                                                        <span class="badge bg-danger">
-                                                            <i class="ri-close-line me-1"></i>Rejected
-                                                        </span>
-                                                    @else
-                                                        <span class="badge bg-warning">
-                                                            <i class="ri-time-line me-1"></i>Pending Review
-                                                        </span>
                                                     @endif
                                                 </td>
                                                 <td>

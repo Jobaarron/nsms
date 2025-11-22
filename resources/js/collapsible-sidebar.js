@@ -19,6 +19,11 @@ document.addEventListener('DOMContentLoaded', function() {
         collapseSidebar();
     }
     
+    // Remove the initial class after applying the state
+    setTimeout(() => {
+        document.documentElement.classList.remove('sidebar-collapsed-initial');
+    }, 100);
+    
     // Main toggle event listener
     sidebarToggle.addEventListener('click', function(e) {
         e.preventDefault();
@@ -64,6 +69,7 @@ document.addEventListener('DOMContentLoaded', function() {
         sidebar.classList.add('collapsed');
         sidebarToggle.classList.add('collapsed');
         mainContent.classList.add('sidebar-collapsed');
+        document.documentElement.style.setProperty('--sidebar-width', '70px');
         
         // Add tooltips to nav links when collapsed
         navLinks.forEach(link => {
@@ -71,6 +77,18 @@ document.addEventListener('DOMContentLoaded', function() {
             if (spanText) {
                 link.setAttribute('data-tooltip', spanText.textContent.trim());
                 link.setAttribute('title', spanText.textContent.trim());
+            }
+        });
+        
+        // Add tooltips to logout buttons when collapsed
+        const logoutButtons = document.querySelectorAll('.sidebar .logout-form button, .sidebar .logout-btn');
+        logoutButtons.forEach(button => {
+            const spanText = button.querySelector('span');
+            if (spanText) {
+                button.setAttribute('data-tooltip', spanText.textContent.trim());
+                button.setAttribute('title', spanText.textContent.trim());
+            } else {
+                button.setAttribute('title', 'Logout');
             }
         });
         
@@ -82,11 +100,19 @@ document.addEventListener('DOMContentLoaded', function() {
         sidebar.classList.remove('collapsed');
         sidebarToggle.classList.remove('collapsed');
         mainContent.classList.remove('sidebar-collapsed');
+        document.documentElement.style.setProperty('--sidebar-width', '250px');
         
         // Remove tooltips when expanded
         navLinks.forEach(link => {
             link.removeAttribute('data-tooltip');
             link.removeAttribute('title');
+        });
+        
+        // Remove tooltips from logout buttons when expanded
+        const logoutButtons = document.querySelectorAll('.sidebar .logout-form button, .sidebar .logout-btn');
+        logoutButtons.forEach(button => {
+            button.removeAttribute('data-tooltip');
+            button.removeAttribute('title');
         });
         
         updateToggleIcon();

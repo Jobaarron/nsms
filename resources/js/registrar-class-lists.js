@@ -15,26 +15,59 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add hover effects and styling
     addCustomStyles();
     
-    // Auto-load all grade sections on page load (disabled to prevent search interference)
-    // autoLoadAllGrades();
+    // Auto-load all grade sections on page load to show student counts
+    autoLoadAllGrades();
 });
 
 // Auto-load all grade sections on page load
 function autoLoadAllGrades() {
     const gradeButtons = document.querySelectorAll('[onclick*="loadGradeSections"]');
     
-    gradeButtons.forEach(button => {
+    gradeButtons.forEach((button, index) => {
         const onclickAttr = button.getAttribute('onclick');
         const gradeMatch = onclickAttr.match(/loadGradeSections\('([^']+)'\)/);
         
         if (gradeMatch) {
             const grade = gradeMatch[1];
-            // Load sections automatically with a small delay to prevent overwhelming the server
+            // Load student counts automatically with a delay to prevent overwhelming the server
             setTimeout(() => {
-                loadGradeSections(grade);
-            }, Math.random() * 1000); // Random delay between 0-1 second
+                loadGradeStudentCount(grade);
+            }, index * 200); // Stagger requests by 200ms each
         }
     });
+}
+
+// Load only student count for a grade level (for initial page load)
+window.loadGradeStudentCount = async function(grade) {
+    const badge = document.getElementById(`badge${grade.replace(' ', '')}`);
+    
+    if (!badge) return;
+    
+    try {
+        let url = `/registrar/class-lists/get-student-count?grade_level=${encodeURIComponent(grade)}`;
+        
+        const response = await fetch(url, {
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            const studentCount = data.total_students || 0;
+            badge.textContent = `${studentCount} student${studentCount !== 1 ? 's' : ''}`;
+            badge.className = 'badge bg-primary ms-auto me-3';
+        } else {
+            badge.textContent = 'Error';
+            badge.className = 'badge bg-danger ms-auto me-3';
+        }
+    } catch (error) {
+        console.error('Error loading student count for grade:', grade, error);
+        badge.textContent = 'Error';
+        badge.className = 'badge bg-danger ms-auto me-3';
+    }
 }
 
 // Load sections for a grade level

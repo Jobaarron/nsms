@@ -1633,11 +1633,8 @@ class GuidanceController extends Controller
             $counselor = $session->counselor;
             $documentsHtml = '';
             
-            // Build documents HTML with available PDF reports
+            // Build documents HTML with additional reports (main PDF is handled by frontend)
             $documents = [];
-            
-            // Student Profile Recommendation Letter (Counseling Session PDF)
-            $documents[] = '<a href="/pdf/counseling-session?session_id=' . $session->id . '" target="_blank" class="btn btn-outline-success btn-sm"><i class="ri-download-2-line me-2"></i>Student Profile Recommendation Letter</a>';
             
             // Counseling Summary (if session has summary/notes)
             if (!empty($session->summary) || !empty($session->notes)) {
@@ -2032,7 +2029,16 @@ public function getDisciplineVsTotalStats(Request $request)
         $period = $request->get('period', '12months');
         $chartType = $request->get('chart_type', 'line');
         $severity = $request->get('severity', 'all');
-        $groupBy = $request->get('group_by', 'month');
+        
+        // Validate chart type - only allow line and bar
+        if (!in_array($chartType, ['line', 'bar'])) {
+            $chartType = 'line';
+        }
+        
+        // Validate severity - exclude 'severe' option
+        if (!in_array($severity, ['all', 'minor', 'major'])) {
+            $severity = 'all';
+        }
         
         // Calculate period range
         $monthsBack = match($period) {
@@ -2049,44 +2055,31 @@ public function getDisciplineVsTotalStats(Request $request)
         // Build query with filters
         $query = \App\Models\Violation::query();
         
-        if ($severity !== 'all') {
+        if ($severity !== 'all' && in_array($severity, ['minor', 'major'])) {
             $query->where('severity', $severity);
         }
         
-        // Get data by grouping
+        // Get data by months
         for ($i = $monthsBack - 1; $i >= 0; $i--) {
             $now = $this->schoolNow();
             $date = $now->copy()->subMonths($i);
             
-            if ($groupBy === 'quarter') {
-                // Group by quarters
-                if ($i % 3 === 2) {
-                    $labels[] = 'Q' . ceil((13 - $i) / 3) . ' ' . $date->format('Y');
-                    $quarterStart = $date->startOfQuarter();
-                    $quarterEnd = $date->endOfQuarter();
-                    
-                    $count = (clone $query)
-                        ->whereBetween('violation_date', [$quarterStart, $quarterEnd])
-                        ->count();
-                    $violations[] = $count;
-                }
-            } else {
-                // Group by months (default)
-                $labels[] = $date->format('M Y');
-                
-                $count = (clone $query)
-                    ->whereYear('violation_date', $date->year)
-                    ->whereMonth('violation_date', $date->month)
-                    ->count();
-                $violations[] = $count;
-            }
+            $labels[] = $date->format('M Y');
+            
+            $count = (clone $query)
+                ->whereYear('violation_date', $date->year)
+                ->whereMonth('violation_date', $date->month)
+                ->count();
+            $violations[] = $count;
         }
 
         return response()->json([
             'success' => true,
             'labels' => $labels,
             'data' => $violations,
-            'chart_type' => $chartType
+            'chart_type' => $chartType,
+            'severity' => $severity,
+            'period' => $period
         ]);
     }
 
@@ -2113,7 +2106,6 @@ public function getDisciplineVsTotalStats(Request $request)
     public function getCounselingEffectiveness(Request $request)
     {
         $period = $request->get('period', 'month');
-        $counselor = $request->get('counselor', 'all');
         
         // Calculate date filter
         $startDate = $this->getDateRangeStart($period);
@@ -2123,10 +2115,6 @@ public function getDisciplineVsTotalStats(Request $request)
         
         if ($startDate) {
             $query->where('created_at', '>=', $startDate);
-        }
-        
-        if ($counselor !== 'all') {
-            $query->where('counselor_id', $counselor);
         }
         
         $total = $query->count();
@@ -2144,8 +2132,7 @@ public function getDisciplineVsTotalStats(Request $request)
                 'in_progress' => $in_progress,
                 'total' => $total,
                 'effectiveness_rate' => $total > 0 ? round(($completed / $total) * 100, 1) : 0,
-                'period' => $period,
-                'counselor' => $counselor
+                'period' => $period
             ]
         ]);
     }

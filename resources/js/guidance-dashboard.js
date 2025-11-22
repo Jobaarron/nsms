@@ -25,9 +25,7 @@ function initializeFilterDefaults() {
         'violationTrendsPeriod': '12months',
         'violationTrendsType': 'line',
         'violationSeverity': 'all',
-        'violationGroupBy': 'month',
         'counselingPeriod': 'month',
-        'counselingCounselor': 'all',
         'caseStatusPeriod': 'month',
         'closedCasesPeriod': '6months',
         'closedCasesView': 'monthly',
@@ -63,9 +61,7 @@ function triggerRelatedFilter(elementId) {
         'violationTrendsPeriod': applyViolationTrendsFilter,
         'violationTrendsType': applyViolationTrendsFilter,
         'violationSeverity': applyViolationTrendsFilter,
-        'violationGroupBy': applyViolationTrendsFilter,
         'counselingPeriod': applyCounselingEffectivenessFilter,
-        'counselingCounselor': applyCounselingEffectivenessFilter,
         'caseStatusPeriod': applyCaseStatusFilter,
         'closedCasesPeriod': applyClosedCasesFilter,
         'closedCasesView': applyClosedCasesFilter,
@@ -824,6 +820,11 @@ function renderViolationTrendsChart(labels, data, chartType = 'line') {
     const ctx = document.getElementById('violationTrendsChart');
     if (!ctx || typeof Chart === 'undefined') return;
     
+    // Validate chart type - only allow line and bar charts
+    if (!['line', 'bar'].includes(chartType)) {
+        chartType = 'line';
+    }
+    
     // Destroy existing chart if it exists
     if (window.violationTrendsChart && typeof window.violationTrendsChart.destroy === 'function') {
         window.violationTrendsChart.destroy();
@@ -837,14 +838,16 @@ function renderViolationTrendsChart(labels, data, chartType = 'line') {
                 label: 'Violations',
                 data: data,
                 borderColor: '#2e7d32',
-                backgroundColor: 'rgba(46, 125, 50, 0.1)',
-                fill: true,
-                tension: 0.4,
+                backgroundColor: chartType === 'line' ? 'rgba(46, 125, 50, 0.1)' : '#2e7d32',
+                fill: chartType === 'line',
+                tension: chartType === 'line' ? 0.4 : 0,
                 borderWidth: 3,
                 pointBackgroundColor: '#2e7d32',
                 pointBorderColor: '#ffffff',
                 pointBorderWidth: 2,
-                pointRadius: 5
+                pointRadius: chartType === 'line' ? 5 : 0,
+                borderRadius: chartType === 'bar' ? 6 : 0,
+                borderSkipped: chartType === 'bar' ? false : undefined
             }]
         },
         options: {
@@ -974,11 +977,22 @@ window.applyActivitiesFilter = applyActivitiesFilter;
 window.applyTasksFilter = applyTasksFilter;
 window.applyTopCasesFilter = applyTopCasesFilter;
 window.applyViolationTrendsFilter = applyViolationTrendsFilter;
+window.resetViolationTrendsFilter = resetViolationTrendsFilter;
 window.applyCounselingEffectivenessFilter = applyCounselingEffectivenessFilter;
 window.applyCaseStatusFilter = applyCaseStatusFilter;
 window.applyClosedCasesFilter = applyClosedCasesFilter;
 window.applyCounselingSessionsFilter = applyCounselingSessionsFilter;
 window.applyDisciplineStatsFilter = applyDisciplineStatsFilter;
+
+// Reset violation trends filter to defaults
+function resetViolationTrendsFilter() {
+    document.getElementById('violationTrendsPeriod').value = '12months';
+    document.getElementById('violationTrendsType').value = 'line';
+    document.getElementById('violationSeverity').value = 'all';
+    
+    // Apply the reset filters
+    applyViolationTrendsFilter();
+}
 
 // Individual Chart Filter Functions
 
@@ -987,25 +1001,18 @@ function applyActivitiesFilter() {
     const dateRange = document.getElementById('activitiesDateRange')?.value || 'week';
     const type = document.getElementById('activitiesType')?.value || 'all';
     
-    showLoadingToast('Filtering activities...');
-    
     const params = new URLSearchParams({
         date_range: dateRange,
         content_types: type === 'all' ? 'case_meeting,counseling,violation' : type
     });
     
     loadFilteredRecentActivities(params);
-    hideLoadingToast();
 }
 
 // Upcoming Tasks Filter
 function applyTasksFilter() {
     const dateRange = document.getElementById('tasksDateRange')?.value || 'week';
     const priority = document.getElementById('tasksPriority')?.value || 'all';
-    
-    if (typeof showLoadingToast === 'function') {
-        showLoadingToast('Filtering tasks...');
-    }
     
     const params = new URLSearchParams({
         date_range: dateRange,
@@ -1015,10 +1022,6 @@ function applyTasksFilter() {
     
     loadFilteredUpcomingTasks(params);
     
-    if (typeof hideLoadingToast === 'function') {
-        hideLoadingToast();
-    }
-    
 
 }
 
@@ -1026,8 +1029,6 @@ function applyTasksFilter() {
 function applyTopCasesFilter() {
     const dateRange = document.getElementById('topCasesDateRange')?.value || 'month';
     const limit = document.getElementById('topCasesLimit')?.value || '5';
-    
-    showLoadingToast('Loading top cases...');
     
     fetch(`/guidance/top-cases?date_range=${dateRange}&limit=${limit}`, {
         method: 'GET',
@@ -1039,11 +1040,9 @@ function applyTopCasesFilter() {
     .then(response => response.json())
     .then(data => {
         renderTopCases(data.cases || []);
-        hideLoadingToast();
     })
     .catch(error => {
         console.error('Error loading top cases:', error);
-        hideLoadingToast();
     });
 }
 
@@ -1052,15 +1051,11 @@ function applyViolationTrendsFilter() {
     const period = document.getElementById('violationTrendsPeriod')?.value || '12months';
     const chartType = document.getElementById('violationTrendsType')?.value || 'line';
     const severity = document.getElementById('violationSeverity')?.value || 'all';
-    const groupBy = document.getElementById('violationGroupBy')?.value || 'month';
-    
-    showLoadingToast('Updating violation trends...');
     
     const params = new URLSearchParams({
         period: period,
         chart_type: chartType,
-        severity: severity,
-        group_by: groupBy
+        severity: severity
     });
     
     fetch(`/guidance/violation-trends?${params.toString()}`, {
@@ -1075,24 +1070,18 @@ function applyViolationTrendsFilter() {
         if (data.success) {
             renderViolationTrendsChart(data.labels, data.data, chartType);
         }
-        hideLoadingToast();
     })
     .catch(error => {
         console.error('Error loading violation trends:', error);
-        hideLoadingToast();
     });
 }
 
 // Counseling Effectiveness Filter
 function applyCounselingEffectivenessFilter() {
     const period = document.getElementById('counselingPeriod')?.value || 'month';
-    const counselor = document.getElementById('counselingCounselor')?.value || 'all';
-    
-    showLoadingToast('Updating counseling data...');
     
     const params = new URLSearchParams({
-        period: period,
-        counselor: counselor
+        period: period
     });
     
     fetch(`/guidance/counseling-effectiveness?${params.toString()}`, {
@@ -1113,19 +1102,15 @@ function applyCounselingEffectivenessFilter() {
                 rateElement.textContent = data.data.effectiveness_rate + '%';
             }
         }
-        hideLoadingToast();
     })
     .catch(error => {
         console.error('Error loading counseling effectiveness:', error);
-        hideLoadingToast();
     });
 }
 
 // Case Status Filter
 function applyCaseStatusFilter() {
     const period = document.getElementById('caseStatusPeriod')?.value || 'month';
-    
-    showLoadingToast('Updating case status...');
     
     fetch(`/guidance/case-status-stats?period=${period}`, {
         method: 'GET',
@@ -1143,11 +1128,9 @@ function applyCaseStatusFilter() {
                 data.pre_completed || 0
             );
         }
-        hideLoadingToast();
     })
     .catch(error => {
         console.error('Error loading case status:', error);
-        hideLoadingToast();
     });
 }
 
@@ -1155,8 +1138,6 @@ function applyCaseStatusFilter() {
 function applyClosedCasesFilter() {
     const period = document.getElementById('closedCasesPeriod')?.value || '6months';
     const view = document.getElementById('closedCasesView')?.value || 'monthly';
-    
-    showLoadingToast('Updating closed cases...');
     
     const params = new URLSearchParams({
         period: period,
@@ -1175,11 +1156,9 @@ function applyClosedCasesFilter() {
         if (data.success) {
             renderClosedCasesBarChart(data.labels, data.data);
         }
-        hideLoadingToast();
     })
     .catch(error => {
         console.error('Error loading closed cases:', error);
-        hideLoadingToast();
     });
 }
 
@@ -1187,8 +1166,6 @@ function applyClosedCasesFilter() {
 function applyCounselingSessionsFilter() {
     const period = document.getElementById('counselingSessionsPeriod')?.value || '6months';
     const status = document.getElementById('counselingSessionsStatus')?.value || 'all';
-    
-    showLoadingToast('Updating counseling sessions...');
     
     const params = new URLSearchParams({
         period: period,
@@ -1207,11 +1184,9 @@ function applyCounselingSessionsFilter() {
         if (data.success) {
             renderCounselingSessionsBarChart(data.labels, data.data);
         }
-        hideLoadingToast();
     })
     .catch(error => {
         console.error('Error loading counseling sessions:', error);
-        hideLoadingToast();
     });
 }
 
@@ -1219,8 +1194,6 @@ function applyCounselingSessionsFilter() {
 function applyDisciplineStatsFilter() {
     const period = document.getElementById('disciplineStatsPeriod')?.value || '5years';
     const view = document.getElementById('disciplineStatsView')?.value || 'comparison';
-    
-    showLoadingToast('Updating discipline statistics...');
     
     const params = new URLSearchParams({
         period: period,
@@ -1239,11 +1212,9 @@ function applyDisciplineStatsFilter() {
         if (data.success) {
             renderDisciplineVsTotalHistogram(data.labels, data.data);
         }
-        hideLoadingToast();
     })
     .catch(error => {
         console.error('Error loading discipline stats:', error);
-        hideLoadingToast();
     });
 }
 

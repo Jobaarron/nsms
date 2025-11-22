@@ -431,7 +431,6 @@
                                 <select class="form-select form-select-sm" id="violationTrendsType" onchange="applyViolationTrendsFilter()">
                                     <option value="line" selected>Line Chart</option>
                                     <option value="bar">Bar Chart</option>
-                                    <option value="area">Area Chart</option>
                                 </select>
                             </div>
                             <div class="col-md-3">
@@ -440,16 +439,13 @@
                                     <option value="all" selected>All Severity</option>
                                     <option value="minor">Minor</option>
                                     <option value="major">Major</option>
-                                    <option value="severe">Severe</option>
                                 </select>
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label small mb-1">Group By</label>
-                                <select class="form-select form-select-sm" id="violationGroupBy" onchange="applyViolationTrendsFilter()">
-                                    <option value="month" selected>Monthly</option>
-                                    <option value="week">Weekly</option>
-                                    <option value="day">Daily</option>
-                                </select>
+                                <label class="form-label small mb-1">&nbsp;</label>
+                                <button class="btn btn-outline-secondary btn-sm w-100" onclick="resetViolationTrendsFilter()">
+                                    <i class="ri-refresh-line me-1"></i>Reset Filters
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -470,18 +466,12 @@
                         </div>
                         <!-- Inline Filter Controls -->
                         <div class="row g-2">
-                            <div class="col-6">
+                            <div class="col-12">
                                 <select class="form-select form-select-sm" id="counselingPeriod" onchange="applyCounselingEffectivenessFilter()">
                                     <option value="month" selected>This Month</option>
                                     <option value="quarter">This Quarter</option>
                                     <option value="year">This Year</option>
                                     <option value="all">All Time</option>
-                                </select>
-                            </div>
-                            <div class="col-6">
-                                <select class="form-select form-select-sm" id="counselingCounselor" onchange="applyCounselingEffectivenessFilter()">
-                                    <option value="all" selected>All Counselors</option>
-                                    <!-- Options will be populated dynamically -->
                                 </select>
                             </div>
                         </div>

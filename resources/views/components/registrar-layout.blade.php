@@ -10,6 +10,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf-token" content="{{ csrf_token() }}">
 
+  <!-- Prevent sidebar flash by applying state immediately -->
+  <script>
+    (function() {
+      try {
+        const sidebarState = localStorage.getItem('sidebarState') || 'expanded';
+        if (window.innerWidth > 767.98 && sidebarState === 'collapsed') {
+          document.documentElement.classList.add('sidebar-collapsed-initial');
+          document.documentElement.style.setProperty('--sidebar-width', '70px');
+        } else {
+          document.documentElement.style.setProperty('--sidebar-width', '250px');
+        }
+      } catch(e) {}
+    })();
+  </script>
+
   <title>Registrar Portal | Nicolites Portal</title>
 
     <!-- Remix Icons -->
@@ -37,7 +52,7 @@
 </head>
 <body>
   <!-- Sidebar Toggle Button (Desktop & Mobile) -->
-  <button class="sidebar-toggle d-block" type="button" title="Toggle Sidebar">
+  <button class="sidebar-toggle d-block" type="button">
     <i class="ri-menu-line"></i>
   </button>
 

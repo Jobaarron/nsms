@@ -332,12 +332,12 @@ class PdfController extends Controller
     {
         $caseMeeting = \App\Models\CaseMeeting::with(['violation', 'student', 'adviser'])->findOrFail($caseMeetingId);
         
-        // Check authorization - only guidance staff or the assigned adviser can access this PDF
+        // Check authorization - only admin, guidance staff, discipline staff or the assigned adviser can access this PDF
         $currentUser = \Illuminate\Support\Facades\Auth::user();
         $canAccess = false;
         
-        // Check if user is guidance staff or discipline staff
-        if ($currentUser && ($currentUser->isGuidanceStaff() || $currentUser->isDisciplineStaff())) {
+        // Check if user is admin, guidance staff or discipline staff
+        if ($currentUser && ($currentUser->isAdmin() || $currentUser->isGuidanceStaff() || $currentUser->isDisciplineStaff())) {
             $canAccess = true;
         }
         // Check if user is the assigned adviser
