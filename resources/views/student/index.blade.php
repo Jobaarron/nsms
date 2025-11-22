@@ -312,16 +312,23 @@
                                 $hasPaymentSchedule = \App\Models\Payment::where('payable_type', 'App\\Models\\Student')->where('payable_id', $student->id)->exists();
                                 $enrollmentCompleted = $student->enrollment_status === 'enrolled';
                                 $enrollmentInProgress = $student->enrollment_status === 'pre_registered' && $hasPaymentSchedule;
+                                $isRejected = $student->enrollment_status === 'rejected';
                             @endphp
-                            <div class="timeline-item {{ $enrollmentCompleted ? 'completed' : ($enrollmentInProgress ? 'active' : '') }}">
-                                <h6 class="mb-1 {{ $enrollmentCompleted ? 'text-success' : ($enrollmentInProgress ? 'text-warning' : 'text-muted') }}">
-                                    <i class="ri-user-add-line me-1"></i>Complete Enrollment
+                            <div class="timeline-item {{ $enrollmentCompleted ? 'completed' : ($enrollmentInProgress ? 'active' : ($isRejected ? 'rejected' : '')) }}">
+                                <h6 class="mb-1 {{ $enrollmentCompleted ? 'text-success' : ($enrollmentInProgress ? 'text-warning' : ($isRejected ? 'text-danger' : 'text-muted')) }}">
+                                    @if($isRejected)
+                                        <i class="ri-close-line me-1"></i>Decision
+                                    @else
+                                        <i class="ri-user-add-line me-1"></i>Complete Enrollment
+                                    @endif
                                 </h6>
                                 <small class="text-muted">
                                     @if($enrollmentCompleted)
                                         Completed
                                     @elseif($enrollmentInProgress)
                                         Awaiting Payment Approval
+                                    @elseif($isRejected)
+                                        Application Rejected
                                     @else
                                         Pending
                                     @endif

@@ -123,9 +123,13 @@
                         <i class="ri-search-eye-line"></i>
                     </div>
                     
-                    <!-- Step 3: Approved by Registrar -->
+                    <!-- Step 3: Decision by Registrar -->
                     <div class="progress-step {{ in_array($enrollee->enrollment_status, ['approved', 'enrolled']) ? 'completed' : (in_array($enrollee->enrollment_status, ['rejected', 'declined']) ? 'rejected' : '') }}">
-                        <i class="ri-check-double-line"></i>
+                        @if(in_array($enrollee->enrollment_status, ['rejected', 'declined']))
+                            <i class="ri-close-line"></i>
+                        @else
+                            <i class="ri-check-double-line"></i>
+                        @endif
                     </div>
                     
                     <!-- Step 4: Pre-Register -->

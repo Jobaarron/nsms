@@ -348,6 +348,11 @@
     animation: pulse 2s infinite;
   }
 
+  .timeline-item.rejected::before {
+    background-color: #dc3545;
+    box-shadow: 0 0 0 2px #dc3545;
+  }
+
   /* Info Cards */
   .info-card {
     background: linear-gradient(135deg, var(--light-green) 0%, rgba(208, 216, 195, 0.3) 100%);
