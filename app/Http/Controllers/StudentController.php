@@ -230,6 +230,12 @@ class StudentController extends Controller
             return redirect()->route('student.login');
         }
         
+        // Redirect fully enrolled students to dashboard
+        if ($student->enrollment_status === 'enrolled') {
+            return redirect()->route('student.dashboard')
+                ->with('info', 'You are already fully enrolled. Access your enrollment details from the dashboard.');
+        }
+        
         // Calculate total fees for the student
         $academicYear = $student->academic_year ?? (date('Y') . '-' . (date('Y') + 1));
         $feeCalculation = Fee::calculateTotalFeesForGrade($student->grade_level, $academicYear);
@@ -759,7 +765,7 @@ class StudentController extends Controller
                 $faceEncoding = $decoded;
             }
         }
-        \App\Models\FaceRegistration::create([
+        $faceRegistration = \App\Models\FaceRegistration::create([
             'student_id' => $studentId,
             'face_encoding' => $faceEncoding,
             'confidence_score' => $request->input('confidence_score'),
@@ -771,9 +777,18 @@ class StudentController extends Controller
             'is_active' => true
         ]);
 
+        // Return the face image data URL for immediate UI update
+        $faceImageDataUrl = null;
+        if ($faceRegistration->face_image_data && $faceRegistration->face_image_mime_type) {
+            $faceImageDataUrl = 'data:' . $faceRegistration->face_image_mime_type . ';base64,' . $faceRegistration->face_image_data;
+        }
+
         return response()->json([
             'success' => true,
-            'message' => 'Face registered successfully!'
+            'message' => 'Face registered successfully!',
+            'face_image_data_url' => $faceImageDataUrl,
+            'registration_date' => $faceRegistration->registered_at->format('M d, Y'),
+            'source' => ucfirst(str_replace('_', ' ', $faceRegistration->source))
         ]);
     } catch (\Exception $e) {
         \Log::error('Face registration server error', [

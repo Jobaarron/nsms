@@ -865,6 +865,13 @@
                             </div>
                         </div>
                         
+                        <div class="alert alert-warning border-0 rounded-4 mb-4">
+                            <div class="d-flex align-items-center">
+                                <i class="ri-information-line text-warning me-2 fs-5"></i>
+                                <strong>Note:</strong> Please select only ONE sanction option below.
+                            </div>
+                        </div>
+                        
                         <div class="row g-4">
                             <!-- Primary Interventions -->
                             <div class="col-md-6">
@@ -875,28 +882,28 @@
                                     </h6>
                                     
                                     <div class="form-check mb-3">
-                                        <input class="form-check-input" type="checkbox" id="written_reflection" name="written_reflection">
+                                        <input class="form-check-input sanction-radio" type="radio" id="written_reflection" name="selected_sanction" value="written_reflection">
                                         <label class="form-check-label fw-medium" for="written_reflection">
                                             <i class="ri-file-edit-line text-success me-2"></i>Written Reflection
                                         </label>
                                     </div>
 
                                     <div class="form-check mb-3">
-                                        <input class="form-check-input" type="checkbox" id="mentorship_counseling" name="mentorship_counseling">
+                                        <input class="form-check-input sanction-radio" type="radio" id="mentorship_counseling" name="selected_sanction" value="mentorship_counseling">
                                         <label class="form-check-label fw-medium" for="mentorship_counseling">
                                             <i class="ri-user-heart-line text-success me-2"></i>Mentorship/Counseling
                                         </label>
                                     </div>
 
                                     <div class="form-check mb-3">
-                                        <input class="form-check-input" type="checkbox" id="parent_teacher_communication" name="parent_teacher_communication">
+                                        <input class="form-check-input sanction-radio" type="radio" id="parent_teacher_communication" name="selected_sanction" value="parent_teacher_communication">
                                         <label class="form-check-label fw-medium" for="parent_teacher_communication">
                                             <i class="ri-parent-line text-warning me-2"></i>Parent-Teacher Communication
                                         </label>
                                     </div>
 
                                     <div class="form-check mb-0">
-                                        <input class="form-check-input" type="checkbox" id="restorative_justice_activity" name="restorative_justice_activity">
+                                        <input class="form-check-input sanction-radio" type="radio" id="restorative_justice_activity" name="selected_sanction" value="restorative_justice_activity">
                                         <label class="form-check-label fw-medium" for="restorative_justice_activity">
                                             <i class="ri-hand-heart-line text-success me-2"></i>Restorative Justice Activity
                                         </label>
@@ -912,28 +919,28 @@
                                     </h6>
                                     
                                     <div class="form-check mb-3">
-                                        <input class="form-check-input" type="checkbox" id="follow_up_meeting" name="follow_up_meeting">
+                                        <input class="form-check-input sanction-radio" type="radio" id="follow_up_meeting" name="selected_sanction" value="follow_up_meeting">
                                         <label class="form-check-label fw-medium" for="follow_up_meeting">
                                             <i class="ri-calendar-check-line text-success me-2"></i>Follow-up Meeting
                                         </label>
                                     </div>
 
                                     <div class="form-check mb-3">
-                                        <input class="form-check-input" type="checkbox" id="community_service" name="community_service">
+                                        <input class="form-check-input sanction-radio" type="radio" id="community_service" name="selected_sanction" value="community_service">
                                         <label class="form-check-label fw-medium" for="community_service">
                                             <i class="ri-community-line text-success me-2"></i>Community Service
                                         </label>
                                     </div>
 
                                     <div class="form-check mb-3">
-                                        <input class="form-check-input" type="checkbox" id="suspension" name="suspension">
+                                        <input class="form-check-input sanction-radio" type="radio" id="suspension" name="selected_sanction" value="suspension">
                                         <label class="form-check-label fw-medium" for="suspension">
                                             <i class="ri-pause-circle-line text-danger me-2"></i>Suspension
                                         </label>
                                     </div>
 
                                     <div class="form-check mb-0">
-                                        <input class="form-check-input" type="checkbox" id="expulsion" name="expulsion">
+                                        <input class="form-check-input sanction-radio" type="radio" id="expulsion" name="selected_sanction" value="expulsion">
                                         <label class="form-check-label fw-medium" for="expulsion">
                                             <i class="ri-close-circle-line text-danger me-2"></i>Expulsion
                                         </label>
@@ -1129,6 +1136,13 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('reviseSanctionForm').addEventListener('submit', function (e) {
         e.preventDefault();
 
+        // Validate that exactly one sanction is selected
+        const selectedSanction = document.querySelector('input[name="selected_sanction"]:checked');
+        if (!selectedSanction) {
+            alert('Please select exactly one sanction before submitting.');
+            return;
+        }
+
         const meetingId = this.getAttribute('data-meeting-id');
         const formData = new FormData(this);
 
@@ -1159,14 +1173,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // Function to reset the revise sanction modal
 function resetReviseSanctionModal() {
-    const dropdown = document.getElementById('revise-sanction-dropdown');
-    const customField = document.getElementById('custom-sanction-field');
-    const customTextarea = document.getElementById('revise-sanction-custom');
+    // Clear all radio buttons
+    const radioButtons = document.querySelectorAll('#reviseSanctionModal input[type="radio"]');
+    radioButtons.forEach(radio => radio.checked = false);
     
-    dropdown.value = '';
-    customField.style.display = 'none';
-    customTextarea.removeAttribute('required');
-    customTextarea.value = '';
+    // Clear the sanctions display  
+    const sanctionsDisplay = document.getElementById('current-sanctions-display');
+    if (sanctionsDisplay) {
+        sanctionsDisplay.innerHTML = 'Loading...';
+    }
 }
 
 
@@ -1485,15 +1500,28 @@ function loadCurrentSanctions(meetingId) {
             sanctionsDisplay.innerHTML = currentSanctions.length > 0 ? 
                 currentSanctions.join(', ') : 'No sanctions currently set';
             
-            // Set checkboxes based on current values
-            document.getElementById('written_reflection').checked = data.sanctions.written_reflection;
-            document.getElementById('mentorship_counseling').checked = data.sanctions.mentorship_counseling;
-            document.getElementById('parent_teacher_communication').checked = data.sanctions.parent_teacher_communication;
-            document.getElementById('restorative_justice_activity').checked = data.sanctions.restorative_justice_activity;
-            document.getElementById('follow_up_meeting').checked = data.sanctions.follow_up_meeting;
-            document.getElementById('community_service').checked = data.sanctions.community_service;
-            document.getElementById('suspension').checked = data.sanctions.suspension;
-            document.getElementById('expulsion').checked = data.sanctions.expulsion;
+            // Set radio button based on current values - find which sanction is currently true
+            const sanctionFields = [
+                'written_reflection', 'mentorship_counseling', 'parent_teacher_communication',
+                'restorative_justice_activity', 'follow_up_meeting', 'community_service', 
+                'suspension', 'expulsion'
+            ];
+            
+            // Clear all radio buttons first
+            document.querySelectorAll('input[name="selected_sanction"]').forEach(radio => {
+                radio.checked = false;
+            });
+            
+            // Find and select the current sanction
+            for (let field of sanctionFields) {
+                if (data.sanctions[field]) {
+                    const radioElement = document.getElementById(field);
+                    if (radioElement) {
+                        radioElement.checked = true;
+                        break; // Only one should be selected
+                    }
+                }
+            }
         }
     })
     .catch(error => {
@@ -1504,9 +1532,9 @@ function loadCurrentSanctions(meetingId) {
 
 // Reset the revise sanction modal
 function resetReviseSanctionModal() {
-    // Uncheck all checkboxes
-    const checkboxes = document.querySelectorAll('#reviseSanctionModal input[type="checkbox"]');
-    checkboxes.forEach(checkbox => checkbox.checked = false);
+    // Uncheck all radio buttons
+    const radioButtons = document.querySelectorAll('#reviseSanctionModal input[type="radio"]');
+    radioButtons.forEach(radio => radio.checked = false);
     
     // Clear the sanctions display
     const sanctionsDisplay = document.getElementById('current-sanctions-display');

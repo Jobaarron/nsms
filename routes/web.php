@@ -817,6 +817,7 @@ Route::prefix('registrar')->name('registrar.')->group(function () {
         Route::get('/class-lists/get-strands', [RegistrarController::class, 'getClassListStrands'])->name('class-lists.get-strands');
         Route::get('/class-lists/get-tracks', [RegistrarController::class, 'getClassListTracks'])->name('class-lists.get-tracks');
         Route::get('/class-lists/get-sections', [RegistrarController::class, 'getClassListSections'])->name('class-lists.get-sections');
+        Route::get('/class-lists/get-student-count', [RegistrarController::class, 'getClassListStudentCount'])->name('class-lists.get-student-count');
         Route::get('/class-lists/get-students', [RegistrarController::class, 'getClassListStudents'])->name('class-lists.get-students');
         Route::get('/class-lists/student/{student}', [RegistrarController::class, 'getStudentDetails'])->name('class-lists.student-details');
         

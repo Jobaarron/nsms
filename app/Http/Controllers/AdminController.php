@@ -1430,24 +1430,38 @@ public function updateEnrollment(Request $request, $id)
             return $response;
         }
 
+        // Validate that exactly one sanction is selected
+        $request->validate([
+            'selected_sanction' => 'required|in:written_reflection,mentorship_counseling,parent_teacher_communication,restorative_justice_activity,follow_up_meeting,community_service,suspension,expulsion'
+        ]);
+
         try {
             $caseMeeting = \App\Models\CaseMeeting::findOrFail($id);
             
-            // Update sanctions based on checkbox values
-            $caseMeeting->update([
-                'written_reflection' => $request->has('written_reflection'),
-                'mentorship_counseling' => $request->has('mentorship_counseling'),
-                'parent_teacher_communication' => $request->has('parent_teacher_communication'),
-                'restorative_justice_activity' => $request->has('restorative_justice_activity'),
-                'follow_up_meeting' => $request->has('follow_up_meeting'),
-                'community_service' => $request->has('community_service'),
-                'suspension' => $request->has('suspension'),
-                'expulsion' => $request->has('expulsion'),
-            ]);
+            // Reset all sanctions to false first
+            $sanctionUpdate = [
+                'written_reflection' => false,
+                'mentorship_counseling' => false,
+                'parent_teacher_communication' => false,
+                'restorative_justice_activity' => false,
+                'follow_up_meeting' => false,
+                'community_service' => false,
+                'suspension' => false,
+                'expulsion' => false,
+            ];
+            
+            // Set the selected sanction to true
+            $selectedSanction = $request->input('selected_sanction');
+            if (array_key_exists($selectedSanction, $sanctionUpdate)) {
+                $sanctionUpdate[$selectedSanction] = true;
+            }
+            
+            // Update the case meeting with the new sanction
+            $caseMeeting->update($sanctionUpdate);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Sanctions updated successfully.'
+                'message' => 'Sanction updated successfully. Only one sanction is now active.'
             ]);
         } catch (\Exception $e) {
             return response()->json([

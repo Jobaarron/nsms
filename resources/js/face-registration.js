@@ -270,14 +270,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     alert('✅ Face registration completed successfully!');
                     // Update face image in UI if new image URL is returned
                     if (json.face_image_data_url) {
-                        if (typeof updateCurrentFaceImage === 'function') {
-                            updateCurrentFaceImage(json.face_image_data_url);
-                        } else if (window.updateCurrentFaceImage) {
-                            window.updateCurrentFaceImage(json.face_image_data_url);
-                        }
+                        updateCurrentFaceImage(
+                            json.face_image_data_url, 
+                            json.registration_date || 'Today', 
+                            json.source || 'Camera Capture'
+                        );
                     }
-                    // Optionally, clear captured photo and reset UI
+                    // Clear captured photo and reset UI
+                    const capturedPhotosCard = document.getElementById('capturedPhotosCard');
+                    if (capturedPhotosCard) {
+                        capturedPhotosCard.style.display = 'none';
+                    }
                     capturedPhoto = null;
+                    faceData = { landmarks: null, confidence: 0, encoding: null };
                     savePhotosBtn.disabled = true;
                     savePhotosBtn.innerHTML = '<i class="ri-save-line me-2"></i>Save Face Registration';
                 } else {
@@ -408,8 +413,31 @@ savePhotosBtn.addEventListener('click', async function() {
             console.log('🎉 Registration successful!');
             faceStatus.textContent = 'Face registered successfully!';
             faceStatus.style.background = 'rgba(40,167,69,0.8)';
+            
+            // Update the current face image display without page reload
+            if (json.face_image_data_url) {
+                updateCurrentFaceImage(
+                    json.face_image_data_url, 
+                    json.registration_date || 'Today', 
+                    json.source || 'Camera Capture'
+                );
+            }
+            
+            // Clear the captured photo and reset UI
+            const capturedPhotosCard = document.getElementById('capturedPhotosCard');
+            if (capturedPhotosCard) {
+                capturedPhotosCard.style.display = 'none';
+            }
+            capturedPhoto = null;
+            faceData = { landmarks: null, confidence: 0, encoding: null };
+            
+            // Reset buttons
+            savePhotosBtn.disabled = true;
+            savePhotosBtn.innerHTML = '<i class="ri-save-line me-2"></i>Save Face Registration';
+            captureBtn.disabled = false;
+            captureBtn.innerHTML = '<i class="ri-camera-line me-2"></i>Capture Photo';
+            
             alert('✅ Face registration completed successfully!');
-            setTimeout(() => window.location.reload(), 1500);
         } else {
             console.warn('⚠️ Registration failed:', json.message);
             faceStatus.textContent = 'Registration failed: ' + (json.message || 'Unknown error');
@@ -454,6 +482,62 @@ savePhotosBtn.addEventListener('click', async function() {
     window.removePhoto = function() {
         // Not used in multi-step
     };
+
+    // Function to update current face image without page reload
+    function updateCurrentFaceImage(imageDataUrl, registrationDate, source) {
+        console.log('🖼️ Updating current face image display');
+        
+        // Update the current face image
+        const currentFaceImage = document.getElementById('currentFaceImage');
+        if (currentFaceImage) {
+            currentFaceImage.src = imageDataUrl;
+        }
+        
+        // If no current registration card exists, create one
+        const rightColumn = document.querySelector('.col-lg-4');
+        if (rightColumn && !document.getElementById('currentFaceImage')) {
+            // Get student info from page title or other elements
+            const pageTitle = document.querySelector('h2.section-title')?.textContent || 'Face Registration';
+            const studentName = document.querySelector('.student-name')?.textContent || 'Student';
+            
+            const currentRegistrationCard = `
+                <div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, #e3f0ff 0%, #f9f9f9 100%); border: 2px solid #1976d2; border-radius: 1rem; overflow: hidden;">
+                    <div class="card-header bg-primary text-white border-0 pb-2" style="border-bottom: 2px solid #1976d2;">
+                        <h6 class="card-title mb-0 d-flex align-items-center">
+                            <i class="ri-id-card-line me-2"></i>Current Registration
+                        </h6>
+                    </div>
+                    <div class="card-body p-3">
+                        <div class="d-flex align-items-center" style="gap: 1.5rem;">
+                            <div>
+                                <img id="currentFaceImage" src="${imageDataUrl}" alt="Registered Face" style="width:120px; height:120px; object-fit:cover; border-radius:12px; border:3px solid #1976d2; box-shadow:0 2px 8px rgba(25,118,210,0.15); background:#fff;">
+                            </div>
+                            <div class="flex-grow-1">
+                                <h5 class="fw-bold mb-1" style="color:#1976d2;" id="dynamicStudentName">${studentName}</h5>
+                                <p class="mb-1" style="font-size:1.1rem; color:#333;" id="dynamicStudentId">Registration Complete</p>
+                                <p class="mb-1 text-muted" style="font-size:0.95rem;">Registered: <span class="fw-semibold">${registrationDate}</span></p>
+                                <p class="mb-1 text-muted" style="font-size:0.95rem;">Source: <span class="fw-semibold">${source}</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            rightColumn.insertAdjacentHTML('afterbegin', currentRegistrationCard);
+        }
+        
+        // Update registration date and source if they exist
+        const registrationDateSpan = document.querySelector('.card-body p:nth-of-type(3) .fw-semibold');
+        if (registrationDateSpan) {
+            registrationDateSpan.textContent = registrationDate;
+        }
+        
+        const sourceSpan = document.querySelector('.card-body p:nth-of-type(4) .fw-semibold');
+        if (sourceSpan) {
+            sourceSpan.textContent = source;
+        }
+        
+        console.log('✅ Current face image updated successfully');
+    }
 
     // Helper functions
     function dataURLtoBlob(dataURL) {

@@ -1655,6 +1655,42 @@ class RegistrarController extends Controller
     }
     
     /**
+     * Get total student count for a grade level (for badge display)
+     */
+    public function getClassListStudentCount(Request $request)
+    {
+        $gradeLevel = $request->get('grade_level');
+        $currentAcademicYear = date('Y') . '-' . (date('Y') + 1);
+        
+        if (!$gradeLevel) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Grade level is required'
+            ]);
+        }
+        
+        try {
+            // Count all enrolled students (1st quarter paid) for the grade level
+            $totalStudents = Student::where('grade_level', $gradeLevel)
+                                   ->where('academic_year', $currentAcademicYear)
+                                   ->where('is_active', true)
+                                   ->where('enrollment_status', 'enrolled')
+                                   ->count();
+            
+            return response()->json([
+                'success' => true,
+                'total_students' => $totalStudents,
+                'grade_level' => $gradeLevel
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error counting students: ' . $e->getMessage()
+            ]);
+        }
+    }
+    
+    /**
      * Get student details for modal display
      */
     public function getStudentDetails($studentId)
