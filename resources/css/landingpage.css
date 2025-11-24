@@ -20,10 +20,10 @@ body {
 .navbar {
     background: var(--white);
     backdrop-filter: none;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
     border-bottom: 1px solid var(--border-gray);
-    padding: 0.5rem 0;
-    min-height: 180px;
+    padding: 0.0rem 0;
+    min-height: 0px;
     display: flex;
     align-items: center;
 }
@@ -64,7 +64,7 @@ body {
     width: auto;
     display: block;
     object-fit: contain;
-    max-width: 200px;
+    max-width: 450px;
 }
 
 .btn-custom {

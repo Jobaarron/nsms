@@ -29,22 +29,17 @@
             <div class="row g-4">
                 <div class="col-lg-4 col-md-6">
                     <div class="content-card p-4 h-100">
-                        <div class="bulletin-date mb-2">
-                            {{-- <small class="text-muted">{{ date('M d, Y') }}</small> --}}
-                        </div>
+                        <div class="bulletin-date mb-2">                        </div>
                         <h5 class="fw-bold text-primary mb-3">Group Color Uniform</h5>
                         <p class="mb-3">We are now accepting applications for the upcoming school year. Early bird discounts available until March 31, 2024.</p>
-                        {{-- <a href="#" class="btn btn-outline-primary btn-sm">Read More</a> --}}
                     </div>
                 </div>
                 <div class="col-lg-4 col-md-6">
                     <div class="content-card p-4 h-100">
                         <div class="bulletin-date mb-2">
-                            {{-- <small class="text-muted">{{ date('M d, Y', strtotime('-3 days')) }}</small> --}}
                         </div>
                         <h5 class="fw-bold text-primary mb-3">Facility Updates</h5>
                         <p class="mb-3">New 4-Storey Building (E) to be completed by 2024.</p>
-                        {{-- <a href="#" class="btn btn-outline-primary btn-sm">Read More</a> --}}
                     </div>
                 </div>
                 <div class="col-lg-4 col-md-6">
