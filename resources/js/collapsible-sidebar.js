@@ -11,8 +11,26 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
     
+    // Detect portal type from page title or URL
+    function getPortalType() {
+        const title = document.title.toLowerCase();
+        if (title.includes('applicant') || title.includes('enrollee')) return 'enrollee';
+        if (title.includes('student')) return 'student';
+        if (title.includes('admin')) return 'admin';
+        if (title.includes('teacher')) return 'teacher';
+        if (title.includes('registrar')) return 'registrar';
+        if (title.includes('guidance')) return 'guidance';
+        if (title.includes('faculty') || title.includes('head')) return 'faculty_head';
+        if (title.includes('discipline')) return 'discipline';
+        if (title.includes('cashier')) return 'cashier';
+        return 'default';
+    }
+    
+    const portalType = getPortalType();
+    const sidebarStateKey = `sidebarState_${portalType}`;
+    
     // Get stored sidebar state or default to expanded (desktop only)
-    const sidebarState = localStorage.getItem('sidebarState') || 'expanded';
+    const sidebarState = sessionStorage.getItem(sidebarStateKey) || 'expanded';
     
     // Apply initial state only on desktop
     if (window.innerWidth > 767.98 && sidebarState === 'collapsed') {
@@ -93,7 +111,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         updateToggleIcon();
-        localStorage.setItem('sidebarState', 'collapsed');
+        sessionStorage.setItem(sidebarStateKey, 'collapsed');
     }
     
     function expandSidebar() {
@@ -116,7 +134,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         updateToggleIcon();
-        localStorage.setItem('sidebarState', 'expanded');
+        sessionStorage.setItem(sidebarStateKey, 'expanded');
     }
     
     // Handle window resize
@@ -130,7 +148,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             // Desktop view - restore saved state
             sidebar.classList.remove('show');
-            const savedState = localStorage.getItem('sidebarState');
+            const savedState = sessionStorage.getItem(sidebarStateKey);
             if (savedState === 'collapsed') {
                 collapseSidebar();
             } else {
@@ -164,7 +182,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (window.innerWidth <= 767.98 && 
             !sidebar.contains(e.target) && 
             !sidebarToggle.contains(e.target) &&
-            !mobileOverlay.contains(e.target) &&
+            (!mobileOverlay || !mobileOverlay.contains(e.target)) &&
             sidebar.classList.contains('show')) {
             sidebar.classList.remove('show');
             updateToggleIcon();

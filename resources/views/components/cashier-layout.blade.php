@@ -12,7 +12,7 @@
   <script>
     (function() {
       try {
-        const sidebarState = localStorage.getItem('sidebarState') || 'expanded';
+        const sidebarState = sessionStorage.getItem('sidebarState_cashier') || 'expanded';
         if (window.innerWidth > 767.98 && sidebarState === 'collapsed') {
           document.documentElement.classList.add('sidebar-collapsed-initial');
           document.documentElement.style.setProperty('--sidebar-width', '70px');
