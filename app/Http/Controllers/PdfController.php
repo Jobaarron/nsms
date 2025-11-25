@@ -216,8 +216,7 @@ class PdfController extends Controller
 
             // Overlay student data (adjust coordinates as needed for your template)
             $pdf->SetXY(24, 58); $pdf->Write(0, $student->full_name ?? '');
-            $pdf->SetXY(141, 57); $pdf->Write(0, ($student->grade_level ?? '') . ' -');
-            $pdf->SetXY(160, 57); $pdf->Write(0, $student->section ?? '');
+            $pdf->SetXY(141, 57); $pdf->Write(0, ($student->grade_level ?? '') . ' - ' . ($student->section ?? ''));
 
             // Overlay specific violation date and time
             $pdf->SetXY(120, 40); $pdf->Write(0, $violation->violation_date ? $violation->violation_date->format('Y-m-d') : '');
@@ -872,43 +871,61 @@ $templatePath = resource_path('assets/pdf-forms-generation/Disciplinary-Con-Repo
         $middleinitial = $student && !empty($student->middle_name) ? strtoupper(substr($student->middle_name, 0, 1)) : '';
         $gradelevel = $student ? ($student->grade_level ?? '') : '';
 
-        // Fee breakdown: fetch 'others' fee from Fee model for the student's grade and academic year
-        $entranceFee = $payment->entrance_fee ?? '';
-        $miscFee = $payment->miscellaneous_fee ?? '';
-        $tuitionFee = $payment->tuition_fee ?? '';
-        $othersFee = $payment->others_fee ?? '';
-        $totalFee = $payment->total_fee ?? $payment->amount ?? '';
+        // Initialize fee variables
+        $entranceFee = '';
+        $miscFee = '';
+        $tuitionFee = '';
+        $othersFee = '';
+        
+        // Use amount_received if available, otherwise use amount (same as CashierController logic)
+        $totalFee = $payment->amount_received ?? $payment->amount ?? 0;
 
-        // If not directly on payment, try to get from related models (e.g., Enrollee or Student)
-        if ($entranceFee === '' && $enrollee && isset($enrollee->entrance_fee)) {
-            $entranceFee = $enrollee->entrance_fee;
-        }
-        if ($miscFee === '' && $enrollee && isset($enrollee->miscellaneous_fee)) {
-            $miscFee = $enrollee->miscellaneous_fee;
-        }
-        if ($tuitionFee === '' && $enrollee && isset($enrollee->tuition_fee)) {
-            $tuitionFee = $enrollee->tuition_fee;
-        }
-        if ($totalFee === '' && $enrollee && isset($enrollee->total_fee)) {
-            $totalFee = $enrollee->total_fee;
-        }
-
-        // Fetch 'tuition' and 'others' fee from Fee model for the student's grade and academic year
-        // Consider payment method to calculate appropriate installment amount
+        // Fetch fee breakdown from Fee model for the student's grade and academic year
         if ($student && !empty($student->grade_level)) {
-            $academicYear = $student->academic_year ?? $payment->period_name ?? null;
-            $feeBreakdown = \App\Models\Fee::calculateTotalFeesForGrade($student->grade_level, $academicYear);
+            $academicYear = $student->academic_year ?? $payment->period_name ?? (date('Y') . '-' . (date('Y') + 1));
+            $feeCalculation = \App\Models\Fee::calculateTotalFeesForGrade($student->grade_level, $academicYear);
             
-            // Always display full tuition fee amount (not installment-specific amounts)
-            if (!empty($feeBreakdown['breakdown']['tuition']) && $feeBreakdown['breakdown']['tuition'] != 0) {
-                $fullTuitionFee = $feeBreakdown['breakdown']['tuition'];
+            if (!empty($feeCalculation['breakdown'])) {
+                $breakdown = $feeCalculation['breakdown'];
                 
-                // Always use full tuition fee amount regardless of payment method
-                $tuitionFee = $fullTuitionFee;
+                // Get individual fee amounts from the breakdown
+                $entranceFeeAmount = $breakdown['entrance'] ?? 0;
+                $miscFeeAmount = $breakdown['miscellaneous'] ?? 0;
+                $tuitionFeeAmount = $breakdown['tuition'] ?? 0;
+                $othersFeeAmount = $breakdown['other'] ?? 0;
+                
+                // Format the fees for display
+                $entranceFee = $entranceFeeAmount > 0 ? number_format($entranceFeeAmount, 2) : '';
+                $miscFee = $miscFeeAmount > 0 ? number_format($miscFeeAmount, 2) : '';
+                $tuitionFee = $tuitionFeeAmount > 0 ? number_format($tuitionFeeAmount, 2) : '';
+                $othersFee = $othersFeeAmount > 0 ? number_format($othersFeeAmount, 2) : '';
             }
-            
-            if (!empty($feeBreakdown['breakdown']['other']) && $feeBreakdown['breakdown']['other'] != 0) {
-                $othersFee = $feeBreakdown['breakdown']['other'];
+        }
+
+        // If no student data available, try to get from payment or related models as fallback
+        if (empty($entranceFee) && $payment->entrance_fee) {
+            $entranceFee = number_format($payment->entrance_fee, 2);
+        }
+        if (empty($miscFee) && $payment->miscellaneous_fee) {
+            $miscFee = number_format($payment->miscellaneous_fee, 2);
+        }
+        if (empty($tuitionFee) && $payment->tuition_fee) {
+            $tuitionFee = number_format($payment->tuition_fee, 2);
+        }
+        if (empty($othersFee) && $payment->others_fee) {
+            $othersFee = number_format($payment->others_fee, 2);
+        }
+
+        // Try enrollee as additional fallback
+        if ($enrollee) {
+            if (empty($entranceFee) && isset($enrollee->entrance_fee)) {
+                $entranceFee = number_format($enrollee->entrance_fee, 2);
+            }
+            if (empty($miscFee) && isset($enrollee->miscellaneous_fee)) {
+                $miscFee = number_format($enrollee->miscellaneous_fee, 2);
+            }
+            if (empty($tuitionFee) && isset($enrollee->tuition_fee)) {
+                $tuitionFee = number_format($enrollee->tuition_fee, 2);
             }
         }
 
@@ -944,33 +961,55 @@ $templatePath = resource_path('assets/pdf-forms-generation/Disciplinary-Con-Repo
         $pdf->useTemplate($tplId);
 
         // Overlay fields (adjust coordinates as needed for your template)
-        $pdf->SetXY(125,44); // Date
+        $pdf->SetXY(125,61); // Date
         $pdf->Write(0, $date);
-        // $pdf->SetXY(60, 30); // Year
-        // $pdf->Write(0, $year);
-        $pdf->SetXY(55, 62); // Lastname
+        
+        // Student Information
+        $pdf->SetXY(55, 86); // Lastname (moved down to avoid overlap with fees)
         $pdf->Write(0, $lastname);
-        $pdf->SetXY(90, 62); // Firstname
+        $pdf->SetXY(92, 86); // Firstname 
         $pdf->Write(0, $firstname);
-        $pdf->SetXY(125, 62); // Middle Initial
+        $pdf->SetXY(130, 86); // Middle Initial
         $pdf->Write(0, $middleinitial);
-        $pdf->SetXY(149, 62); // Grade Level
+        $pdf->SetXY(147, 86); // Grade Level
         $pdf->Write(0, $gradelevel);
-        $pdf->SetXY(30, 60); // Entrance Fee
-        $pdf->Write(0, $entranceFee);
-        $pdf->SetXY(30, 70); // Miscellaneous Fee
-        $pdf->Write(0, $miscFee);
-        $pdf->SetXY(75, 139); // Tuition Fee
-        $pdf->Write(0, 'Tuition Fee');
-        $pdf->SetXY(142, 139); // Tuition Fee
-        $pdf->Write(0, '21,500.00'); // Always display full payment amount
-        $pdf->SetXY(30, 90); // Others Fee
-         $pdf->Write(0, $othersFee);
-        $pdf->SetXY(143, 147); // Total Fee
-        $pdf->Write(0, $totalFee);
-        $pdf->SetXY(57, 161); // Amount in Words
+        
+        // Fee Breakdown Section - using separate X and Y coordinates
+        if ($entranceFee) {
+            $pdf->SetXY(145, 110); // Entrance Fee
+            $pdf->Write(0, $entranceFee);
+        }
+        if ($miscFee) {
+            $pdf->SetXY(145, 117); // Miscellaneous Fee
+            $pdf->Write(0, $miscFee);
+        }
+        if ($tuitionFee) {
+            $pdf->SetXY(145, 125); // Tuition Fee
+            $pdf->Write(0, $tuitionFee);
+        }
+        
+        // Calculate and display total of the three main fees
+        $entranceFeeAmount = $breakdown['entrance'] ?? 0;
+        $miscFeeAmount = $breakdown['miscellaneous'] ?? 0;
+        $tuitionFeeAmount = $breakdown['tuition'] ?? 0;
+        $threeFeesTotal = $entranceFeeAmount + $miscFeeAmount + $tuitionFeeAmount;
+        
+        if ($threeFeesTotal > 0) {
+            $pdf->SetXY(145, 133); // Total of Three Fees
+            $pdf->Write(0, number_format($threeFeesTotal, 2));
+        }
+        
+        // Total and Payment Details
+        $pdf->SetXY(145, 141); // Total Fee
+        $pdf->Write(0, number_format($totalFee, 2));
+        $pdf->SetXY(57, 155); // Amount in Words
         $pdf->Write(0, $amountInWords);
-        $pdf->SetXY(120, 185); // Cashier Name
+        
+        // Transaction ID for tracking purposes
+        $pdf->SetXY(55, 185); // Transaction Reference Number
+        $pdf->Write(0, 'Ref No: ' . $payment->transaction_id . '');
+        
+        $pdf->SetXY(126, 172); // Cashier Name
         $pdf->Write(0, $cashierName);
 
         return response($pdf->Output('Cashier-Receipt.pdf', 'S'))->header('Content-Type', 'application/pdf');
