@@ -1616,7 +1616,8 @@ window.viewViolation = function(violationId) {
             url: `/narrative-report/view/${data.student.id}/${data.id}`,
             icon: 'ri-file-text-line',
             color: 'primary',
-            description: 'Student\'s written response and reflection'
+            description: 'Student\'s written response and reflection',
+            filename: `Student_Narrative_Report_${data.student.student_id || data.student.id}_${new Date().toISOString().split('T')[0]}.pdf`
           });
         }
 
@@ -1630,7 +1631,8 @@ window.viewViolation = function(violationId) {
             url: `/guidance/observationreport/pdf/${caseMeetingId}`,
             icon: 'ri-file-paper-line',
             color: 'success',
-            description: 'Teacher\'s observation and recommendations'
+            description: 'Teacher\'s observation and recommendations',
+            filename: `Teacher_Observation_Report_${data.student.student_id || data.student.id}_${new Date().toISOString().split('T')[0]}.pdf`
           });
         }
 
@@ -1641,7 +1643,8 @@ window.viewViolation = function(violationId) {
             url: `/discipline/case-meetings/${caseMeetingId}/disciplinary-conference-report/pdf`,
             icon: 'ri-file-list-3-line',
             color: 'warning',
-            description: 'Complete disciplinary conference report PDF with case summary'
+            description: 'Complete disciplinary conference report PDF with case summary',
+            filename: `Disciplinary_Conference_Report_${data.student.student_id || data.student.id}_${new Date().toISOString().split('T')[0]}.pdf`
           });
         }
 
@@ -1652,7 +1655,8 @@ window.viewViolation = function(violationId) {
             url: `/discipline/violations/${data.id}/download-student-attachment`,
             icon: 'ri-attachment-2',
             color: 'secondary',
-            description: data.student_attachment_description || 'Student uploaded document'
+            description: data.student_attachment_description || 'Student uploaded document',
+            filename: `Student_Attachment_${data.student.student_id || data.student.id}_${new Date().toISOString().split('T')[0]}.pdf`
           });
         }
 
@@ -1676,8 +1680,8 @@ window.viewViolation = function(violationId) {
                         <div class="flex-grow-1">
                           <h6 class="mb-1">${report.title}</h6>
                           <p class="text-muted small mb-2">${report.description}</p>
-                          <a href="${report.url}" target="_blank" class="btn btn-outline-${report.color} btn-sm">
-                            <i class="ri-external-link-line me-1"></i>View/Download
+                          <a href="${report.url}?download=1" class="btn btn-outline-${report.color} btn-sm" download="${report.filename || report.title.replace(/\s+/g, '_') + '.pdf'}">
+                            <i class="ri-download-line me-1"></i>Download
                           </a>
                         </div>
                       </div>

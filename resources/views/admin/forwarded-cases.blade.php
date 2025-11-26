@@ -867,8 +867,13 @@
                         
                         <div class="alert alert-warning border-0 rounded-4 mb-4">
                             <div class="d-flex align-items-center">
-                                <i class="ri-information-line text-warning me-2 fs-5"></i>
-                                <strong>Note:</strong> Please select only ONE sanction option below.
+                                <i class="ri-information-line text-white me-2 fs-5"></i>
+                                <div class="text-white">
+                                    <strong>Instructions:</strong><br>
+                                    <small class="text-white">• The current sanction is disabled and marked as "Current"<br>
+                                    • Select a DIFFERENT sanction to revise the case meeting<br>
+                                    • Only ONE sanction can be applied per case</small>
+                                </div>
                             </div>
                         </div>
                         
@@ -886,6 +891,10 @@
                                         <label class="form-check-label fw-medium" for="written_reflection">
                                             <i class="ri-file-edit-line text-success me-2"></i>Written Reflection
                                         </label>
+                                        <div class="conditional-field" data-target="written_reflection_fields">
+                                            <label class="form-label small text-muted">Due Date:</label>
+                                            <input type="date" name="written_reflection_due" class="form-control form-control-sm">
+                                        </div>
                                     </div>
 
                                     <div class="form-check mb-3">
@@ -893,6 +902,10 @@
                                         <label class="form-check-label fw-medium" for="mentorship_counseling">
                                             <i class="ri-user-heart-line text-success me-2"></i>Mentorship/Counseling
                                         </label>
+                                        <div class="conditional-field" data-target="mentorship_fields">
+                                            <label class="form-label small text-muted">Mentor Name:</label>
+                                            <input type="text" name="mentor_name" class="form-control form-control-sm" placeholder="Enter mentor name">
+                                        </div>
                                     </div>
 
                                     <div class="form-check mb-3">
@@ -900,6 +913,10 @@
                                         <label class="form-check-label fw-medium" for="parent_teacher_communication">
                                             <i class="ri-parent-line text-warning me-2"></i>Parent-Teacher Communication
                                         </label>
+                                        <div class="conditional-field" data-target="parent_teacher_fields">
+                                            <label class="form-label small text-muted">Communication Method:</label>
+                                            <input type="text" name="communication_method" class="form-control form-control-sm" placeholder="Enter communication method">
+                                        </div>
                                     </div>
 
                                     <div class="form-check mb-0">
@@ -907,6 +924,10 @@
                                         <label class="form-check-label fw-medium" for="restorative_justice_activity">
                                             <i class="ri-hand-heart-line text-success me-2"></i>Restorative Justice Activity
                                         </label>
+                                        <div class="conditional-field" data-target="restorative_justice_fields">
+                                            <label class="form-label small text-muted">Activity Details:</label>
+                                            <textarea name="activity_details" class="form-control form-control-sm" rows="2" placeholder="Enter activity details"></textarea>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -923,6 +944,10 @@
                                         <label class="form-check-label fw-medium" for="follow_up_meeting">
                                             <i class="ri-calendar-check-line text-success me-2"></i>Follow-up Meeting
                                         </label>
+                                        <div class="conditional-field" data-target="follow_up_fields">
+                                            <label class="form-label small text-muted">Meeting Date:</label>
+                                            <input type="date" name="follow_up_date" class="form-control form-control-sm">
+                                        </div>
                                     </div>
 
                                     <div class="form-check mb-3">
@@ -930,6 +955,10 @@
                                         <label class="form-check-label fw-medium" for="community_service">
                                             <i class="ri-community-line text-success me-2"></i>Community Service
                                         </label>
+                                        <div class="conditional-field" data-target="community_service_fields">
+                                            <label class="form-label small text-muted">Assigned Area:</label>
+                                            <input type="text" name="service_area" class="form-control form-control-sm" placeholder="Enter assigned area">
+                                        </div>
                                     </div>
 
                                     <div class="form-check mb-3">
@@ -937,6 +966,28 @@
                                         <label class="form-check-label fw-medium" for="suspension">
                                             <i class="ri-pause-circle-line text-danger me-2"></i>Suspension
                                         </label>
+                                        <div class="conditional-field" data-target="suspension_fields">
+                                            <div class="mb-3">
+                                                <label class="form-label small text-muted mb-2">Suspension Duration (days):</label>
+                                                <input type="number" name="suspension_days" class="form-control form-control-sm mb-2" placeholder="Enter number of days" min="1" max="30">
+                                            </div>
+                                            
+                                            <div class="row g-2">
+                                                <div class="col-md-6">
+                                                    <label class="form-label small text-muted">Start Date:</label>
+                                                    <input type="date" name="suspension_start_date" class="form-control form-control-sm">
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label small text-muted">End Date:</label>
+                                                    <input type="date" name="suspension_end_date" class="form-control form-control-sm">
+                                                </div>
+                                            </div>
+                                            
+                                            <small class="text-muted mt-2 d-block">
+                                                <i class="ri-information-line me-1"></i>
+                                                Student must accomplish activity sheets missed during suspension period.
+                                            </small>
+                                        </div>
                                     </div>
 
                                     <div class="form-check mb-0">
@@ -944,6 +995,11 @@
                                         <label class="form-check-label fw-medium" for="expulsion">
                                             <i class="ri-close-circle-line text-danger me-2"></i>Expulsion
                                         </label>
+                                        <div class="conditional-field" data-target="expulsion_fields">
+                                            <label class="form-label small text-muted">Expulsion Date:</label>
+                                            <input type="date" name="expulsion_date" class="form-control form-control-sm">
+                                            <small class="text-muted mt-1 d-block">Note: Certificate of eligibility may be affected per RMPS Sec. 146</small>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -963,839 +1019,5 @@
     </div>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    // Initialize search functionality
-    initializeSearch();
-    
-    // Minimalist modal/card hover CSS
-    const style = document.createElement('style');
-    style.innerHTML = `
-        /* Modern Modal Card Styles */
-        .modal-card {
-            border: none;
-            border-radius: 20px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            margin-bottom: 1.5rem;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            overflow: hidden;
-        }
-        .modal-card:hover {
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-            transform: translateY(-2px);
-        }
-        .modal-card-header {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border-bottom: 2px solid rgba(25, 135, 84, 0.1);
-            font-weight: 700;
-            font-size: 1.1rem;
-            padding: 1.25rem 1.5rem;
-            color: #2d3748;
-        }
-        .modal-card-body {
-            padding: 1.5rem;
-        }
-        .modal-attachment-btn {
-            border-radius: 12px;
-            padding: 0.75rem 1.25rem;
-            font-weight: 600;
-            transition: all 0.2s ease;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .modal-attachment-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            text-decoration: none;
-        }
-        .modal-attachment-btn.btn-outline-primary {
-            background: #e8f5e8;
-            color: #198754;
-            border-color: rgba(25, 135, 84, 0.3);
-        }
-        .modal-attachment-btn.btn-outline-success {
-            background: #e8f5e8;
-            color: #2e7d32;
-            border-color: rgba(46, 125, 50, 0.3);
-        }
-        .modal-attachment-btn.btn-outline-info {
-            background: #e0f7fa;
-            color: #00695c;
-            border-color: rgba(0, 105, 92, 0.3);
-        }
-        .sanction-item {
-            background: #f8f9fa;
-            border-left: 4px solid #198754;
-            border-radius: 8px;
-            padding: 1rem 1.25rem;
-            margin-bottom: 1rem;
-            transition: all 0.2s ease;
-        }
-        .sanction-item:hover {
-            background: #e8fff0;
-            transform: translateX(4px);
-        }
-        .status-badge-modern {
-            font-size: 0.8rem;
-            font-weight: 600;
-            padding: 0.5rem 1rem;
-            border-radius: 50px;
-            text-transform: uppercase;
-            letter-spacing: 0.025em;
-        }
-    `;
-    document.head.appendChild(style);
-    // View summary buttons
-    const viewSummaryButtons = document.querySelectorAll('.view-summary-btn');
-    viewSummaryButtons.forEach(button => {
-        button.addEventListener('click', function () {
-            const meetingId = this.getAttribute('data-meeting-id');
-            loadSummaryReport(meetingId);
-        });
-    });
-
-    // Approve sanction buttons
-    const approveButtons = document.querySelectorAll('.approve-sanction-btn');
-    approveButtons.forEach(button => {
-        button.addEventListener('click', function () {
-            const sanctionId = this.getAttribute('data-sanction-id');
-            if (confirm('Are you sure you want to approve this sanction? This will mark the case meeting as completed.')) {
-                fetch(`/admin/sanctions/${sanctionId}/approve`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    },
-                })
-                .then(response => response.json())
-                .then(data => {
-                    alert(data.message);
-                    if (data.success) {
-                        // Reload page to update button states
-                        location.reload();
-                    }
-                })
-                .catch(error => {
-                    alert('An error occurred while approving the sanction.');
-                    console.error(error);
-                });
-            }
-        });
-    });
-
-    // Reject sanction buttons
-    const rejectButtons = document.querySelectorAll('.reject-sanction-btn');
-    rejectButtons.forEach(button => {
-        button.addEventListener('click', function () {
-            const sanctionId = this.getAttribute('data-sanction-id');
-            if (confirm('Are you sure you want to reject this sanction? This action cannot be undone.')) {
-                fetch(`/admin/sanctions/${sanctionId}/reject`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    },
-                })
-                .then(response => response.json())
-                .then(data => {
-                    alert(data.message);
-                    if (data.success) {
-                        location.reload();
-                    }
-                })
-                .catch(error => {
-                    alert('An error occurred while rejecting the sanction.');
-                    console.error(error);
-                });
-            }
-        });
-    });
-
-    // Revise sanction buttons
-    const reviseButtons = document.querySelectorAll('.revise-sanction-btn');
-    reviseButtons.forEach(button => {
-        button.addEventListener('click', function () {
-            const meetingId = this.getAttribute('data-meeting-id');
-
-            // Reset modal
-            resetReviseSanctionModal();
-            
-            // Load current sanctions
-            loadCurrentSanctions(meetingId);
-
-            // Store meeting ID for form submission
-            document.getElementById('reviseSanctionForm').setAttribute('data-meeting-id', meetingId);
-        });
-    });
-
-    // Handle revise sanction form submission
-    document.getElementById('reviseSanctionForm').addEventListener('submit', function (e) {
-        e.preventDefault();
-
-        // Validate that exactly one sanction is selected
-        const selectedSanction = document.querySelector('input[name="selected_sanction"]:checked');
-        if (!selectedSanction) {
-            alert('Please select exactly one sanction before submitting.');
-            return;
-        }
-
-        const meetingId = this.getAttribute('data-meeting-id');
-        const formData = new FormData(this);
-
-        fetch(`/admin/case-meetings/${meetingId}/sanctions`, {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                'Accept': 'application/json'
-            },
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            alert(data.message);
-            if (data.success) {
-                // Close modal and reload page
-                const modal = bootstrap.Modal.getInstance(document.getElementById('reviseSanctionModal'));
-                modal.hide();
-                location.reload();
-            }
-        })
-        .catch(error => {
-            alert('An error occurred while revising the sanction.');
-            console.error(error);
-        });
-    });
-});
-
-// Function to reset the revise sanction modal
-function resetReviseSanctionModal() {
-    // Clear all radio buttons
-    const radioButtons = document.querySelectorAll('#reviseSanctionModal input[type="radio"]');
-    radioButtons.forEach(radio => radio.checked = false);
-    
-    // Clear the sanctions display  
-    const sanctionsDisplay = document.getElementById('current-sanctions-display');
-    if (sanctionsDisplay) {
-        sanctionsDisplay.innerHTML = 'Loading...';
-    }
-}
-
-
-
-// Function to load summary report
-function loadSummaryReport(meetingId) {
-    const modalBody = document.getElementById('summaryModalBody');
-
-    // Show loading spinner
-    modalBody.innerHTML = `
-        <div class="text-center">
-            <div class="spinner-border" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-        </div>
-    `;
-
-    fetch(`/admin/case-meetings/${meetingId}/summary`, {
-        method: 'GET',
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'Accept': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            const meeting = data.meeting;
-            modalBody.innerHTML = generateSummaryHTML(meeting);
-        } else {
-            modalBody.innerHTML = '<div class="alert alert-danger">Failed to load summary report.</div>';
-        }
-    })
-    .catch(error => {
-        modalBody.innerHTML = '<div class="alert alert-danger">An error occurred while loading the summary report.</div>';
-        console.error(error);
-    });
-}
-
-// Function to generate HTML for summary report
-function generateSummaryHTML(meeting) {
-    let html = '';
-
-    // Student Information
-    html += `
-        <div class="modal-card">
-            <div class="modal-card-header d-flex align-items-center gap-2">
-                <i class="ri-user-line text-success"></i>
-                <span>Student Information</span>
-            </div>
-            <div class="modal-card-body">
-                <div class="row g-4">
-                    <div class="col-md-6">
-                        <div class="d-flex align-items-center gap-3 mb-3">
-                            <div class="bg-success-subtle rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                                <i class="ri-user-line text-success fs-5"></i>
-                            </div>
-                            <div>
-                                <h6 class="mb-0 fw-bold">${meeting.student ? meeting.student.full_name : 'Unknown'}</h6>
-                                <small class="text-muted">Full Name</small>
-                            </div>
-                        </div>
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="bg-success-subtle rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                                <i class="ri-hashtag text-success fs-5"></i>
-                            </div>
-                            <div>
-                                <h6 class="mb-0 fw-bold">${meeting.student ? meeting.student.student_id : 'N/A'}</h6>
-                                <small class="text-muted">Student ID</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="bg-warning-subtle rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                                <i class="ri-graduation-cap-line text-warning fs-5"></i>
-                            </div>
-                            <div>
-                                <h6 class="mb-0 fw-bold">${meeting.student ? meeting.student.grade_level : 'N/A'}</h6>
-                                <small class="text-muted">Grade Level</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-
-    // Meeting Details
-    html += `
-        <div class="modal-card">
-            <div class="modal-card-header d-flex align-items-center gap-2">
-                <i class="ri-calendar-event-line text-success"></i>
-                <span>Meeting Details</span>
-            </div>
-            <div class="modal-card-body">
-                <div class="row g-4">
-                    <div class="col-md-4">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="bg-primary-subtle rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                                <i class="ri-file-list-line text-success fs-5"></i>
-                            </div>
-                            <div>
-                                <h6 class="mb-0 fw-bold">${meeting.meeting_type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</h6>
-                                <small class="text-muted">Meeting Type</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="bg-success-subtle rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                                <i class="ri-calendar-line text-success fs-5"></i>
-                            </div>
-                            <div>
-                                <h6 class="mb-0 fw-bold">${meeting.scheduled_date ? new Date(meeting.scheduled_date).toLocaleDateString() : 'TBD'}</h6>
-                                <small class="text-muted">Scheduled Date</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="bg-warning-subtle rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                                <i class="ri-time-line text-warning fs-5"></i>
-                            </div>
-                            <div>
-                                <h6 class="mb-0 fw-bold">${meeting.scheduled_time ? meeting.scheduled_time : 'TBD'}</h6>
-                                <small class="text-muted">Scheduled Time</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-
-    // Reports Card (PDF Attachments)
-    let hasNarrative = meeting.student && meeting.violation_id && (meeting.student_statement || meeting.incident_feelings || meeting.action_plan);
-    let hasTeacherObservation = meeting.id && (meeting.teacher_statement || meeting.action_plan);
-    html += `
-        <div class="modal-card">
-            <div class="modal-card-header d-flex align-items-center gap-2">
-                <i class="ri-file-text-line text-success"></i>
-                <span>Case Reports & Documents</span>
-            </div>
-            <div class="modal-card-body">
-                <div class="d-flex flex-column gap-3">
-                    <a href="/admin/case-meetings/${meeting.id}/disciplinary-conference-report/pdf" target="_blank" class="modal-attachment-btn btn-outline-success">
-                        <i class="ri-download-2-line"></i>
-                        <span>Disciplinary Conference Report</span>
-                    </a>
-                    ${hasNarrative
-                        ? `<a href="/narrative-report/view/${meeting.student.id}/${meeting.violation_id}" target="_blank" class="modal-attachment-btn btn-outline-success">
-                            <i class="ri-file-edit-line"></i>
-                            <span>Student Narrative Report</span>
-                        </a>`
-                        : ''}
-                    ${hasTeacherObservation
-                        ? `<a href="/guidance/observationreport/pdf/${meeting.id}" target="_blank" class="modal-attachment-btn btn-outline-info">
-                            <i class="ri-eye-line"></i>
-                            <span>Teacher Observation Report</span>
-                        </a>`
-                        : ''}
-                    ${meeting.violation && meeting.violation.student_attachment_path
-                        ? `<a href="/discipline/violations/${meeting.violation_id}/download-student-attachment" target="_blank" class="modal-attachment-btn btn-outline-info">
-                            <i class="ri-attachment-line"></i>
-                            <span>Student Attachment</span>
-                        </a>`
-                        : ''}
-                    ${!hasNarrative && !hasTeacherObservation && (!meeting.violation || !meeting.violation.student_attachment_path)
-                        ? '<div class="text-center py-4"><i class="ri-file-line text-muted fs-3 mb-2 d-block"></i><span class="text-muted fst-italic">No documents available</span></div>'
-                        : ''}
-                </div>
-            </div>
-        </div>
-    `;
-
-    // Case Summary
-    if (meeting.summary) {
-        html += `
-            <div class="modal-card">
-                <div class="modal-card-header d-flex align-items-center gap-2">
-                    <i class="ri-file-list-3-line text-primary"></i>
-                    <span>Case Summary</span>
-                </div>
-                <div class="modal-card-body">
-                    <div class="bg-light rounded-4 p-3">
-                        <p class="mb-0 lh-lg">${meeting.summary.replace(/\n/g, '<br>')}</p>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    // Recommendations
-    if (meeting.recommendations) {
-        html += `
-            <div class="modal-card">
-                <div class="modal-card-header d-flex align-items-center gap-2">
-                    <i class="ri-lightbulb-line text-success"></i>
-                    <span>Recommendations</span>
-                </div>
-                <div class="modal-card-body">
-                    <div class="bg-success-subtle rounded-4 p-3 border-start border-success border-4">
-                        <p class="mb-0 lh-lg">${meeting.recommendations.replace(/\n/g, '<br>')}</p>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    // Sanctions
-    if (meeting.sanctions && meeting.sanctions.length > 0) {
-        html += `
-            <div class="modal-card">
-                <div class="modal-card-header d-flex align-items-center gap-2">
-                    <i class="ri-gavel-line text-warning"></i>
-                    <span>Applied Sanctions</span>
-                </div>
-                <div class="modal-card-body">
-        `;
-
-        meeting.sanctions.forEach((sanction, index) => {
-            html += `
-                <div class="sanction-item">
-                    <div class="row align-items-center">
-                        <div class="col-md-8">
-                            <div class="d-flex align-items-center gap-3 mb-2">
-                                <div class="bg-warning-subtle rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
-                                    <span class="fw-bold text-warning small">${index + 1}</span>
-                                </div>
-                                <h6 class="mb-0 fw-bold">${sanction.sanction}</h6>
-                            </div>
-                            ${sanction.deportment_grade_action ? `<p class="mb-2"><i class="ri-star-line me-2 text-info"></i><strong>Deportment Action:</strong> ${sanction.deportment_grade_action}</p>` : ''}
-                            ${sanction.suspension ? `<p class="mb-2"><i class="ri-pause-circle-line me-2 text-danger"></i><strong>Suspension:</strong> ${sanction.suspension}</p>` : ''}
-                            ${sanction.notes ? `<p class="mb-0"><i class="ri-file-text-line me-2 text-success"></i><strong>Notes:</strong> ${sanction.notes.replace(/\n/g, '<br>')}</p>` : ''}
-                        </div>
-                        <div class="col-md-4 text-end">
-                            ${sanction.is_approved 
-                                ? '<span class="status-badge-modern bg-success text-white">Approved</span>' 
-                                : '<span class="status-badge-modern bg-warning text-dark">Pending</span>'}
-                            ${sanction.approved_at ? `<p class="small text-muted mt-2 mb-0"><i class="ri-time-line me-1"></i>Approved on ${new Date(sanction.approved_at).toLocaleString()}</p>` : ''}
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
-
-        html += `
-                </div>
-            </div>
-        `;
-    }
-
-
-    // Additional Notes
-    if (meeting.notes) {
-        html += `
-            <div class="modal-card">
-                <div class="modal-card-header d-flex align-items-center gap-2">
-                    <i class="ri-sticky-note-line text-success"></i>
-                    <span>Additional Notes</span>
-                </div>
-                <div class="modal-card-body">
-                    <div class="bg-success-subtle rounded-4 p-3 border-start border-success border-4">
-                        <p class="mb-0 lh-lg">${meeting.notes.replace(/\n/g, '<br>')}</p>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    // President Notes
-    if (meeting.president_notes) {
-        html += `
-            <div class="modal-card">
-                <div class="modal-card-header d-flex align-items-center gap-2">
-                    <i class="ri-vip-crown-line text-warning"></i>
-                    <span>President Notes</span>
-                </div>
-                <div class="modal-card-body">
-                    <div class="bg-warning-subtle rounded-4 p-3 border-start border-warning border-4">
-                        <p class="mb-0 lh-lg">${meeting.president_notes.replace(/\n/g, '<br>')}</p>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    return html;
-}
-
-// Load current sanctions for a case meeting
-function loadCurrentSanctions(meetingId) {
-    fetch(`/admin/case-meetings/${meetingId}/sanctions`, {
-        method: 'GET',
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'Accept': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Display current sanctions
-            const sanctionsDisplay = document.getElementById('current-sanctions-display');
-            let currentSanctions = [];
-            if (data.sanctions.written_reflection) currentSanctions.push('Written Reflection');
-            if (data.sanctions.mentorship_counseling) currentSanctions.push('Mentorship/Counseling');
-            if (data.sanctions.parent_teacher_communication) currentSanctions.push('Parent-Teacher Communication');
-            if (data.sanctions.restorative_justice_activity) currentSanctions.push('Restorative Justice Activity');
-            if (data.sanctions.follow_up_meeting) currentSanctions.push('Follow-up Meeting');
-            if (data.sanctions.community_service) currentSanctions.push('Community Service');
-            if (data.sanctions.suspension) currentSanctions.push('Suspension');
-            if (data.sanctions.expulsion) currentSanctions.push('Expulsion');
-            
-            sanctionsDisplay.innerHTML = currentSanctions.length > 0 ? 
-                currentSanctions.join(', ') : 'No sanctions currently set';
-            
-            // Set radio button based on current values - find which sanction is currently true
-            const sanctionFields = [
-                'written_reflection', 'mentorship_counseling', 'parent_teacher_communication',
-                'restorative_justice_activity', 'follow_up_meeting', 'community_service', 
-                'suspension', 'expulsion'
-            ];
-            
-            // Clear all radio buttons first
-            document.querySelectorAll('input[name="selected_sanction"]').forEach(radio => {
-                radio.checked = false;
-            });
-            
-            // Find and select the current sanction
-            for (let field of sanctionFields) {
-                if (data.sanctions[field]) {
-                    const radioElement = document.getElementById(field);
-                    if (radioElement) {
-                        radioElement.checked = true;
-                        break; // Only one should be selected
-                    }
-                }
-            }
-        }
-    })
-    .catch(error => {
-        console.error('Error loading sanctions:', error);
-        document.getElementById('current-sanctions-display').innerHTML = 'Error loading current sanctions';
-    });
-}
-
-// Reset the revise sanction modal
-function resetReviseSanctionModal() {
-    // Uncheck all radio buttons
-    const radioButtons = document.querySelectorAll('#reviseSanctionModal input[type="radio"]');
-    radioButtons.forEach(radio => radio.checked = false);
-    
-    // Clear the sanctions display
-    const sanctionsDisplay = document.getElementById('current-sanctions-display');
-    if (sanctionsDisplay) {
-        sanctionsDisplay.innerHTML = 'Loading...';
-    }
-}
-
-// Approve case meeting buttons
-document.addEventListener('DOMContentLoaded', function() {
-    const approveButtons = document.querySelectorAll('.approve-case-meeting-btn');
-    console.log('Found approve buttons:', approveButtons.length);
-    
-    approveButtons.forEach(button => {
-        button.addEventListener('click', function () {
-            const meetingId = this.getAttribute('data-meeting-id');
-            console.log('Approve button clicked for meeting:', meetingId);
-            
-            if (confirm('Are you sure you want to approve this case? It will be archived after approval.')) {
-                console.log('Sending approve request to:', `/admin/case-meetings/${meetingId}/approve`);
-                
-                fetch(`/admin/case-meetings/${meetingId}/approve`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    }
-                })
-                .then(response => {
-                    console.log('Response status:', response.status);
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('Response data:', data);
-                    alert(data.message);
-                    if (data.success) {
-                        // Reload page to update view
-                        location.reload();
-                    }
-                })
-                .catch(error => {
-                    console.error('Error details:', error);
-                    alert('An error occurred while approving the case.');
-                });
-            }
-        });
-    });
-
-    // Close case buttons
-    const closeButtons = document.querySelectorAll('.close-case-btn');
-    closeButtons.forEach(button => {
-        button.addEventListener('click', function () {
-            const meetingId = this.getAttribute('data-meeting-id');
-            const notes = prompt('Add president notes (optional):');
-            
-            if (confirm('Are you sure you want to close this case? It will be archived after closure.')) {
-                fetch(`/admin/cases/${meetingId}/close`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        president_notes: notes
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    alert(data.message);
-                    if (data.success) {
-                        // Remove the row from the table or reload page
-                        location.reload();
-                    }
-                })
-                .catch(error => {
-                    alert('An error occurred while closing the case.');
-                    console.error(error);
-                });
-            }
-        });
-    });
-});
-
-// Search functionality
-function initializeSearch() {
-    // Active cases search
-    const searchActive = document.getElementById('searchActive');
-    const clearSearchActive = document.getElementById('clearSearchActive');
-    const statusFilter = document.getElementById('statusFilter');
-    
-    // History search
-    const searchHistory = document.getElementById('searchHistory');
-    const clearSearchHistory = document.getElementById('clearSearchHistory');
-    const archiveReasonFilter = document.getElementById('archiveReasonFilter');
-    
-    // Active cases search handler
-    if (searchActive) {
-        searchActive.addEventListener('input', function() {
-            const query = this.value.toLowerCase();
-            filterTable('forwarded', query, statusFilter?.value || '');
-            toggleClearButton(clearSearchActive, query);
-        });
-        
-        clearSearchActive?.addEventListener('click', function() {
-            searchActive.value = '';
-            filterTable('forwarded', '', statusFilter?.value || '');
-            toggleClearButton(clearSearchActive, '');
-        });
-    }
-    
-    // Status filter handler
-    if (statusFilter) {
-        statusFilter.addEventListener('change', function() {
-            const query = searchActive?.value.toLowerCase() || '';
-            filterTable('forwarded', query, this.value);
-        });
-    }
-    
-    // History search handler
-    if (searchHistory) {
-        searchHistory.addEventListener('input', function() {
-            const query = this.value.toLowerCase();
-            filterTable('history', query, archiveReasonFilter?.value || '');
-            toggleClearButton(clearSearchHistory, query);
-        });
-        
-        clearSearchHistory?.addEventListener('click', function() {
-            searchHistory.value = '';
-            filterTable('history', '', archiveReasonFilter?.value || '');
-            toggleClearButton(clearSearchHistory, '');
-        });
-    }
-    
-    // Archive reason filter handler
-    if (archiveReasonFilter) {
-        archiveReasonFilter.addEventListener('change', function() {
-            const query = searchHistory?.value.toLowerCase() || '';
-            filterTable('history', query, this.value);
-        });
-    }
-    
-    // Reset filters handlers
-    const resetFiltersActive = document.getElementById('resetFiltersActive');
-    const resetFiltersHistory = document.getElementById('resetFiltersHistory');
-    
-    if (resetFiltersActive) {
-        resetFiltersActive.addEventListener('click', function() {
-            if (searchActive) searchActive.value = '';
-            if (statusFilter) statusFilter.value = '';
-            if (clearSearchActive) clearSearchActive.classList.add('d-none');
-            filterTable('forwarded', '', '');
-        });
-    }
-    
-    if (resetFiltersHistory) {
-        resetFiltersHistory.addEventListener('click', function() {
-            if (searchHistory) searchHistory.value = '';
-            if (archiveReasonFilter) archiveReasonFilter.value = '';
-            if (clearSearchHistory) clearSearchHistory.classList.add('d-none');
-            filterTable('history', '', '');
-        });
-    }
-}
-
-function filterTable(tabType, searchQuery, filterValue) {
-    const tabId = tabType === 'forwarded' ? 'forwarded' : 'history';
-    const tableSelector = `#${tabId} .modern-table tbody tr`;
-    const rows = document.querySelectorAll(tableSelector);
-    let visibleCount = 0;
-    
-    rows.forEach(row => {
-        const studentName = row.querySelector('.cell-primary')?.textContent.toLowerCase() || '';
-        const studentId = row.querySelector('.cell-secondary')?.textContent.toLowerCase() || '';
-        const violationCell = row.children[2];
-        const violation = violationCell?.textContent.toLowerCase() || '';
-        const statusCell = row.children[4];
-        const status = statusCell?.textContent.toLowerCase() || '';
-        
-        // Check search query match
-        const matchesSearch = !searchQuery || 
-            studentName.includes(searchQuery) || 
-            studentId.includes(searchQuery) || 
-            violation.includes(searchQuery);
-            
-        // Check filter match
-        let matchesFilter = true;
-        if (filterValue) {
-            if (tabType === 'forwarded') {
-                matchesFilter = status.includes(filterValue.toLowerCase());
-            } else {
-                matchesFilter = status.includes(filterValue.toLowerCase());
-            }
-        }
-        
-        const shouldShow = matchesSearch && matchesFilter;
-        row.style.display = shouldShow ? '' : 'none';
-        
-        if (shouldShow) {
-            visibleCount++;
-        }
-    });
-    
-    // Update results count
-    updateResultsCount(tabType, visibleCount, rows.length);
-    
-    // Show/hide no results message
-    showNoResultsMessage(tabType, visibleCount);
-}
-
-function toggleClearButton(clearButton, query) {
-    if (clearButton) {
-        if (query) {
-            clearButton.classList.remove('d-none');
-        } else {
-            clearButton.classList.add('d-none');
-        }
-    }
-}
-
-function updateResultsCount(tabType, visibleCount, totalCount) {
-    const tabId = tabType === 'forwarded' ? 'forwarded' : 'history';
-    const badge = document.querySelector(`#${tabId} .badge`);
-    
-    if (badge) {
-        const originalText = badge.textContent.split(' ')[1]; // Get "Cases" or "Archived"
-        badge.textContent = `${visibleCount} ${originalText}`;
-        
-        if (visibleCount !== totalCount) {
-            badge.classList.add('bg-warning', 'text-dark');
-            badge.classList.remove('bg-white', 'text-success');
-        } else {
-            badge.classList.remove('bg-warning', 'text-dark');
-            badge.classList.add('bg-white', 'text-success');
-        }
-    }
-}
-
-function showNoResultsMessage(tabType, visibleCount) {
-    const tabId = tabType === 'forwarded' ? 'forwarded' : 'history';
-    const tableContainer = document.querySelector(`#${tabId} .table-responsive`);
-    let noResultsMsg = document.querySelector(`#${tabId} .no-results-message`);
-    
-    if (visibleCount === 0) {
-        if (!noResultsMsg) {
-            noResultsMsg = document.createElement('div');
-            noResultsMsg.className = 'no-results-message text-center py-5';
-            noResultsMsg.innerHTML = `
-                <i class="ri-search-line fs-1 text-muted mb-3 d-block"></i>
-                <h5 class="text-muted">No results found</h5>
-                <p class="text-muted mb-0">Try adjusting your search criteria or filters.</p>
-            `;
-            tableContainer?.parentNode.insertBefore(noResultsMsg, tableContainer.nextSibling);
-        }
-        noResultsMsg.style.display = 'block';
-        if (tableContainer) tableContainer.style.display = 'none';
-    } else {
-        if (noResultsMsg) noResultsMsg.style.display = 'none';
-        if (tableContainer) tableContainer.style.display = 'block';
-    }
-}
-</script>
+@vite('resources/js/forwarded-cases.js')
 </x-admin-layout>

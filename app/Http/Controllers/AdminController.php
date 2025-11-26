@@ -756,6 +756,18 @@ public function submittedCases()
         $meetingArr['incident_feelings'] = $caseMeeting->violation ? $caseMeeting->violation->incident_feelings : null;
         $meetingArr['action_plan'] = $caseMeeting->violation ? $caseMeeting->violation->action_plan : null;
 
+        // Include intervention-specific fields
+        $meetingArr['intervention_fields'] = [
+            'mentor_name' => $caseMeeting->mentor_name ?? '',
+            'follow_up_date' => $caseMeeting->follow_up_date ?? '',
+            'service_area' => $caseMeeting->service_area ?? '',
+            'suspension_days' => $caseMeeting->suspension_days ?? '',
+            'suspension_start_date' => $caseMeeting->suspension_start_date ?? '',
+            'suspension_end_date' => $caseMeeting->suspension_end_date ?? '',
+            'activity_details' => $caseMeeting->activity_details ?? '',
+            'communication_method' => $caseMeeting->communication_method ?? '',
+        ];
+
         return response()->json([
             'success' => true,
             'meeting' => $meetingArr
@@ -1411,6 +1423,16 @@ public function updateEnrollment(Request $request, $id)
                     'community_service' => $caseMeeting->community_service,
                     'suspension' => $caseMeeting->suspension,
                     'expulsion' => $caseMeeting->expulsion,
+                ],
+                'intervention_fields' => [
+                    'mentor_name' => $caseMeeting->mentor_name ?? '',
+                    'follow_up_date' => $caseMeeting->follow_up_date ?? '',
+                    'service_area' => $caseMeeting->service_area ?? '',
+                    'suspension_days' => $caseMeeting->suspension_days ?? '',
+                    'suspension_start_date' => $caseMeeting->suspension_start_date ?? '',
+                    'suspension_end_date' => $caseMeeting->suspension_end_date ?? '',
+                    'activity_details' => $caseMeeting->activity_details ?? '',
+                    'communication_method' => $caseMeeting->communication_method ?? '',
                 ]
             ]);
         } catch (\Exception $e) {
@@ -1432,7 +1454,16 @@ public function updateEnrollment(Request $request, $id)
 
         // Validate that exactly one sanction is selected
         $request->validate([
-            'selected_sanction' => 'required|in:written_reflection,mentorship_counseling,parent_teacher_communication,restorative_justice_activity,follow_up_meeting,community_service,suspension,expulsion'
+            'selected_sanction' => 'required|in:written_reflection,mentorship_counseling,parent_teacher_communication,restorative_justice_activity,follow_up_meeting,community_service,suspension,expulsion',
+            // Intervention-specific field validation
+            'mentor_name' => 'nullable|string|max:255',
+            'follow_up_date' => 'nullable|date',
+            'service_area' => 'nullable|string|max:255',
+            'suspension_days' => 'nullable|integer|min:1|max:30',
+            'suspension_start_date' => 'nullable|date',
+            'suspension_end_date' => 'nullable|date',
+            'activity_details' => 'nullable|string|max:1000',
+            'communication_method' => 'nullable|string|max:255',
         ]);
 
         try {
@@ -1456,12 +1487,52 @@ public function updateEnrollment(Request $request, $id)
                 $sanctionUpdate[$selectedSanction] = true;
             }
             
-            // Update the case meeting with the new sanction
+            // Add intervention-specific fields based on selected sanction
+            switch ($selectedSanction) {
+                case 'mentorship_counseling':
+                    if ($request->filled('mentor_name')) {
+                        $sanctionUpdate['mentor_name'] = $request->input('mentor_name');
+                    }
+                    break;
+                case 'follow_up_meeting':
+                    if ($request->filled('follow_up_date')) {
+                        $sanctionUpdate['follow_up_date'] = $request->input('follow_up_date');
+                    }
+                    break;
+                case 'community_service':
+                    if ($request->filled('service_area')) {
+                        $sanctionUpdate['service_area'] = $request->input('service_area');
+                    }
+                    break;
+                case 'suspension':
+                    if ($request->filled('suspension_days')) {
+                        $sanctionUpdate['suspension_days'] = $request->input('suspension_days');
+                    }
+                    if ($request->filled('suspension_start_date')) {
+                        $sanctionUpdate['suspension_start_date'] = $request->input('suspension_start_date');
+                    }
+                    if ($request->filled('suspension_end_date')) {
+                        $sanctionUpdate['suspension_end_date'] = $request->input('suspension_end_date');
+                    }
+                    break;
+                case 'restorative_justice_activity':
+                    if ($request->filled('activity_details')) {
+                        $sanctionUpdate['activity_details'] = $request->input('activity_details');
+                    }
+                    break;
+                case 'parent_teacher_communication':
+                    if ($request->filled('communication_method')) {
+                        $sanctionUpdate['communication_method'] = $request->input('communication_method');
+                    }
+                    break;
+            }
+            
+            // Update the case meeting with the new sanction and intervention fields
             $caseMeeting->update($sanctionUpdate);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Sanction updated successfully. Only one sanction is now active.'
+                'message' => 'Sanction and intervention details updated successfully.'
             ]);
         } catch (\Exception $e) {
             return response()->json([
