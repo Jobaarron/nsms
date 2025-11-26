@@ -77,18 +77,6 @@
          <img src="{{ Vite::asset('resources/assets/images/nms-logo.png') }}" alt="Nicolites Montessori School" class="sidebar-logo">
         </div>
         
-        <!-- User Info -->
-        {{-- <div class="user-info mb-4 p-3 bg-light rounded">
-          <div class="d-flex align-items-center">
-            <div class="avatar-circle me-3">
-              <i class="ri-user-line"></i>
-            </div>
-            <div>
-              <h6 class="mb-0">{{ Auth::guard('student')->user()->first_name ?? (Auth::guard('web')->user()->first_name ?? 'Student') }}</h6>
-              <small class="text-muted">{{ Auth::guard('student')->user()->student_id ?? (Auth::guard('web')->user()->student_id ?? 'ID: N/A') }}</small>
-            </div>
-          </div>
-        </div> --}}
 
         @php
           $currentStudent = Auth::guard('student')->user();
@@ -108,7 +96,7 @@
         @endphp
 
         <ul class="nav flex-column px-3">
-          <!-- Dashboard (disabled until enrolled) -->
+         
           <li class="nav-item mb-2">
             @if($hasNoEnrollment)
               <span class="nav-link disabled" title="Complete enrollment first to access dashboard">
@@ -122,7 +110,7 @@
             @endif
           </li>
           
-          <!-- Step 1: Enrollment (hidden when fully enrolled) -->
+          
           @if($currentStudent && $currentStudent->enrollment_status !== 'enrolled')
             <li class="nav-item mb-2">
               <a class="nav-link {{ request()->routeIs('student.enrollment') ? 'active' : '' }}" href="{{ route('student.enrollment') }}" title="Complete Enrollment">
@@ -131,7 +119,7 @@
             </li>
           @endif
           
-          <!-- Step 2: Payments (disabled until fully enrolled) -->
+         
           <li class="nav-item mb-2">
             @if($hasNoEnrollment)
               <span class="nav-link disabled" title="Complete enrollment first to access payments">
@@ -145,7 +133,7 @@
             @endif
           </li>
           
-          <!-- Step 3: Other features (disabled only if payment not settled) -->
+         
           <li class="nav-item mb-2">
             @if($hasNoPayment)
               <span class="nav-link disabled" title="Complete enrollment and settle payment to access this feature">
@@ -198,7 +186,7 @@
             @endif
           </li>
           
-          <!-- LOGOUT SECTION -->
+          
           <li class="nav-item mb-2">
             <form class="logout-form" action="{{ route('student.logout') }}" method="POST">
               @csrf
@@ -211,7 +199,7 @@
         </ul>
       </nav>
 
-  <!-- MAIN CONTENT -->
+
   <div class="main-content-wrapper">
     <main class="px-3 px-md-4 py-4">
       <div class="main-content">
