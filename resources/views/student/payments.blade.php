@@ -91,43 +91,52 @@
             </div>
             <div class="col-lg-4 col-md-6 mb-3">
                 <div class="card border-0 shadow-sm card-summary card-gpa h-100">
-                    <div class="card-body d-flex align-items-center">
-                        <div class="flex-shrink-0 me-3">
-                            @php
-                                $pendingCount = $paymentSchedules->where('confirmation_status', 'pending')->count();
-                                $confirmedCount = $paymentSchedules->where('confirmation_status', 'confirmed')->count();
-                                $rejectedCount = $paymentSchedules->where('confirmation_status', 'rejected')->count();
-                                $hasSchedule = $paymentSchedules->count() > 0;
-                            @endphp
-                            
-                            @if($confirmedCount > 0)
-                                <i class="ri-check-double-line fs-2"></i>
-                            @elseif($rejectedCount > 0)
-                                <i class="ri-close-circle-line fs-2"></i>
-                            @elseif($pendingCount > 0)
-                                <i class="ri-time-line fs-2"></i>
-                            @else
-                                <i class="ri-calendar-line fs-2"></i>
-                            @endif
+                    <div class="card-body d-flex flex-column">
+                        <div class="d-flex align-items-start mb-2">
+                            <div class="flex-shrink-0 me-3">
+                                @php
+                                    $pendingCount = $paymentSchedules->where('confirmation_status', 'pending')->count();
+                                    $confirmedCount = $paymentSchedules->where('confirmation_status', 'confirmed')->count();
+                                    $rejectedCount = $paymentSchedules->where('confirmation_status', 'rejected')->count();
+                                    $hasSchedule = $paymentSchedules->count() > 0;
+                                    $firstPayment = $paymentSchedules->first();
+                                @endphp
+                                
+                                @if($confirmedCount > 0)
+                                    <i class="ri-check-double-line fs-2"></i>
+                                @elseif($rejectedCount > 0)
+                                    <i class="ri-close-circle-line fs-2"></i>
+                                @elseif($pendingCount > 0)
+                                    <i class="ri-time-line fs-2"></i>
+                                @else
+                                    <i class="ri-calendar-line fs-2"></i>
+                                @endif
+                            </div>
+                            <div class="flex-grow-1">
+                                <h3 class="fw-bold fs-5 mb-1 text-white">Payment Schedule</h3>
+                                @if($confirmedCount > 0)
+                                    <span class="badge bg-success"><i class="ri-check-line me-1"></i>Confirmed</span>
+                                @elseif($rejectedCount > 0)
+                                    <span class="badge bg-danger"><i class="ri-close-line me-1"></i>Rejected</span>
+                                @elseif($pendingCount > 0)
+                                    <span class="badge bg-warning"><i class="ri-time-line me-1"></i>Pending</span>
+                                @else
+                                    <span class="badge bg-secondary"><i class="ri-calendar-line me-1"></i>No Schedule</span>
+                                @endif
+                            </div>
                         </div>
-                        <div class="flex-grow-1">
-                            @if($confirmedCount > 0)
-                                <h3 class="fw-bold fs-4 mb-0 text-white">Schedule Approved</h3>
-                                <small class="text-white">Confirmed by Cashier</small>
-                            @elseif($rejectedCount > 0)
-                                <h3 class="fw-bold fs-4 mb-0 text-white">Schedule Rejected</h3>
-                                <small class="text-white">Contact Cashier Office</small>
-                            @elseif($pendingCount > 0)
-                                <h3 class="fw-bold fs-4 mb-0 text-white">Pending Review</h3>
-                                <small class="text-white">Awaiting Cashier Approval</small>
-                            @elseif($hasSchedule)
-                                <h3 class="fw-bold fs-4 mb-0 text-white">Schedule Submitted</h3>
-                                <small class="text-white">Under Processing</small>
-                            @else
-                                <h3 class="fw-bold fs-4 mb-0 text-white">No Schedule</h3>
-                                <small class="text-white">Submit Payment Schedule</small>
-                            @endif
-                        </div>
+                        @if($hasSchedule && $firstPayment)
+                            <div class="text-white small mt-2 pt-2 border-top border-white border-opacity-25">
+                                <div class="mb-2">
+                                    <strong>Submitted:</strong><br>
+                                    <small>{{ $firstPayment->created_at ? $firstPayment->created_at->format('M d, Y') : 'N/A' }}</small>
+                                </div>
+                                <div>
+                                    <strong>1st Payment:</strong><br>
+                                    <small>{{ $firstPayment->scheduled_date ? $firstPayment->scheduled_date->format('M d, Y') : 'Not Set' }}</small>
+                                </div>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -490,28 +499,6 @@
                         </div>
                     </div>
                 @endif
-
-                <!-- Quick Actions -->
-                <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-header bg-white border-0 pb-0">
-                        <h6 class="card-title mb-0">Quick Actions</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-grid gap-2">
-                            <a href="{{ route('student.dashboard') }}" class="btn btn-outline-primary">
-                                <i class="ri-dashboard-line me-2"></i>Back to Dashboard
-                            </a>
-                            @if($student->enrollment_status === 'pre_registered')
-                                <a href="{{ route('student.enrollment') }}" class="btn btn-primary">
-                                    <i class="ri-user-add-line me-2"></i>Complete Enrollment
-                                </a>
-                            @endif
-                            <button class="btn btn-success disabled" onclick="window.print()">
-                                <i class="ri-printer-line me-2"></i>Print Statement
-                            </button>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     </div>

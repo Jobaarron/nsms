@@ -40,7 +40,7 @@
         @if($student->enrollment_status === 'pre_registered')
             <div class="row mb-4">
                 <div class="col-12">
-                    <div class="alert alert-warning border-0 shadow-sm">
+                    <div class="alert alert-warning border-0 shadow-sm" data-alert-type="enrollment_complete">
                         <div class="d-flex align-items-center">
                             <i class="ri-information-line fs-4 me-3"></i>
                             <div class="flex-grow-1">
@@ -50,6 +50,7 @@
                                     <i class="ri-arrow-right-line me-1"></i>Continue Enrollment
                                 </button>
                             </div>
+                            <button type="button" class="btn-close ms-3" data-dismiss-alert="enrollment_complete" aria-label="Close"></button>
                         </div>
                     </div>
                 </div>
@@ -57,13 +58,14 @@
         @elseif($student->enrollment_status === 'enrolled')
             <div class="row mb-4">
                 <div class="col-12">
-                    <div class="alert alert-success border-0 shadow-sm">
+                    <div class="alert alert-success border-0 shadow-sm" data-alert-type="enrollment_complete">
                         <div class="d-flex align-items-center">
                             <i class="ri-check-line fs-4 me-3"></i>
-                            <div>
+                            <div class="flex-grow-1">
                                 <h6 class="alert-heading mb-1">Enrollment Complete</h6>
                                 <p class="mb-0">You are successfully enrolled for Academic Year {{ $student->academic_year ?? '2024-2025' }}.</p>
                             </div>
+                            <button type="button" class="btn-close ms-3" data-dismiss-alert="enrollment_complete" aria-label="Close"></button>
                         </div>
                     </div>
                 </div>
@@ -89,16 +91,17 @@
             @if($student->is_paid)
                 <div class="row mb-4">
                     <div class="col-12">
-                        <div class="alert alert-success border-0 shadow-sm">
+                        <div class="alert alert-success border-0 shadow-sm" data-alert-type="payment_complete">
                             <div class="d-flex align-items-center">
                                 <i class="ri-check-double-line fs-4 me-3"></i>
-                                <div>
+                                <div class="flex-grow-1">
                                     <h6 class="alert-heading mb-1">Payment Complete</h6>
                                     <p class="mb-0">All payments have been completed. Total paid: ₱{{ number_format($student->total_paid ?? 0, 2) }}</p>
                                     @if($student->payment_completed_at)
                                         <small class="text-muted">Completed on: {{ $student->payment_completed_at->format('M d, Y h:i A') }}</small>
                                     @endif
                                 </div>
+                                <button type="button" class="btn-close ms-3" data-dismiss-alert="payment_complete" aria-label="Close"></button>
                             </div>
                         </div>
                     </div>
@@ -106,10 +109,10 @@
             @elseif($student->total_paid > 0)
                 <div class="row mb-4">
                     <div class="col-12">
-                        <div class="alert alert-warning border-0 shadow-sm">
+                        <div class="alert alert-warning border-0 shadow-sm" data-alert-type="partial_payment">
                             <div class="d-flex align-items-center">
                                 <i class="ri-money-dollar-circle-line fs-4 me-3"></i>
-                                <div>
+                                <div class="flex-grow-1">
                                     <h6 class="alert-heading mb-1">Partial Payment Received</h6>
                                     <p class="mb-0">
                                         Paid: ₱{{ number_format($student->total_paid ?? 0, 2) }} of ₱{{ number_format($student->total_fees_due ?? 0, 2) }}
@@ -117,6 +120,7 @@
                                         <strong>Remaining Balance: ₱{{ number_format(($student->total_fees_due ?? 0) - ($student->total_paid ?? 0), 2) }}</strong>
                                     </p>
                                 </div>
+                                <button type="button" class="btn-close ms-3" data-dismiss-alert="partial_payment" aria-label="Close"></button>
                             </div>
                         </div>
                     </div>
