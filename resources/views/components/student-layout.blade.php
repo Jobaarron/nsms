@@ -50,7 +50,7 @@
   @vite(['resources/js/student-violation.js'])
   @vite(['resources/js/student-enrollment.js'])
   @vite(['resources/js/collapsible-sidebar.js'])
-  @vite(['resources/js/student-payment-alerts.js'])
+  @vite(['resources/js/student-alerts-manager.js'])
 </head>
 <body>
   <!-- Sidebar Toggle Button (Desktop & Mobile) -->
@@ -121,14 +121,22 @@
           
          
           <li class="nav-item mb-2">
-            @if($hasNoEnrollment)
-              <span class="nav-link disabled" title="Complete enrollment first to access payments">
+            @if($hasNoPayment)
+              <span class="nav-link disabled" title="Complete enrollment and settle payment to access this feature">
                 <i class="ri-money-dollar-circle-line me-2"></i><span>Payments</span>
                 <i class="ri-lock-line ms-auto"></i>
               </span>
             @else
-              <a class="nav-link {{ request()->routeIs('student.payments') ? 'active' : '' }}" href="{{ route('student.payments') }}" title="Payments">
+              @php
+                $duePaymentsCount = $currentStudent ? \App\Models\Payment::getDuePaymentsCountForStudent($currentStudent->id) : 0;
+              @endphp
+              <a class="nav-link {{ request()->routeIs('student.payments') ? 'active' : '' }} position-relative" href="{{ route('student.payments') }}" title="Payments" id="payments-link" style="{{ $duePaymentsCount > 0 ? 'background-color: #f8d7da; border-left: 4px solid #dc3545; padding-left: calc(0.75rem - 4px);' : '' }}">
                 <i class="ri-money-dollar-circle-line me-2"></i><span>Payments</span>
+                @if($duePaymentsCount > 0)
+                  <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem; padding: 0.25rem 0.4rem;">
+                    {{ $duePaymentsCount }}
+                  </span>
+                @endif
               </a>
             @endif
           </li>
@@ -167,8 +175,17 @@
                 <i class="ri-lock-line ms-auto"></i>
               </span>
             @else
-              <a class="nav-link {{ request()->routeIs('student.grades.*') ? 'active' : '' }}" href="{{ route('student.grades.index') }}" title="Grades">
+              @php
+                $newGradesCount = $currentStudent ? \App\Models\Grade::getNewGradesCountForStudent($currentStudent->id) : 0;
+                $gradesViewed = session('grades_alert_viewed', false);
+              @endphp
+              <a class="nav-link {{ request()->routeIs('student.grades.*') ? 'active' : '' }} position-relative" href="{{ route('student.grades.index') }}" title="Grades" id="grades-link" style="{{ ($newGradesCount > 0 && !$gradesViewed) ? 'background-color: #f8d7da; border-left: 4px solid #dc3545; padding-left: calc(0.75rem - 4px);' : '' }}">
                 <i class="ri-file-text-line me-2"></i><span>Grades</span>
+                @if($newGradesCount > 0 && !$gradesViewed)
+                  <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem; padding: 0.25rem 0.4rem;">
+                    {{ $newGradesCount }}
+                  </span>
+                @endif
               </a>
             @endif
           </li>
@@ -180,8 +197,17 @@
                 <i class="ri-lock-line ms-auto"></i>
               </span>
             @else
-              <a class="nav-link {{ request()->routeIs('student.violations') ? 'active' : '' }}" href="{{ route('student.violations') }}" title="Violations">
+              @php
+                $newViolationsCount = $currentStudent ? \App\Models\Violation::getNewViolationsCountForStudent($currentStudent->id) : 0;
+                $violationsViewed = session('violations_alert_viewed', false);
+              @endphp
+              <a class="nav-link {{ request()->routeIs('student.violations') ? 'active' : '' }} position-relative" href="{{ route('student.violations') }}" title="Violations" id="violations-link" style="{{ ($newViolationsCount > 0 && !$violationsViewed) ? 'background-color: #f8d7da; border-left: 4px solid #dc3545; padding-left: calc(0.75rem - 4px);' : '' }}">
                 <i class="ri-flag-line me-2"></i><span>Violations</span>
+                @if($newViolationsCount > 0 && !$violationsViewed)
+                  <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem; padding: 0.25rem 0.4rem;">
+                    {{ $newViolationsCount }}
+                  </span>
+                @endif
               </a>
             @endif
           </li>

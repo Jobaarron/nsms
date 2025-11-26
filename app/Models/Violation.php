@@ -168,4 +168,13 @@ class Violation extends Model
     // {
     //     return $this->belongsTo(\App\Models\Teacher::class, 'users_id', 'users_id');
     // }
+
+    /**
+     * Get count of violations for a student
+     * Alert shows only if student hasn't visited violations page yet
+     */
+    public static function getNewViolationsCountForStudent($studentId)
+    {
+        return self::where('student_id', $studentId)->count();
+    }
 }

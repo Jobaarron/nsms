@@ -134,7 +134,7 @@
           </thead>
           <tbody>
             @foreach($violations as $violation)
-              <tr class="violation-row" data-title="{{ strtolower($violation->title) }}">
+              <tr class="violation-row" data-title="{{ strtolower($violation->title) }}" data-violation="true" data-created-at="{{ $violation->created_at }}">
                 <td>{{ $violation->title }}</td>
                 <td>
                   <span class="badge" style="background:#198754;color:#fff;">{{ ucfirst($violation->effective_severity) }}</span>
@@ -443,4 +443,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
   <!-- Bootstrap JS (must come before your JS file) -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  @push('scripts')
+  <script>
+      // Mark violations alert as viewed when student visits this page
+      document.addEventListener('DOMContentLoaded', function() {
+          fetch('{{ route("student.mark-alert-viewed") }}', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+              },
+              body: JSON.stringify({
+                  alert_type: 'violations'
+              })
+          }).catch(error => console.error('Error marking violations alert as viewed:', error));
+      });
+  </script>
+  @endpush
 </x-student-layout>

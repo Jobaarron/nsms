@@ -123,11 +123,12 @@
             @php
               $quarterData = collect($availableQuarters)->firstWhere('quarter', $quarter);
               $hasGrades = $quarterData !== null;
+              $lastGradeUpdate = $quarterData['last_updated_at'] ?? null;
             @endphp
             
             @if($hasGrades)
               <button type="button" class="btn p-0 w-100 text-decoration-none" onclick="viewQuarterGrades('{{ $quarter }}')">
-                <div class="card card-summary card-application h-100">
+                <div class="card card-summary card-application h-100" data-quarter="{{ $quarter }} Quarter" data-updated-at="{{ $lastGradeUpdate }}">
                   <div class="card-body text-center">
                     <i class="ri-file-check-line display-6 mb-2"></i>
                     <div>{{ $quarter }} Quarter</div>
@@ -136,7 +137,7 @@
                 </div>
               </button>
             @else
-              <div class="card h-100 opacity-50">
+              <div class="card h-100 opacity-50" data-quarter="{{ $quarter }} Quarter">
                 <div class="card-body text-center">
                   <i class="ri-file-line display-6 mb-2 text-muted"></i>
                   <div class="text-muted">{{ $quarter }} Quarter</div>
@@ -194,4 +195,22 @@
         </div>
       </div>
     </div>
+
+    @push('scripts')
+    <script>
+        // Mark grades alert as viewed when student visits this page
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('{{ route("student.mark-alert-viewed") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({
+                    alert_type: 'grades'
+                })
+            }).catch(error => console.error('Error marking grades alert as viewed:', error));
+        });
+    </script>
+    @endpush
 </x-student-layout>

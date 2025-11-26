@@ -237,7 +237,12 @@ class StudentController extends Controller
         }
         
         // Calculate total fees for the student
-        $academicYear = $student->academic_year ?? (date('Y') . '-' . (date('Y') + 1));
+        // Use Philippine academic year logic if student doesn't have one set
+        if ($student->academic_year) {
+            $academicYear = $student->academic_year;
+        } else {
+            $academicYear = self::getCurrentAcademicYear();
+        }
         $feeCalculation = Fee::calculateTotalFeesForGrade($student->grade_level, $academicYear);
         $totalAmount = $feeCalculation['total_amount'];
         
@@ -948,5 +953,20 @@ class StudentController extends Controller
         }
 
         return Storage::disk('public')->download($violation->student_attachment_path);
+    }
+
+    public function markAlertViewed(Request $request)
+    {
+        $alertType = $request->input('alert_type');
+        
+        if ($alertType === 'payments') {
+            session(['payments_alert_viewed' => true]);
+        } elseif ($alertType === 'grades') {
+            session(['grades_alert_viewed' => true]);
+        } elseif ($alertType === 'violations') {
+            session(['violations_alert_viewed' => true]);
+        }
+        
+        return response()->json(['success' => true]);
     }
 }

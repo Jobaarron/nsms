@@ -207,4 +207,13 @@ class Grade extends Model
             return 'semester'; // 1st & 2nd → first sem, 3rd & 4th → second sem → final → general average
         }
     }
+
+    /**
+     * Get count of grades for a student
+     * Alert shows only if student hasn't visited grades page yet
+     */
+    public static function getNewGradesCountForStudent($studentId)
+    {
+        return self::where('student_id', $studentId)->count();
+    }
 }

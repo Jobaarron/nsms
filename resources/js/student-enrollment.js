@@ -421,18 +421,20 @@ function showAlert(message, type = 'info') {
 
 // Initialize enrollment data when page loads
 document.addEventListener('DOMContentLoaded', function() {
-    if (typeof window.initializeEnrollmentData === 'function') {
-        // Get data from data attributes or global variables
-        const enrollmentForm = document.getElementById('enrollmentForm');
-        if (enrollmentForm) {
-            const totalAmountValue = enrollmentForm.dataset.totalAmount || totalAmount || 0;
-            const scheduleDate = enrollmentForm.dataset.scheduleDate || preferredScheduleDate;
-            
+    console.log('DOMContentLoaded - window.enrollmentTotalAmount:', window.enrollmentTotalAmount);
+    console.log('DOMContentLoaded - window.enrollmentScheduleDate:', window.enrollmentScheduleDate);
+    
+    // Use window variables set by Blade template
+    if (window.enrollmentTotalAmount !== undefined && window.enrollmentTotalAmount > 0) {
+        console.log('Using window.enrollmentTotalAmount:', window.enrollmentTotalAmount);
+        if (typeof window.initializeEnrollmentData === 'function') {
             window.initializeEnrollmentData(
-                parseFloat(totalAmountValue),
-                scheduleDate
+                parseFloat(window.enrollmentTotalAmount),
+                window.enrollmentScheduleDate || ''
             );
         }
+    } else {
+        console.warn('window.enrollmentTotalAmount not set or is 0');
     }
 });
 

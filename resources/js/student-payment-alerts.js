@@ -12,11 +12,15 @@ function initializePaymentAlerts() {
     // Check if we're on the payments page
     const isPaymentsPage = window.location.pathname.includes('/student/payments');
     
+    console.log('Payment alerts - Current page:', window.location.pathname, 'Is payments page:', isPaymentsPage);
+    
     if (isPaymentsPage) {
         // Clear the alert when user opens payments page
+        console.log('On payments page, clearing alert');
         clearPaymentAlert();
     } else {
-        // Check for upcoming payments and highlight if needed
+        // Only check for upcoming payments on non-payments pages (dashboard, etc)
+        console.log('Not on payments page, checking for upcoming payments');
         checkUpcomingPayments();
     }
 }
@@ -26,26 +30,29 @@ function checkUpcomingPayments() {
     const paymentScheduleCard = document.querySelector('[data-payment-schedule]');
     
     if (!paymentScheduleCard) {
+        console.log('Payment schedule card not found');
         return;
     }
 
     try {
         // Get all payment rows from the table
-        const paymentRows = document.querySelectorAll('table tbody tr');
+        const paymentRows = document.querySelectorAll('[data-payment-schedule] table tbody tr');
         let hasUpcomingPayment = false;
         let nearestDueDate = null;
 
-        paymentRows.forEach(row => {
-            const dateCell = row.querySelector('td:nth-child(3)'); // Scheduled Date column
-            const statusCell = row.querySelector('td:nth-child(4)'); // Payment Status column
+        console.log('Found payment rows:', paymentRows.length);
+
+        paymentRows.forEach((row, index) => {
+            // Get scheduled date from data attribute
+            const scheduledDate = row.getAttribute('data-scheduled-date');
+            const paymentStatus = row.getAttribute('data-payment-status');
             
-            if (dateCell && statusCell) {
-                const dateText = dateCell.textContent.trim();
-                const statusText = statusCell.textContent.trim();
-                
+            console.log(`Row ${index}: date=${scheduledDate}, status=${paymentStatus}`);
+            
+            if (scheduledDate && paymentStatus) {
                 // Only check pending payments
-                if (statusText.toLowerCase().includes('pending')) {
-                    const dueDate = parseDate(dateText);
+                if (paymentStatus.toLowerCase() === 'pending') {
+                    const dueDate = parseDate(scheduledDate);
                     
                     if (dueDate) {
                         const today = new Date();
@@ -53,9 +60,12 @@ function checkUpcomingPayments() {
                         
                         const daysUntilDue = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
                         
+                        console.log(`Days until due: ${daysUntilDue}`);
+                        
                         // Highlight if due date is within 7 days or overdue
                         if (daysUntilDue <= 7) {
                             hasUpcomingPayment = true;
+                            console.log('Found upcoming payment within 7 days');
                             
                             if (!nearestDueDate || dueDate < nearestDueDate) {
                                 nearestDueDate = dueDate;
@@ -65,6 +75,8 @@ function checkUpcomingPayments() {
                 }
             }
         });
+
+        console.log('Has upcoming payment:', hasUpcomingPayment);
 
         if (hasUpcomingPayment) {
             highlightPaymentSidebar();

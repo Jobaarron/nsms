@@ -139,4 +139,21 @@ class Payment extends Model
         // Pad with zeros to make it 4 digits (0000, 0001, 0002, etc.)
         return 'TXN-' . $studentId . '-' . str_pad($sequentialNumber, 4, '0', STR_PAD_LEFT);
     }
+
+    /**
+     * Get count of pending payments due within 7 days for a student
+     * Alert shows only when payment date is near (within 7 days)
+     */
+    public static function getDuePaymentsCountForStudent($studentId)
+    {
+        $today = now()->startOfDay();
+        $sevenDaysFromNow = now()->addDays(7)->endOfDay();
+        
+        return self::where('payable_type', Student::class)
+            ->where('payable_id', $studentId)
+            ->where('status', 'pending')
+            ->where('confirmation_status', 'pending')
+            ->whereBetween('scheduled_date', [$today, $sevenDaysFromNow])
+            ->count();
+    }
 }

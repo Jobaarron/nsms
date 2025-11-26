@@ -147,7 +147,7 @@
             <div class="col-lg-8">
                 <!-- Payment Schedule -->
                 @if($paymentSchedules->count() > 0)
-                    <div class="card border-0 shadow-sm mb-4">
+                    <div class="card border-0 shadow-sm mb-4" data-payment-schedule="true">
                         <div class="card-header bg-white border-0 pb-0">
                             <div class="d-flex justify-content-between align-items-center">
                                 <h5 class="card-title mb-0">
@@ -203,7 +203,7 @@
                                     </thead>
                                     <tbody>
                                         @foreach($paymentSchedules as $payment)
-                                            <tr>
+                                            <tr data-scheduled-date="{{ $payment->scheduled_date ? $payment->scheduled_date->format('M d, Y') : '' }}" data-payment-status="{{ $payment->status }}">
                                                 <td class="fw-semibold">{{ $payment->period_name }}</td>
                                                 <td class="fw-bold text-primary">₱{{ number_format($payment->amount, 2) }}</td>
                                                 <td>{{ $payment->scheduled_date ? $payment->scheduled_date->format('M d, Y') : 'Not Set' }}</td>
@@ -225,7 +225,7 @@
                         </div>
                     </div>
                 @else
-                    <div class="card border-0 shadow-sm mb-4">
+                    <div class="card border-0 shadow-sm mb-4" data-payment-schedule="true">
                         <div class="card-header bg-white border-0 pb-0">
                             <h5 class="card-title mb-0">
                                 <i class="ri-calendar-check-line me-2"></i>Payment Schedule
@@ -575,6 +575,8 @@
                 const modal = bootstrap.Modal.getInstance(document.getElementById('paymentModal'));
                 modal.hide();
             }
+
+            // Payments alert is based on due date only, no need to mark as viewed
         </script>
     @endpush
 </x-student-layout>

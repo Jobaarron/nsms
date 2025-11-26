@@ -652,6 +652,7 @@ Route::prefix('student')->name('student.')->group(function () {
             Route::get('/dashboard', [StudentController::class, 'index'])->name('dashboard');
             Route::get('/payments', [StudentController::class, 'payments'])->name('payments');
             Route::post('/payment/mode/update', [StudentController::class, 'updatePaymentMode'])->name('payment.mode.update');
+            Route::post('/mark-alert-viewed', [StudentController::class, 'markAlertViewed'])->name('mark-alert-viewed');
         });
         
         // Routes that require both enrollment completion AND payment settlement
