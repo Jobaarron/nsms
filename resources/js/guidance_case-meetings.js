@@ -79,6 +79,33 @@ document.addEventListener('DOMContentLoaded', function() {
         .border-primary {
             border-color: #198754 !important;
         }
+        
+        /* Edit modal intervention fields styling */
+        #editCaseMeetingModal .conditional-field {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border-left: 3px solid #198754;
+            display: none;
+        }
+        
+        #editCaseMeetingModal .conditional-field input,
+        #editCaseMeetingModal .conditional-field select {
+            margin-bottom: 8px;
+        }
+        
+        #editCaseMeetingModal .form-check {
+            margin-bottom: 1rem;
+        }
+        
+        #editCaseMeetingModal .form-check-label {
+            font-weight: 500;
+        }
+        
+        #editCaseMeetingModal .bg-light {
+            background-color: #f8f9fa !important;
+        }
     `;
     document.head.appendChild(style);
 
@@ -164,19 +191,52 @@ document.addEventListener('DOMContentLoaded', function() {
             allowInput: true,
         });
 
-        flatpickr("#createCaseSummaryModal input[name='suspension_end']", {
-            dateFormat: "Y-m-d",
-            minDate: "today",
-            allowInput: true,
-        });
 
-        flatpickr("#createCaseSummaryModal input[name='suspension_return']", {
-            dateFormat: "Y-m-d",
-            minDate: "today",
-            allowInput: true,
-        });
 
         flatpickr("#createCaseSummaryModal input[name='expulsion_date']", {
+            dateFormat: "Y-m-d",
+            minDate: "today",
+            allowInput: true,
+        });
+        
+        // Initialize flatpickr for edit modal intervention date fields
+        flatpickr("#editCaseMeetingModal input[name='written_reflection_due']", {
+            dateFormat: "Y-m-d",
+            minDate: "today",
+            allowInput: true,
+        });
+
+        flatpickr("#editCaseMeetingModal input[name='parent_teacher_date']", {
+            dateFormat: "Y-m-d",
+            minDate: "today",
+            allowInput: true,
+        });
+
+        flatpickr("#editCaseMeetingModal input[name='restorative_justice_date']", {
+            dateFormat: "Y-m-d",
+            minDate: "today",
+            allowInput: true,
+        });
+
+        flatpickr("#editCaseMeetingModal input[name='follow_up_date']", {
+            dateFormat: "Y-m-d",
+            minDate: "today",
+            allowInput: true,
+        });
+
+        flatpickr("#editCaseMeetingModal input[name='community_service_date']", {
+            dateFormat: "Y-m-d",
+            minDate: "today",
+            allowInput: true,
+        });
+
+        flatpickr("#editCaseMeetingModal input[name='suspension_start']", {
+            dateFormat: "Y-m-d",
+            minDate: "today",
+            allowInput: true,
+        });
+
+        flatpickr("#editCaseMeetingModal input[name='expulsion_date']", {
             dateFormat: "Y-m-d",
             minDate: "today",
             allowInput: true,
@@ -215,6 +275,9 @@ function initializeModals() {
     
     // Initialize intervention checkbox toggles
     initializeInterventionToggles();
+    
+    // Initialize edit modal intervention toggles
+    initializeEditInterventionToggles();
 }
 
 // Initialize checkbox toggle functionality for intervention fields
@@ -305,6 +368,96 @@ function initializeInterventionToggles() {
             console.log(`Initialized toggle for ${mapping.checkboxId} → ${mapping.target}`);
         } else {
             console.warn(`Conditional field with data-target="${mapping.target}" not found`);
+        }
+    });
+}
+
+// Initialize checkbox toggle functionality specifically for edit modal
+function initializeEditInterventionToggles() {
+    // Mapping of edit modal checkbox IDs to their data-target values
+    const editInterventionMappings = [
+        { checkboxId: 'edit_action_written_reflection', target: 'written_reflection' },
+        { checkboxId: 'edit_action_mentorship', target: 'mentorship_counseling' },
+        { checkboxId: 'edit_action_parent_teacher', target: 'parent_teacher_communication' },
+        { checkboxId: 'edit_action_restorative_justice', target: 'restorative_justice_activity' },
+        { checkboxId: 'edit_action_follow_up_meeting', target: 'follow_up_meeting' },
+        { checkboxId: 'edit_action_community_service', target: 'community_service' },
+        { checkboxId: 'edit_action_suspension', target: 'suspension' },
+        { checkboxId: 'edit_action_expulsion', target: 'expulsion' }
+    ];
+    
+    editInterventionMappings.forEach(mapping => {
+        const checkbox = document.getElementById(mapping.checkboxId);
+        
+        if (!checkbox) {
+            console.warn(`Edit modal checkbox with ID ${mapping.checkboxId} not found`);
+            return;
+        }
+        
+        // Find the corresponding conditional field
+        const conditionalField = document.querySelector(`#editCaseMeetingModal .conditional-field[data-target="${mapping.target}"]`);
+        
+        if (conditionalField) {
+            // Initially hide the conditional field
+            conditionalField.style.display = 'none';
+            
+            // Add event listener
+            checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                    // Show the conditional field for this intervention
+                    conditionalField.style.display = 'block';
+                    
+                    // Disable all other intervention checkboxes
+                    editInterventionMappings.forEach(otherMapping => {
+                        if (otherMapping.checkboxId !== mapping.checkboxId) {
+                            const otherCheckbox = document.getElementById(otherMapping.checkboxId);
+                            if (otherCheckbox) {
+                                otherCheckbox.disabled = true;
+                                otherCheckbox.checked = false;
+                                
+                                // Hide other conditional fields and clear their values
+                                const otherConditionalField = document.querySelector(`#editCaseMeetingModal .conditional-field[data-target="${otherMapping.target}"]`);
+                                if (otherConditionalField) {
+                                    otherConditionalField.style.display = 'none';
+                                    const otherInputs = otherConditionalField.querySelectorAll('input, select');
+                                    otherInputs.forEach(input => {
+                                        if (input.type === 'checkbox') {
+                                            input.checked = false;
+                                        } else {
+                                            input.value = '';
+                                        }
+                                    });
+                                }
+                            }
+                        }
+                    });
+                } else {
+                    // Hide the conditional field for this intervention
+                    conditionalField.style.display = 'none';
+                    
+                    // Clear input values within this conditional field
+                    const inputs = conditionalField.querySelectorAll('input, select');
+                    inputs.forEach(input => {
+                        if (input.type === 'checkbox') {
+                            input.checked = false;
+                        } else {
+                            input.value = '';
+                        }
+                    });
+                    
+                    // Re-enable all other intervention checkboxes
+                    editInterventionMappings.forEach(otherMapping => {
+                        if (otherMapping.checkboxId !== mapping.checkboxId) {
+                            const otherCheckbox = document.getElementById(otherMapping.checkboxId);
+                            if (otherCheckbox) {
+                                otherCheckbox.disabled = false;
+                            }
+                        }
+                    });
+                }
+            });
+        } else {
+            console.warn(`Conditional field for target ${mapping.target} not found in edit modal`);
         }
     });
 }
@@ -428,25 +581,25 @@ window.viewCaseMeeting = function(meetingId) {
                             <div style="font-weight: bold; font-size: 16px; margin-bottom: 12px;">Attachment Report</div>
                             ${caseMeetingAttachmentUrl ? `
                                 <div style="margin-bottom: 10px;">
-                                    <a href="${caseMeetingAttachmentUrl}" target="_blank" style="display: inline-flex; align-items: center; border: 2px solid #388e3c; color: #388e3c; border-radius: 6px; padding: 8px 18px; font-size: 16px; font-weight: 500; background: #fff; text-decoration: none; margin-bottom: 8px;">
+                                    <a href="${caseMeetingAttachmentUrl}" download="Student-Narrative-Report-${meeting.id}.pdf" style="display: inline-flex; align-items: center; border: 2px solid #388e3c; color: #388e3c; border-radius: 6px; padding: 8px 18px; font-size: 16px; font-weight: 500; background: #fff; text-decoration: none; margin-bottom: 8px;">
                                         <span style="margin-right: 8px; font-size: 18px;">&#128206;</span> <!-- Paperclip Unicode -->
-                                        Student Narrative Report
+                                        Download Student Narrative Report
                                     </a>
                                 </div>
                             ` : ''}
                             ${teacherObservationReportUrl ? `
                                 <div style="margin-bottom: 10px;">
-                                    <a href="${teacherObservationReportUrl}" target="_blank" style="display: inline-flex; align-items: center; border: 2px solid #388e3c; color: #388e3c; border-radius: 6px; padding: 8px 18px; font-size: 16px; font-weight: 500; background: #fff; text-decoration: none;">
+                                    <a href="${teacherObservationReportUrl}" download="Teacher-Observation-Report-${meeting.id}.pdf" style="display: inline-flex; align-items: center; border: 2px solid #388e3c; color: #388e3c; border-radius: 6px; padding: 8px 18px; font-size: 16px; font-weight: 500; background: #fff; text-decoration: none;">
                                         <span style="margin-right: 8px; font-size: 18px;">&#128196;</span> <!-- Page with curl Unicode (PDF icon alternative) -->
-                                        View Teacher Observation Report
+                                        Download Teacher Observation Report
                                     </a>
                                 </div>
                             ` : ''}
                             ${meeting.summary ? `
                                 <div>
-                                    <a href="/guidance/case-meetings/${meeting.id}/disciplinary-conference-report/pdf" target="_blank" style="display: inline-flex; align-items: center; border: 2px solid #d32f2f; color: #d32f2f; border-radius: 6px; padding: 8px 18px; font-size: 16px; font-weight: 500; background: #fff; text-decoration: none;">
+                                    <a href="/guidance/case-meetings/${meeting.id}/disciplinary-conference-report/pdf" download="Disciplinary-Conference-Report-${meeting.id}.pdf" style="display: inline-flex; align-items: center; border: 2px solid #d32f2f; color: #d32f2f; border-radius: 6px; padding: 8px 18px; font-size: 16px; font-weight: 500; background: #fff; text-decoration: none;">
                                         <span style="margin-right: 8px; font-size: 18px;">&#128221;</span> <!-- Clipboard Unicode -->
-                                        Discipline Conference Report
+                                        Download Conference Report
                                     </a>
                                 </div>
                             ` : ''}
@@ -846,30 +999,24 @@ window.confirmCaseMeetingScheduling = function() {
 };
 
 window.editCaseMeeting = function(meetingId) {
-    // Fetch meeting data and sanction options, then populate edit modal
-    Promise.all([
-        fetch(`/guidance/case-meetings/${meetingId}/edit`, {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            },
-            credentials: 'same-origin'
-        }).then(response => response.json()),
-        fetch('/guidance/api/sanctions/list', {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            },
-            credentials: 'same-origin'
-        }).then(response => response.json())
-    ]).then(([data, sanctionsData]) => {
-        if (data.success && sanctionsData.success) {
+    // Reset all intervention checkboxes and conditional fields first
+    resetEditInterventionForm();
+    
+    // Fetch meeting data
+    fetch(`/guidance/case-meetings/${meetingId}/edit`, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
             const meeting = data.meeting;
-            const sanctions = sanctionsData.sanctions || [];
 
-            // Populate form
+            // Populate basic form fields
             var studentIdEl = document.getElementById('edit_student_id');
             if (studentIdEl) studentIdEl.value = meeting.student_id;
             var meetingTypeEl = document.getElementById('edit_meeting_type');
@@ -878,18 +1025,12 @@ window.editCaseMeeting = function(meetingId) {
             if (scheduledDateEl) scheduledDateEl.value = meeting.scheduled_date || '';
             var scheduledTimeEl = document.getElementById('edit_scheduled_time');
             if (scheduledTimeEl) scheduledTimeEl.value = meeting.scheduled_time || '';
+            var summaryEl = document.getElementById('edit_summary');
+            if (summaryEl) summaryEl.value = meeting.summary || '';
 
-            var reasonEl = document.getElementById('edit_reason');
-            if (reasonEl) reasonEl.value = meeting.reason || '';
-            var notesEl = document.getElementById('edit_notes');
-            if (notesEl) notesEl.value = meeting.notes || '';
-
-            // Populate sanction dropdown
-            var sanctionSelect = document.getElementById('edit_sanction');
-            if (sanctionSelect) {
-                sanctionSelect.innerHTML = '<option value="">Select Intervention</option>' +
-                    sanctions.map(s => `<option value="${s}">${s}</option>`).join('');
-                if (meeting.sanction) sanctionSelect.value = meeting.sanction;
+            // Populate intervention fields if they exist
+            if (meeting.intervention_fields) {
+                populateEditInterventionFields(meeting.intervention_fields);
             }
 
             // Set form action
@@ -899,13 +1040,80 @@ window.editCaseMeeting = function(meetingId) {
             const modal = new bootstrap.Modal(document.getElementById('editCaseMeetingModal'));
             modal.show();
         } else {
-            showAlert('danger', 'Failed to load meeting details or sanctions');
+            showAlert('danger', 'Failed to load meeting details');
         }
-    }).catch(error => {
+    })
+    .catch(error => {
         console.error('Error:', error);
         showAlert('danger', 'Error loading meeting for editing');
     });
 };
+
+// Function to reset edit intervention form
+function resetEditInterventionForm() {
+    // Reset all checkboxes and enable them
+    const editModal = document.getElementById('editCaseMeetingModal');
+    if (!editModal) return;
+    
+    const checkboxes = editModal.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+        checkbox.disabled = false;
+    });
+    
+    // Hide all conditional fields and clear inputs
+    const conditionalFields = editModal.querySelectorAll('.conditional-field');
+    conditionalFields.forEach(field => {
+        field.style.display = 'none';
+        const inputs = field.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            if (input.type === 'checkbox') {
+                input.checked = false;
+            } else {
+                input.value = '';
+            }
+        });
+    });
+}
+
+// Function to populate intervention fields in edit modal
+function populateEditInterventionFields(interventionFields) {
+    if (!interventionFields || typeof interventionFields !== 'object') return;
+    
+    // Map of intervention types to their checkbox IDs
+    const interventionMap = {
+        'written_reflection': 'edit_action_written_reflection',
+        'mentorship': 'edit_action_mentorship', 
+        'parent_teacher': 'edit_action_parent_teacher',
+        'restorative_justice': 'edit_action_restorative_justice',
+        'follow_up_meeting': 'edit_action_follow_up_meeting',
+        'community_service': 'edit_action_community_service',
+        'suspension': 'edit_action_suspension',
+        'expulsion': 'edit_action_expulsion'
+    };
+    
+    Object.keys(interventionFields).forEach(key => {
+        const checkboxId = interventionMap[key];
+        if (checkboxId) {
+            const checkbox = document.getElementById(checkboxId);
+            if (checkbox && interventionFields[key]) {
+                checkbox.checked = true;
+                checkbox.dispatchEvent(new Event('change')); // Trigger the toggle
+                
+                // Populate the related fields
+                const fieldData = interventionFields[key];
+                if (typeof fieldData === 'object') {
+                    Object.keys(fieldData).forEach(fieldKey => {
+                        const input = document.querySelector(`#editCaseMeetingModal input[name="${fieldKey}"], #editCaseMeetingModal select[name="${fieldKey}"]`);
+                        if (input && fieldData[fieldKey]) {
+                            input.value = fieldData[fieldKey];
+                        }
+                    });
+                }
+            }
+        }
+    });
+}
 
 window.submitEditCaseMeeting = function(event) {
     event.preventDefault();
@@ -914,6 +1122,12 @@ window.submitEditCaseMeeting = function(event) {
     const formData = new FormData(form);
     const submitBtn = form.querySelector('button[type="submit"]');
     const originalText = submitBtn.innerHTML;
+
+    // Add intervention fields data
+    const interventionFields = collectEditInterventionFields();
+    if (Object.keys(interventionFields).length > 0) {
+        formData.append('intervention_fields', JSON.stringify(interventionFields));
+    }
 
     // Add CSRF token and method
     formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
@@ -970,6 +1184,47 @@ window.submitEditCaseMeeting = function(event) {
         submitBtn.innerHTML = originalText;
     });
 };
+
+// Function to collect intervention fields from edit modal
+function collectEditInterventionFields() {
+    const interventionFields = {};
+    const editModal = document.getElementById('editCaseMeetingModal');
+    
+    if (!editModal) return interventionFields;
+    
+    // Map of checkbox IDs to intervention field names
+    const checkboxMap = {
+        'edit_action_written_reflection': 'written_reflection',
+        'edit_action_mentorship': 'mentorship',
+        'edit_action_parent_teacher': 'parent_teacher',
+        'edit_action_restorative_justice': 'restorative_justice',
+        'edit_action_follow_up_meeting': 'follow_up_meeting',
+        'edit_action_community_service': 'community_service',
+        'edit_action_suspension': 'suspension',
+        'edit_action_expulsion': 'expulsion'
+    };
+    
+    Object.keys(checkboxMap).forEach(checkboxId => {
+        const checkbox = document.getElementById(checkboxId);
+        if (checkbox && checkbox.checked) {
+            const interventionType = checkboxMap[checkboxId];
+            interventionFields[interventionType] = {};
+            
+            // Get the corresponding conditional field
+            const conditionalField = checkbox.closest('.form-check').querySelector('.conditional-field');
+            if (conditionalField) {
+                const inputs = conditionalField.querySelectorAll('input, select');
+                inputs.forEach(input => {
+                    if (input.name && input.value) {
+                        interventionFields[interventionType][input.name] = input.value;
+                    }
+                });
+            }
+        }
+    });
+    
+    return interventionFields;
+}
 
 window.completeCaseMeeting = function(meetingId) {
     if (confirm('Are you sure you want to mark this case meeting as completed?')) {

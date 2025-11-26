@@ -2,16 +2,6 @@
     @vite('resources/css/index_guidance.css')
 
     @if(isset($showDetail))
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Automatically open the PDF modal when viewing details
-    var caseMeetingId = {{ $caseMeeting->id }};
-    var pdfUrl = `/guidance/pdf/case-meeting/${caseMeetingId}`;
-    document.getElementById('incidentFormPdfIframe').src = pdfUrl;
-    var modal = new bootstrap.Modal(document.getElementById('incidentFormPdfPreviewModal'));
-    modal.show();
-    });
-    </script>
     <!-- Case Meeting Detail View -->
     <!-- Header -->
     <div class="row mb-4">
@@ -29,43 +19,18 @@
                     <p class="text-muted">Meeting ID: {{ $caseMeeting->id }}</p>
                 </div>
                 <div class="d-flex gap-2">
-                    <button class="btn btn-outline-info" onclick="openIncidentFormPdfPreview({{ $caseMeeting->id }})">
-                        <i class="ri-file-pdf-line me-2"></i>View Incident PDF
-                    </button>
-                    <a href="{{ url('guidance/pdf/case-meeting/' . $caseMeeting->id) }}" target="_blank" class="btn btn-outline-success">
-                        <i class="ri-attachment-2"></i> View Attachment
+                    <a href="{{ url('guidance/pdf/case-meeting/' . $caseMeeting->id) }}" download="Case-Meeting-{{ $caseMeeting->id }}.pdf" class="btn btn-outline-info">
+                        <i class="ri-file-pdf-line me-2"></i>Download Incident PDF
+                    </a>
+                    <a href="{{ url('guidance/pdf/case-meeting/' . $caseMeeting->id) }}" download="Case-Meeting-Attachment-{{ $caseMeeting->id }}.pdf" class="btn btn-outline-success">
+                        <i class="ri-attachment-2"></i> Download Attachment
                     </a>
                     @if($caseMeeting->summary)
-                        <a href="{{ route('guidance.case-meetings.disciplinary-conference-report.pdf', $caseMeeting->id) }}" target="_blank" class="btn btn-outline-danger">
-                            <i class="ri-file-text-line me-2"></i>Discipline Conference Report
+                        <a href="{{ route('guidance.case-meetings.disciplinary-conference-report.pdf', $caseMeeting->id) }}" download="Disciplinary-Conference-Report-{{ $caseMeeting->id }}.pdf" class="btn btn-outline-danger">
+                            <i class="ri-file-text-line me-2"></i>Download Conference Report
                         </a>
                     @endif
-    <!-- INCIDENT FORM PDF PREVIEW MODAL (READ-ONLY) -->
-    <div class="modal fade" id="incidentFormPdfPreviewModal" tabindex="-1" aria-labelledby="incidentFormPdfPreviewModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="incidentFormPdfPreviewModalLabel">Incident Form PDF Preview</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body" style="background: #fff; min-height: 600px;">
-                    <iframe id="incidentFormPdfIframe" src="" width="100%" height="600px" style="border: none;"></iframe>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    <script>
-    function openIncidentFormPdfPreview(caseMeetingId) {
-        // Use the dynamic PDF route for the case meeting
-        var pdfUrl = `/guidance/pdf/case-meeting/${caseMeetingId}`;
-        document.getElementById('incidentFormPdfIframe').src = pdfUrl;
-        var modal = new bootstrap.Modal(document.getElementById('incidentFormPdfPreviewModal'));
-        modal.show();
-    }
-    </script>
+
                     <a href="{{ route('guidance.case-meetings.index') }}" class="btn btn-outline-secondary">
                         Back to List
                     </a>
@@ -197,9 +162,9 @@
                             </div>
                         </div>
                         <div class="col-md-3 d-flex align-items-end">
-                            <button class="btn btn-success w-100" type="button" onclick="window.open('/guidance/conference-summary-report/pdf', '_blank')">
-                                <i class="ri-file-list-3-line me-1"></i> SUMMARY REPORT
-                            </button>
+                            <a href="/guidance/conference-summary-report/pdf" download="Conference-Summary-Report.pdf" class="btn btn-success w-100">
+                                <i class="ri-file-list-3-line me-1"></i> Download Summary Report
+                            </a>
                         </div>
     <div class="row mb-4">
         <div class="col-12">
@@ -332,9 +297,9 @@
                             </div>
                         </div>
                         <div class="col-md-2 d-flex align-items-end">
-                            <button class="btn btn-success w-100" type="button" onclick="window.open('/guidance/conference-summary-report/pdf', '_blank')">
-                                <i class="ri-file-list-3-line me-1"></i> Conference Summary Report
-                            </button>
+                            <a href="/guidance/conference-summary-report/pdf" download="Conference-Summary-Report.pdf" class="btn btn-success w-100">
+                                <i class="ri-file-list-3-line me-1"></i> Download Summary Report
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -659,41 +624,209 @@
 
     <!-- Edit Case Meeting Modal -->
     <div class="modal fade" id="editCaseMeetingModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog modal-xl">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Edit Case Meeting</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <form id="editCaseMeetingForm" onsubmit="submitEditCaseMeeting(event)">
-                    <div class="modal-body">
-                        <div class="row g-3">
-                             <div class="col-md-6">
-                                 <label class="form-label">Date <span class="text-danger">*</span></label>
-                                 <input type="date" class="form-control" name="scheduled_date" id="edit_scheduled_date" required min="{{ date('Y-m-d') }}">
-                             </div>
-                             <div class="col-md-6">
-                                 <label class="form-label">Time <span class="text-danger">*</span></label>
-                                 <input type="time" class="form-control" name="scheduled_time" id="edit_scheduled_time" required>
-                             </div>
-
-                             <div class="col-12">
-                                 <label class="form-label">Summary</label>
-                                 <textarea class="form-control" name="summary" id="edit_summary" rows="3" placeholder="Enter summary..."></textarea>
-                             </div>
-                             <div class="col-12">
-                                 <label class="form-label">Interventions</label>
-                                 <select class="form-control" name="sanction" id="edit_sanction">
-                                     <option value="">Select Intervention</option>
-                                     <!-- Options will be populated by JS -->
-                                 </select>
-                             </div>
+                <div class="modal-header bg-gradient border-0" style="background: linear-gradient(135deg, #198754 0%, #20c997 100%);">
+                    <div class="d-flex align-items-center gap-3 text-white">
+                        <i class="ri-edit-line fs-4"></i>
+                        <div>
+                            <h5 class="modal-title fw-bold mb-0">Edit Case Meeting & Select Interventions</h5>
+                            <small style="opacity: 0.9;">Update meeting details and intervention strategies</small>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="ri-save-line me-2"></i>Update Meeting
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="editCaseMeetingForm" onsubmit="submitEditCaseMeeting(event)">
+                    <div class="modal-body p-4">
+                        <!-- Basic Meeting Information -->
+                        <div class="mb-4">
+                            <h6 class="fw-bold text-success mb-3 d-flex align-items-center">
+                                <i class="ri-calendar-event-line me-2"></i>
+                                Meeting Information
+                            </h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Date <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" name="scheduled_date" id="edit_scheduled_date" required min="{{ date('Y-m-d') }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Time <span class="text-danger">*</span></label>
+                                    <input type="time" class="form-control" name="scheduled_time" id="edit_scheduled_time" required>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Summary</label>
+                                    <textarea class="form-control" name="summary" id="edit_summary" rows="3" placeholder="Enter summary..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Intervention Selection -->
+                        <div class="mb-4">
+                            <h6 class="fw-bold text-warning mb-3 d-flex align-items-center">
+                                <i class="ri-heart-pulse-line me-2"></i>
+                                Select Interventions
+                            </h6>
+                            <div class="alert alert-info border-0 rounded-4 mb-4">
+                                <div class="d-flex align-items-center">
+                                    <i class="ri-information-line text-info me-2 fs-5"></i>
+                                    <div class="text-info">
+                                        <strong>Instructions:</strong> Select one appropriate intervention based on the case assessment.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row g-4">
+                                <!-- Primary Interventions -->
+                                <div class="col-md-6">
+                                    <div class="p-3 bg-light rounded-4">
+                                        <h6 class="fw-bold text-success mb-3 d-flex align-items-center">
+                                            <i class="ri-heart-pulse-line me-2"></i>
+                                            Primary Interventions
+                                        </h6>
+                                        
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" name="action_written_reflection" value="1" id="edit_action_written_reflection">
+                                            <label class="form-check-label fw-medium" for="edit_action_written_reflection">
+                                                <i class="ri-file-edit-line text-success me-2"></i>Written Reflection
+                                            </label>
+                                            <div class="conditional-field" data-target="written_reflection">
+                                                <div class="row">
+                                                    <div class="col-12">
+                                                        <label class="form-label">Due Date</label>
+                                                        <input type="date" class="form-control form-control-sm" name="written_reflection_due">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" name="action_mentorship" value="1" id="edit_action_mentorship">
+                                            <label class="form-check-label fw-medium" for="edit_action_mentorship">
+                                                <i class="ri-user-heart-line text-success me-2"></i>Mentorship/Counseling
+                                            </label>
+                                            <div class="conditional-field" data-target="mentorship_counseling">
+                                                <div class="row">
+                                                    <div class="col-12">
+                                                        <label class="form-label">Mentor Name</label>
+                                                        <input type="text" class="form-control form-control-sm" name="mentor_name" placeholder="Assigned mentor">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" name="action_parent_teacher" value="1" id="edit_action_parent_teacher">
+                                            <label class="form-check-label fw-medium" for="edit_action_parent_teacher">
+                                                <i class="ri-parent-line text-warning me-2"></i>Parent-Teacher Communication
+                                            </label>
+                                            <div class="conditional-field" data-target="parent_teacher_communication">
+                                                <div class="row">
+                                                    <div class="col-12">
+                                                        <label class="form-label">Meeting Date</label>
+                                                        <input type="date" class="form-control form-control-sm" name="parent_teacher_date">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" name="action_restorative_justice" value="1" id="edit_action_restorative_justice">
+                                            <label class="form-check-label fw-medium" for="edit_action_restorative_justice">
+                                                <i class="ri-hand-heart-line text-success me-2"></i>Restorative Justice Activity
+                                            </label>
+                                            <div class="conditional-field" data-target="restorative_justice_activity">
+                                                <div class="row">
+                                                    <div class="col-12">
+                                                        <label class="form-label">Activity Date</label>
+                                                        <input type="date" class="form-control form-control-sm" name="restorative_justice_date">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="action_follow_up_meeting" value="1" id="edit_action_follow_up_meeting">
+                                            <label class="form-check-label fw-medium" for="edit_action_follow_up_meeting">
+                                                <i class="ri-calendar-check-line text-success me-2"></i>Follow-up Meeting
+                                            </label>
+                                            <div class="conditional-field" data-target="follow_up_meeting">
+                                                <div class="row">
+                                                    <div class="col-12">
+                                                        <label class="form-label">Follow-up Date</label>
+                                                        <input type="date" class="form-control form-control-sm" name="follow_up_date">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="p-3 bg-light rounded-4">
+                                        <h6 class="fw-bold text-warning mb-3 d-flex align-items-center">
+                                            <i class="ri-alert-line me-2"></i>
+                                            Disciplinary Actions
+                                        </h6>
+                                        
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" name="action_community_service" value="1" id="edit_action_community_service">
+                                            <label class="form-check-label fw-medium" for="edit_action_community_service">
+                                                <i class="ri-community-line text-success me-2"></i>Community Service
+                                            </label>
+                                            <div class="conditional-field" data-target="community_service">
+                                                <div class="row">
+                                                    <div class="col-12">
+                                                        <label class="form-label">Service Date</label>
+                                                        <input type="date" class="form-control form-control-sm" name="community_service_date">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" name="action_suspension" value="1" id="edit_action_suspension">
+                                            <label class="form-check-label fw-medium" for="edit_action_suspension">
+                                                <i class="ri-pause-circle-line text-danger me-2"></i>Suspension
+                                            </label>
+                                            <div class="conditional-field" data-target="suspension">
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Start Date</label>
+                                                        <input type="date" class="form-control form-control-sm" name="suspension_start">
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Days Count</label>
+                                                        <input type="number" class="form-control form-control-sm" name="suspension_days" min="1" placeholder="Number of days">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="action_expulsion" value="1" id="edit_action_expulsion">
+                                            <label class="form-check-label fw-medium" for="edit_action_expulsion">
+                                                <i class="ri-close-circle-line text-danger me-2"></i>Expulsion
+                                            </label>
+                                            <div class="conditional-field" data-target="expulsion">
+                                                <div class="row">
+                                                    <div class="col-12">
+                                                        <label class="form-label">Effective Date</label>
+                                                        <input type="date" class="form-control form-control-sm" name="expulsion_date">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 bg-light gap-2">
+                        <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">
+                            <i class="ri-close-line me-2"></i>Cancel
+                        </button>
+                        <button type="submit" class="btn btn-success rounded-pill px-4">
+                            <i class="ri-save-line me-2"></i>Update Meeting & Interventions
                         </button>
                     </div>
                 </form>

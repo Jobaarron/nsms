@@ -216,7 +216,9 @@ class PdfController extends Controller
 
             // Overlay student data (adjust coordinates as needed for your template)
             $pdf->SetXY(24, 58); $pdf->Write(0, $student->full_name ?? '');
-            $pdf->SetXY(141, 57); $pdf->Write(0, ($student->grade_level ?? '') . ' - ' . ($student->section ?? ''));
+            
+            $gradeSection = ($student->grade_level ?? '') . ' - ' . ($student->section ?? '');
+            $pdf->SetXY(141, 57); $pdf->Write(0, $gradeSection);
 
             // Overlay specific violation date and time
             $pdf->SetXY(120, 40); $pdf->Write(0, $violation->violation_date ? $violation->violation_date->format('Y-m-d') : '');
@@ -281,8 +283,8 @@ class PdfController extends Controller
         // Overlay case meeting and student data (adjust coordinates as needed for your template)
         if ($student) {
             $pdf->SetXY(24, 58); $pdf->Write(0, $student->full_name ?? '');
-            $pdf->SetXY(141, 57); $pdf->Write(0, $student->grade_level ?? '');
-            $pdf->SetXY(47, 56); $pdf->Write(0, $student->section ?? '');
+            $gradeSection = ($student->grade_level ?? '') . ' - ' . ($student->section ?? '');
+            $pdf->SetXY(141, 57); $pdf->Write(0, $gradeSection);
         }
         if ($violation) {
             $pdf->SetXY(120, 40); $pdf->Write(0, $violation->violation_date ? $violation->violation_date->format('Y-m-d') : '');
