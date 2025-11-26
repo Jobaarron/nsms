@@ -311,7 +311,7 @@ class TeacherController extends Controller
             'incident_description' => 'nullable|string',
         ]);
 
-        CounselingSession::create([
+        $counselingSession = CounselingSession::create([
             'student_id' => $validatedData['student_id'],
             'recommended_by' => Auth::id(),
             'referral_academic' => isset($validatedData['referral_academic']) ? json_encode($validatedData['referral_academic']) : null,
@@ -321,6 +321,40 @@ class TeacherController extends Controller
             'incident_description' => $validatedData['incident_description'] ?? null,
             'status' => 'recommended',
         ]);
+
+        // Create notification for guidance about teacher recommendation
+        try {
+            $teacherName = Auth::user()->name ?? 'Teacher';
+            $student = \App\Models\Student::find($validatedData['student_id']);
+            $studentName = $student ? $student->full_name : 'Student';
+            
+            // Get referral reasons
+            $academicReasons = $validatedData['referral_academic'] ?? [];
+            $socialReasons = $validatedData['referral_social'] ?? [];
+            $allReasons = array_merge($academicReasons, $socialReasons);
+            $reasonsText = !empty($allReasons) ? implode(', ', $allReasons) : 'General counseling need';
+            
+            \App\Models\Notice::createGlobal(
+                "Student Recommended for Counseling",
+                "Teacher {$teacherName} has recommended {$studentName} for counseling. Concerns: {$reasonsText}. Please review and schedule the counseling session.",
+                null, // created_by will be null for system-generated notices
+                null, // target_status
+                null  // target_grade_level
+            );
+            
+            \Log::info('Notification created for teacher counseling recommendation', [
+                'counseling_session_id' => $counselingSession->id,
+                'teacher_name' => $teacherName,
+                'student_name' => $studentName,
+                'reasons' => $reasonsText
+            ]);
+        } catch (\Exception $notificationError) {
+            // Log notification error but don't fail the main operation
+            \Log::error('Failed to create notification for teacher counseling recommendation', [
+                'counseling_session_id' => $counselingSession->id,
+                'error' => $notificationError->getMessage()
+            ]);
+        }
 
         return redirect()->route('teacher.dashboard')
             ->with('success', 'Student has been recommended for counseling. Guidance will review the recommendation.');
@@ -442,6 +476,33 @@ class TeacherController extends Controller
             // Check if the case meeting can be saved
             if (!$caseMeeting->save()) {
                 throw new \Exception('Failed to save case meeting - save() returned false');
+            }
+
+            // Create notification for guidance counselor about teacher reply
+            try {
+                $teacherName = $currentUser->name ?? 'Teacher';
+                $studentName = $caseMeeting->student ? $caseMeeting->student->full_name : 'Student';
+                
+                \App\Models\Notice::createGlobal(
+                    "Teacher Reply Received - Case Meeting",
+                    "Teacher {$teacherName} has submitted their reply for the case meeting regarding {$studentName}. Please review the teacher's statement and action plan in the case meeting details.",
+                    null, // created_by will be null for system-generated notices
+                    null, // target_status
+                    null  // target_grade_level
+                );
+                
+                \Log::info('Notification created for teacher reply', [
+                    'case_meeting_id' => $caseMeetingId,
+                    'teacher_name' => $teacherName,
+                    'student_name' => $studentName
+                ]);
+            } catch (\Exception $notificationError) {
+                // Log notification error but don't fail the main operation
+                \Log::error('Failed to create notification for teacher reply', [
+                    'case_meeting_id' => $caseMeetingId,
+                    'teacher_id' => $currentUser->id,
+                    'error' => $notificationError->getMessage()
+                ]);
             }
 
             \Log::info('Teacher observation reply submitted successfully', [

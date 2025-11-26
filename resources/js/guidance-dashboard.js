@@ -949,6 +949,346 @@ function renderCounselingEffectivenessChart(data) {
 
 // Individual refresh functions removed - charts update automatically with filters
 
+// Guidance Notification Bell Functions
+function toggleGuidanceNotificationPanel() {
+    const panel = document.getElementById('guidanceNotificationPanel');
+    const isVisible = panel.style.display !== 'none';
+    
+    if (isVisible) {
+        panel.style.display = 'none';
+    } else {
+        panel.style.display = 'block';
+        loadGuidanceNotifications();
+    }
+    
+    // Close panel when clicking outside
+    if (!isVisible) {
+        setTimeout(() => {
+            document.addEventListener('click', closeGuidanceNotificationOnClickOutside, { once: true });
+        }, 100);
+    }
+}
+
+function closeGuidanceNotificationOnClickOutside(event) {
+    const panel = document.getElementById('guidanceNotificationPanel');
+    const bell = document.querySelector('.guidance-notification-bell');
+    
+    if (!panel.contains(event.target) && !bell.contains(event.target)) {
+        panel.style.display = 'none';
+    }
+}
+
+function loadGuidanceNotifications() {
+    const listContainer = document.getElementById('guidanceNotificationList');
+    
+    // Show loading state
+    listContainer.innerHTML = `
+        <div class="text-center py-3">
+            <div class="spinner-border spinner-border-sm text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <div class="mt-2">Loading notifications...</div>
+        </div>
+    `;
+    
+    // Fetch notifications from the Notice model for guidance (filtered for specific types)
+    fetch('/guidance/notifications/api?filter=guidance_only', {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.notifications) {
+            renderGuidanceNotifications(data.notifications);
+            updateGuidanceNotificationBadge(data.unread_count || 0);
+        } else {
+            showEmptyGuidanceNotifications();
+        }
+    })
+    .catch(error => {
+        console.error('Error loading guidance notifications:', error);
+        listContainer.innerHTML = `
+            <div class="text-center py-3 text-muted">
+                <i class="ri-error-warning-line fs-4 d-block mb-2 text-danger"></i>
+                <div>Error loading notifications</div>
+                <button class="btn btn-sm btn-outline-primary mt-2" onclick="loadGuidanceNotifications()">
+                    Try Again
+                </button>
+            </div>
+        `;
+    });
+}
+
+function renderGuidanceNotifications(notifications) {
+    const listContainer = document.getElementById('guidanceNotificationList');
+    
+    if (notifications.length === 0) {
+        showEmptyNotifications();
+        return;
+    }
+    
+    const notificationHtml = notifications.map(notification => {
+        // Determine notification type and icon
+        let icon = 'ri-notification-line';
+        let badgeColor = 'bg-info';
+        let typeText = '';
+        
+        const title = notification.title.toLowerCase();
+        if (title.includes('case meeting')) {
+            icon = 'ri-calendar-event-line';
+            badgeColor = 'bg-primary';
+            typeText = 'Case Meeting';
+        } else if (title.includes('counseling session')) {
+            icon = 'ri-heart-pulse-line';
+            badgeColor = 'bg-success';
+            typeText = 'Counseling';
+        } else if (title.includes('teacher reply')) {
+            icon = 'ri-reply-line';
+            badgeColor = 'bg-warning';
+            typeText = 'Teacher Reply';
+        } else if (title.includes('forwarded')) {
+            icon = 'ri-share-forward-line';
+            badgeColor = 'bg-danger';
+            typeText = 'Forwarded Case';
+        } else if (title.includes('recommended')) {
+            icon = 'ri-user-heart-line';
+            badgeColor = 'bg-info';
+            typeText = 'Recommendation';
+        }
+        
+        return `
+            <div class="notification-item ${!notification.is_read ? 'unread' : ''}" 
+                 onclick="viewNotification(${notification.id})" 
+                 style="cursor: pointer;" 
+                 title="Click to view details">
+                <div class="d-flex align-items-start">
+                    <div class="me-2 mt-1">
+                        <i class="${icon} text-primary"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="notification-title">${notification.title}</div>
+                        <div class="notification-message">${notification.preview_message || notification.message.substring(0, 80) + '...'}</div>
+                        <div class="notification-time">
+                            <i class="ri-time-line me-1"></i>${notification.time_ago || notification.formatted_date}
+                            ${typeText ? `<span class="badge ${badgeColor} ms-2">${typeText}</span>` : ''}
+                            ${!notification.is_read ? '<span class="badge bg-warning ms-1">New</span>' : ''}
+                            <i class="ri-arrow-right-line ms-2 text-muted"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    listContainer.innerHTML = notificationHtml;
+}
+
+function showEmptyGuidanceNotifications() {
+    const listContainer = document.getElementById('guidanceNotificationList');
+    listContainer.innerHTML = `
+        <div class="text-center py-3 text-muted">
+            <i class="ri-notification-off-line fs-3 d-block mb-2"></i>
+            <div>No guidance notifications</div>
+            <small class="text-muted">Notifications for case meetings, counseling sessions, teacher replies, forwarded cases, and recommendations will appear here</small>
+        </div>
+    `;
+}
+
+function updateGuidanceNotificationBadge(count) {
+    const badge = document.getElementById('guidance-notification-count');
+    const bell = document.querySelector('.guidance-notification-bell');
+    
+    if (count > 0) {
+        badge.textContent = count > 99 ? '99+' : count;
+        badge.style.display = 'block';
+        bell.classList.add('has-notifications');
+    } else {
+        badge.style.display = 'none';
+        bell.classList.remove('has-notifications');
+    }
+}
+
+function viewNotification(notificationId) {
+    // Mark as read and redirect to appropriate page
+    fetch(`/guidance/notifications/${notificationId}/read`, {
+        method: 'POST',
+        headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Refresh notifications
+            loadGuidanceNotifications();
+            // Redirect based on notification type
+            redirectBasedOnNotificationType(data.notification);
+        }
+    })
+    .catch(error => {
+        console.error('Error marking notification as read:', error);
+    });
+    
+    // Close guidance notification panel
+    document.getElementById('guidanceNotificationPanel').style.display = 'none';
+}
+
+function redirectBasedOnNotificationType(notification) {
+    const title = notification.title.toLowerCase();
+    const message = notification.message.toLowerCase();
+    
+    if (title.includes('case meeting') || title.includes('forwarded') || message.includes('case meeting')) {
+        // Redirect to case meetings page
+        window.location.href = '/guidance/case-meetings';
+    } else if (title.includes('counseling session') || title.includes('recommended') || message.includes('counseling session') || message.includes('recommended')) {
+        // Redirect to counseling sessions page
+        window.location.href = '/guidance/counseling-sessions';
+    } else if (title.includes('teacher reply') || message.includes('teacher reply')) {
+        // Redirect to case meetings page (since teacher replies are for case meetings)
+        window.location.href = '/guidance/case-meetings';
+    } else {
+        // Default: show notification details in modal for other types
+        showNotificationDetails(notification);
+    }
+}
+
+function showNotificationDetails(notification) {
+    // Mark notification as read when viewing details
+    markNotificationAsRead(notification.id);
+    
+    // Create and show notification details modal
+    const modalHtml = `
+        <div class="modal fade" id="notificationDetailModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="ri-notification-line me-2"></i>${notification.title}
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <strong>Message:</strong>
+                            <div class="mt-2 p-3 bg-light rounded">${notification.message}</div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <small><strong>Date:</strong> ${notification.formatted_date}</small>
+                            </div>
+                            <div class="col-md-6">
+                                <small><strong>From:</strong> ${notification.creator_name || 'System'}</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if any
+    const existingModal = document.getElementById('notificationDetailModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add modal to body and show
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const modal = new bootstrap.Modal(document.getElementById('notificationDetailModal'));
+    modal.show();
+    
+    // Remove modal after hiding
+    document.getElementById('notificationDetailModal').addEventListener('hidden.bs.modal', function() {
+        this.remove();
+    });
+}
+
+function markNotificationAsRead(notificationId) {
+    fetch(`/guidance/notifications/${notificationId}/mark-read`, {
+        method: 'POST',
+        headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Refresh notifications to update count and remove read notification
+            loadGuidanceNotifications();
+            loadGuidanceNotificationCount();
+        }
+    })
+    .catch(error => {
+        console.error('Error marking notification as read:', error);
+    });
+}
+
+function markAllGuidanceAsRead() {
+    fetch('/guidance/notifications/mark-all-read', {
+        method: 'POST',
+        headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            loadGuidanceNotifications();
+            showAlert('All notifications marked as read', 'success');
+        }
+    })
+    .catch(error => {
+        console.error('Error marking all as read:', error);
+        showAlert('Error marking notifications as read', 'danger');
+    });
+}
+
+function viewAllNotifications() {
+    // Navigate to full notifications page (to be created)
+    window.location.href = '/guidance/notifications';
+}
+
+// Auto-load guidance notifications on page load and set up periodic refresh
+document.addEventListener('DOMContentLoaded', function() {
+    // Initial load of notification count
+    setTimeout(loadGuidanceNotificationCount, 1000);
+    
+    // Refresh notification count every 5 seconds for near real-time updates
+    setInterval(loadGuidanceNotificationCount, 5000);
+});
+
+function loadGuidanceNotificationCount() {
+    fetch('/guidance/notifications/count?filter=guidance_only', {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            updateGuidanceNotificationBadge(data.count || 0);
+        }
+    })
+    .catch(error => {
+        console.log('Could not load notification count:', error);
+    });
+}
+
 // Expose functions to global scope for onclick handlers
 window.openQuickActionModal = openQuickActionModal;
 window.scheduleNewCaseMeeting = scheduleNewCaseMeeting;
@@ -957,6 +1297,13 @@ window.scheduleHouseVisit = scheduleHouseVisit;
 window.createCaseSummary = createCaseSummary;
 window.closeModal = closeModal;
 window.loadViolationTrends = loadViolationTrends;
+
+// Guidance Notification functions
+window.toggleGuidanceNotificationPanel = toggleGuidanceNotificationPanel;
+window.loadGuidanceNotifications = loadGuidanceNotifications;
+window.viewNotification = viewNotification;
+window.markAllGuidanceAsRead = markAllGuidanceAsRead;
+window.viewAllNotifications = viewAllNotifications;
 
 // Chart rendering functions
 window.renderCaseStatusPieChart = renderCaseStatusPieChart;

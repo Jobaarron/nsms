@@ -58,8 +58,8 @@
         <div class="card card-summary stats-card h-100" style="background-color: #28a745; color: white;">
           <div class="card-body text-center">
             <i class="ri-check-line display-6 mb-2"></i>
-            <div>Resolved</div>
-            <h3>{{ $stats['resolved'] ?? 0 }}</h3>
+            <div>Case Closed</div>
+            <h3>{{ $stats['case_closed'] ?? 0 }}</h3>
           </div>
         </div>
       </div>

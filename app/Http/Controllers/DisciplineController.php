@@ -258,7 +258,7 @@ class DisciplineController extends Controller
             'investigating' => $filtered->whereIn('status', ['investigating', 'in_progress'])->count(),
             'submitted' => $filtered->where('status', 'submitted')->count(),
             'completed' => $filtered->where('status', 'completed')->count(),
-            'resolved' => $filtered->where('status', 'resolved')->count(),
+            'case_closed' => $filtered->where('status', 'case_closed')->count(),
             'severe' => $filtered->where('effective_severity', 'severe')->count(),
         ];
 
@@ -868,6 +868,36 @@ class DisciplineController extends Controller
             'approved_by' => null,
             'approved_at' => null,
         ]);
+
+        // Create notification for guidance about forwarded case
+        try {
+            $disciplineOfficerName = Auth::user()->name ?? 'Discipline Officer';
+            $studentName = $violation->student ? $violation->student->full_name : 'Student';
+            $violationTitle = $violation->title ?? 'Violation';
+            $severityBadge = ucfirst($violation->severity ?? 'Unknown');
+            
+            \App\Models\Notice::createGlobal(
+                "Case Forwarded from Discipline Office",
+                "Discipline Officer {$disciplineOfficerName} has forwarded a {$severityBadge} violation case for {$studentName} to the Guidance Office. Violation: {$violationTitle}. A case meeting has been automatically created and requires your attention.",
+                null, // created_by will be null for system-generated notices
+                null, // target_status
+                null  // target_grade_level
+            );
+            
+            \Log::info('Notification created for forwarded discipline case', [
+                'case_meeting_id' => $caseMeeting->id,
+                'violation_id' => $violation->id,
+                'discipline_officer' => $disciplineOfficerName,
+                'student_name' => $studentName
+            ]);
+        } catch (\Exception $notificationError) {
+            // Log notification error but don't fail the main operation
+            \Log::error('Failed to create notification for forwarded discipline case', [
+                'case_meeting_id' => $caseMeeting->id,
+                'violation_id' => $violation->id,
+                'error' => $notificationError->getMessage()
+            ]);
+        }
 
         return response()->json([
             'success' => true,
