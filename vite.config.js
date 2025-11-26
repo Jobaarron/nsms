@@ -42,7 +42,6 @@ export default defineConfig({
                 'resources/css/roles_access.css',
                 'resources/css/index_admin.css',
                 'resources/css/email.css',
-                'resources/css/admin_generator.css',
                 'resources/css/manage_users.css',
                 'resources/css/index_student.css',
                 'resources/css/index_cashier.css',
