@@ -349,19 +349,6 @@
                 <div class="card-header bg-white border-0">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="card-title mb-0">Case Meetings List</h5>
-                        <div class="dropdown">
-                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                <i class="ri-more-line me-1"></i>Actions
-                            </button>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="#" onclick="exportCaseMeetings()">
-                                    <i class="ri-download-line me-2"></i>Export
-                                </a></li>
-                                <li><a class="dropdown-item" href="#" onclick="printCaseMeetings()">
-                                    <i class="ri-printer-line me-2"></i>Print
-                                </a></li>
-                            </ul>
-                        </div>
                     </div>
                 </div>
                 <div class="card-body p-0">

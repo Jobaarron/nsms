@@ -258,7 +258,7 @@ class DisciplineController extends Controller
             'investigating' => $filtered->whereIn('status', ['investigating', 'in_progress'])->count(),
             'submitted' => $filtered->where('status', 'submitted')->count(),
             'completed' => $filtered->where('status', 'completed')->count(),
-            'resolved' => $filtered->where('status', 'resolved')->count(),
+            'case_closed' => $filtered->where('status', 'case_closed')->count(),
             'severe' => $filtered->where('effective_severity', 'severe')->count(),
         ];
 

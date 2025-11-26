@@ -1710,7 +1710,15 @@ window.viewViolation = function(violationId) {
                   <tr><td><strong>Severity:</strong></td><td><span class="badge bg-${data.severity === 'major' ? 'danger' : (data.severity === 'minor' ? 'warning' : 'info')}">${data.severity ? data.severity.charAt(0).toUpperCase() + data.severity.slice(1) : 'N/A'}</span></td></tr>
                   <tr><td><strong>Status:</strong></td><td><span class="badge bg-${data.status === 'pending' ? 'warning' : (data.status === 'resolved' ? 'success' : (data.status === 'case_closed' ? 'dark' : 'info'))}">${data.status === 'case_closed' ? 'Case Closed' : (data.status ? data.status.charAt(0).toUpperCase() + data.status.slice(1) : 'N/A')}</span></td></tr>
                   <tr><td><strong>Date:</strong></td><td>${data.violation_date ? new Date(data.violation_date).toLocaleDateString() : 'N/A'}</td></tr>
-                  <tr><td><strong>Time:</strong></td><td>${data.violation_time || 'N/A'}</td></tr>
+                  <tr><td><strong>Time:</strong></td><td>${data.violation_time ? (function() { 
+                    try {
+                      const timeStr = data.violation_time.length > 5 ? data.violation_time.substring(0, 5) : data.violation_time;
+                      const date = new Date('1970-01-01T' + timeStr);
+                      return isNaN(date) ? data.violation_time : date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+                    } catch(e) {
+                      return data.violation_time;
+                    }
+                  })() : 'N/A'}</td></tr>
                   <tr><td><strong>Location:</strong></td><td>${data.location || 'N/A'}</td></tr>
                 </tbody>
               </table>
