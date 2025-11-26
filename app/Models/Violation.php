@@ -170,11 +170,15 @@ class Violation extends Model
     // }
 
     /**
-     * Get count of violations for a student
-     * Alert shows only if student hasn't visited violations page yet
+     * Get count of violations for a student that are less than 1 day old
+     * Alert shows only if violations exist and are within 24 hours
      */
     public static function getNewViolationsCountForStudent($studentId)
     {
-        return self::where('student_id', $studentId)->count();
+        $oneDayAgo = now()->subDay();
+        
+        return self::where('student_id', $studentId)
+            ->where('created_at', '>=', $oneDayAgo)
+            ->count();
     }
 }

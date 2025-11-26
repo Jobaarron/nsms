@@ -209,11 +209,15 @@ class Grade extends Model
     }
 
     /**
-     * Get count of grades for a student
-     * Alert shows only if student hasn't visited grades page yet
+     * Get count of grades for a student that are less than 1 day old
+     * Alert shows only if grades exist and are within 24 hours
      */
     public static function getNewGradesCountForStudent($studentId)
     {
-        return self::where('student_id', $studentId)->count();
+        $oneDayAgo = now()->subDay();
+        
+        return self::where('student_id', $studentId)
+            ->where('created_at', '>=', $oneDayAgo)
+            ->count();
     }
 }
