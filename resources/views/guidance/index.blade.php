@@ -17,7 +17,40 @@
                         <i class="ri-time-line me-1"></i>{{ now()->format('g:i A') }}
                     </small>
                 </div>
-                <div>
+                <div class="d-flex align-items-center gap-2">
+                    <!-- Guidance Notification Bell -->
+                    <div class="position-relative guidance-notification-wrapper">
+                        <button class="btn btn-outline-primary guidance-notification-bell" 
+                                onclick="toggleGuidanceNotificationPanel()" 
+                                title="Guidance Notifications"
+                                style="padding: 10px 14px; font-size: 16px;">
+                            <i class="ri-notification-line" style="font-size: 20px;"></i>
+                            <span class="guidance-notification-badge badge bg-danger position-absolute" 
+                                  id="guidance-notification-count" style="display: none; top: -5px; right: -8px; font-size: 10px; min-width: 18px; height: 18px; border-radius: 9px; line-height: 18px;">0</span>
+                        </button>
+                        
+                        <!-- Guidance Notification Panel -->
+                        <div class="guidance-notification-panel" id="guidanceNotificationPanel" style="display: none;">
+                            <div class="guidance-notification-header px-3 py-2 border-bottom d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">Guidance Notifications</h6>
+                                <button class="btn btn-sm btn-link p-0 text-decoration-none" onclick="markAllGuidanceAsRead()">
+                                    <small>Mark all read</small>
+                                </button>
+                            </div>
+                            <div class="guidance-notification-list" id="guidanceNotificationList">
+                                <div class="text-center py-3 text-muted">
+                                    <i class="ri-notification-off-line fs-3 d-block mb-2"></i>
+                                    <div>No new notifications</div>
+                                </div>
+                            </div>
+                            <div class="notification-footer px-3 py-2 border-top">
+                                <a href="#" class="btn btn-sm btn-outline-primary w-100" onclick="viewAllNotifications()">
+                                    View All Notifications
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <button class="btn btn-success btn-sm" onclick="openQuickActionModal()">
                         <i class="ri-add-line me-1 me-sm-2"></i><span class="d-none d-sm-inline">Quick Action</span>
                     </button>
@@ -850,6 +883,93 @@
             .card:nth-child(2) { animation-delay: 0.2s; }
             .card:nth-child(3) { animation-delay: 0.3s; }
             .card:nth-child(4) { animation-delay: 0.4s; }
+            
+            /* Notification Bell Styles */
+            .guidance-notification-bell {
+                width: 35px;
+                height: 35px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                position: relative;
+            }
+            
+            .notification-badge {
+                font-size: 10px;
+                min-width: 16px;
+                height: 16px;
+                border-radius: 8px;
+            }
+            
+            .guidance-notification-panel {
+                position: absolute;
+                top: 100%;
+                right: 0;
+                width: 320px;
+                background: white;
+                border: 1px solid #dee2e6;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                z-index: 1050;
+                max-height: 400px;
+                overflow-y: auto;
+                margin-top: 5px;
+            }
+            
+            .notification-list {
+                max-height: 300px;
+                overflow-y: auto;
+            }
+            
+            .notification-item {
+                padding: 12px 16px;
+                border-bottom: 1px solid #f8f9fa;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                border-radius: 4px;
+                margin: 2px;
+            }
+            
+            .notification-item:hover {
+                background-color: #e3f2fd;
+                transform: translateX(2px);
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            
+            .notification-item.unread {
+                background-color: #fff3cd;
+                border-left: 3px solid #ffc107;
+            }
+            
+            .notification-item .notification-title {
+                font-weight: 600;
+                font-size: 14px;
+                color: #333;
+                margin-bottom: 4px;
+            }
+            
+            .notification-item .notification-message {
+                font-size: 13px;
+                color: #666;
+                margin-bottom: 4px;
+            }
+            
+            .notification-item .notification-time {
+                font-size: 11px;
+                color: #999;
+            }
+            
+            /* Animation for guidance notification bell */
+            .guidance-notification-bell.has-notifications {
+                animation: guidanceBellShake 0.8s ease-in-out infinite;
+            }
+            
+            @keyframes guidanceBellShake {
+                0%, 50%, 100% { transform: rotate(0deg); }
+                10%, 30% { transform: rotate(-10deg); }
+                20%, 40% { transform: rotate(10deg); }
+            }
         </style>
 
     <!-- Toast container for notifications -->

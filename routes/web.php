@@ -500,6 +500,13 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
             Route::get('/upcoming-tasks', [App\Http\Controllers\GuidanceController::class, 'getUpcomingTasks'])->name('upcoming-tasks');
             Route::get('/counselor-performance', [App\Http\Controllers\GuidanceController::class, 'getCounselorPerformance'])->name('counselor-performance');
             
+        // Notification Routes
+        Route::get('/notifications', [App\Http\Controllers\GuidanceController::class, 'notificationsPage'])->name('notifications');
+        Route::get('/notifications/api', [App\Http\Controllers\GuidanceController::class, 'getNotifications'])->name('notifications.api');
+        Route::get('/notifications/count', [App\Http\Controllers\GuidanceController::class, 'getNotificationCount'])->name('notifications.count');
+        Route::post('/notifications/{notification}/read', [App\Http\Controllers\GuidanceController::class, 'markNotificationAsRead'])->name('notifications.read');
+        Route::post('/notifications/mark-all-read', [App\Http\Controllers\GuidanceController::class, 'markAllNotificationsAsRead'])->name('notifications.mark-all-read');
+            
         // Logout
         Route::post('/logout', [App\Http\Controllers\GuidanceController::class, 'logout'])->name('logout');
         

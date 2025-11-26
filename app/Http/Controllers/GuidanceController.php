@@ -300,6 +300,33 @@ class GuidanceController extends Controller
         } else {
             // Create new case meeting
             $caseMeeting = CaseMeeting::create($validatedData);
+            
+            // Create notification for new case meeting
+            try {
+                $counselorName = Auth::user()->name ?? 'Guidance Counselor';
+                $studentName = $caseMeeting->student ? $caseMeeting->student->full_name : 'Student';
+                $meetingDate = $caseMeeting->scheduled_date ? \Carbon\Carbon::parse($caseMeeting->scheduled_date)->format('F j, Y') : 'TBD';
+                
+                \App\Models\Notice::createGlobal(
+                    "New Case Meeting Scheduled",
+                    "A new case meeting has been scheduled by {$counselorName} for {$studentName} on {$meetingDate}. Reason: {$caseMeeting->reason}",
+                    null, // created_by will be null for system-generated notices
+                    null, // target_status
+                    null  // target_grade_level
+                );
+                
+                \Log::info('Notification created for new case meeting', [
+                    'case_meeting_id' => $caseMeeting->id,
+                    'counselor_name' => $counselorName,
+                    'student_name' => $studentName
+                ]);
+            } catch (\Exception $notificationError) {
+                // Log notification error but don't fail the main operation
+                \Log::error('Failed to create notification for new case meeting', [
+                    'case_meeting_id' => $caseMeeting->id,
+                    'error' => $notificationError->getMessage()
+                ]);
+            }
         }
 
         // Load related data
@@ -1037,6 +1064,34 @@ class GuidanceController extends Controller
             'referral_social_other' => $validatedData['referral_social_other'] ?? null,
             'incident_description' => $validatedData['incident_description'] ?? null,
         ]);
+
+        // Create notification for new counseling session
+        try {
+            $counselorName = Auth::user()->name ?? 'Guidance Counselor';
+            $studentName = $counselingSession->student ? $counselingSession->student->full_name : 'Student';
+            $sessionDate = $counselingSession->scheduled_date ? \Carbon\Carbon::parse($counselingSession->scheduled_date)->format('F j, Y') : 'TBD';
+            $sessionType = ucfirst($counselingSession->session_type);
+            
+            \App\Models\Notice::createGlobal(
+                "New Counseling Session Scheduled",
+                "A new {$sessionType} counseling session has been scheduled by {$counselorName} for {$studentName} on {$sessionDate}. Reason: {$counselingSession->reason}",
+                null, // created_by will be null for system-generated notices
+                null, // target_status
+                null  // target_grade_level
+            );
+            
+            \Log::info('Notification created for new counseling session', [
+                'counseling_session_id' => $counselingSession->id,
+                'counselor_name' => $counselorName,
+                'student_name' => $studentName
+            ]);
+        } catch (\Exception $notificationError) {
+            // Log notification error but don't fail the main operation
+            \Log::error('Failed to create notification for new counseling session', [
+                'counseling_session_id' => $counselingSession->id,
+                'error' => $notificationError->getMessage()
+            ]);
+        }
 
         return redirect()->route('guidance.counseling-sessions.index')
             ->with('success', 'Counseling session scheduled successfully.');
@@ -2542,5 +2597,199 @@ public function getDisciplineVsTotalStats(Request $request)
 
         // Check if there are any sanctions in the sanctions table as well (for backward compatibility)
         return $caseMeeting->sanctions()->exists();
+    }
+
+    /**
+     * Get notifications for guidance dashboard
+     */
+    public function getNotifications(Request $request)
+    {
+        try {
+            // Filter for guidance-specific notifications only
+            $query = \App\Models\Notice::query();
+            
+            if ($request->get('filter') === 'guidance_only') {
+                $query->where(function($q) {
+                    $q->where('title', 'LIKE', '%case meeting%')
+                      ->orWhere('title', 'LIKE', '%counseling session%')
+                      ->orWhere('title', 'LIKE', '%teacher reply%')
+                      ->orWhere('title', 'LIKE', '%Case Meeting%')
+                      ->orWhere('title', 'LIKE', '%Counseling Session%')
+                      ->orWhere('title', 'LIKE', '%Teacher Reply%')
+                      ->orWhere('title', 'LIKE', '%forwarded%')
+                      ->orWhere('title', 'LIKE', '%Forwarded%')
+                      ->orWhere('title', 'LIKE', '%recommended%')
+                      ->orWhere('title', 'LIKE', '%Recommended%')
+                      ->orWhere('message', 'LIKE', '%case meeting%')
+                      ->orWhere('message', 'LIKE', '%counseling session%')
+                      ->orWhere('message', 'LIKE', '%teacher reply%')
+                      ->orWhere('message', 'LIKE', '%forwarded%')
+                      ->orWhere('message', 'LIKE', '%recommended%');
+                });
+            }
+            
+            $notifications = $query->orderBy('created_at', 'desc')->limit(20)->get();
+            $unreadCount = $query->where('is_read', false)->count();
+
+            return response()->json([
+                'success' => true,
+                'notifications' => $notifications->map(function($notice) {
+                    return [
+                        'id' => $notice->id,
+                        'title' => $notice->title,
+                        'message' => $notice->message,
+                        'preview_message' => $notice->preview_message,
+                        'is_read' => $notice->is_read,
+                        'is_global' => $notice->is_global,
+                        'creator_name' => $notice->creator_name,
+                        'formatted_date' => $notice->formatted_date,
+                        'time_ago' => $notice->time_ago,
+                        'created_at' => $notice->created_at
+                    ];
+                }),
+                'unread_count' => $unreadCount
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching notifications: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching notifications'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get notification count for guidance dashboard
+     */
+    public function getNotificationCount(Request $request)
+    {
+        try {
+            // Filter for guidance-specific notifications only
+            $query = \App\Models\Notice::query();
+            
+            if ($request->get('filter') === 'guidance_only') {
+                $query->where(function($q) {
+                    $q->where('title', 'LIKE', '%case meeting%')
+                      ->orWhere('title', 'LIKE', '%counseling session%')
+                      ->orWhere('title', 'LIKE', '%teacher reply%')
+                      ->orWhere('title', 'LIKE', '%Case Meeting%')
+                      ->orWhere('title', 'LIKE', '%Counseling Session%')
+                      ->orWhere('title', 'LIKE', '%Teacher Reply%')
+                      ->orWhere('title', 'LIKE', '%forwarded%')
+                      ->orWhere('title', 'LIKE', '%Forwarded%')
+                      ->orWhere('title', 'LIKE', '%recommended%')
+                      ->orWhere('title', 'LIKE', '%Recommended%')
+                      ->orWhere('message', 'LIKE', '%case meeting%')
+                      ->orWhere('message', 'LIKE', '%counseling session%')
+                      ->orWhere('message', 'LIKE', '%teacher reply%')
+                      ->orWhere('message', 'LIKE', '%forwarded%')
+                      ->orWhere('message', 'LIKE', '%recommended%');
+                });
+            }
+            
+            $count = $query->where('is_read', false)->count();
+
+            return response()->json([
+                'success' => true,
+                'count' => $count
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching notification count: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'count' => 0
+            ]);
+        }
+    }
+
+    /**
+     * Mark notification as read
+     */
+    public function markNotificationAsRead(Request $request, $notificationId)
+    {
+        try {
+            $notification = \App\Models\Notice::findOrFail($notificationId);
+            $notification->markAsRead();
+
+            return response()->json([
+                'success' => true,
+                'notification' => [
+                    'id' => $notification->id,
+                    'title' => $notification->title,
+                    'message' => $notification->message,
+                    'creator_name' => $notification->creator_name,
+                    'formatted_date' => $notification->formatted_date,
+                    'is_read' => $notification->is_read
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error marking notification as read: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error marking notification as read'
+            ], 500);
+        }
+    }
+
+    /**
+     * Mark all notifications as read
+     */
+    public function markAllNotificationsAsRead(Request $request)
+    {
+        try {
+            \App\Models\Notice::unread()->update([
+                'is_read' => true,
+                'read_at' => now()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'All notifications marked as read'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error marking all notifications as read: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error marking notifications as read'
+            ], 500);
+        }
+    }
+
+    /**
+     * Show notifications page
+     */
+    public function notificationsPage(Request $request)
+    {
+        // Check if user is authenticated and is guidance staff
+        if (!Auth::check() || !session('guidance_user') || !Auth::user()->isGuidanceStaff()) {
+            return redirect()->route('guidance.login')->withErrors(['error' => 'Please login to access notifications.']);
+        }
+
+        // Get filtered notifications for display
+        $query = \App\Models\Notice::query();
+        
+        // Filter for guidance-specific notifications
+        $query->where(function($q) {
+            $q->where('title', 'LIKE', '%case meeting%')
+              ->orWhere('title', 'LIKE', '%counseling session%')
+              ->orWhere('title', 'LIKE', '%teacher reply%')
+              ->orWhere('title', 'LIKE', '%Case Meeting%')
+              ->orWhere('title', 'LIKE', '%Counseling Session%')
+              ->orWhere('title', 'LIKE', '%Teacher Reply%')
+              ->orWhere('title', 'LIKE', '%forwarded%')
+              ->orWhere('title', 'LIKE', '%Forwarded%')
+              ->orWhere('title', 'LIKE', '%recommended%')
+              ->orWhere('title', 'LIKE', '%Recommended%')
+              ->orWhere('message', 'LIKE', '%case meeting%')
+              ->orWhere('message', 'LIKE', '%counseling session%')
+              ->orWhere('message', 'LIKE', '%teacher reply%')
+              ->orWhere('message', 'LIKE', '%forwarded%')
+              ->orWhere('message', 'LIKE', '%recommended%');
+        });
+
+        $notifications = $query->orderBy('created_at', 'desc')->paginate(15);
+        $unreadCount = $query->where('is_read', false)->count();
+
+        return view('guidance.notifications', compact('notifications', 'unreadCount'));
     }
 }
