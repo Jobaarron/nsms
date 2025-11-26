@@ -36,7 +36,7 @@
             </div>
         </div>
 
-        <!-- Enrollment Status Alert -->
+      
         @if($student->enrollment_status === 'pre_registered')
             <div class="row mb-4">
                 <div class="col-12">
@@ -220,10 +220,10 @@
                     </div>
                 @endif
                 
-                <!-- Main Quick Actions Grid -->
+                
                 <div class="row g-3 mb-4">
                     <div class="col-12 col-md-6 col-lg-4">
-                        <!-- View Subjects - Disabled only if payment not settled -->
+                       
                         @if($hasNoPayment)
                             <div class="btn btn-outline-secondary w-100 py-3 disabled position-relative" title="Complete enrollment and settle payment to access this feature">
                                 <i class="ri-book-open-line fs-4 d-block mb-2"></i>
@@ -238,7 +238,7 @@
                         @endif
                     </div>
                     <div class="col-12 col-md-6 col-lg-4">
-                        <!-- Payment History - Disabled until payment settled (same as other features) -->
+                       
                         @if($hasNoPayment)
                             <div class="btn btn-outline-secondary w-100 py-3 disabled position-relative" title="Complete enrollment and settle payment to access this feature">
                                 <i class="ri-bill-line fs-4 d-block mb-2"></i>
@@ -253,7 +253,7 @@
                         @endif
                     </div>
                     <div class="col-12 col-md-6 col-lg-4">
-                        <!-- Face Registration - Disabled only if payment not settled -->
+                       
                         @if($hasNoPayment)
                             <div class="btn btn-outline-secondary w-100 py-3 disabled position-relative" title="Complete enrollment and settle payment to access this feature">
                                 <i class="ri-camera-line fs-4 d-block mb-2"></i>
@@ -270,9 +270,9 @@
                 </div>
             </div>
 
-            <!-- Right Column -->
+           
             <div class="col-6 col-sm-6 col-lg-4">
-                <!-- Student Profile Card -->
+                
                 <div class="card border-0 shadow-sm mb-4">
                     <div class="card-body text-center">
                         @if($student->id_photo_data_url)
@@ -297,7 +297,7 @@
                     </div>
                 </div>
 
-                <!-- Enrollment Progress -->
+                
                 <div class="card border-0 shadow-sm mb-4">
                     <div class="card-header bg-white border-0 pb-0">
                         <h6 class="card-title mb-0">Enrollment Progress</h6>
