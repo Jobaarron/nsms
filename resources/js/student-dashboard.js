@@ -1,5 +1,8 @@
 // Student Dashboard JavaScript
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize alert manager
+    initializeAlertManager();
+    
     // Initialize dashboard functionality
     initializeDashboard();
     
@@ -9,6 +12,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize tooltips
     initializeTooltips();
 });
+
+function initializeAlertManager() {
+    // Check and hide expired alerts
+    checkAndHideExpiredAlerts();
+    
+    // Setup dismiss button handlers
+    setupAlertDismissHandlers();
+}
 
 function initializeDashboard() {
     console.log('Student Dashboard initialized');
@@ -98,5 +109,124 @@ function showAlert(message, type = 'info') {
     }, 5000);
 }
 
+// Alert Manager Functions
+const ALERT_STORAGE_PREFIX = 'student_alert_';
+const ALERT_DURATION_DAYS = 7;
+const ALERT_DURATION_MS = ALERT_DURATION_DAYS * 24 * 60 * 60 * 1000;
+
+function getAlertStorageKey(alertType) {
+    return `${ALERT_STORAGE_PREFIX}${alertType}`;
+}
+
+function shouldHideAlert(alertType) {
+    const storageKey = getAlertStorageKey(alertType);
+    const storedData = localStorage.getItem(storageKey);
+
+    if (!storedData) {
+        return false; // Alert not yet dismissed
+    }
+
+    try {
+        const data = JSON.parse(storedData);
+        const dismissedTime = new Date(data.dismissedAt).getTime();
+        const currentTime = new Date().getTime();
+        const timePassed = currentTime - dismissedTime;
+
+        // If 7 days have passed, return true (should hide)
+        return timePassed >= ALERT_DURATION_MS;
+    } catch (e) {
+        console.error('Error parsing alert data:', e);
+        return false;
+    }
+}
+
+function dismissAlert(alertType) {
+    const storageKey = getAlertStorageKey(alertType);
+    const data = {
+        dismissedAt: new Date().toISOString(),
+        type: alertType
+    };
+    localStorage.setItem(storageKey, JSON.stringify(data));
+}
+
+function checkAndHideExpiredAlerts() {
+    const alertTypes = ['enrollment_complete', 'partial_payment', 'payment_complete'];
+
+    alertTypes.forEach(alertType => {
+        const alertElement = document.querySelector(`[data-alert-type="${alertType}"]`);
+        
+        if (alertElement) {
+            if (shouldHideAlert(alertType)) {
+                hideAlertElement(alertElement);
+            }
+        }
+    });
+}
+
+function hideAlertElement(alertElement) {
+    if (!alertElement) return;
+
+    alertElement.style.transition = 'opacity 0.3s ease-out';
+    alertElement.style.opacity = '0';
+
+    setTimeout(() => {
+        alertElement.style.display = 'none';
+    }, 300);
+}
+
+function setupAlertDismissHandlers() {
+    const dismissButtons = document.querySelectorAll('[data-dismiss-alert]');
+
+    dismissButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const alertType = this.getAttribute('data-dismiss-alert');
+            const alertElement = this.closest('[data-alert-type]');
+
+            if (alertElement) {
+                dismissAlert(alertType);
+                hideAlertElement(alertElement);
+            }
+        });
+    });
+}
+
+function getRemainingDays(alertType) {
+    const storageKey = getAlertStorageKey(alertType);
+    const storedData = localStorage.getItem(storageKey);
+
+    if (!storedData) {
+        return null;
+    }
+
+    try {
+        const data = JSON.parse(storedData);
+        const dismissedTime = new Date(data.dismissedAt).getTime();
+        const currentTime = new Date().getTime();
+        const timePassed = currentTime - dismissedTime;
+        const remainingMs = ALERT_DURATION_MS - timePassed;
+        const remainingDays = Math.ceil(remainingMs / (24 * 60 * 60 * 1000));
+
+        return Math.max(0, remainingDays);
+    } catch (e) {
+        console.error('Error calculating remaining days:', e);
+        return null;
+    }
+}
+
+function resetAlert(alertType) {
+    const storageKey = getAlertStorageKey(alertType);
+    localStorage.removeItem(storageKey);
+    
+    const alertElement = document.querySelector(`[data-alert-type="${alertType}"]`);
+    if (alertElement) {
+        alertElement.style.display = '';
+        alertElement.style.opacity = '1';
+    }
+}
+
 // Export functions for global access
 window.showAlert = showAlert;
+window.dismissAlert = dismissAlert;
+window.resetAlert = resetAlert;
+window.getRemainingDays = getRemainingDays;

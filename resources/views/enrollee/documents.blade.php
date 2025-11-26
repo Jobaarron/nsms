@@ -358,10 +358,6 @@
                         <i class="ri-download-line me-1"></i>
                         Download
                     </button>
-                    <button type="button" class="btn btn-outline-secondary" id="openNewTabBtn">
-                        <i class="ri-external-link-line me-1"></i>
-                        Open in New Tab
-                    </button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>

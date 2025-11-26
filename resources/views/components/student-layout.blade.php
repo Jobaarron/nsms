@@ -50,6 +50,7 @@
   @vite(['resources/js/student-violation.js'])
   @vite(['resources/js/student-enrollment.js'])
   @vite(['resources/js/collapsible-sidebar.js'])
+  @vite(['resources/js/student-payment-alerts.js'])
 </head>
 <body>
   <!-- Sidebar Toggle Button (Desktop & Mobile) -->

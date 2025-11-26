@@ -526,7 +526,6 @@ function viewDocument(index, filename, path, type) {
     
     // Update footer buttons
     document.getElementById('downloadBtn').onclick = () => downloadDocument(index, filename, path);
-    document.getElementById('openNewTabBtn').onclick = () => window.open(documentUrl, '_blank');
 }
 
 function downloadDocument(index, filename, path) {

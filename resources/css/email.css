@@ -145,22 +145,6 @@
         }
         
         .security-notice p {
-            margin: 0;
-            color: #e65100;
-            font-size: 0.95rem;
-        }
-        
-        .email-footer {
-            background-color: var(--dark-green);
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
-        
-        .footer-brand {
-            font-size: 1.3rem;
-            font-weight: 700;
-            margin-bottom: 10px;
             color: var(--secondary-color);
         }
         
