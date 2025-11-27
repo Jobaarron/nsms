@@ -1,4 +1,5 @@
 <x-registrar-layout>
+    {{-- @var \Illuminate\Pagination\LengthAwarePaginator $applications --}}
     @vite(['resources/js/registrar-applications.js'])
     @vite(['resources/js/registrar-data-change-requests.js'])
     @vite(['resources/js/registrar-document-management.js'])
@@ -179,14 +180,15 @@
                                 </thead>
                                 <tbody>
                                     @forelse($applications ?? [] as $application)
+                                        @if($application)
                                         <tr>
                                             <td>
-                                                <input type="checkbox" class="form-check-input application-checkbox" value="{{ $application->id }}">
+                                                <input type="checkbox" class="form-check-input application-checkbox" value="{{ $application->id ?? '' }}">
                                             </td>
-                                            <td>{{ $application->application_id }}</td>
-                                            <td>{{ $application->first_name }} {{ $application->last_name }}</td>
-                                            <td>{{ $application->grade_level_applied }}</td>
-                                            <td>{{ $application->email }}</td>
+                                            <td>{{ $application->application_id ?? 'N/A' }}</td>
+                                            <td>{{ ($application->first_name ?? '') }} {{ ($application->last_name ?? '') }}</td>
+                                            <td>{{ $application->grade_level_applied ?? 'N/A' }}</td>
+                                            <td>{{ $application->email ?? 'N/A' }}</td>
                                             <td>
                                                 @php
                                                     $statusClasses = [
@@ -194,14 +196,15 @@
                                                         'approved' => 'bg-success',
                                                         'rejected' => 'bg-danger'
                                                     ];
-                                                    $statusClass = $statusClasses[$application->enrollment_status] ?? 'bg-secondary';
-                                                    $statusDisplay = $application->enrollment_status === 'rejected' ? 'Declined' : ucfirst($application->enrollment_status);
+                                                    $enrollmentStatus = $application->enrollment_status ?? 'pending';
+                                                    $statusClass = $statusClasses[$enrollmentStatus] ?? 'bg-secondary';
+                                                    $statusDisplay = $enrollmentStatus === 'rejected' ? 'Declined' : ucfirst($enrollmentStatus);
                                                 @endphp
                                                 <span class="badge {{ $statusClass }}">
                                                     {{ $statusDisplay }}
                                                 </span>
                                             </td>
-                                            <td>{{ $application->created_at->format('M d, Y') }}</td>
+                                            <td>{{ $application->created_at ? $application->created_at->format('M d, Y') : 'N/A' }}</td>
                                             <td>
                                                 <div class="btn-group" role="group">
                                                     <!-- Primary Actions -->
@@ -226,6 +229,7 @@
                                                 </div>
                                             </td>
                                         </tr>
+                                        @endif
                                     @empty
                                         <tr>
                                             <td colspan="8" class="text-center py-4">
@@ -689,16 +693,32 @@
     <script>
         // Mark applications alert as viewed when registrar visits this page
         document.addEventListener('DOMContentLoaded', function() {
-            fetch('{{ route("registrar.mark-alert-viewed") }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                },
-                body: JSON.stringify({
-                    alert_type: 'applications'
+            try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]');
+                if (!csrfToken) {
+                    console.warn('CSRF token not found');
+                    return;
+                }
+                
+                fetch('{{ route("registrar.mark-alert-viewed") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken.getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        alert_type: 'applications'
+                    })
                 })
-            }).catch(error => console.error('Error marking applications alert as viewed:', error));
+                .then(response => {
+                    if (!response.ok) {
+                        console.error('Failed to mark applications alert as viewed:', response.status);
+                    }
+                })
+                .catch(error => console.error('Error marking applications alert as viewed:', error));
+            } catch(error) {
+                console.error('Error in registrar applications alert script:', error);
+            }
         });
     </script>
     @endpush

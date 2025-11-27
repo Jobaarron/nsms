@@ -70,9 +70,9 @@
     </div>
   </div>
 
-  <!-- SIDEBAR -->
+  
   <nav class="sidebar py-4 bg-white border-end">
-        <!-- School Logo -->
+        
         <div class="text-center mb-3">
          <img src="{{ Vite::asset('resources/assets/images/nms-logo.png') }}" alt="Nicolites Montessori School" class="sidebar-logo">
         </div>
@@ -80,11 +80,11 @@
 
         @php
           $currentStudent = Auth::guard('student')->user();
-          // Only allow access if student is fully 'enrolled', not just 'pre_registered'
+         
           $hasNoEnrollment = !$currentStudent || $currentStudent->enrollment_status !== 'enrolled';
           
           
-          // Check if student has at least one confirmed payment (1st quarter)
+          
           $hasConfirmedPayment = $currentStudent ? \App\Models\Payment::where('payable_type', 'App\\Models\\Student')
               ->where('payable_id', $currentStudent->id)
               ->where('confirmation_status', 'confirmed')
@@ -130,7 +130,7 @@
               @php
                 $duePaymentsCount = $currentStudent ? \App\Models\Payment::getDuePaymentsCountForStudent($currentStudent->id) : 0;
               @endphp
-              <a class="nav-link {{ request()->routeIs('student.payments') ? 'active' : '' }} position-relative" href="{{ route('student.payments') }}" title="Payments" id="payments-link" style="{{ $duePaymentsCount > 0 ? 'background-color: #f8d7da; border-left: 4px solid #dc3545; padding-left: calc(0.75rem - 4px);' : '' }}">
+              <a class="nav-link {{ request()->routeIs('student.payments') ? 'active' : '' }} position-relative" href="{{ route('student.payments') }}" title="Payments" id="payments-link" data-alert-link="payments" style="{{ $duePaymentsCount > 0 ? 'background-color: #f8d7da; border-left: 4px solid #dc3545; padding-left: calc(0.75rem - 4px);' : '' }}">
                 <i class="ri-money-dollar-circle-line me-2"></i><span>Payments</span>
                 @if($duePaymentsCount > 0)
                   <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem; padding: 0.25rem 0.4rem;">
@@ -179,7 +179,7 @@
                 $newGradesCount = $currentStudent ? \App\Models\Grade::getNewGradesCountForStudent($currentStudent->id) : 0;
                 $gradesViewed = session('grades_alert_viewed', false);
               @endphp
-              <a class="nav-link {{ request()->routeIs('student.grades.*') ? 'active' : '' }} position-relative" href="{{ route('student.grades.index') }}" title="Grades" id="grades-link" style="{{ ($newGradesCount > 0 && !$gradesViewed) ? 'background-color: #f8d7da; border-left: 4px solid #dc3545; padding-left: calc(0.75rem - 4px);' : '' }}">
+              <a class="nav-link {{ request()->routeIs('student.grades.*') ? 'active' : '' }} position-relative" href="{{ route('student.grades.index') }}" title="Grades" id="grades-link" data-alert-link="grades" style="{{ ($newGradesCount > 0 && !$gradesViewed) ? 'background-color: #f8d7da; border-left: 4px solid #dc3545; padding-left: calc(0.75rem - 4px);' : '' }}">
                 <i class="ri-file-text-line me-2"></i><span>Grades</span>
                 @if($newGradesCount > 0 && !$gradesViewed)
                   <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem; padding: 0.25rem 0.4rem;">
@@ -201,7 +201,7 @@
                 $newViolationsCount = $currentStudent ? \App\Models\Violation::getNewViolationsCountForStudent($currentStudent->id) : 0;
                 $violationsViewed = session('violations_alert_viewed', false);
               @endphp
-              <a class="nav-link {{ request()->routeIs('student.violations') ? 'active' : '' }} position-relative" href="{{ route('student.violations') }}" title="Violations" id="violations-link" style="{{ ($newViolationsCount > 0 && !$violationsViewed) ? 'background-color: #f8d7da; border-left: 4px solid #dc3545; padding-left: calc(0.75rem - 4px);' : '' }}">
+              <a class="nav-link {{ request()->routeIs('student.violations') ? 'active' : '' }} position-relative" href="{{ route('student.violations') }}" title="Violations" id="violations-link" data-alert-link="violations" style="{{ ($newViolationsCount > 0 && !$violationsViewed) ? 'background-color: #f8d7da; border-left: 4px solid #dc3545; padding-left: calc(0.75rem - 4px);' : '' }}">
                 <i class="ri-flag-line me-2"></i><span>Violations</span>
                 @if($newViolationsCount > 0 && !$violationsViewed)
                   <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem; padding: 0.25rem 0.4rem;">
@@ -224,6 +224,11 @@
          
         </ul>
       </nav>
+
+      <!-- Hidden badge elements for JavaScript alert system -->
+      <div id="payments-alert-badge" class="d-none" style="display: none;"></div>
+      <div id="grades-alert-badge" class="d-none" style="display: none;"></div>
+      <div id="violations-alert-badge" class="d-none" style="display: none;"></div>
 
 
   <div class="main-content-wrapper">

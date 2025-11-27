@@ -2,10 +2,27 @@
  * Student Alerts Manager
  * Pure JavaScript alert system using localStorage
  * Shows red badges on sidebar for: Payments (due soon), Grades (new), Violations (new)
+ * Production-ready with error handling and fallbacks
  */
 
+// Check if localStorage is available
+window.localStorageAvailable = (function() {
+    try {
+        const test = '__localStorage_test__';
+        localStorage.setItem(test, test);
+        localStorage.removeItem(test);
+        return true;
+    } catch(e) {
+        return false;
+    }
+})();
+
 document.addEventListener('DOMContentLoaded', function() {
-    initializeStudentAlerts();
+    try {
+        initializeStudentAlerts();
+    } catch(error) {
+        console.error('Error initializing student alerts:', error);
+    }
 });
 
 function initializeStudentAlerts() {
@@ -132,31 +149,50 @@ function checkViolationAlerts() {
 // ALERT STATE MANAGEMENT
 // ============================================
 function storeAlertState(alertType, count) {
-    const state = {
-        count: count,
-        timestamp: new Date().toISOString(),
-        hasAlert: count > 0
-    };
-    localStorage.setItem(`student_alert_${alertType}`, JSON.stringify(state));
-    console.log(`✅ Stored ${alertType} alert state:`, state);
+    if (!window.localStorageAvailable) {
+        console.warn('localStorage not available, skipping alert storage');
+        return;
+    }
+    
+    try {
+        const state = {
+            count: count,
+            timestamp: new Date().toISOString(),
+            hasAlert: count > 0
+        };
+        localStorage.setItem(`student_alert_${alertType}`, JSON.stringify(state));
+        console.log(`✅ Stored ${alertType} alert state:`, state);
+    } catch(error) {
+        console.error(`Error storing ${alertType} alert state:`, error);
+    }
 }
 
 function getAlertState(alertType) {
-    const stored = localStorage.getItem(`student_alert_${alertType}`);
-    if (stored) {
-        try {
+    if (!window.localStorageAvailable) {
+        return null;
+    }
+    
+    try {
+        const stored = localStorage.getItem(`student_alert_${alertType}`);
+        if (stored) {
             return JSON.parse(stored);
-        } catch (e) {
-            console.error(`Error parsing ${alertType} alert state:`, e);
-            return null;
         }
+    } catch (error) {
+        console.error(`Error retrieving ${alertType} alert state:`, error);
     }
     return null;
 }
 
 function clearAlertBadge(alertType) {
     console.log(`🗑️ Clearing ${alertType} alert`);
-    localStorage.removeItem(`student_alert_${alertType}`);
+    
+    if (window.localStorageAvailable) {
+        try {
+            localStorage.removeItem(`student_alert_${alertType}`);
+        } catch(error) {
+            console.error(`Error clearing ${alertType} from localStorage:`, error);
+        }
+    }
     
     const badge = document.getElementById(`${alertType}-alert-badge`);
     if (badge) {

@@ -318,16 +318,32 @@
   <script>
       // Mark grades alert as viewed when faculty head visits this page
       document.addEventListener('DOMContentLoaded', function() {
-          fetch('{{ route("faculty-head.mark-alert-viewed") }}', {
-              method: 'POST',
-              headers: {
-                  'Content-Type': 'application/json',
-                  'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-              },
-              body: JSON.stringify({
-                  alert_type: 'grades'
+          try {
+              const csrfToken = document.querySelector('meta[name="csrf-token"]');
+              if (!csrfToken) {
+                  console.warn('CSRF token not found');
+                  return;
+              }
+              
+              fetch('{{ route("faculty-head.mark-alert-viewed") }}', {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                      'X-CSRF-TOKEN': csrfToken.getAttribute('content')
+                  },
+                  body: JSON.stringify({
+                      alert_type: 'grades'
+                  })
               })
-          }).catch(error => console.error('Error marking grades alert as viewed:', error));
+              .then(response => {
+                  if (!response.ok) {
+                      console.error('Failed to mark grades alert as viewed:', response.status);
+                  }
+              })
+              .catch(error => console.error('Error marking grades alert as viewed:', error));
+          } catch(error) {
+              console.error('Error in faculty head grades alert script:', error);
+          }
       });
   </script>
   @endpush
