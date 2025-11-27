@@ -34,23 +34,24 @@ window.selectedStudents = [];
 // Function to fetch violation options from the database
 async function fetchViolationOptions() {
     try {
-        const response = await fetch('/discipline/violations/summary', { credentials: 'include' });
+        const response = await fetch('/api/discipline/violation-types', { credentials: 'include' });
         if (response.status === 401) {
             alert('Your session has expired. Please log in again.');
             window.location.href = '/discipline/login';
-            return { minor: [], major: { "Category 1": [], "Category 2": [], "Category 3": [] } };
+            return { minor: [], major: { "1": [], "2": [], "3": [] } };
         }
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        window.offenseOptions = data.options;
-        console.log('Violation options loaded from database:', window.offenseOptions);
+        // Handle both old format (data.options) and new format (data.violation_types)
+        window.offenseOptions = data.violation_types || data.options;
+        console.log('✅ Violation options loaded from database:', window.offenseOptions);
         return window.offenseOptions;
     } catch (error) {
-        console.error('Failed to fetch violation options:', error);
+        console.error('❌ Failed to fetch violation options:', error);
         // Fallback to empty options if fetch fails
-        window.offenseOptions = { minor: [], major: { "Category 1": [], "Category 2": [], "Category 3": [] } };
+        window.offenseOptions = { minor: [], major: { "1": [], "2": [], "3": [] } };
         return window.offenseOptions;
     }
 }
