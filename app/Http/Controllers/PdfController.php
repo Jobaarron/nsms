@@ -776,6 +776,21 @@ $templatePath = resource_path('assets/pdf-forms-generation/Disciplinary-Con-Repo
     // Use scheduled_date from payment table for appointment date
     $appointmentDate = $payment->scheduled_date ? (\Carbon\Carbon::parse($payment->scheduled_date)->format('Y-m-d')) : '';
         $event = $payment->period_name ?? '';
+        
+        // Payment Type (Full Payment, Monthly Payment, Quarterly Payment)
+        $paymentType = '';
+        if ($payment->payment_method) {
+            $paymentType = ucfirst($payment->payment_method) . ' Payment';
+        } elseif ($payment->period_name) {
+            // Fallback: derive payment type from period_name if payment_method is not set
+            if ($payment->period_name === 'Full Payment') {
+                $paymentType = 'Full Payment';
+            } elseif (str_contains($payment->period_name, 'Quarter')) {
+                $paymentType = 'Quarterly Payment';
+            } elseif (in_array($payment->period_name, ['June', 'July', 'August', 'September', 'October', 'November', 'December', 'January', 'February', 'March'])) {
+                $paymentType = 'Monthly Payment';
+            }
+        }
 
         // Load static PDF
         $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
@@ -827,8 +842,8 @@ $templatePath = resource_path('assets/pdf-forms-generation/Disciplinary-Con-Repo
             $appointmentDateDisplay .= ' (' . $appointmentTimeOfDay . ')';
         }
         $pdf->Write(0, '' . $appointmentDateDisplay);
-        $pdf->SetXY(95, 117); // Event
-        $pdf->Write(0, '' . $event);
+        $pdf->SetXY(95, 117); // Payment Type
+        $pdf->Write(0, '' . $paymentType);
 
         return response($pdf->Output('Receipt.pdf', 'S'))->header('Content-Type', 'application/pdf');
     }
