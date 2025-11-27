@@ -264,4 +264,23 @@ class GradeSubmission extends Model
                    ->get()
                    ->keyBy('student_id');
     }
+
+    public static function getPendingSubmissionsCount()
+    {
+        $oneDayAgo = now()->subDay();
+        
+        return self::where('status', 'submitted')
+            ->where('created_at', '>=', $oneDayAgo)
+            ->count();
+    }
+
+    public static function getDraftSubmissionsCountForTeacher($teacherId)
+    {
+        $oneDayAgo = now()->subDay();
+        
+        return self::where('teacher_id', $teacherId)
+            ->where('status', 'draft')
+            ->where('created_at', '>=', $oneDayAgo)
+            ->count();
+    }
 }

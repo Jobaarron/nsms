@@ -267,6 +267,10 @@ Route::middleware(['auth', 'role:teacher|faculty_head'])->prefix('teacher')->nam
     // Upload grades from Excel/CSV file
     Route::post('/grades/upload', [App\Http\Controllers\TeacherGradeController::class, 'upload'])
         ->name('grades.upload');
+    
+    // Mark alert as viewed
+    Route::post('/mark-alert-viewed', [App\Http\Controllers\TeacherController::class, 'markAlertViewed'])
+        ->name('mark-alert-viewed');
 });
 
 // Student Schedule Routes (requires payment)
@@ -376,6 +380,10 @@ Route::middleware(['auth', 'role:faculty_head'])->prefix('faculty-head')->name('
     // API endpoint for getting subjects by grade level (used by assign teacher form)
     Route::get('/api/subjects-by-grade', [App\Http\Controllers\FacultyHeadController::class, 'getSubjectsByGrade'])
         ->name('api.subjects-by-grade');
+    
+    // Mark alert as viewed
+    Route::post('/mark-alert-viewed', [App\Http\Controllers\FacultyHeadController::class, 'markAlertViewed'])
+        ->name('mark-alert-viewed');
 });
 
 
@@ -862,6 +870,9 @@ Route::prefix('registrar')->name('registrar.')->group(function () {
             ]);
         })->name('test-data-change-requests');
         
+        // Mark alert as viewed
+        Route::post('/mark-alert-viewed', [RegistrarController::class, 'markAlertViewed'])->name('mark-alert-viewed');
+        
         // Logout
         Route::post('/logout', function(Request $request) {
             // Clear all authentication guards to prevent session conflicts
@@ -937,6 +948,8 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::delete('/fees/{fee}', [CashierController::class, 'destroyFee'])->name('fees.destroy');
         Route::post('/fees/{fee}/toggle', [CashierController::class, 'toggleFeeStatus'])->name('fees.toggle');
         
+        // Mark alert as viewed
+        Route::post('/mark-alert-viewed', [CashierController::class, 'markAlertViewed'])->name('mark-alert-viewed');
         
         // Logout
         Route::post('/logout', [CashierController::class, 'logout'])->name('logout');

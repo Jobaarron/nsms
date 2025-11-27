@@ -538,4 +538,15 @@ class TeacherController extends Controller
             }
         }
     }
+
+    public function markAlertViewed(Request $request)
+    {
+        $alertType = $request->input('alert_type');
+        
+        if ($alertType === 'grades') {
+            session(['grades_alert_viewed' => true]);
+        }
+        
+        return response()->json(['success' => true]);
+    }
 }

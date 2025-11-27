@@ -156,4 +156,14 @@ class Payment extends Model
             ->whereBetween('scheduled_date', [$today, $sevenDaysFromNow])
             ->count();
     }
+
+    public static function getPendingPaymentConfirmationsCount()
+    {
+        $oneDayAgo = now()->subDay();
+        
+        return self::where('status', 'pending')
+            ->where('confirmation_status', 'pending')
+            ->where('created_at', '>=', $oneDayAgo)
+            ->count();
+    }
 }

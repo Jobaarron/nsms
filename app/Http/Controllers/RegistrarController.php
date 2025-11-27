@@ -1758,4 +1758,24 @@ class RegistrarController extends Controller
         ];
         return $trackNames[$track] ?? null;
     }
+
+    public static function getNewApplicationsCount()
+    {
+        $oneDayAgo = now()->subDay();
+        
+        return Enrollee::where('enrollment_status', 'pending')
+            ->where('created_at', '>=', $oneDayAgo)
+            ->count();
+    }
+
+    public function markAlertViewed(Request $request)
+    {
+        $alertType = $request->input('alert_type');
+        
+        if ($alertType === 'applications') {
+            session(['applications_alert_viewed' => true]);
+        }
+        
+        return response()->json(['success' => true]);
+    }
 }
