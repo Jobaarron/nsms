@@ -37,18 +37,20 @@
             margin-top: 20px;
         }
         .alert {
-            background-color: #f8d7da;
-            border: 1px solid #f5c6cb;
-            color: #721c24;
+            background-color: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
             padding: 12px;
             border-radius: 4px;
             margin: 15px 0;
+            border-left: 4px solid #ff9800;
         }
         .info-box {
-            background-color: #e7f3ff;
-            border-left: 4px solid #2196F3;
+            background-color: #e8f5e8;
+            border-left: 4px solid #2d6a3e;
             padding: 12px;
             margin: 15px 0;
+            color: #012d17;
         }
         .button {
             display: inline-block;
@@ -70,6 +72,7 @@
             padding: 12px;
             border-radius: 4px;
             margin: 15px 0;
+            border-left: 4px solid #ff9800;
         }
     </style>
 </head>

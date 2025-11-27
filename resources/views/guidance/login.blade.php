@@ -84,12 +84,17 @@
                     </button>
                 </form>
 
-                {{-- <div class="text-center">
+                <div class="text-center mt-4">
+                    <p class="text-muted mb-2">
+                        <a href="{{ route('password.forgot.form') }}" style="color: var(--primary-color); text-decoration: none;">
+                            <i class="ri-lock-line me-1"></i>Forgot your password?
+                        </a>
+                    </p>
                     <small class="text-muted">
                         <i class="ri-information-line me-1"></i>
                         For guidance counselors only - Contact administrator for assistance
                     </small>
-                </div> --}}
+                </div>
             </div>
         </div>
     </div>

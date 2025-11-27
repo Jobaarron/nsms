@@ -78,6 +78,14 @@
                         <i class="ri-login-circle-line me-2"></i>Login to Portal
                     </button>
                 </form>
+
+                <div class="text-center mt-4">
+                    <p class="text-muted mb-0">
+                        <a href="{{ route('password.forgot.form') }}" style="color: var(--primary-color); text-decoration: none;">
+                            <i class="ri-lock-line me-1"></i>Forgot your password?
+                        </a>
+                    </p>
+                </div>
             </div>
         </div>
     </div>

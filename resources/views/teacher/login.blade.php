@@ -79,12 +79,13 @@
                     </button>
                 </form>
 
-                {{-- <div class="text-center">
-                    <p class="text-muted">
-                        Don't have an account? 
-                        <a href="{{ route('teacher.generator') }}" style="color: var(--primary-color);">Create Teacher Account</a>
+                <div class="text-center mt-4">
+                    <p class="text-muted mb-2">
+                        <a href="{{ route('password.forgot.form') }}" style="color: var(--primary-color); text-decoration: none;">
+                            <i class="ri-lock-line me-1"></i>Forgot your password?
+                        </a>
                     </p>
-                </div> --}}
+                </div>
             </div>
         </div>
     </div>
