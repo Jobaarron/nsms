@@ -17,7 +17,16 @@
                         {{ now()->format('l, F j, Y g:i A') }}
                     </small>
                 </div>
-                <div>
+                <div class="d-flex align-items-center gap-2">
+                    <!-- Notification Bell -->
+                    <div class="position-relative" style="display: inline-block;">
+                        <button class="btn btn-outline-success btn-sm" id="notificationBell" data-bs-toggle="modal" data-bs-target="#notificationsModal" title="Case Closed Notifications">
+                            <i class="ri-notification-3-line fs-5"></i>
+                        </button>
+                        <span class="badge rounded-pill bg-danger" id="notificationBadge">
+                            0
+                        </span>
+                    </div>
                     <button class="btn btn-success btn-sm" onclick="openQuickActionModal()">
                         <i class="ri-add-circle-line me-1 me-sm-2"></i><span class="d-none d-sm-inline">Quick Actions</span>
                     </button>
@@ -719,6 +728,73 @@
                 bottom: auto !important;
                 transform: translate3d(0px, 0px, 0px) !important;
             }
+            
+            /* Notification Bell Styling */
+            #notificationBell {
+                transition: all 0.3s ease;
+                border-radius: 50%;
+                width: 40px;
+                height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 0;
+                position: relative;
+            }
+            
+            #notificationBell:hover {
+                background-color: #198754;
+                border-color: #198754;
+                color: white;
+                transform: scale(1.1);
+            }
+            
+            #notificationBell:hover .ri-notification-3-line {
+                animation: bellRing 0.5s ease-in-out;
+            }
+            
+            @keyframes bellRing {
+                0%, 100% { transform: rotate(0deg); }
+                10%, 30%, 50%, 70%, 90% { transform: rotate(-10deg); }
+                20%, 40%, 60%, 80% { transform: rotate(10deg); }
+            }
+            
+            #notificationBadge {
+                position: absolute;
+                top: -8px;
+                right: -8px;
+                font-size: 0.65rem;
+                padding: 0.25rem 0.45rem;
+                min-width: 20px;
+                height: 20px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                animation: pulse 2s infinite;
+                transform: none !important;
+                z-index: 10;
+            }
+            
+            @keyframes pulse {
+                0%, 100% { 
+                    opacity: 1; 
+                    transform: scale(1);
+                }
+                50% { 
+                    opacity: 0.8; 
+                    transform: scale(1.1);
+                }
+            }
+            
+            /* Notification Card Hover */
+            #notificationsModalBody .card {
+                transition: all 0.3s ease;
+            }
+            
+            #notificationsModalBody .card:hover {
+                transform: translateX(5px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            }
         </style>
 
     <!-- Toast container for notifications -->
@@ -830,5 +906,34 @@
             };
         }
     </script>
+
+    <!-- Notifications Modal -->
+    <div class="modal fade" id="notificationsModal" tabindex="-1" aria-labelledby="notificationsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="notificationsModalLabel">
+                        <i class="ri-notification-3-line me-2"></i>Case Closed Notifications
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="notificationsModalBody" style="max-height: 500px; overflow-y: auto;">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-success" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Loading notifications...</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-success" id="markAllReadBtn">
+                        <i class="ri-check-double-line me-1"></i>Mark All as Read
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     </div>
 </x-discipline-layout>

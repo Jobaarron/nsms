@@ -429,6 +429,18 @@ Route::prefix('discipline')->name('discipline.')->group(function () {
         // Logout
         Route::post('/logout', [App\Http\Controllers\DisciplineController::class, 'logout'])->name('logout');
         
+        // Notification count route (AJAX)
+        Route::get('/notification-count', [DisciplineController::class, 'getNotificationCount'])
+            ->name('notification-count');
+        
+        // Get violations data for notifications (AJAX)
+        Route::get('/violations-data', [DisciplineController::class, 'getViolationsData'])
+            ->name('violations-data');
+        
+        // Mark notifications as read (AJAX)
+        Route::post('/mark-notifications-read', [DisciplineController::class, 'markNotificationsAsRead'])
+            ->name('mark-notifications-read');
+        
         // Student Management Routes
         Route::prefix('students')->name('students.')->group(function () {
             Route::get('/', [App\Http\Controllers\DisciplineController::class, 'studentsIndex'])
