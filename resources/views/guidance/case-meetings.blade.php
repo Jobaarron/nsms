@@ -20,14 +20,14 @@
                 </div>
                 <div class="d-flex gap-2">
                     <a href="{{ url('guidance/pdf/case-meeting/' . $caseMeeting->id) }}" download="Case-Meeting-{{ $caseMeeting->id }}.pdf" class="btn btn-outline-info">
-                        <i class="ri-file-pdf-line me-2"></i>Download Incident PDF
+                        <i class="ri-download-line me-2"></i>Download Incident PDF
                     </a>
                     <a href="{{ url('guidance/pdf/case-meeting/' . $caseMeeting->id) }}" download="Case-Meeting-Attachment-{{ $caseMeeting->id }}.pdf" class="btn btn-outline-success">
-                        <i class="ri-attachment-2"></i> Download Attachment
+                        <i class="ri-download-line me-2"></i> Download Attachment
                     </a>
                     @if($caseMeeting->summary)
                         <a href="{{ route('guidance.case-meetings.disciplinary-conference-report.pdf', $caseMeeting->id) }}" download="Disciplinary-Conference-Report-{{ $caseMeeting->id }}.pdf" class="btn btn-outline-danger">
-                            <i class="ri-file-text-line me-2"></i>Download Conference Report
+                            <i class="ri-download-line me-2"></i>Download Conference Report
                         </a>
                     @endif
 
@@ -163,7 +163,7 @@
                         </div>
                         <div class="col-md-3 d-flex align-items-end">
                             <a href="/guidance/conference-summary-report/pdf" download="Conference-Summary-Report.pdf" class="btn btn-success w-100">
-                                <i class="ri-file-list-3-line me-1"></i> Download Summary Report
+                                <i class="ri-download-line me-1"></i> Download Summary Report
                             </a>
                         </div>
     <div class="row mb-4">
@@ -298,7 +298,7 @@
                         </div>
                         <div class="col-md-2 d-flex align-items-end">
                             <a href="/guidance/conference-summary-report/pdf" download="Conference-Summary-Report.pdf" class="btn btn-success w-100">
-                                <i class="ri-file-list-3-line me-1"></i> Download Summary Report
+                                <i class="ri-download-line me-1"></i> Download Summary Report
                             </a>
                         </div>
                     </div>

@@ -94,15 +94,18 @@ function showSessionDetailModal(sessionId) {
                                     </div>
                                 `;
                                 // Documents Card (bottom right)
-                                const pdfUrl = `/pdf/counseling-session?session_id=${sessionId}`;
+                                const pdfUrl = `/pdf/counseling-session?session_id=${sessionId}&download=1`;
+                                const studentName = s.student_name?.replace(/\s+/g, '_') || 'Student';
+                                const currentDate = new Date().toISOString().split('T')[0];
+                                const fileName = `Student_Profile_Recommendation_Letter_${studentName}_${currentDate}.pdf`;
                                 const documentsCard = `
                                     <div class="card border-success" style="border-width:2px;">
                                         <div class="card-header bg-success bg-opacity-10 text-success" style="font-weight:500;">
                                             <span><i class="ri-file-list-3-line me-2"></i> Documents</span>
                                         </div>
                                         <div class="card-body p-3">
-                                            <a href="${pdfUrl}" class="btn btn-sm btn-outline-success w-100 d-flex align-items-center justify-content-center" target="_blank" title="Download Counseling Session PDF">
-                                                <i class="ri-download-2-line me-2"></i> Student Profile Recommendation Letter
+                                            <a href="${pdfUrl}" class="btn btn-sm btn-outline-success w-100 d-flex align-items-center justify-content-center" download="${fileName}" title="Download Counseling Session PDF">
+                                                <i class="ri-download-line me-2"></i> Student Profile Recommendation Letter
                                             </a>
                                             ${s.documents_html ? `<div class="mt-3">${s.documents_html}</div>` : ''}
                                         </div>
