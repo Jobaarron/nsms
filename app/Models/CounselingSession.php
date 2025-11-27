@@ -186,13 +186,27 @@ class CounselingSession extends Model
      * Get count of pending counseling recommendations for a teacher
      * Returns counseling sessions recommended by teacher with status 'recommended' (not yet scheduled)
      */
-    public static function getPendingCounselingRecommendationsCountForTeacher($teacherId)
+    /**
+     * Get count of scheduled counseling sessions for an adviser (guidance has responded)
+     * @param int $userId - The user ID of the adviser (not teacher table id)
+     * @return int
+     */
+    public static function getScheduledCounselingCountForAdviser($userId)
     {
-        $oneDayAgo = now()->subDay();
-        
-        return self::where('recommended_by', $teacherId)
-            ->where('status', 'recommended')
-            ->where('created_at', '>=', $oneDayAgo)
+        // Count counseling sessions recommended by this adviser that have been scheduled by guidance
+        return self::where('recommended_by', $userId)
+            ->where('status', 'scheduled')
+            ->where('teacher_notified', false)
             ->count();
+    }
+
+    /**
+     * Get count of recommended counseling sessions (pending scheduling by guidance)
+     * @return int
+     */
+    public static function getRecommendedCounselingSessionsCount()
+    {
+        // Count all counseling sessions with status 'recommended' (awaiting guidance scheduling)
+        return self::where('status', 'recommended')->count();
     }
 }

@@ -475,6 +475,36 @@
                 console.error('Network or JS error:', error);
             });
         }
+
+        // Mark counseling sessions alert as viewed when guidance visits this page
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]');
+                if (!csrfToken) {
+                    console.warn('CSRF token not found');
+                    return;
+                }
+                
+                fetch('{{ route("guidance.mark-alert-viewed") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken.getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        alert_type: 'counseling_sessions'
+                    })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        console.error('Failed to mark counseling sessions alert as viewed:', response.status);
+                    }
+                })
+                .catch(error => console.error('Error marking counseling sessions alert as viewed:', error));
+            } catch(error) {
+                console.error('Error in guidance counseling sessions alert script:', error);
+            }
+        });
     </script>
 
 </x-guidance-layout>

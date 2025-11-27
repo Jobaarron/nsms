@@ -11,16 +11,6 @@
         <p class="text-muted mb-0">Submit a counseling recommendation for student support</p>
       </div>
       <div class="d-flex gap-2">
-        <!-- Notification Bell -->
-        <button class="btn btn-outline-info position-relative" data-bs-toggle="modal" data-bs-target="#counselingNotificationsModal" title="Counseling Session Notifications">
-          <i class="ri-notification-3-line"></i>
-          @if(isset($scheduledSessions) && $scheduledSessions->count() > 0)
-            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-              {{ $scheduledSessions->count() }}
-            </span>
-          @endif
-        </button>
-        
         <a href="{{ route('teacher.dashboard') }}" class="btn btn-outline-success">
           <i class="ri-arrow-left-line me-2"></i>Back to Dashboard
         </a>
@@ -270,8 +260,181 @@
     </div>
   </main>
 
-  <!-- Counseling Notifications Modal -->
-  <div class="modal fade" id="counselingNotificationsModal" tabindex="-1" aria-labelledby="counselingNotificationsModalLabel" aria-hidden="true">
+  <!-- Scheduled Counseling Sessions Modal -->
+  @if(isset($scheduledSessions) && $scheduledSessions->count() > 0)
+  <div class="modal fade" id="scheduledCounselingModal" tabindex="-1" aria-labelledby="scheduledCounselingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title" id="scheduledCounselingModalLabel">
+            <i class="ri-calendar-check-line me-2"></i>Scheduled Counseling Sessions
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-info border-0 bg-info bg-opacity-10">
+            <div class="d-flex align-items-start">
+              <i class="ri-information-line me-2 text-info fs-5 mt-1"></i>
+              <div>
+                <strong class="text-info">Guidance has scheduled your counseling recommendations</strong>
+                <p class="mb-0 mt-1">
+                  The following sessions have been approved and scheduled by the Guidance Department.
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="list-group">
+            @foreach($scheduledSessions as $session)
+            <div class="list-group-item border-start border-success border-3">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                  <h6 class="mb-1 text-success">
+                    <i class="ri-user-heart-line me-1"></i>
+                    {{ $session->student->first_name ?? '' }} {{ $session->student->last_name ?? '' }}
+                  </h6>
+                  @if($session->student && $session->student->student_id)
+                    <small class="text-muted">Student ID: {{ $session->student->student_id }}</small>
+                  @endif
+                </div>
+                <span class="badge bg-success">Scheduled</span>
+              </div>
+              
+              <div class="row g-2 mt-2">
+                @if($session->start_date)
+                  <div class="col-md-6">
+                    <small class="text-muted d-block"><strong>Start Date:</strong></small>
+                    <span class="badge bg-primary">{{ $session->start_date->format('M j, Y') }}</span>
+                  </div>
+                @endif
+                
+                @if($session->end_date)
+                  <div class="col-md-6">
+                    <small class="text-muted d-block"><strong>End Date:</strong></small>
+                    <span class="badge bg-primary">{{ $session->end_date->format('M j, Y') }}</span>
+                  </div>
+                @endif
+                
+                @if($session->time)
+                  <div class="col-md-6">
+                    <small class="text-muted d-block"><strong>Time:</strong></small>
+                    <span class="badge bg-info">{{ $session->time instanceof \Carbon\Carbon ? $session->time->format('g:i A') : $session->time }}</span>
+                  </div>
+                @endif
+                
+                @if($session->frequency)
+                  <div class="col-md-6">
+                    <small class="text-muted d-block"><strong>Frequency:</strong></small>
+                    <span class="badge bg-secondary">{{ ucfirst(str_replace('_', ' ', $session->frequency)) }}</span>
+                  </div>
+                @endif
+                
+                @if($session->time_limit)
+                  <div class="col-md-6">
+                    <small class="text-muted d-block"><strong>Duration:</strong></small>
+                    <span class="badge bg-warning text-dark">{{ $session->time_limit }} minutes</span>
+                  </div>
+                @endif
+                
+                @if($session->session_no)
+                  <div class="col-md-6">
+                    <small class="text-muted d-block"><strong>Session #:</strong></small>
+                    <span class="badge bg-success">{{ $session->session_no }}</span>
+                  </div>
+                @endif
+              </div>
+              
+              @if($session->incident_description)
+                <div class="mt-2">
+                  <small class="text-muted d-block"><strong>Your Original Recommendation:</strong></small>
+                  <p class="small text-secondary mt-1 mb-0" style="font-style: italic;">
+                    {{ Str::limit($session->incident_description, 150) }}
+                  </p>
+                </div>
+              @endif
+            </div>
+            @endforeach
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-success" id="markAsViewedBtn">
+            <i class="ri-check-line me-1"></i>Mark as Viewed
+          </button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Auto-show modal on page load if there are scheduled sessions
+    document.addEventListener('DOMContentLoaded', function() {
+      @if(isset($scheduledSessions) && $scheduledSessions->count() > 0)
+        var scheduledModal = new bootstrap.Modal(document.getElementById('scheduledCounselingModal'));
+        scheduledModal.show();
+        
+        // Mark as viewed button handler
+        document.getElementById('markAsViewedBtn').addEventListener('click', function() {
+          const csrfToken = document.querySelector('meta[name="csrf-token"]');
+          if (!csrfToken) {
+            console.warn('CSRF token not found');
+            return;
+          }
+          
+          const btn = this;
+          btn.disabled = true;
+          btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Marking...';
+          
+          fetch('{{ route("teacher.mark-alert-viewed") }}', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-TOKEN': csrfToken.getAttribute('content')
+            },
+            body: JSON.stringify({
+              alert_type: 'counseling'
+            })
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              btn.innerHTML = '<i class="ri-check-double-line me-1"></i>Viewed';
+              btn.classList.remove('btn-success');
+              btn.classList.add('btn-outline-success');
+              
+              // Hide badge from sidebar by reloading the layout component
+              const badge = document.querySelector('#counseling-link .badge');
+              if (badge) {
+                badge.style.display = 'none';
+              }
+              
+              // Remove red background from sidebar item
+              const counselingLink = document.getElementById('counseling-link');
+              if (counselingLink) {
+                counselingLink.style.backgroundColor = '';
+                counselingLink.style.borderLeft = '';
+                counselingLink.style.paddingLeft = '';
+              }
+              
+              setTimeout(() => {
+                scheduledModal.hide();
+              }, 1000);
+            }
+          })
+          .catch(error => {
+            console.error('Error marking counseling alert as viewed:', error);
+            btn.disabled = false;
+            btn.innerHTML = '<i class="ri-check-line me-1"></i>Mark as Viewed';
+            alert('Failed to mark as viewed. Please try again.');
+          });
+        });
+      @endif
+    });
+  </script>
+  @endif
+
+  <!-- Counseling Notifications Modal - Removed (sidebar badge handles notifications) -->
+  <div class="modal fade d-none" id="counselingNotificationsModal" tabindex="-1" aria-labelledby="counselingNotificationsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-header bg-success text-white">
@@ -397,37 +560,5 @@
     </div>
   </div>
 
-  @push('scripts')
-  <script>
-      // Mark counseling recommendations alert as viewed when teacher visits this page
-      document.addEventListener('DOMContentLoaded', function() {
-          try {
-              const csrfToken = document.querySelector('meta[name="csrf-token"]');
-              if (!csrfToken) {
-                  console.warn('CSRF token not found');
-                  return;
-              }
-              
-              fetch('{{ route("teacher.mark-alert-viewed") }}', {
-                  method: 'POST',
-                  headers: {
-                      'Content-Type': 'application/json',
-                      'X-CSRF-TOKEN': csrfToken.getAttribute('content')
-                  },
-                  body: JSON.stringify({
-                      alert_type: 'counseling'
-                  })
-              })
-              .then(response => {
-                  if (!response.ok) {
-                      console.error('Failed to mark counseling alert as viewed:', response.status);
-                  }
-              })
-              .catch(error => console.error('Error marking counseling alert as viewed:', error));
-          } catch(error) {
-              console.error('Error in teacher counseling alert script:', error);
-          }
-      });
-  </script>
-  @endpush
+
 </x-teacher-layout>

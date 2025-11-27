@@ -287,10 +287,11 @@ class TeacherController extends Controller
             $message = 'You are not assigned as a class adviser for the current academic year.';
         }
 
-        // Get scheduled counseling sessions recommended by this teacher
+        // Get scheduled counseling sessions recommended by this teacher (only unviewed ones)
         $scheduledSessions = CounselingSession::with(['student', 'counselor'])
             ->where('recommended_by', $teacher->id)
             ->where('status', 'scheduled')
+            ->where('teacher_notified', false)
             ->orderBy('start_date', 'desc')
             ->get();
 
@@ -549,6 +550,12 @@ class TeacherController extends Controller
             session(['observation_reports_alert_viewed' => true]);
         } elseif ($alertType === 'counseling') {
             session(['counseling_alert_viewed' => true]);
+            
+            // Mark all scheduled counseling sessions as notified for this adviser
+            CounselingSession::where('recommended_by', Auth::id())
+                ->where('status', 'scheduled')
+                ->where('teacher_notified', false)
+                ->update(['teacher_notified' => true]);
         }
         
         return response()->json(['success' => true]);
