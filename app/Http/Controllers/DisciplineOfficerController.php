@@ -317,7 +317,7 @@ class DisciplineOfficerController extends Controller
             ], 403);
         }
 
-        $violationTypes = ViolationList::select('id', 'title', 'severity', 'category', 'description')
+        $violationTypes = ViolationList::select('id', 'title', 'severity', 'category')
             ->orderBy('severity')
             ->orderBy('title')
             ->get();

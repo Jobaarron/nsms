@@ -52,7 +52,10 @@ class DebugController extends Controller
         $debug['seeder_status'] = $violationCount > 0 ? 'SEEDED ✓' : 'NOT SEEDED ✗';
 
         // 7. Sample violations (first 5)
-        $debug['sample_violations'] = ViolationList::limit(5)->get()->toArray();
+        $debug['sample_violations'] = ViolationList::select('id', 'title', 'severity', 'category')
+            ->limit(5)
+            ->get()
+            ->toArray();
 
         // 8. Environment info
         $debug['environment'] = [
@@ -71,7 +74,7 @@ class DebugController extends Controller
     public function testViolationListApi()
     {
         try {
-            $violationTypes = ViolationList::select('id', 'title', 'severity', 'category', 'description')
+            $violationTypes = ViolationList::select('id', 'title', 'severity', 'category')
                 ->orderBy('severity')
                 ->orderBy('title')
                 ->get();
@@ -106,7 +109,10 @@ class DebugController extends Controller
         $debug['violation_count'] = $violationCount;
 
         // 3. Get all violations
-        $violations = ViolationList::orderBy('severity')->orderBy('title')->get();
+        $violations = ViolationList::select('id', 'title', 'severity', 'category')
+            ->orderBy('severity')
+            ->orderBy('title')
+            ->get();
         $debug['violations'] = $violations;
 
         // 4. Database info
