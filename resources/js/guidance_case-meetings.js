@@ -927,13 +927,26 @@ window.confirmCaseMeetingScheduling = function() {
             return response.json();
         } else {
             return response.json().then(errorData => {
-                let errorMsg = 'Failed to schedule meeting';
-                if (errorData.errors) {
-                    errorMsg += '\n\nValidation errors:';
+                let errorMsg = errorData.message || 'Failed to schedule meeting';
+                
+                // Handle duplicate meeting error (409 Conflict)
+                if (response.status === 409 && errorData.error_type === 'duplicate_meeting') {
+                    errorMsg = errorData.message;
+                    if (errorData.existing_meeting) {
+                        errorMsg += '\n\nExisting meeting details:';
+                        errorMsg += '\n- Date: ' + errorData.existing_meeting.date;
+                        errorMsg += '\n- Time: ' + errorData.existing_meeting.time;
+                        errorMsg += '\n- Status: ' + errorData.existing_meeting.status;
+                    }
+                }
+                // Handle validation errors
+                else if (errorData.errors) {
+                    errorMsg = 'Validation errors:';
                     Object.keys(errorData.errors).forEach(field => {
                         errorMsg += '\n- ' + field + ': ' + errorData.errors[field].join(', ');
                     });
                 }
+                
                 throw new Error(errorMsg);
             });
         }

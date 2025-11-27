@@ -231,21 +231,35 @@ class GuidanceController extends Controller
             return back()->withErrors(['error' => 'Your guidance account is inactive. Please contact an administrator.']);
         }
 
-        // Check for duplicate meeting
+        // Check for duplicate meeting at exact same date/time
         $existingMeeting = CaseMeeting::where('student_id', $validatedData['student_id'])
             ->where('scheduled_date', $validatedData['scheduled_date'])
             ->where('scheduled_time', $validatedData['scheduled_time'])
+            ->whereIn('status', ['scheduled', 'pending', 'in_progress'])
+            ->with('student')
             ->first();
 
         if ($existingMeeting) {
-            $message = 'A meeting for this student at the specified date and time already exists.';
+            $studentName = $existingMeeting->student ? $existingMeeting->student->full_name : 'this student';
+            $formattedDate = \Carbon\Carbon::parse($existingMeeting->scheduled_date)->format('F j, Y');
+            $formattedTime = \Carbon\Carbon::parse($existingMeeting->scheduled_time)->format('g:i A');
+            
+            $message = "A case meeting for {$studentName} is already scheduled on {$formattedDate} at {$formattedTime}. Please choose a different date or time.";
+            
             if ($request->ajax()) {
                 return response()->json([
                     'success' => false,
                     'message' => $message,
+                    'error_type' => 'duplicate_meeting',
+                    'existing_meeting' => [
+                        'id' => $existingMeeting->id,
+                        'date' => $formattedDate,
+                        'time' => $formattedTime,
+                        'status' => $existingMeeting->status
+                    ]
                 ], 409);
             }
-            return back()->withErrors(['error' => $message]);
+            return back()->withErrors(['scheduled_date' => $message, 'scheduled_time' => 'This time slot is already taken.']);
         }
 
         $validatedData['counselor_id'] = $guidanceRecord->id;
