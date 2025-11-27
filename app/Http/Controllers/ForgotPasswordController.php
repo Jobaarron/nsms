@@ -212,22 +212,27 @@ class ForgotPasswordController extends Controller
             'user_type' => 'required|in:system_user,student,enrollee'
         ]);
 
-        $resetCode = $request->input('reset_code');
+        $resetCode = strtoupper($request->input('reset_code'));
         $userType = $request->input('user_type');
+        $token = $request->input('token');
         $newPassword = Hash::make($request->input('password'));
 
-        // Find reset record by email (we'll verify the code matches the token)
+        // Find the most recent reset record (only latest code is valid)
         $resetRecord = DB::table('password_reset_tokens')
             ->where('created_at', '>=', now()->subHours(1))
+            ->orderBy('created_at', 'desc')
             ->first();
 
         if (!$resetRecord) {
-            return back()->withErrors(['reset_code' => 'Invalid or expired reset code.']);
+            return back()->withErrors(['reset_code' => 'Invalid or expired reset code. Please request a new password reset.']);
         }
 
-        // Verify the reset code matches the stored token
-        if (!Hash::check($resetCode . '.' . substr($request->input('token'), 6), $resetRecord->token)) {
-            return back()->withErrors(['reset_code' => 'Invalid reset code.']);
+        // Verify the reset code by checking if it matches when hashed
+        // The token stored is: Hash(resetCode . '.' . randomString)
+        $fullToken = $resetCode . '.' . substr($token, strlen($resetCode) + 1);
+        
+        if (!Hash::check($fullToken, $resetRecord->token)) {
+            return back()->withErrors(['reset_code' => 'Invalid reset code. Please check the code from your email.']);
         }
 
         try {
@@ -251,7 +256,7 @@ class ForgotPasswordController extends Controller
                     break;
             }
 
-            // Delete reset token
+            // Delete ALL reset tokens for this email (invalidate previous codes)
             DB::table('password_reset_tokens')->where('email', $resetRecord->email)->delete();
 
             return redirect('/')->with('success', 'Password has been reset successfully. You can now log in with your new password.');
