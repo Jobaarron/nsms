@@ -449,12 +449,14 @@ function setupDateTimeConstraints() {
         // Set minimum date to today
         const today = new Date().toISOString().split('T')[0];
         dateInput.min = today;
+        dateInput.setAttribute('data-min-date', today);
     }
     
     if (followUpDateInput) {
         // Set minimum follow-up date to today
         const today = new Date().toISOString().split('T')[0];
         followUpDateInput.min = today;
+        followUpDateInput.setAttribute('data-min-date', today);
     }
 }
 
@@ -547,7 +549,7 @@ function setupFollowUpToggle() {
 }
 
 // Submit counseling session form
-function submitCounselingSession(event) {
+window.submitCounselingSession = function(event) {
     event.preventDefault();
     
     const form = event.target;
@@ -608,7 +610,7 @@ function submitCounselingSession(event) {
         submitBtn.innerHTML = originalText;
         submitBtn.disabled = false;
     });
-}
+};
 
 // Complete counseling session
 function completeCounselingSession(sessionId) {

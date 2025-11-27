@@ -139,7 +139,7 @@ class GuidanceController extends Controller
         $validatedData = $request->validate([
             'student_id' => 'required|exists:students,id',
             'meeting_type' => 'required|in:case_meeting,house_visit',
-            'scheduled_date' => 'required|date|after:today',
+            'scheduled_date' => 'required|date_format:Y-m-d|after_or_equal:today',
             'scheduled_time' => 'required',
             'location' => 'nullable|string|max:255',
             'reason' => 'required|string',
@@ -231,13 +231,14 @@ class GuidanceController extends Controller
             return back()->withErrors(['error' => 'Your guidance account is inactive. Please contact an administrator.']);
         }
 
-        // Check for duplicate meeting
-        $existingMeeting = CaseMeeting::where('student_id', $validatedData['student_id'])
+        // Check for duplicate meeting (only for completed/scheduled meetings, not pending/in_progress)
+        $existingScheduledMeeting = CaseMeeting::where('student_id', $validatedData['student_id'])
             ->where('scheduled_date', $validatedData['scheduled_date'])
             ->where('scheduled_time', $validatedData['scheduled_time'])
+            ->whereNotIn('status', ['pending', 'in_progress'])
             ->first();
 
-        if ($existingMeeting) {
+        if ($existingScheduledMeeting) {
             $message = 'A meeting for this student at the specified date and time already exists.';
             if ($request->ajax()) {
                 return response()->json([
@@ -1006,21 +1007,22 @@ class GuidanceController extends Controller
      */
     public function scheduleCounselingSession(Request $request)
     {
-        $validatedData = $request->validate([
+        try {
+            $validatedData = $request->validate([
             'student_id' => 'required|exists:students,id',
             'session_type' => 'required|in:individual,group,family,career',
-            'scheduled_date' => 'required|date|after:today',
+            'scheduled_date' => 'required|date_format:Y-m-d|after_or_equal:today',
             'scheduled_time' => 'required',
             'duration' => 'required|integer|min:30|max:180',
             'location' => 'nullable|string|max:255',
             'reason' => 'required|string',
             'notes' => 'nullable|string',
-            'referral_academic' => 'nullable|array',
-            'referral_academic_other' => 'nullable|string',
-            'referral_social' => 'nullable|array',
-            'referral_social_other' => 'nullable|string',
-            'incident_description' => 'nullable|string',
-        ]);
+                'referral_academic' => 'nullable|array',
+                'referral_academic_other' => 'nullable|string',
+                'referral_social' => 'nullable|array',
+                'referral_social_other' => 'nullable|string',
+                'incident_description' => 'nullable|string',
+            ]);
 
         // Convert time from 12-hour format (h:i A) to 24-hour format (H:i:s) for MySQL
         if (isset($validatedData['scheduled_time'])) {
@@ -1032,41 +1034,47 @@ class GuidanceController extends Controller
             }
         }
 
-        // Get current user's guidance record
-        $user = Auth::user();
-        $guidanceRecord = $user->guidance ?? $user->guidanceDiscipline ?? null;
-        if (!$guidanceRecord) {
-            return back()->withErrors(['error' => 'You do not have permission to schedule counseling sessions.']);
-        }
+            // Get current user's guidance record
+            $user = Auth::user();
+            $guidanceRecord = $user->guidance ?? $user->guidanceDiscipline ?? null;
+            if (!$guidanceRecord) {
+                if ($request->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'You do not have permission to schedule counseling sessions.'
+                    ], 403);
+                }
+                return back()->withErrors(['error' => 'You do not have permission to schedule counseling sessions.']);
+            }
 
-        $validatedData['counselor_id'] = $guidanceRecord->id;
-        $validatedData['status'] = 'scheduled';
+            $validatedData['counselor_id'] = $guidanceRecord->id;
+            $validatedData['status'] = 'scheduled';
 
-        // Auto-set session_no based on count of previous sessions for this student
-        $studentId = $validatedData['student_id'];
-        $sessionCount = CounselingSession::where('student_id', $studentId)->count();
-        $validatedData['session_no'] = $sessionCount + 1;
+            // Auto-set session_no based on count of previous sessions for this student
+            $studentId = $validatedData['student_id'];
+            $sessionCount = CounselingSession::where('student_id', $studentId)->count();
+            $validatedData['session_no'] = $sessionCount + 1;
 
-        // Remove 'Others' from the checklist arrays before saving
-        $referralAcademic = $validatedData['referral_academic'] ?? [];
-        if (($key = array_search('Others', $referralAcademic)) !== false) {
-            unset($referralAcademic[$key]);
-        }
-        $referralSocial = $validatedData['referral_social'] ?? [];
-        if (($key = array_search('Others', $referralSocial)) !== false) {
-            unset($referralSocial[$key]);
-        }
-        $counselingSession = CounselingSession::create([
-            ...$validatedData,
-            'referral_academic' => !empty($referralAcademic) ? json_encode(array_values($referralAcademic)) : null,
-            'referral_academic_other' => $validatedData['referral_academic_other'] ?? null,
-            'referral_social' => !empty($referralSocial) ? json_encode(array_values($referralSocial)) : null,
-            'referral_social_other' => $validatedData['referral_social_other'] ?? null,
-            'incident_description' => $validatedData['incident_description'] ?? null,
-        ]);
+            // Remove 'Others' from the checklist arrays before saving
+            $referralAcademic = $validatedData['referral_academic'] ?? [];
+            if (($key = array_search('Others', $referralAcademic)) !== false) {
+                unset($referralAcademic[$key]);
+            }
+            $referralSocial = $validatedData['referral_social'] ?? [];
+            if (($key = array_search('Others', $referralSocial)) !== false) {
+                unset($referralSocial[$key]);
+            }
+            $counselingSession = CounselingSession::create([
+                ...$validatedData,
+                'referral_academic' => !empty($referralAcademic) ? json_encode(array_values($referralAcademic)) : null,
+                'referral_academic_other' => $validatedData['referral_academic_other'] ?? null,
+                'referral_social' => !empty($referralSocial) ? json_encode(array_values($referralSocial)) : null,
+                'referral_social_other' => $validatedData['referral_social_other'] ?? null,
+                'incident_description' => $validatedData['incident_description'] ?? null,
+            ]);
 
-        // Create notification for new counseling session
-        try {
+            // Create notification for new counseling session
+            try {
             $counselorName = Auth::user()->name ?? 'Guidance Counselor';
             $studentName = $counselingSession->student ? $counselingSession->student->full_name : 'Student';
             $sessionDate = $counselingSession->scheduled_date ? \Carbon\Carbon::parse($counselingSession->scheduled_date)->format('F j, Y') : 'TBD';
@@ -1093,8 +1101,32 @@ class GuidanceController extends Controller
             ]);
         }
 
-        return redirect()->route('guidance.counseling-sessions.index')
-            ->with('success', 'Counseling session scheduled successfully.');
+            // Return JSON for AJAX requests, redirect for regular requests
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Counseling session scheduled successfully.',
+                    'session' => $counselingSession
+                ]);
+            }
+
+            return redirect()->route('guidance.counseling-sessions.index')
+                ->with('success', 'Counseling session scheduled successfully.');
+        } catch (\Exception $e) {
+            \Log::error('Error scheduling counseling session', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'An error occurred while scheduling the counseling session: ' . $e->getMessage()
+                ], 500);
+            }
+
+            return back()->withErrors(['error' => 'An error occurred: ' . $e->getMessage()]);
+        }
     }
 
     /**
@@ -1112,7 +1144,7 @@ class GuidanceController extends Controller
 
         $validatedData = $request->validate([
             'counselor_id' => 'required|exists:guidances,id',
-            'scheduled_date' => 'required|date|after_or_equal:today',
+            'scheduled_date' => 'required|date_format:Y-m-d|after_or_equal:today',
             'scheduled_time' => 'required',
             'duration' => 'required|integer|min:15|max:240',
             'location' => 'nullable|string|max:255',
@@ -1425,7 +1457,7 @@ class GuidanceController extends Controller
     public function rescheduleCounselingSession(Request $request, CounselingSession $counselingSession)
     {
         $validatedData = $request->validate([
-            'scheduled_date' => 'required|date|after_or_equal:today',
+            'scheduled_date' => 'required|date_format:Y-m-d|after_or_equal:today',
             'scheduled_time' => 'required',
         ]);
 

@@ -737,12 +737,16 @@ function validateCaseMeetingForm(form) {
     
     // Date validation
     if (scheduledDate) {
-        const selectedDate = new Date(scheduledDate);
+        // Parse date string in YYYY-MM-DD format to avoid timezone issues
+        const [year, month, day] = scheduledDate.split('-').map(Number);
+        const selectedDate = new Date(year, month - 1, day);
+        
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         
-        if (selectedDate <= today) {
-            errors.push('Meeting date must be in the future');
+        // Allow today or future dates
+        if (selectedDate < today) {
+            errors.push('Meeting date must be today or in the future');
         }
         
         const dayOfWeek = selectedDate.getDay();
@@ -928,13 +932,29 @@ window.confirmCaseMeetingScheduling = function() {
         } else {
             return response.json().then(errorData => {
                 let errorMsg = 'Failed to schedule meeting';
+                
+                // Handle specific HTTP status codes
+                if (response.status === 409) {
+                    errorMsg = errorData.message || 'A meeting for this student at the specified date and time already exists.';
+                } else if (response.status === 403) {
+                    errorMsg = errorData.message || 'You do not have permission to schedule meetings.';
+                } else if (response.status === 401) {
+                    errorMsg = errorData.message || 'Your session has expired. Please login again.';
+                } else if (errorData.message) {
+                    errorMsg = errorData.message;
+                }
+                
+                // Add validation errors if present
                 if (errorData.errors) {
                     errorMsg += '\n\nValidation errors:';
                     Object.keys(errorData.errors).forEach(field => {
                         errorMsg += '\n- ' + field + ': ' + errorData.errors[field].join(', ');
                     });
                 }
-                throw new Error(errorMsg);
+                
+                const error = new Error(errorMsg);
+                error.status = response.status;
+                throw error;
             });
         }
     })
