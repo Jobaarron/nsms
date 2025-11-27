@@ -439,7 +439,13 @@
                             </a>
                             <a href="#contact" class="btn btn-outline-primary btn-lg">
                                 <i class="ri-phone-line me-2"></i>Contact Us
-                            </a>  {{-- WIP --}}
+                            </a>
+                        </div>
+                        <div class="mt-3 text-center">
+                            <p class="text-muted mb-0">Already have an account? 
+                                <a href="#" data-bs-toggle="modal" data-bs-target="#loginModal" class="text-primary fw-bold">Sign in here</a> or 
+                                <a href="{{ route('password.forgot.form') }}" class="text-primary fw-bold">reset your password</a>
+                            </p>
                         </div>
                     </div>
                 </div>

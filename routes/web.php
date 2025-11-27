@@ -55,7 +55,15 @@ Route::get('/enroll/get-temp-files', [EnrollmentController::class, 'getTempFiles
 // Contact form routes
 Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
 
-
+// Forgot Password Routes (Public)
+Route::get('/forgot-password', [App\Http\Controllers\ForgotPasswordController::class, 'showForm'])
+    ->name('password.forgot.form');
+Route::post('/forgot-password', [App\Http\Controllers\ForgotPasswordController::class, 'sendResetLink'])
+    ->name('password.forgot.send');
+Route::get('/reset-password/{token}', [App\Http\Controllers\ForgotPasswordController::class, 'showResetForm'])
+    ->name('password.reset.form');
+Route::post('/reset-password', [App\Http\Controllers\ForgotPasswordController::class, 'resetPassword'])
+    ->name('password.reset.submit');
 
 // Admin Generator (accessible without login for initial setup) Removed
 
