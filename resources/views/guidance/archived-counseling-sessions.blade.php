@@ -1082,15 +1082,15 @@
                     </div>
                     <div class="card-body">
                         <div class="d-flex flex-column gap-2">
-                            <a href="/guidance/case-meetings/${meeting.id}/disciplinary-conference-report/pdf" target="_blank" class="btn btn-outline-primary btn-sm"><i class="ri-download-2-line me-2"></i> Disciplinary Conference Reports PDF</a>
+                            <a href="/guidance/case-meetings/${meeting.id}/disciplinary-conference-report/pdf?download=1" class="btn btn-outline-primary btn-sm" download="Disciplinary_Conference_Report_${meeting.student?.name?.replace(/\s+/g, '_') || 'Student'}_${new Date().toISOString().split('T')[0]}.pdf"><i class="ri-download-line me-2"></i> Disciplinary Conference Report</a>
                             ${hasNarrative
-                                ? `<a href="/narrative-report/view/${meeting.student.id}/${meeting.violation_id}" target="_blank" class="btn btn-outline-primary btn-sm"><i class="ri-attachment-2 me-2"></i> Student Narrative PDF</a>`
+                                ? `<a href="/narrative-report/view/${meeting.student.id}/${meeting.violation_id}?download=1" class="btn btn-outline-primary btn-sm" download="Student_Narrative_Report_${meeting.student?.name?.replace(/\s+/g, '_') || 'Student'}_${new Date().toISOString().split('T')[0]}.pdf"><i class="ri-download-line me-2"></i> Student Narrative Report</a>`
                                 : ''}
                             ${hasTeacherObservation
-                                ? `<a href="/guidance/observationreport/pdf/${meeting.id}" target="_blank" class="btn btn-outline-success btn-sm"><i class="ri-file-pdf-line me-2"></i> Teacher Observation Report PDF</a>`
+                                ? `<a href="/guidance/observationreport/pdf/${meeting.id}?download=1" class="btn btn-outline-success btn-sm" download="Teacher_Observation_Report_${meeting.student?.name?.replace(/\s+/g, '_') || 'Student'}_${new Date().toISOString().split('T')[0]}.pdf"><i class="ri-download-line me-2"></i> Teacher Observation Report</a>`
                                 : ''}
                             ${meeting.violation && meeting.violation.student_attachment_path
-                                ? `<a href="/discipline/violations/${meeting.violation_id}/download-student-attachment" target="_blank" class="btn btn-outline-info btn-sm"><i class="ri-attachment-line me-2"></i> Student Attachment</a>`
+                                ? `<a href="/discipline/violations/${meeting.violation_id}/download-student-attachment" class="btn btn-outline-info btn-sm" download="Student_Attachment_${meeting.student?.name?.replace(/\s+/g, '_') || 'Student'}_${new Date().toISOString().split('T')[0]}.pdf"><i class="ri-download-line me-2"></i> Student Attachment</a>`
                                 : ''}
                             ${!hasNarrative && !hasTeacherObservation && (!meeting.violation || !meeting.violation.student_attachment_path)
                                 ? '<span class="text-muted small">No Attachment</span>'

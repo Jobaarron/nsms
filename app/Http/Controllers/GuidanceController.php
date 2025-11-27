@@ -998,7 +998,7 @@ class GuidanceController extends Controller
         // Archive password
         $archivePassword = 'nsmsguidance';
 
-        return view('guidance.archived-counseling-sessions', compact('archivedSessions', 'archivePassword'));
+        return view('guidance.archive-center', compact('archivedSessions', 'archivePassword'));
     }
 
     /**
