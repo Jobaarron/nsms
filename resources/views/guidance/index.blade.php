@@ -19,15 +19,15 @@
                 </div>
                 <div class="d-flex align-items-center gap-2">
                     <!-- Guidance Notification Bell -->
-                    <div class="position-relative guidance-notification-wrapper">
+                    <div class="position-relative guidance-notification-wrapper" style="display: inline-block;">
                         <button class="btn btn-outline-primary guidance-notification-bell" 
                                 onclick="toggleGuidanceNotificationPanel()" 
                                 title="Guidance Notifications"
                                 style="padding: 10px 14px; font-size: 16px;">
                             <i class="ri-notification-line" style="font-size: 20px;"></i>
-                            <span class="guidance-notification-badge badge bg-danger position-absolute" 
-                                  id="guidance-notification-count" style="display: none; top: -5px; right: -8px; font-size: 10px; min-width: 18px; height: 18px; border-radius: 9px; line-height: 18px;">0</span>
                         </button>
+                        <span class="guidance-notification-badge badge bg-danger position-absolute" 
+                              id="guidance-notification-count" style="display: none; top: -8px; right: -8px; font-size: 10px; min-width: 18px; height: 18px; border-radius: 9px; line-height: 18px;">0</span>
                         
                         <!-- Guidance Notification Panel -->
                         <div class="guidance-notification-panel" id="guidanceNotificationPanel" style="display: none;">
@@ -893,6 +893,21 @@
                 align-items: center;
                 justify-content: center;
                 position: relative;
+            }
+            
+            .guidance-notification-badge {
+                position: absolute;
+                top: -8px;
+                right: -8px;
+                font-size: 10px;
+                min-width: 18px;
+                height: 18px;
+                border-radius: 9px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 0 4px;
+                z-index: 10;
             }
             
             .notification-badge {

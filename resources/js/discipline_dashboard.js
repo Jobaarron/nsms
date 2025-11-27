@@ -11,6 +11,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // Setup real-time clock
     updateClock();
     setInterval(updateClock, 60000); // Update every minute
+    
+    // Load notification count
+    loadNotificationCount();
+    setInterval(loadNotificationCount, 30000); // Update every 30 seconds
+    
+    // Setup notification modal event
+    setupNotificationModal();
 });
 
 // Initialize default filter values
@@ -902,3 +909,174 @@ window.loadPendingActions = loadPendingActions;
 window.loadCriticalCases = loadCriticalCases;
 window.loadViolationTrends = loadViolationTrends;
 window.loadDisciplineEffectiveness = loadDisciplineEffectiveness;
+
+// Notification Functions
+window.loadNotificationCount = loadNotificationCount;
+window.loadNotifications = loadNotifications;
+window.setupNotificationModal = setupNotificationModal;
+window.markAllNotificationsAsRead = markAllNotificationsAsRead;
+
+// Mark all notifications as read
+function markAllNotificationsAsRead() {
+    const btn = document.getElementById('markAllReadBtn');
+    const originalText = btn.innerHTML;
+    
+    // Show loading state
+    btn.disabled = true;
+    btn.innerHTML = '<i class="spinner-border spinner-border-sm me-1"></i>Processing...';
+    
+    fetch('/discipline/mark-notifications-read', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Update badge count to 0
+            const badge = document.getElementById('notificationBadge');
+            if (badge) {
+                badge.textContent = '0';
+                badge.style.display = 'none';
+            }
+            
+            // Show success message
+            const modalBody = document.getElementById('notificationsModalBody');
+            modalBody.innerHTML = `
+                <div class="text-center py-5">
+                    <i class="ri-check-circle-line display-1 text-success"></i>
+                    <p class="mt-3 text-success fw-bold">All notifications marked as read!</p>
+                    <p class="text-muted">Your case closed violations have been acknowledged.</p>
+                </div>
+            `;
+            
+            // Reset button
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            
+            // Close modal after 2 seconds
+            setTimeout(() => {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('notificationsModal'));
+                if (modal) modal.hide();
+            }, 2000);
+        }
+    })
+    .catch(error => {
+        console.error('Error marking notifications as read:', error);
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        alert('Failed to mark notifications as read. Please try again.');
+    });
+}
+
+// Load notification count
+function loadNotificationCount() {
+    fetch('/discipline/notification-count')
+        .then(response => response.json())
+        .then(data => {
+            const badge = document.getElementById('notificationBadge');
+            if (badge) {
+                badge.textContent = data.count;
+                if (data.count > 0) {
+                    badge.style.display = 'inline-block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error loading notification count:', error);
+        });
+}
+
+// Setup notification modal
+function setupNotificationModal() {
+    const modal = document.getElementById('notificationsModal');
+    if (modal) {
+        modal.addEventListener('show.bs.modal', function() {
+            loadNotifications();
+        });
+    }
+    
+    // Setup mark all as read button
+    const markAllReadBtn = document.getElementById('markAllReadBtn');
+    if (markAllReadBtn) {
+        markAllReadBtn.addEventListener('click', function() {
+            markAllNotificationsAsRead();
+        });
+    }
+}
+
+// Load notifications content
+function loadNotifications() {
+    const modalBody = document.getElementById('notificationsModalBody');
+    if (!modalBody) return;
+    
+    // Show loading state
+    modalBody.innerHTML = `
+        <div class="text-center py-4">
+            <div class="spinner-border text-success" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2 text-muted">Loading case closed violations...</p>
+        </div>
+    `;
+    
+    // Fetch case_closed violations
+    fetch('/discipline/violations-data?status=case_closed')
+        .then(response => response.json())
+        .then(data => {
+            if (data.violations && data.violations.length > 0) {
+                const html = data.violations.map(violation => `
+                    <div class="card mb-3 border-start border-success border-3">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-2">
+                                        <i class="ri-user-line me-1 text-success"></i>
+                                        <strong>${violation.student_name || 'N/A'}</strong>
+                                        <small class="text-muted">(${violation.student_id || 'N/A'})</small>
+                                    </h6>
+                                    <p class="mb-2">
+                                        <span class="badge bg-danger me-2">${violation.title || 'No Title'}</span>
+                                    </p>
+                                    <div class="mb-2">
+                                        <strong class="text-success">
+                                            <i class="ri-scales-line me-1"></i>Disciplinary Action:
+                                        </strong>
+                                        <span class="text-dark">${violation.disciplinary_action || 'N/A'}</span>
+                                    </div>
+                                    <small class="text-muted">
+                                        <i class="ri-calendar-line me-1"></i>
+                                        ${violation.violation_date || 'N/A'}
+                                        ${violation.violation_time ? ' at ' + violation.violation_time : ''}
+                                    </small>
+                                </div>
+                                <span class="badge bg-success">Case Closed</span>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                
+                modalBody.innerHTML = html;
+            } else {
+                modalBody.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="ri-notification-off-line display-1 text-muted"></i>
+                        <p class="mt-3 text-muted">No case closed violations at the moment</p>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading notifications:', error);
+            modalBody.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="ri-error-warning-line me-2"></i>
+                    Failed to load notifications. Please try again.
+                </div>
+            `;
+        });
+}

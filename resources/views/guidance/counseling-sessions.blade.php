@@ -12,11 +12,6 @@
                     <h1 class="h3 mb-0 text-guidance">Counseling Sessions</h1>
                     <p class="text-muted mb-0">Manage individual and group counseling sessions</p>
                 </div>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-outline-primary" onclick="refreshCounselingSessions()">
-                        <i class="ri-refresh-line me-2"></i>Refresh
-                    </button>
-                </div>
             </div>
         </div>
     </div>
@@ -47,25 +42,7 @@
         <div class="col-12">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white border-0">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="card-title mb-0">Counseling Sessions List</h5>
-                        <div class="dropdown">
-                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                <i class="ri-more-line me-1"></i>Actions
-                            </button>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="#" onclick="exportCounselingSessions()">
-                                    <i class="ri-download-line me-2"></i>Export
-                                </a></li>
-                                <li><a class="dropdown-item" href="#" onclick="printCounselingSessions()">
-                                    <i class="ri-printer-line me-2"></i>Print
-                                </a></li>
-                                <li><a class="dropdown-item" href="#" onclick="showPdfModal()">
-                                    <i class="ri-file-pdf-line me-2"></i>View PDF Form
-                                </a></li>
-                            </ul>
-                        </div>
-                    </div>
+                    <h5 class="card-title mb-0">Counseling Sessions List</h5>
                 </div>
                 <div class="card-body p-0">
                     <ul class="nav nav-tabs mb-3" id="counselingTab" role="tablist">

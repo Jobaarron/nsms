@@ -183,6 +183,113 @@ class DisciplineController extends Controller
     // VIOLATIONS MANAGEMENT METHODS
 
     /**
+     * Get notification count (case_closed violations)
+     */
+    public function getNotificationCount()
+    {
+        // Get case_closed violations
+        $violations = Violation::where('status', 'case_closed')->get();
+        
+        // Get viewed notification IDs from session
+        $viewedIds = session('viewed_case_closed_notifications', []);
+        
+        // Count unviewed violations
+        $unviewedCount = $violations->filter(function($violation) use ($viewedIds) {
+            return !in_array($violation->id, $viewedIds);
+        })->count();
+        
+        return response()->json([
+            'count' => $unviewedCount,
+            'status' => 'success'
+        ]);
+    }
+    
+    /**
+     * Mark all notifications as read for current user
+     */
+    public function markNotificationsAsRead()
+    {
+        // Get all case_closed violation IDs
+        $violationIds = Violation::where('status', 'case_closed')
+            ->pluck('id')
+            ->toArray();
+        
+        // Store in session as viewed
+        session(['viewed_case_closed_notifications' => $violationIds]);
+        
+        return response()->json([
+            'status' => 'success',
+            'message' => 'All notifications marked as read'
+        ]);
+    }
+
+    /**
+     * Get violations data for notifications
+     */
+    public function getViolationsData(Request $request)
+    {
+        $status = $request->query('status', 'case_closed');
+        
+        $violations = Violation::with(['student', 'caseMeeting', 'sanctions'])
+            ->where('status', $status)
+            ->orderBy('updated_at', 'desc')
+            ->get()
+            ->map(function($violation) {
+                // Get disciplinary action - check multiple sources in order of priority
+                $disciplinaryAction = 'N/A';
+                
+                // 1. First check the violation's disciplinary_action field directly (used in view modal)
+                if (!empty($violation->disciplinary_action)) {
+                    $disciplinaryAction = $violation->disciplinary_action;
+                }
+                // 2. Try to get it from the direct sanctions relationship (hasMany)
+                elseif ($violation->sanctions && $violation->sanctions->isNotEmpty()) {
+                    // Get the most recent sanction
+                    $latestSanction = $violation->sanctions->sortByDesc('created_at')->first();
+                    $disciplinaryAction = $latestSanction->sanction ?? 'N/A';
+                }
+                // 3. If not found, try to get it from case meeting sanctions
+                elseif ($violation->caseMeeting) {
+                    $caseMeeting = $violation->caseMeeting->load('sanctions');
+                    if ($caseMeeting->sanctions && $caseMeeting->sanctions->isNotEmpty()) {
+                        // Get the sanction for this specific violation
+                        $violationSanction = $caseMeeting->sanctions
+                            ->where('violation_id', $violation->id)
+                            ->first();
+                        
+                        if ($violationSanction) {
+                            $disciplinaryAction = $violationSanction->sanction ?? 'N/A';
+                        }
+                    }
+                }
+                
+                return [
+                    'id' => $violation->id,
+                    'title' => $violation->title,
+                    'description' => $violation->description,
+                    'student_name' => $violation->student 
+                        ? $violation->student->first_name . ' ' . $violation->student->last_name 
+                        : 'N/A',
+                    'student_id' => $violation->student ? $violation->student->student_id : 'N/A',
+                    'violation_date' => $violation->violation_date 
+                        ? $violation->violation_date->format('M d, Y') 
+                        : 'N/A',
+                    'violation_time' => $violation->violation_time 
+                        ? date('h:i A', strtotime($violation->violation_time)) 
+                        : null,
+                    'status' => $violation->status,
+                    'severity' => $violation->severity,
+                    'disciplinary_action' => $disciplinaryAction,
+                ];
+            });
+        
+        return response()->json([
+            'violations' => $violations,
+            'status' => 'success'
+        ]);
+    }
+
+    /**
      * Display violations index page
      */
     public function violationsIndex()
