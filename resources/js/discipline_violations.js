@@ -1396,7 +1396,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             // Populate all offenses in the title dropdown
+            console.log('📍 About to populate offenses. violationTitleSelect:', violationTitleSelect);
+            console.log('📍 window.offenseOptions:', window.offenseOptions);
             populateAllOffenses();
+            console.log('📍 Offenses populated. Dropdown options count:', violationTitleSelect ? violationTitleSelect.options.length : 'N/A');
 
             // Remove custom input if exists
             const customInput = document.getElementById('customOffenseInput');
