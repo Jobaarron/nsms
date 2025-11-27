@@ -289,6 +289,24 @@
       </div>
     </div>
   </main>
+
+  @push('scripts')
+  <script>
+      // Mark grades alert as viewed when teacher visits this page
+      document.addEventListener('DOMContentLoaded', function() {
+          fetch('{{ route("teacher.mark-alert-viewed") }}', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+              },
+              body: JSON.stringify({
+                  alert_type: 'grades'
+              })
+          }).catch(error => console.error('Error marking grades alert as viewed:', error));
+      });
+  </script>
+  @endpush
 </x-teacher-layout>
 
 

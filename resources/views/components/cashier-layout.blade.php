@@ -104,8 +104,17 @@
           </li>
           
           <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('cashier.payments') ? 'active' : '' }}" href="{{ route('cashier.payments') }}" title="Payments">
+            @php
+              $pendingPaymentsCount = \App\Models\Payment::getPendingPaymentConfirmationsCount();
+              $paymentsViewed = session('payments_alert_viewed', false);
+            @endphp
+            <a class="nav-link {{ request()->routeIs('cashier.payments') ? 'active' : '' }} position-relative" href="{{ route('cashier.payments') }}" title="Payments" id="payments-link" style="{{ ($pendingPaymentsCount > 0 && !$paymentsViewed) ? 'background-color: #f8d7da; border-left: 4px solid #dc3545; padding-left: calc(0.75rem - 4px);' : '' }}">
               <i class="ri-time-line me-2"></i><span>Payments</span>
+              @if($pendingPaymentsCount > 0 && !$paymentsViewed)
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem; padding: 0.25rem 0.4rem;">
+                  {{ $pendingPaymentsCount }}
+                </span>
+              @endif
             </a>
           </li>
           

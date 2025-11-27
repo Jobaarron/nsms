@@ -127,4 +127,22 @@
             </div>
         </div>
     </div>
+
+    @push('scripts')
+    <script>
+        // Mark payments alert as viewed when cashier visits this page
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('{{ route("cashier.mark-alert-viewed") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({
+                    alert_type: 'payments'
+                })
+            }).catch(error => console.error('Error marking payments alert as viewed:', error));
+        });
+    </script>
+    @endpush
 </x-cashier-layout>

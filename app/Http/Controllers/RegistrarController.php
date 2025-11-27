@@ -1764,6 +1764,7 @@ class RegistrarController extends Controller
         $oneDayAgo = now()->subDay();
         
         return Enrollee::where('enrollment_status', 'pending')
+            ->where('first_viewed_at', null)
             ->where('created_at', '>=', $oneDayAgo)
             ->count();
     }

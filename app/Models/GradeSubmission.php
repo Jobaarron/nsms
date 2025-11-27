@@ -279,7 +279,7 @@ class GradeSubmission extends Model
         $oneDayAgo = now()->subDay();
         
         return self::where('teacher_id', $teacherId)
-            ->where('status', 'draft')
+            ->whereIn('status', ['approved', 'revision_requested'])
             ->where('created_at', '>=', $oneDayAgo)
             ->count();
     }

@@ -76,8 +76,17 @@
             </a>
           </li>
           <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('registrar.applications') ? 'active' : '' }}" href="{{ route('registrar.applications') }}" title="Applications">
+            @php
+              $newApplicationsCount = \App\Http\Controllers\RegistrarController::getNewApplicationsCount();
+              $applicationsViewed = session('applications_alert_viewed', false);
+            @endphp
+            <a class="nav-link {{ request()->routeIs('registrar.applications') ? 'active' : '' }} position-relative" href="{{ route('registrar.applications') }}" title="Applications" id="applications-link" style="{{ ($newApplicationsCount > 0 && !$applicationsViewed) ? 'background-color: #f8d7da; border-left: 4px solid #dc3545; padding-left: calc(0.75rem - 4px);' : '' }}">
               <i class="ri-file-text-line me-2"></i><span>Applications</span>
+              @if($newApplicationsCount > 0 && !$applicationsViewed)
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem; padding: 0.25rem 0.4rem;">
+                  {{ $newApplicationsCount }}
+                </span>
+              @endif
             </a>
           </li>
           <li class="nav-item mb-2">

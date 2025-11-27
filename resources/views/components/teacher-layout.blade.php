@@ -82,8 +82,19 @@
           
           
           <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('teacher.grades*') ? 'active' : '' }}" href="{{ route('teacher.grades') }}" title="Submit Grades">
+            @php
+              $currentUser = auth()->user();
+              $currentTeacher = $currentUser && $currentUser->teacher ? $currentUser->teacher : null;
+              $draftGradesCount = $currentTeacher ? \App\Models\GradeSubmission::getDraftSubmissionsCountForTeacher($currentTeacher->id) : 0;
+              $gradesViewed = session('grades_alert_viewed', false);
+            @endphp
+            <a class="nav-link {{ request()->routeIs('teacher.grades*') ? 'active' : '' }} position-relative" href="{{ route('teacher.grades') }}" title="Submit Grades" id="grades-link" style="{{ ($draftGradesCount > 0 && !$gradesViewed) ? 'background-color: #f8d7da; border-left: 4px solid #dc3545; padding-left: calc(0.75rem - 4px);' : '' }}">
               <i class="ri-pencil-ruler-2-line me-2"></i><span>Submit Grades</span>
+              @if($draftGradesCount > 0 && !$gradesViewed)
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem; padding: 0.25rem 0.4rem;">
+                  {{ $draftGradesCount }}
+                </span>
+              @endif
             </a>
           </li>
 

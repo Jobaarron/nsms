@@ -77,8 +77,17 @@
           </li>
           
           <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('faculty-head.view-grades.*') || request()->routeIs('faculty-head.approve-grades.*') ? 'active' : '' }}" href="{{ route('faculty-head.view-grades') }}" title="Review & Approve Grades">
+            @php
+              $pendingGradesCount = \App\Models\GradeSubmission::getPendingSubmissionsCount();
+              $gradesViewed = session('grades_alert_viewed', false);
+            @endphp
+            <a class="nav-link {{ request()->routeIs('faculty-head.view-grades.*') || request()->routeIs('faculty-head.approve-grades.*') ? 'active' : '' }} position-relative" href="{{ route('faculty-head.view-grades') }}" title="Review & Approve Grades" id="grades-link" style="{{ ($pendingGradesCount > 0 && !$gradesViewed) ? 'background-color: #f8d7da; border-left: 4px solid #dc3545; padding-left: calc(0.75rem - 4px);' : '' }}">
               <i class="ri-file-list-3-line me-2"></i><span>Review & Approve Grades</span>
+              @if($pendingGradesCount > 0 && !$gradesViewed)
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem; padding: 0.25rem 0.4rem;">
+                  {{ $pendingGradesCount }}
+                </span>
+              @endif
             </a>
           </li>
           
