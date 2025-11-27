@@ -381,6 +381,38 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
-// ...existing code...
+
+@push('scripts')
+<script>
+    // Mark observation reports alert as viewed when teacher visits this page
+    document.addEventListener('DOMContentLoaded', function() {
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]');
+            if (!csrfToken) {
+                console.warn('CSRF token not found');
+                return;
+            }
+            
+            fetch('{{ route("teacher.mark-alert-viewed") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken.getAttribute('content')
+                },
+                body: JSON.stringify({
+                    alert_type: 'observation_reports'
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    console.error('Failed to mark observation reports alert as viewed:', response.status);
+                }
+            })
+            .catch(error => console.error('Error marking observation reports alert as viewed:', error));
+        } catch(error) {
+            console.error('Error in teacher observation reports alert script:', error);
+        }
+    });
 </script>
+@endpush
 </x-teacher-layout>

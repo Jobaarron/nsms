@@ -102,12 +102,19 @@
             $currentUser = auth()->user();
             $currentTeacher = $currentUser && $currentUser->teacher ? $currentUser->teacher : null;
             $isClassAdviser = $currentTeacher ? $currentTeacher->isClassAdviser() : false;
+            $unrepliedObservationReportsCount = $currentTeacher ? \App\Models\CaseMeeting::getUnrepliedObservationReportsCountForTeacher($currentTeacher->id) : 0;
+            $observationReportsViewed = session('observation_reports_alert_viewed', false);
           @endphp
 
           @if($isClassAdviser)
             <li class="nav-item mb-2">
-              <a class="nav-link {{ request()->routeIs('teacher.observationreport*') ? 'active' : '' }}" href="{{ route('teacher.observationreport') }}" title="Observation Report">
+              <a class="nav-link {{ request()->routeIs('teacher.observationreport*') ? 'active' : '' }} position-relative" href="{{ route('teacher.observationreport') }}" title="Observation Report" id="observation-reports-link" data-alert-link="observation_reports" style="{{ ($unrepliedObservationReportsCount > 0 && !$observationReportsViewed) ? 'background-color: #f8d7da; border-left: 4px solid #dc3545; padding-left: calc(0.75rem - 4px);' : '' }}">
                 <i class="ri-file-list-3-line me-2"></i><span>Observation Report</span>
+                @if($unrepliedObservationReportsCount > 0 && !$observationReportsViewed)
+                  <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem; padding: 0.25rem 0.4rem;">
+                    {{ $unrepliedObservationReportsCount }}
+                  </span>
+                @endif
               </a>
             </li>
             
@@ -118,8 +125,17 @@
             </li>
             
             <li class="nav-item mb-2">
-              <a class="nav-link {{ request()->routeIs('teacher.recommend-counseling.*') ? 'active' : '' }}" href="{{ route('teacher.recommend-counseling.form') }}" title="Recommend Counseling">
+              @php
+                $pendingCounselingCount = $currentTeacher ? \App\Models\CounselingSession::getPendingCounselingRecommendationsCountForTeacher($currentTeacher->id) : 0;
+                $counselingViewed = session('counseling_alert_viewed', false);
+              @endphp
+              <a class="nav-link {{ request()->routeIs('teacher.recommend-counseling.*') ? 'active' : '' }} position-relative" href="{{ route('teacher.recommend-counseling.form') }}" title="Recommend Counseling" id="counseling-link" data-alert-link="counseling" style="{{ ($pendingCounselingCount > 0 && !$counselingViewed) ? 'background-color: #f8d7da; border-left: 4px solid #dc3545; padding-left: calc(0.75rem - 4px);' : '' }}">
                 <i class="ri-heart-pulse-line me-2"></i><span>Recommend Counseling</span>
+                @if($pendingCounselingCount > 0 && !$counselingViewed)
+                  <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem; padding: 0.25rem 0.4rem;">
+                    {{ $pendingCounselingCount }}
+                  </span>
+                @endif
               </a>
             </li>
           @else

@@ -429,4 +429,18 @@ class CaseMeeting extends Model
         return $this->hasOne(ArchivedMeeting::class, 'original_case_meeting_id');
     }
 
+    /**
+     * Get count of unreplied observation reports for a teacher
+     * Returns observation reports where teacher hasn't replied yet (no teacher_statement)
+     */
+    public static function getUnrepliedObservationReportsCountForTeacher($teacherId)
+    {
+        $oneDayAgo = now()->subDay();
+        
+        return self::where('adviser_id', $teacherId)
+            ->whereNull('teacher_statement')
+            ->where('created_at', '>=', $oneDayAgo)
+            ->count();
+    }
+
 }

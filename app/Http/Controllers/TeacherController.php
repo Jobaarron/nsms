@@ -545,6 +545,10 @@ class TeacherController extends Controller
         
         if ($alertType === 'grades') {
             session(['grades_alert_viewed' => true]);
+        } elseif ($alertType === 'observation_reports') {
+            session(['observation_reports_alert_viewed' => true]);
+        } elseif ($alertType === 'counseling') {
+            session(['counseling_alert_viewed' => true]);
         }
         
         return response()->json(['success' => true]);

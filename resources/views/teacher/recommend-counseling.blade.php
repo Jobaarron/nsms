@@ -396,4 +396,38 @@
       </div>
     </div>
   </div>
+
+  @push('scripts')
+  <script>
+      // Mark counseling recommendations alert as viewed when teacher visits this page
+      document.addEventListener('DOMContentLoaded', function() {
+          try {
+              const csrfToken = document.querySelector('meta[name="csrf-token"]');
+              if (!csrfToken) {
+                  console.warn('CSRF token not found');
+                  return;
+              }
+              
+              fetch('{{ route("teacher.mark-alert-viewed") }}', {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                      'X-CSRF-TOKEN': csrfToken.getAttribute('content')
+                  },
+                  body: JSON.stringify({
+                      alert_type: 'counseling'
+                  })
+              })
+              .then(response => {
+                  if (!response.ok) {
+                      console.error('Failed to mark counseling alert as viewed:', response.status);
+                  }
+              })
+              .catch(error => console.error('Error marking counseling alert as viewed:', error));
+          } catch(error) {
+              console.error('Error in teacher counseling alert script:', error);
+          }
+      });
+  </script>
+  @endpush
 </x-teacher-layout>
