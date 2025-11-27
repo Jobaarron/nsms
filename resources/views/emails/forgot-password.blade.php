@@ -1,211 +1,204 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
+    <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Password Reset Request</title>
+    <title>Password Reset Request - Nicolites Portal</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background-color: #f5f5f5;
-        }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-        .header {
-            background-color: #014421;
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
-        .header h1 {
-            margin: 0;
-            font-size: 24px;
-            font-weight: 700;
-        }
-        .content {
-            padding: 30px;
-        }
-        .content h2 {
-            color: #014421;
-            font-size: 18px;
-            margin-top: 0;
-            border-bottom: 2px solid #014421;
-            padding-bottom: 10px;
-        }
-        .reset-code {
-            background-color: #e8f5e8;
-            border-left: 4px solid #2d6a3e;
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 4px;
-            font-family: 'Courier New', monospace;
-        }
-        .reset-code-label {
-            font-size: 12px;
-            color: #666;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 5px;
-        }
-        .reset-code-value {
-            font-size: 24px;
-            font-weight: 700;
-            color: #014421;
-            letter-spacing: 2px;
-        }
-        .button-container {
-            text-align: center;
-            margin: 30px 0;
-        }
-        .reset-button {
-            display: inline-block;
-            background-color: #2d6a3e;
-            color: white;
-            padding: 12px 30px;
-            text-decoration: none;
-            border-radius: 6px;
-            font-weight: 600;
-            transition: transform 0.2s;
-        }
-        .reset-button:hover {
-            transform: translateY(-2px);
-        }
-        .info-box {
-            background-color: #fff3cd;
-            border-left: 4px solid #ffc107;
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-        .info-box strong {
-            color: #856404;
-        }
-        .footer {
-            background-color: #f9f9f9;
-            padding: 20px;
-            text-align: center;
-            font-size: 12px;
-            color: #666;
-            border-top: 1px solid #eee;
-        }
-        .footer a {
-            color: #2d6a3e;
-            text-decoration: none;
-        }
-        .user-info {
-            background-color: #e8f5e8;
-            padding: 15px;
-            border-radius: 4px;
-            margin: 20px 0;
-            font-size: 14px;
-            border-left: 4px solid #2d6a3e;
-        }
-        .user-info strong {
-            color: #014421;
-        }
-        ul {
-            margin: 15px 0;
-            padding-left: 20px;
-        }
-        ul li {
-            margin: 8px 0;
+        @media only screen and (max-width: 600px) {
+            .container { width: 100% !important; }
+            .mobile-padding { padding: 20px !important; }
+            .mobile-font { font-size: 16px !important; }
+            .mobile-title { font-size: 24px !important; }
+            .credential-table { width: 100% !important; }
+            .credential-label { display: block !important; width: 100% !important; margin-bottom: 5px !important; }
+            .credential-value { display: block !important; width: 100% !important; margin-bottom: 15px !important; }
         }
     </style>
 </head>
-<body>
-    <div class="container">
+<body style="font-family: Arial, Helvetica, sans-serif; background-color: #e8f5e8; margin: 0; padding: 20px;">
+    <table align="center" border="0" cellpadding="0" cellspacing="0" width="600" class="container" style="background-color: #ffffff; border-radius: 10px; overflow: hidden; max-width: 600px;">
+        
         <!-- Header -->
-        <div class="header">
-            <h1>🔐 Password Reset Request</h1>
-        </div>
+        <tr>
+            <td style="background-color: #014421; color: white; padding: 40px 30px; text-align: center;" class="mobile-padding">
+                <h1 style="font-size: 32px; font-weight: 700; margin: 0; color: white;" class="mobile-title">
+                    🔐 Password Reset Request
+                </h1>
+                <p style="font-size: 18px; margin: 10px 0 0 0; color: #d0d8c3;" class="mobile-font">
+                    Nicolites Portal
+                </p>
+            </td>
+        </tr>
 
-        <!-- Content -->
-        <div class="content">
-            <h2>Hello,</h2>
-            
-            <p>We received a request to reset the password for your account at <strong>Nicolites Montessori School</strong>.</p>
+        <!-- Main Content -->
+        <tr>
+            <td style="padding: 40px 30px;" class="mobile-padding">
+                
+                <!-- Welcome Message -->
+                <p style="font-size: 18px; color: #012d17; margin-bottom: 30px; line-height: 1.6;" class="mobile-font">
+                    Hello,<br>
+                    We received a request to reset the password for your account at <strong>Nicolites Montessori School</strong>.
+                </p>
 
-            <!-- User Info -->
-            <div class="user-info">
-                <strong>Account Information:</strong><br>
-                @if($userType === 'system_user')
-                    <strong>Email:</strong> {{ $user->email }}<br>
-                    <strong>Name:</strong> {{ $user->name }}
-                @elseif($userType === 'student')
-                    <strong>Student ID:</strong> {{ $user->student_id }}<br>
-                    <strong>Name:</strong> {{ $user->first_name ?? 'N/A' }} {{ $user->last_name ?? 'N/A' }}
-                @elseif($userType === 'enrollee')
-                    <strong>Application ID:</strong> {{ $user->application_id }}<br>
-                    <strong>Name:</strong> {{ $user->first_name ?? 'N/A' }} {{ $user->last_name ?? 'N/A' }}
-                @endif
-            </div>
+                <!-- Account Information -->
+                <table width="100%" border="0" cellpadding="0" cellspacing="0" style="background-color: #e8f5e8; border: 1px solid #d0d8c3; border-radius: 8px; border-left: 4px solid #2d6a3e; margin: 25px 0;">
+                    <tr>
+                        <td style="padding: 25px;">
+                            <div style="font-size: 20px; font-weight: 600; color: #014421; margin-bottom: 15px;">
+                                📋 Account Information
+                            </div>
+                            
+                            @if($userType === 'system_user')
+                                <!-- System User Info -->
+                                <table width="100%" border="0" cellpadding="0" cellspacing="0" class="credential-table" style="margin-bottom: 12px;">
+                                    <tr>
+                                        <td style="font-weight: 600; color: #014421; width: 80px; vertical-align: top; padding: 8px 15px 8px 0;" class="credential-label">Email:</td>
+                                        <td style="color: #012d17; font-family: Courier, monospace; background-color: #ffffff; padding: 8px 12px; border-radius: 4px; border: 1px solid #d0d8c3;" class="credential-value">
+                                            {{ $user->email }}
+                                        </td>
+                                    </tr>
+                                </table>
+                                <table width="100%" border="0" cellpadding="0" cellspacing="0" class="credential-table">
+                                    <tr>
+                                        <td style="font-weight: 600; color: #014421; width: 80px; vertical-align: top; padding: 8px 15px 8px 0;" class="credential-label">Name:</td>
+                                        <td style="color: #012d17; font-family: Courier, monospace; background-color: #ffffff; padding: 8px 12px; border-radius: 4px; border: 1px solid #d0d8c3;" class="credential-value">
+                                            {{ $user->name }}
+                                        </td>
+                                    </tr>
+                                </table>
+                            @elseif($userType === 'student')
+                                <!-- Student Info -->
+                                <table width="100%" border="0" cellpadding="0" cellspacing="0" class="credential-table" style="margin-bottom: 12px;">
+                                    <tr>
+                                        <td style="font-weight: 600; color: #014421; width: 100px; vertical-align: top; padding: 8px 15px 8px 0;" class="credential-label">Student ID:</td>
+                                        <td style="color: #012d17; font-family: Courier, monospace; background-color: #ffffff; padding: 8px 12px; border-radius: 4px; border: 1px solid #d0d8c3;" class="credential-value">
+                                            {{ $user->student_id }}
+                                        </td>
+                                    </tr>
+                                </table>
+                                <table width="100%" border="0" cellpadding="0" cellspacing="0" class="credential-table">
+                                    <tr>
+                                        <td style="font-weight: 600; color: #014421; width: 100px; vertical-align: top; padding: 8px 15px 8px 0;" class="credential-label">Name:</td>
+                                        <td style="color: #012d17; font-family: Courier, monospace; background-color: #ffffff; padding: 8px 12px; border-radius: 4px; border: 1px solid #d0d8c3;" class="credential-value">
+                                            {{ $user->first_name ?? 'N/A' }} {{ $user->last_name ?? 'N/A' }}
+                                        </td>
+                                    </tr>
+                                </table>
+                            @elseif($userType === 'enrollee')
+                                <!-- Enrollee Info -->
+                                <table width="100%" border="0" cellpadding="0" cellspacing="0" class="credential-table" style="margin-bottom: 12px;">
+                                    <tr>
+                                        <td style="font-weight: 600; color: #014421; width: 120px; vertical-align: top; padding: 8px 15px 8px 0;" class="credential-label">Application ID:</td>
+                                        <td style="color: #012d17; font-family: Courier, monospace; background-color: #ffffff; padding: 8px 12px; border-radius: 4px; border: 1px solid #d0d8c3;" class="credential-value">
+                                            {{ $user->application_id }}
+                                        </td>
+                                    </tr>
+                                </table>
+                                <table width="100%" border="0" cellpadding="0" cellspacing="0" class="credential-table">
+                                    <tr>
+                                        <td style="font-weight: 600; color: #014421; width: 120px; vertical-align: top; padding: 8px 15px 8px 0;" class="credential-label">Name:</td>
+                                        <td style="color: #012d17; font-family: Courier, monospace; background-color: #ffffff; padding: 8px 12px; border-radius: 4px; border: 1px solid #d0d8c3;" class="credential-value">
+                                            {{ $user->first_name ?? 'N/A' }} {{ $user->last_name ?? 'N/A' }}
+                                        </td>
+                                    </tr>
+                                </table>
+                            @endif
+                        </td>
+                    </tr>
+                </table>
 
-            <!-- Reset Code -->
-            <div class="reset-code">
-                <div class="reset-code-label">Your Reset Code:</div>
-                <div class="reset-code-value">{{ $resetCode }}</div>
-            </div>
+                <!-- Reset Code Box -->
+                <table width="100%" border="0" cellpadding="0" cellspacing="0" style="background-color: #e8f5e8; border: 1px solid #d0d8c3; border-radius: 8px; border-left: 4px solid #2d6a3e; margin: 25px 0;">
+                    <tr>
+                        <td style="padding: 25px; text-align: center;">
+                            <div style="font-size: 14px; font-weight: 600; color: #2d6a3e; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px;">
+                                Your Reset Code
+                            </div>
+                            <div style="font-size: 32px; font-weight: 700; color: #014421; letter-spacing: 3px; font-family: Courier, monospace;">
+                                {{ $resetCode }}
+                            </div>
+                        </td>
+                    </tr>
+                </table>
 
-            <!-- Instructions -->
-            <h2>How to Reset Your Password:</h2>
-            <ol>
-                <li>Click the button below or visit the password reset page</li>
-                <li>Enter the reset code shown above: <strong>{{ $resetCode }}</strong></li>
-                <li>Create a new password (at least 8 characters with uppercase, lowercase, and numbers)</li>
-                <li>Confirm your new password</li>
-                <li>Click "Reset Password" to complete the process</li>
-            </ol>
+                <!-- Instructions -->
+                <p style="color: #2d6a3e; font-size: 15px; margin: 25px 0; font-weight: 600;">
+                    How to Reset Your Password:
+                </p>
+                <ol style="color: #012d17; font-size: 15px; line-height: 1.8;">
+                    <li>Click the button below or visit the password reset page</li>
+                    <li>Enter the reset code shown above: <strong>{{ $resetCode }}</strong></li>
+                    <li>Create a new password (at least 8 characters with uppercase, lowercase, and numbers)</li>
+                    <li>Confirm your new password</li>
+                    <li>Click "Reset Password" to complete the process</li>
+                </ol>
 
-            <!-- Reset Button -->
-            <div class="button-container">
-                <a href="{{ $resetLink }}" class="reset-button">Reset Your Password</a>
-            </div>
+                <!-- Reset Button -->
+                <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin: 25px 0;">
+                    <tr>
+                        <td align="center">
+                            <a href="{{ $resetLink }}" style="display: inline-block; background-color: #2d6a3e; color: white; text-decoration: none; padding: 15px 30px; border-radius: 8px; font-weight: 600; font-size: 18px;">
+                                🔑 Reset Your Password
+                            </a>
+                        </td>
+                    </tr>
+                </table>
 
-            <!-- Alternative Link -->
-            <p style="text-align: center; font-size: 12px; color: #666;">
-                Or copy and paste this link in your browser:<br>
-                <code style="background: #f0f0f0; padding: 5px 10px; border-radius: 3px; display: inline-block; margin-top: 5px; word-break: break-all;">
-                    {{ $resetLink }}
-                </code>
-            </p>
+                <!-- Alternative Link -->
+                <p style="color: #666; font-size: 12px; text-align: center; margin: 20px 0;">
+                    Or copy and paste this link in your browser:<br>
+                    <code style="background: #f0f0f0; padding: 8px 12px; border-radius: 4px; display: inline-block; margin-top: 8px; word-break: break-all; color: #012d17;">
+                        {{ $resetLink }}
+                    </code>
+                </p>
 
-            <!-- Warning Box -->
-            <div class="info-box">
-                <strong>⚠️ Important:</strong> This reset link will expire in <strong>1 hour</strong>. If you didn't request a password reset, please ignore this email or contact our support team immediately.
-            </div>
+                <!-- Security Warning -->
+                <table width="100%" border="0" cellpadding="0" cellspacing="0" style="background-color: #fff8e1; border: 1px solid #ffcc02; border-radius: 6px; border-left: 4px solid #ff9800; margin: 25px 0;">
+                    <tr>
+                        <td style="padding: 15px;">
+                            <p style="margin: 0; color: #e65100; font-size: 15px;">
+                                ⚠️ <strong>Important:</strong> This reset link will expire in <strong>1 hour</strong>. If you didn't request a password reset, please ignore this email or contact our support team immediately.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
 
-            <!-- Security Tips -->
-            <h2>Security Tips:</h2>
-            <ul>
-                <li>Never share your reset code with anyone</li>
-                <li>Use a strong, unique password</li>
-                <li>Don't use the same password as other accounts</li>
-                <li>If you didn't request this reset, change your password immediately</li>
-            </ul>
-        </div>
+                <!-- Security Tips -->
+                <p style="color: #2d6a3e; font-size: 15px; margin: 25px 0; font-weight: 600;">
+                    Security Tips:
+                </p>
+                <ul style="color: #012d17; font-size: 15px; line-height: 1.8;">
+                    <li>Never share your reset code with anyone</li>
+                    <li>Use a strong, unique password</li>
+                    <li>Don't use the same password as other accounts</li>
+                    <li>If you didn't request this reset, change your password immediately</li>
+                </ul>
+
+                <!-- Support Message -->
+                <p style="color: #2d6a3e; font-size: 15px; margin: 30px 0 0 0; padding-top: 20px; border-top: 1px solid #d0d8c3;">
+                    If you have any questions or need assistance, please don't hesitate to contact our support team.
+                </p>
+
+            </td>
+        </tr>
 
         <!-- Footer -->
-        <div class="footer">
-            <p>
-                <strong>Nicolites Montessori School</strong><br>
-                San Roque St., Brgy 4, Nasugbu, Batangas 4231<br>
-                <a href="tel:+63431600149">(043) 416-0149</a> | 
-                <a href="mailto:admissions@nicolites.edu.ph">admissions@nicolites.edu.ph</a>
-            </p>
-            <p style="margin-top: 15px; border-top: 1px solid #ddd; padding-top: 15px;">
-                This is an automated email. Please do not reply to this message.<br>
-                © {{ date('Y') }} Nicolites Montessori School. All rights reserved.
-            </p>
-        </div>
-    </div>
+        <tr>
+            <td style="background-color: #012d17; color: white; padding: 30px; text-align: center;" class="mobile-padding">
+                <div style="font-size: 20px; font-weight: 700; margin-bottom: 10px; color: #d0d8c3;">
+                    Nicolites Portal
+                </div>
+                <p style="color: #d0d8c3; margin: 0 0 20px 0; font-size: 14px;">
+                    Password Reset Service
+                </p>
+                <div style="border-top: 1px solid #d0d8c3; margin: 20px 0; opacity: 0.3;"></div>
+                <p style="color: #d0d8c3; margin: 0; font-size: 14px;">
+                    © 2025 Nicolites Montessori School. All rights reserved.
+                </p>
+            </td>
+        </tr>
+
+    </table>
 </body>
 </html>
