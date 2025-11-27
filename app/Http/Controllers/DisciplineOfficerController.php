@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
 use App\Models\Student;
 use App\Models\Violation;
 use App\Models\ViolationList;
@@ -307,7 +306,7 @@ class DisciplineOfficerController extends Controller
     }
 
     /**
-     * Get violation types/options - Formatted for JavaScript with caching
+     * Get violation types/options
      */
     public function getViolationTypes(Request $request)
     {
@@ -318,44 +317,36 @@ class DisciplineOfficerController extends Controller
             ], 403);
         }
 
-        try {
-            $formattedViolations = Cache::remember('violation_types_formatted', 3600, function () {
-                $violations = ViolationList::all();
+        $violations = ViolationList::select('id', 'title', 'severity', 'category')
+            ->orderBy('severity')
+            ->orderBy('title')
+            ->get();
 
-                $formattedViolations = [
-                    'minor' => [],
-                    'major' => [
-                        '1' => [],
-                        '2' => [],
-                        '3' => []
-                    ]
-                ];
+        $formattedViolations = [
+            'minor' => [],
+            'major' => [
+                'Category 1' => [],
+                'Category 2' => [],
+                'Category 3' => []
+            ]
+        ];
 
-                foreach ($violations as $violation) {
-                    if ($violation->severity === 'minor') {
-                        $formattedViolations['minor'][] = $violation->title;
-                    } elseif ($violation->severity === 'major') {
-                        $category = $violation->category ?? '1';
-                        if (!isset($formattedViolations['major'][$category])) {
-                            $formattedViolations['major'][$category] = [];
-                        }
-                        $formattedViolations['major'][$category][] = $violation->title;
-                    }
+        foreach ($violations as $violation) {
+            if ($violation->severity === 'minor') {
+                $formattedViolations['minor'][] = $violation->title;
+            } elseif ($violation->severity === 'major') {
+                $categoryName = 'Category ' . ($violation->category ?? '1');
+                if (!isset($formattedViolations['major'][$categoryName])) {
+                    $formattedViolations['major'][$categoryName] = [];
                 }
-
-                return $formattedViolations;
-            });
-
-            return response()->json([
-                'success' => true,
-                'violation_types' => $formattedViolations
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'error' => $e->getMessage()
-            ], 500);
+                $formattedViolations['major'][$categoryName][] = $violation->title;
+            }
         }
+
+        return response()->json([
+            'success' => true,
+            'options' => $formattedViolations
+        ]);
     }
 
     /**
