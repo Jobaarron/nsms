@@ -95,6 +95,9 @@ function markAsRead(noticeId, showMessage = true) {
             updateNoticeRowAsRead(noticeId);
             updateUnreadCount();
             
+            // Fetch latest unread count from server and update sidebar badge
+            fetchAndUpdateUnreadCount();
+            
             if (showMessage) {
                 showAlert('Notice marked as read', 'success');
             }
@@ -164,6 +167,10 @@ function markAllAsRead() {
                 });
                 
                 updateUnreadCount();
+                
+                // Fetch latest unread count from server and update sidebar badge
+                fetchAndUpdateUnreadCount();
+                
                 showAlert('All notices marked as read', 'success');
             } else {
                 showAlert(data.message || 'Error marking notices as read', 'danger');
@@ -199,7 +206,7 @@ function updateNoticeRowAsRead(noticeId) {
     });
 }
 
-// Update unread count in UI
+// Update unread count in UI and sidebar badge
 function updateUnreadCount() {
     const unreadRows = document.querySelectorAll('.table-warning');
     const unreadCount = unreadRows.length;
@@ -215,6 +222,60 @@ function updateUnreadCount() {
     if (sidebarWarningElement && sidebarWarningElement.previousElementSibling) {
         sidebarWarningElement.previousElementSibling.textContent = unreadCount;
     }
+    
+    // Update sidebar badge in real-time
+    updateSidebarBadge(unreadCount);
+}
+
+// Update sidebar notification badge
+function updateSidebarBadge(count) {
+    // Find the Notices link in both desktop and mobile sidebars
+    const noticesLinks = document.querySelectorAll('a[href*="/enrollee/notices"]');
+    
+    noticesLinks.forEach(link => {
+        // Remove existing badge if present
+        const existingBadge = link.querySelector('.badge');
+        if (existingBadge) {
+            existingBadge.remove();
+        }
+        
+        // Add new badge only if there are unread notices
+        if (count > 0) {
+            const badge = document.createElement('span');
+            badge.className = 'position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger';
+            badge.textContent = count;
+            badge.style.fontSize = '0.65rem';
+            badge.style.padding = '0.25rem 0.4rem';
+            
+            // Make sure link has position-relative
+            link.style.position = 'relative';
+            link.appendChild(badge);
+        }
+    });
+}
+
+// Fetch unread count from server and update sidebar badge
+function fetchAndUpdateUnreadCount() {
+    fetch('/enrollee/notices/count/unread')
+        .then(response => {
+            if (!response.ok) {
+                console.error('Error fetching unread count:', response.status);
+                return null;
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data && data.success) {
+                const unreadCount = data.count;
+                console.log('Updated unread count from server:', unreadCount);
+                
+                // Update sidebar badge with server count
+                updateSidebarBadge(unreadCount);
+            }
+        })
+        .catch(error => {
+            console.error('Error updating unread count from server:', error);
+        });
 }
 
 // Refresh notifications
@@ -250,3 +311,5 @@ window.markAsRead = markAsRead;
 window.markAsReadFromModal = markAsReadFromModal;
 window.markAllAsRead = markAllAsRead;
 window.refreshNotifications = refreshNotifications;
+window.fetchAndUpdateUnreadCount = fetchAndUpdateUnreadCount;
+window.updateSidebarBadge = updateSidebarBadge;

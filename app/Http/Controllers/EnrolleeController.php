@@ -534,6 +534,45 @@ class EnrolleeController extends Controller
         return view('enrollee.notices', compact('enrollee', 'unreadCount'));
     }
 
+    /**
+     * Get unread notices count for AJAX
+     */
+    public function getUnreadNoticesCount(): JsonResponse
+    {
+        try {
+            $enrollee = Auth::guard('enrollee')->user();
+            
+            if (!$enrollee) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not authenticated',
+                    'count' => 0
+                ], 401);
+            }
+            
+            // Get unread notices count
+            $unreadCount = Notice::where(function($query) use ($enrollee) {
+                $query->where('enrollee_id', $enrollee->id)
+                      ->orWhere('is_global', true);
+            })
+            ->where('is_read', false)
+            ->count();
+            
+            return response()->json([
+                'success' => true,
+                'count' => $unreadCount
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Error getting unread notices count: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error retrieving unread count',
+                'count' => 0
+            ], 500);
+        }
+    }
+
 
     /**
      * Get single notice details

@@ -799,11 +799,195 @@ function populateApplicationModal(application) {
 
 // Approve application from modal
 function approveApplicationFromModal(applicationId) {
+    // Check if all documents are approved first
+    if (!checkAllDocumentsApproved()) {
+        showAlert('All documents must be approved before approving the application', 'warning');
+        return;
+    }
+    
     // Close modal first
     const modal = bootstrap.Modal.getInstance(document.getElementById('applicationDetailsModal'));
     if (modal) modal.hide();
     
     approveApplication(applicationId || currentApplicationId);
+}
+
+// Check if all documents are approved
+function checkAllDocumentsApproved() {
+    const documents = document.querySelectorAll('[data-document-status]');
+    if (documents.length === 0) return true; // No documents, allow approval
+    
+    let allApproved = true;
+    documents.forEach(doc => {
+        const status = doc.getAttribute('data-document-status');
+        if (status !== 'approved') {
+            allApproved = false;
+        }
+    });
+    
+    return allApproved;
+}
+
+// Update approve button state based on document statuses
+function updateApproveButtonState() {
+    const approveBtn = document.querySelector('button[onclick*="approveApplicationFromModal"]');
+    if (!approveBtn) return;
+    
+    const allApproved = checkAllDocumentsApproved();
+    
+    if (allApproved) {
+        approveBtn.disabled = false;
+        approveBtn.style.opacity = '1';
+        approveBtn.title = 'Approve Application';
+    } else {
+        approveBtn.disabled = true;
+        approveBtn.style.opacity = '0.5';
+        approveBtn.title = 'All documents must be approved first';
+    }
+}
+
+// Monitor document status changes
+function monitorDocumentStatusChanges() {
+    // Watch for changes in document status elements
+    const observer = new MutationObserver(() => {
+        updateApproveButtonState();
+    });
+    
+    const documentsContainer = document.getElementById('documents-list');
+    if (documentsContainer) {
+        observer.observe(documentsContainer, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['data-document-status']
+        });
+    }
+}
+
+// Update applications table in real-time
+function updateApplicationsTableRealTime(applicationId, newStatus) {
+    console.log('Updating applications table for application:', applicationId, 'to status:', newStatus);
+    
+    // Find the enrollment applications table - look for table inside the applications tab
+    let enrollmentTable = document.querySelector('#applications .table');
+    if (!enrollmentTable) {
+        enrollmentTable = document.querySelector('table.table');
+    }
+    if (!enrollmentTable) {
+        enrollmentTable = document.querySelector('.table');
+    }
+    
+    if (!enrollmentTable) {
+        console.error('Enrollment applications table not found');
+        console.log('Trying to find any table on page...');
+        const allTables = document.querySelectorAll('table');
+        console.log('Found', allTables.length, 'tables on page');
+        return;
+    }
+    
+    // Find the row in the applications table
+    const tableRows = enrollmentTable.querySelectorAll('tbody tr');
+    console.log('Found', tableRows.length, 'rows in table');
+    
+    let rowFound = false;
+    tableRows.forEach((row, index) => {
+        // Get all cells in this row
+        const cells = row.querySelectorAll('td');
+        if (cells.length > 0) {
+            // Application ID is in column 1 (after checkbox in column 0)
+            const appIdCell = cells[1];
+            const cellText = appIdCell.textContent.trim();
+            
+            console.log('Row', index, '- Application ID:', cellText);
+            
+            // Check if this row matches the application ID
+            if (cellText === applicationId || cellText.includes(applicationId)) {
+                console.log('Found matching row at index:', index);
+                rowFound = true;
+                
+                // Status is in column 5 (index 5)
+                if (cells.length >= 6) {
+                    const statusCell = cells[5];
+                    
+                    // Update the status badge
+                    const statusBadge = statusCell.querySelector('.badge');
+                    if (statusBadge) {
+                        const statusText = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+                        statusBadge.textContent = statusText;
+                        statusBadge.className = `badge bg-${getStatusColor(newStatus)}`;
+                        
+                        console.log('Status badge updated to:', statusText, 'with color: bg-' + getStatusColor(newStatus));
+                        
+                        // Add a subtle animation to highlight the change
+                        statusCell.style.backgroundColor = '#d4edda';
+                        setTimeout(() => {
+                            statusCell.style.backgroundColor = '';
+                        }, 1000);
+                    } else {
+                        console.warn('Status badge not found in cell');
+                    }
+                } else {
+                    console.warn('Not enough cells in row. Expected at least 5, got:', cells.length);
+                }
+            }
+        }
+    });
+    
+    if (!rowFound) {
+        console.warn('No matching row found for application ID:', applicationId);
+    }
+    
+    // Update the summary statistics
+    updateApplicationsStatistics();
+}
+
+// Update applications statistics in real-time
+function updateApplicationsStatistics() {
+    console.log('Updating applications statistics...');
+    
+    // Update statistics by counting visible rows
+    try {
+        // Find the enrollment applications table
+        let enrollmentTable = document.querySelector('#applications .table');
+        if (!enrollmentTable) {
+            enrollmentTable = document.querySelector('table.table');
+        }
+        
+        if (enrollmentTable) {
+            const tableRows = enrollmentTable.querySelectorAll('tbody tr');
+            console.log('Found', tableRows.length, 'total rows in table');
+            
+            // Count pending applications
+            let pendingCount = 0;
+            tableRows.forEach(row => {
+                const statusCell = row.querySelector('td:nth-child(5)');
+                if (statusCell) {
+                    const statusBadge = statusCell.querySelector('.badge');
+                    if (statusBadge && statusBadge.textContent.toLowerCase().includes('pending')) {
+                        pendingCount++;
+                    }
+                }
+            });
+            
+            console.log('Pending applications count:', pendingCount);
+            
+            // Update pending applications card
+            const pendingCard = document.querySelector('[data-stat="pending-applications"]');
+            if (pendingCard) {
+                pendingCard.textContent = pendingCount;
+                console.log('Updated pending card to:', pendingCount);
+            }
+            
+            // Update total applications card
+            const totalCard = document.querySelector('[data-stat="total-applications"]');
+            if (totalCard) {
+                totalCard.textContent = tableRows.length;
+                console.log('Updated total card to:', tableRows.length);
+            }
+        }
+    } catch (error) {
+        console.error('Error updating statistics:', error);
+    }
 }
 
 // Decline application from modal
@@ -3035,3 +3219,5 @@ window.updateApplicationsTable = updateApplicationsTable;
 window.createApplicationRow = createApplicationRow;
 window.updateLastUpdatedTimestamp = updateLastUpdatedTimestamp;
 window.populateApplicationModal = populateApplicationModal;
+window.updateApplicationsTableRealTime = updateApplicationsTableRealTime;
+window.updateApplicationsStatistics = updateApplicationsStatistics;

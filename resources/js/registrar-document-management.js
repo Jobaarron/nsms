@@ -211,6 +211,7 @@ window.RegistrarDocumentManagement = (function() {
             
             return `
                 <div class="document-item border rounded p-3 mb-2" 
+                     data-document-status="${doc.status}"
                      style="cursor: pointer; transition: all 0.2s;" 
                      onclick="RegistrarDocumentManagement.openDocumentReview(${index})"
                      onmouseover="this.style.backgroundColor='#f8f9fa'"
@@ -235,6 +236,16 @@ window.RegistrarDocumentManagement = (function() {
         }).join('');
         
         documentsList.innerHTML = documentsHtml;
+        
+        // Trigger button state update after documents are displayed
+        if (typeof updateApproveButtonState === 'function') {
+            setTimeout(() => {
+                updateApproveButtonState();
+                if (typeof monitorDocumentStatusChanges === 'function') {
+                    monitorDocumentStatusChanges();
+                }
+            }, 100);
+        }
     }
 
     /**
@@ -398,6 +409,20 @@ window.RegistrarDocumentManagement = (function() {
                 // Refresh documents list
                 displayDocuments(currentDocuments);
                 
+                // Update approve button state in real-time
+                if (typeof updateApproveButtonState === 'function') {
+                    setTimeout(() => {
+                        updateApproveButtonState();
+                    }, 100);
+                }
+                
+                // Check if all documents are now approved and auto-approve application
+                if (status === 'approved' && checkIfAllDocumentsApproved()) {
+                    setTimeout(() => {
+                        autoApproveApplication(currentApplicationId);
+                    }, 500);
+                }
+                
                 // Show success message
                 showAlert(`Document ${status} successfully`, 'success');
             } else {
@@ -528,11 +553,132 @@ window.RegistrarDocumentManagement = (function() {
         }, 3000);
     }
 
+    /**
+     * Check if all documents are approved
+     */
+    function checkIfAllDocumentsApproved() {
+        if (currentDocuments.length === 0) return false;
+        
+        return currentDocuments.every(doc => doc.status === 'approved');
+    }
+
+    /**
+     * Auto-approve application when all documents are approved
+     */
+    function autoApproveApplication(applicationId) {
+        console.log('Auto-approving application:', applicationId);
+        console.log('Current application ID:', currentApplicationId);
+        
+        fetch(`/registrar/applications/${applicationId}/approve`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+            },
+            body: JSON.stringify({
+                auto_approved: true,
+                reason: 'All documents approved - automatic approval'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log('Application auto-approved successfully');
+                showAlert('✓ All documents approved! Application has been automatically approved.', 'success');
+                
+                // Update the applications table in real-time IMMEDIATELY (no delay)
+                console.log('Attempting to update table for application:', applicationId);
+                if (typeof window.updateApplicationsTableRealTime === 'function') {
+                    console.log('updateApplicationsTableRealTime function found, calling now');
+                    window.updateApplicationsTableRealTime(applicationId, 'approved');
+                    console.log('Table update called');
+                } else {
+                    console.warn('updateApplicationsTableRealTime function not found in window');
+                }
+                
+                // Refresh the modal to show updated application status
+                setTimeout(() => {
+                    console.log('Refreshing modal status');
+                    refreshApplicationDetailsModal(applicationId);
+                }, 300);
+                
+                // Close modal after table is updated
+                setTimeout(() => {
+                    console.log('Closing modal');
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('documentManagementModal'));
+                    if (modal) {
+                        modal.hide();
+                        console.log('Modal closed');
+                    }
+                }, 700);
+            } else {
+                console.error('Auto-approval failed:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error auto-approving application:', error);
+        });
+    }
+
+    /**
+     * Refresh application details modal with updated data
+     */
+    function refreshApplicationDetailsModal(applicationId) {
+        console.log('Refreshing application details modal for:', applicationId);
+        
+        // Fetch updated application data
+        fetch(`/registrar/applications/${applicationId}`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.application) {
+                const app = data.application;
+                console.log('Updated application data received:', app);
+                
+                // Update the status in the modal
+                const statusElement = document.getElementById('app-current-status');
+                if (statusElement) {
+                    const statusText = app.enrollment_status.charAt(0).toUpperCase() + app.enrollment_status.slice(1);
+                    statusElement.textContent = statusText;
+                    
+                    // Update status badge color
+                    const statusColor = getStatusColorForModal(app.enrollment_status);
+                    statusElement.className = `badge bg-${statusColor}`;
+                    
+                    console.log('Modal status updated to:', statusText);
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error refreshing application details:', error);
+        });
+    }
+
+    /**
+     * Get status color for modal display
+     */
+    function getStatusColorForModal(status) {
+        switch(status) {
+            case 'pending': return 'warning';
+            case 'approved': return 'success';
+            case 'rejected': return 'danger';
+            default: return 'secondary';
+        }
+    }
+
     // Public API
     return {
         makeDocumentsClickable: makeDocumentsClickable,
         openDocumentReview: openDocumentReview,
-        downloadDocument: downloadDocument
+        downloadDocument: downloadDocument,
+        checkIfAllDocumentsApproved: checkIfAllDocumentsApproved,
+        autoApproveApplication: autoApproveApplication
     };
 
 })();

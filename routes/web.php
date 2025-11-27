@@ -721,6 +721,7 @@ Route::prefix('enrollee')->name('enrollee.')->group(function () {
         // Notices management
         Route::get('/notices', [EnrolleeController::class, 'notices'])->name('notices');
         Route::get('/notices/{id}', [EnrolleeController::class, 'getNotice'])->name('notices.get');
+        Route::get('/notices/count/unread', [EnrolleeController::class, 'getUnreadNoticesCount'])->name('notices.count.unread');
         Route::post('/notices/{id}/mark-read', [EnrolleeController::class, 'markNoticeAsRead'])->name('notices.mark-read');
         Route::post('/notices/mark-all-read', [EnrolleeController::class, 'markAllNoticesAsRead'])->name('notices.mark-all-read');
         
