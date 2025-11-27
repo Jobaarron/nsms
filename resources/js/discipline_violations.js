@@ -28,6 +28,9 @@ function validateSchoolHours(timeString) {
 // Global variable to store violation options fetched from the database
 window.offenseOptions = null;
 
+// Initialize selected students array globally to prevent undefined errors
+window.selectedStudents = [];
+
 // Function to fetch violation options from the database
 async function fetchViolationOptions() {
     try {
@@ -1198,19 +1201,30 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
 
     // Fetch violation options and initialize mappings
-    await fetchViolationOptions();
+    try {
+        await fetchViolationOptions();
+    } catch (error) {
+        console.error('Failed to fetch violation options:', error);
+        // Set empty defaults to prevent undefined errors
+        window.offenseOptions = { minor: [], major: { "Category 1": [], "Category 2": [], "Category 3": [] } };
+    }
 
     // Create reverse mapping: title -> {severity, category}
     window.titleToSeverityMap = {};
-    if (window.offenseOptions) {
+    if (window.offenseOptions && (window.offenseOptions.minor.length > 0 || Object.keys(window.offenseOptions.major).some(k => window.offenseOptions.major[k].length > 0))) {
         window.offenseOptions.minor.forEach(title => {
             window.titleToSeverityMap[title] = { severity: 'minor', category: null };
         });
         Object.keys(window.offenseOptions.major).forEach(category => {
-            window.offenseOptions.major[category].forEach(title => {
-                window.titleToSeverityMap[title] = { severity: 'major', category: category };
-            });
+            if (window.offenseOptions.major[category]) {
+                window.offenseOptions.major[category].forEach(title => {
+                    window.titleToSeverityMap[title] = { severity: 'major', category: category };
+                });
+            }
         });
+    } else {
+        console.warn('⚠️ No violation options loaded! The violation_lists table may be empty in the database.');
+        console.warn('Run: php artisan db:seed --class=ViolationListSeeder');
     }
 
     // Initialize native HTML date and time inputs with school hours validation
@@ -1283,27 +1297,52 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // Check if violation options are loaded
         if (!window.offenseOptions) {
-            console.warn('Violation options not loaded yet');
+            console.warn('⚠️ Violation options not loaded yet');
+            const emptyOption = document.createElement('option');
+            emptyOption.value = '';
+            emptyOption.textContent = '-- No offenses available (database empty) --';
+            emptyOption.disabled = true;
+            violationTitleSelect.appendChild(emptyOption);
+            return;
+        }
+
+        // Check if there are any violations at all
+        const hasMinor = window.offenseOptions.minor && window.offenseOptions.minor.length > 0;
+        const hasMajor = window.offenseOptions.major && Object.keys(window.offenseOptions.major).some(cat => window.offenseOptions.major[cat].length > 0);
+        
+        if (!hasMinor && !hasMajor) {
+            console.warn('⚠️ No violations found in database. Please run: php artisan db:seed --class=ViolationListSeeder');
+            const emptyOption = document.createElement('option');
+            emptyOption.value = '';
+            emptyOption.textContent = '-- No offenses available (database empty) --';
+            emptyOption.disabled = true;
+            violationTitleSelect.appendChild(emptyOption);
             return;
         }
 
         // Add minor offenses
-        window.offenseOptions.minor.forEach(offense => {
-            const option = document.createElement('option');
-            option.value = offense;
-            option.textContent = offense;
-            violationTitleSelect.appendChild(option);
-        });
-
-        // Add major offenses from all categories
-        Object.keys(window.offenseOptions.major).forEach(category => {
-            window.offenseOptions.major[category].forEach(offense => {
+        if (window.offenseOptions.minor && window.offenseOptions.minor.length > 0) {
+            window.offenseOptions.minor.forEach(offense => {
                 const option = document.createElement('option');
                 option.value = offense;
                 option.textContent = offense;
                 violationTitleSelect.appendChild(option);
             });
-        });
+        }
+
+        // Add major offenses from all categories
+        if (window.offenseOptions.major) {
+            Object.keys(window.offenseOptions.major).forEach(category => {
+                if (window.offenseOptions.major[category] && window.offenseOptions.major[category].length > 0) {
+                    window.offenseOptions.major[category].forEach(offense => {
+                        const option = document.createElement('option');
+                        option.value = offense;
+                        option.textContent = offense;
+                        violationTitleSelect.appendChild(option);
+                    });
+                }
+            });
+        }
 
         // Add custom option
         const customOption = document.createElement('option');
@@ -1328,8 +1367,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (studentSuggestions) studentSuggestions.style.display = 'none';
             if (selectedStudentsContainer) selectedStudentsContainer.innerHTML = '';
 
-            // Initialize selected students array
-            window.selectedStudents = [];
+            // Initialize selected students array (ensure it's always an array)
+            window.selectedStudents = window.selectedStudents || [];
+            window.selectedStudents.length = 0; // Clear existing items
 
             // If student ID provided, add it to selected students
             if (studentId) {
@@ -1489,6 +1529,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     function selectStudent(studentId, studentName) {
+      // Ensure window.selectedStudents is initialized
+      if (!window.selectedStudents) {
+        window.selectedStudents = [];
+        console.warn('window.selectedStudents was undefined, initializing now');
+      }
+      
       if (!window.selectedStudents.some(s => s.id === studentId)) {
         window.selectedStudents.push({ id: studentId, name: studentName });
         updateSelectedStudentsDisplay();

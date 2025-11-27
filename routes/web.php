@@ -982,3 +982,12 @@ Route::get('/pdf/counseling-session', [PdfController::class, 'show']);
 
 // PDF Receipt (dynamic overlay)
 Route::get('/pdf/receipt', [PdfController::class, 'showReceipt'])->name('pdf.receipt');
+
+// DEBUG ROUTES - DELETE AFTER TESTING
+use App\Http\Controllers\DebugController;
+Route::prefix('debug')->group(function () {
+    Route::get('/violation-list', [DebugController::class, 'violationListDebugPage'])->name('debug.violation-list');
+    Route::get('/violation-list-json', [DebugController::class, 'violationListDebug'])->name('debug.violation-list-json');
+    Route::get('/test-violation-api', [DebugController::class, 'testViolationListApi'])->name('debug.test-violation-api');
+});
+// END DEBUG ROUTES
