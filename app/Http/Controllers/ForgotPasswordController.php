@@ -69,11 +69,13 @@ class ForgotPasswordController extends Controller
         $resetCode = strtoupper(Str::random(6));
         $token = $resetCode . '.' . Str::random(64);
 
-        // Store reset token in database
+        // Store reset token in database with user type and ID
         DB::table('password_reset_tokens')->updateOrInsert(
             ['email' => $user->email],
             [
                 'token' => Hash::make($token),
+                'user_type' => 'system_user',
+                'user_id' => $user->id,
                 'created_at' => now()
             ]
         );
@@ -112,17 +114,16 @@ class ForgotPasswordController extends Controller
         $token = $resetCode . '.' . Str::random(64);
         $emailKey = $student->email ?? $student->student_id;
 
-        // Store reset token in database
+        // Store reset token in database with user type and ID
         DB::table('password_reset_tokens')->updateOrInsert(
             ['email' => $emailKey],
             [
                 'token' => Hash::make($token),
+                'user_type' => 'student',
+                'user_id' => $student->id,
                 'created_at' => now()
             ]
         );
-
-        // Store student ID in session for later lookup
-        session(['reset_student_id' => $student->id]);
 
         // Send email if available
         if ($student->email) {
@@ -161,17 +162,16 @@ class ForgotPasswordController extends Controller
         $token = $resetCode . '.' . Str::random(64);
         $emailKey = $enrollee->email ?? $enrollee->application_id;
 
-        // Store reset token in database
+        // Store reset token in database with user type and ID
         DB::table('password_reset_tokens')->updateOrInsert(
             ['email' => $emailKey],
             [
                 'token' => Hash::make($token),
+                'user_type' => 'enrollee',
+                'user_id' => $enrollee->id,
                 'created_at' => now()
             ]
         );
-
-        // Store enrollee ID in session for later lookup
-        session(['reset_enrollee_id' => $enrollee->id]);
 
         // Send email if available
         if ($enrollee->email) {
@@ -208,12 +208,10 @@ class ForgotPasswordController extends Controller
         $request->validate([
             'token' => 'required',
             'reset_code' => 'required|string|size:6',
-            'password' => 'required|string|min:8|confirmed',
-            'user_type' => 'required|in:system_user,student,enrollee'
+            'password' => 'required|string|min:8|confirmed'
         ]);
 
         $resetCode = strtoupper($request->input('reset_code'));
-        $userType = $request->input('user_type');
         $token = $request->input('token');
         $newPassword = Hash::make($request->input('password'));
 
@@ -236,24 +234,23 @@ class ForgotPasswordController extends Controller
         }
 
         try {
+            // Get user type and ID from database
+            $userType = $resetRecord->user_type;
+            $userId = $resetRecord->user_id;
+
+            // Update password based on user type stored in database
             switch ($userType) {
                 case 'system_user':
-                    User::where('email', $resetRecord->email)->update(['password' => $newPassword]);
+                    User::where('id', $userId)->update(['password' => $newPassword]);
                     break;
                 case 'student':
-                    $studentId = session('reset_student_id');
-                    if ($studentId) {
-                        Student::where('id', $studentId)->update(['password' => $newPassword]);
-                        session()->forget('reset_student_id');
-                    }
+                    Student::where('id', $userId)->update(['password' => $newPassword]);
                     break;
                 case 'enrollee':
-                    $enrolleeId = session('reset_enrollee_id');
-                    if ($enrolleeId) {
-                        Enrollee::where('id', $enrolleeId)->update(['password' => $newPassword]);
-                        session()->forget('reset_enrollee_id');
-                    }
+                    Enrollee::where('id', $userId)->update(['password' => $newPassword]);
                     break;
+                default:
+                    return back()->withErrors(['reset_code' => 'Invalid user type.']);
             }
 
             // Delete ALL reset tokens for this email (invalidate previous codes)

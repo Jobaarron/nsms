@@ -35,7 +35,6 @@
 
                     <!-- Hidden Fields -->
                     <input type="hidden" name="token" value="{{ $token }}">
-                    <input type="hidden" name="user_type" id="userType" value="system_user">
 
                     <!-- Reset Code -->
                     <div class="mb-4">
