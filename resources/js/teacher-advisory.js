@@ -430,35 +430,3 @@ window.printCurrentGrades = function() {
     printWindow.print();
 }
 
-/**
- * Print all grades from modal
- */
-window.printAllGrades = function() {
-    const modalContent = document.getElementById('allGradesModalContent');
-    const printContent = modalContent.innerHTML;
-    
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(`
-        <html>
-            <head>
-                <title>Advisory Class Grades</title>
-                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-                <style>
-                    @media print {
-                        .no-print { display: none !important; }
-                        body { font-size: 12px; }
-                        table { font-size: 10px; }
-                    }
-                </style>
-            </head>
-            <body>
-                <div class="container-fluid">
-                    <h3 class="text-center mb-4">Advisory Class Grades Report</h3>
-                    ${printContent}
-                </div>
-            </body>
-        </html>
-    `);
-    printWindow.document.close();
-    printWindow.print();
-}

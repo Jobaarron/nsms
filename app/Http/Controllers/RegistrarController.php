@@ -340,6 +340,7 @@ class RegistrarController extends Controller
     {
         try {
             $notices = Notice::with('enrollee:id,application_id,first_name,last_name,email')
+                ->excludeGuidanceSpecific()
                 ->orderBy('created_at', 'desc')
                 ->get()
                 ->map(function ($notice) {
@@ -1004,7 +1005,7 @@ class RegistrarController extends Controller
         ]);
 
         try {
-            $notice = Notice::findOrFail($id);
+            $notice = Notice::excludeGuidanceSpecific()->findOrFail($id);
             
             // Update notice fields
             $notice->update([
@@ -1230,6 +1231,7 @@ class RegistrarController extends Controller
     {
         try {
             $notice = Notice::with('enrollee:id,application_id,first_name,last_name,email')
+                ->excludeGuidanceSpecific()
                 ->findOrFail($id);
 
             return response()->json([

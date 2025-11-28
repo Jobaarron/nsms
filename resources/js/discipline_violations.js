@@ -1287,25 +1287,33 @@ document.addEventListener('DOMContentLoaded', async function() {
             return;
         }
 
+        // Collect all violations in an array
+        const allViolations = [];
+
         // Add minor offenses
         window.offenseOptions.minor.forEach(offense => {
+            allViolations.push(offense);
+        });
+
+        // Add major offenses from all categories
+        Object.keys(window.offenseOptions.major).forEach(category => {
+            window.offenseOptions.major[category].forEach(offense => {
+                allViolations.push(offense);
+            });
+        });
+
+        // Sort alphabetically
+        allViolations.sort((a, b) => a.localeCompare(b));
+
+        // Add sorted options to select
+        allViolations.forEach(offense => {
             const option = document.createElement('option');
             option.value = offense;
             option.textContent = offense;
             violationTitleSelect.appendChild(option);
         });
 
-        // Add major offenses from all categories
-        Object.keys(window.offenseOptions.major).forEach(category => {
-            window.offenseOptions.major[category].forEach(offense => {
-                const option = document.createElement('option');
-                option.value = offense;
-                option.textContent = offense;
-                violationTitleSelect.appendChild(option);
-            });
-        });
-
-        // Add custom option
+        // Add custom option at the end
         const customOption = document.createElement('option');
         customOption.value = 'custom';
         customOption.textContent = '-- Custom Offense --';

@@ -1,7 +1,7 @@
 @php
     use App\Models\Notice;
     
-    // Get notifications for current enrollee
+    // Get notifications for current enrollee (excluding guidance-specific notifications)
     $enrollee = Auth::guard('enrollee')->user();
     $notifications = Notice::getForEnrollee($enrollee->id);
     
