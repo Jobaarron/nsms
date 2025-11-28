@@ -48,6 +48,7 @@
   @vite(['resources/js/registrar-dashboard.js'])
   @vite(['resources/js/registrar-applicant-archives.js'])
   @vite(['resources/js/collapsible-sidebar.js'])
+  @vite(['resources/js/registrar-alerts-manager.js'])
 
 </head>
 <body>

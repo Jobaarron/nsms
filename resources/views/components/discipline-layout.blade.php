@@ -42,6 +42,7 @@
   @vite(['resources/css/index_discipline.css'])
   @vite(['resources/css/collapsible-sidebar.css'])
   @vite(['resources/js/collapsible-sidebar.js'])
+  @vite(['resources/js/discipline-alerts-manager.js'])
 </head>
 <body>
   <!-- Sidebar Toggle Button (Desktop & Mobile) -->
@@ -77,7 +78,7 @@
           </li>
           
           <li class="nav-item mb-2">
-            <a class="nav-link {{ request()->routeIs('discipline.violations.*') ? 'active' : '' }}" href="{{ route('discipline.violations.index') }}" title="Violations Management">
+            <a id="violations-link" class="nav-link position-relative {{ request()->routeIs('discipline.violations.*') ? 'active' : '' }}" href="{{ route('discipline.violations.index') }}" title="Violations Management">
               <i class="ri-alert-line me-2"></i><span>Violations Management</span>
             </a>
           </li>

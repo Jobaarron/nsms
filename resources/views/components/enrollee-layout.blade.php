@@ -44,6 +44,7 @@
   @vite(['resources/css/collapsible-sidebar.css'])
   @vite(['resources/js/app.js'])
   @vite(['resources/js/collapsible-sidebar.js'])
+  @vite(['resources/js/enrollee-alerts-manager.js'])
 
   <style>
     /* Mobile responsive improvements */

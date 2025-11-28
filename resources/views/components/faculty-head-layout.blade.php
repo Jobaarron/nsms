@@ -42,6 +42,7 @@
   @vite(['resources/js/faculty-head-activate-submission.js'])
   @vite(['resources/js/faculty-head-view-grades.js'])
   @vite(['resources/js/collapsible-sidebar.js'])
+  @vite(['resources/js/faculty-head-alerts-manager.js'])
 
 </head>
 <body>

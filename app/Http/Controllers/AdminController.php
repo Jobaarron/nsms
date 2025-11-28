@@ -1585,4 +1585,30 @@ public function updateEnrollment(Request $request, $id)
         
         return response()->json(['success' => true]);
     }
+
+    /**
+     * Get real-time alert counts for admin
+     */
+    public function getAlertCounts()
+    {
+        try {
+            $counts = [
+                'unread_messages' => \App\Models\ContactMessage::where('status', 'unread')->count(),
+                'pending_cases' => \App\Models\CaseMeeting::where('forwarded_to_admin', true)
+                    ->whereNull('admin_action')
+                    ->count(),
+            ];
+            
+            return response()->json([
+                'success' => true,
+                'counts' => $counts
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching alert counts',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

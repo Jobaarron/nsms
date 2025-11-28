@@ -20,6 +20,7 @@ window.localStorageAvailable = (function() {
 document.addEventListener('DOMContentLoaded', function() {
     try {
         initializeStudentAlerts();
+        startRealTimeAlertPolling();
     } catch(error) {
         console.error('Error initializing student alerts:', error);
     }
@@ -47,6 +48,78 @@ function initializeStudentAlerts() {
         console.log('📍 On other page - displaying stored alerts');
         displayStoredAlerts();
     }
+}
+
+// ============================================
+// REAL-TIME POLLING
+// ============================================
+let pollingInterval = null;
+
+function startRealTimeAlertPolling() {
+    const POLL_INTERVAL = 3000; // 3 seconds
+    
+    console.log('🔄 Starting real-time alert polling (every 3 seconds)');
+    
+    // Initial check
+    fetchAlertCounts();
+    
+    // Poll every 3 seconds
+    pollingInterval = setInterval(() => {
+        console.log('⏰ Polling for new alerts...');
+        fetchAlertCounts();
+    }, POLL_INTERVAL);
+    
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+        if (pollingInterval) {
+            clearInterval(pollingInterval);
+        }
+    });
+}
+
+async function fetchAlertCounts() {
+    try {
+        const response = await fetch('/student/alerts/counts', {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+            },
+            credentials: 'same-origin'
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            console.log('📊 Alert counts received:', data.counts);
+            updateAlertBadges(data.counts);
+        }
+    } catch (error) {
+        console.error('Error fetching alert counts:', error);
+    }
+}
+
+function updateAlertBadges(counts) {
+    const currentPath = window.location.pathname;
+    
+    // Update each alert type
+    Object.keys(counts).forEach(alertType => {
+        const count = counts[alertType] || 0;
+        
+        // Don't show badge on the current page for that alert type
+        if (currentPath.includes(`/student/${alertType}`)) {
+            displayAlertBadge(alertType, 0);
+            storeAlertState(alertType, 0);
+        } else {
+            displayAlertBadge(alertType, count);
+            storeAlertState(alertType, count);
+        }
+    });
 }
 
 // ============================================

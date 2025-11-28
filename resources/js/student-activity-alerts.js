@@ -6,8 +6,11 @@
  * Removes highlight when student opens the respective pages
  */
 
+let activityPollingInterval = null;
+
 document.addEventListener('DOMContentLoaded', function() {
     initializeActivityAlerts();
+    startActivityPolling();
 });
 
 function initializeActivityAlerts() {
@@ -36,6 +39,35 @@ function initializeActivityAlerts() {
         console.log('Not on violations page, checking for new violations');
         checkNewViolations();
     }
+}
+
+function startActivityPolling() {
+    const POLL_INTERVAL = 3000; // 3 seconds
+    
+    console.log('🔄 Starting activity alert polling (every 3 seconds)');
+    
+    // Poll every 3 seconds
+    activityPollingInterval = setInterval(() => {
+        const isGradesPage = window.location.pathname.includes('/student/grades');
+        const isViolationsPage = window.location.pathname.includes('/student/violations');
+        
+        if (!isGradesPage) {
+            console.log('⏰ Polling for grade updates...');
+            checkNewGrades();
+        }
+        
+        if (!isViolationsPage) {
+            console.log('⏰ Polling for violation updates...');
+            checkNewViolations();
+        }
+    }, POLL_INTERVAL);
+    
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+        if (activityPollingInterval) {
+            clearInterval(activityPollingInterval);
+        }
+    });
 }
 
 /**

@@ -1251,4 +1251,27 @@ class FacultyHeadController extends Controller
         return response()->json(['success' => true]);
     }
 
+    /**
+     * Get real-time alert counts for faculty head
+     */
+    public function getAlertCounts()
+    {
+        try {
+            $counts = [
+                'pending_grades' => GradeSubmission::where('status', 'submitted')->count(),
+            ];
+            
+            return response()->json([
+                'success' => true,
+                'counts' => $counts
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching alert counts',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
 }

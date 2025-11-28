@@ -1533,4 +1533,53 @@ class DisciplineController extends Controller
             ]);
         }
 
+    /**
+     * Mark alert as viewed (for dismissing notification badges)
+     */
+    public function markAlertViewed(Request $request)
+    {
+        $alertType = $request->input('alert_type');
+        
+        if ($alertType === 'violations') {
+            session(['violations_alert_viewed_at' => now()]);
+        }
+        
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Get real-time alert counts for discipline
+     */
+    public function getAlertCounts()
+    {
+        try {
+            // Get timestamp of when alerts were last viewed
+            $lastViewedAt = session('violations_alert_viewed_at');
+            
+            // Count violations with student replies that were added after last view
+            $query = Violation::whereNotNull('student_statement')
+                ->where('student_statement', '!=', '');
+            
+            // If there's a last viewed timestamp, only count newer replies
+            if ($lastViewedAt) {
+                $query->where('updated_at', '>', $lastViewedAt);
+            }
+            
+            $counts = [
+                'student_replies' => $query->count(),
+            ];
+            
+            return response()->json([
+                'success' => true,
+                'counts' => $counts
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching alert counts',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     }

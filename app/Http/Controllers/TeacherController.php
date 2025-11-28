@@ -560,4 +560,49 @@ class TeacherController extends Controller
         
         return response()->json(['success' => true]);
     }
+
+    /**
+     * Get real-time alert counts for teacher
+     */
+    public function getAlertCounts()
+    {
+        try {
+            $teacher = Auth::user();
+            $teacherRecord = Teacher::where('user_id', $teacher->id)->first();
+            
+            $counts = [
+                'draft_grades' => 0,
+                'unreplied_reports' => 0,
+                'scheduled_counseling' => 0,
+            ];
+            
+            if ($teacherRecord) {
+                // Count draft grade submissions
+                $counts['draft_grades'] = GradeSubmission::where('teacher_id', $teacherRecord->id)
+                    ->where('status', 'draft')
+                    ->count();
+                
+                // Count unreplied observation reports
+                $counts['unreplied_reports'] = \App\Models\CaseMeeting::where('teacher_id', $teacherRecord->id)
+                    ->whereNull('teacher_reply')
+                    ->count();
+                
+                // Count scheduled counseling sessions
+                $counts['scheduled_counseling'] = CounselingSession::where('recommended_by', $teacher->id)
+                    ->where('status', 'scheduled')
+                    ->count();
+            }
+            
+            return response()->json([
+                'success' => true,
+                'counts' => $counts
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching alert counts',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

@@ -1108,4 +1108,33 @@ class EnrolleeController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get real-time alert counts for enrollee
+     */
+    public function getAlertCounts()
+    {
+        try {
+            $enrollee = Auth::guard('enrollee')->user();
+            
+            $counts = [
+                'unread_notices' => Notice::where('target_audience', 'like', '%enrollees%')
+                    ->whereDoesntHave('readBy', function ($query) use ($enrollee) {
+                        $query->where('enrollee_id', $enrollee->id);
+                    })
+                    ->count(),
+            ];
+            
+            return response()->json([
+                'success' => true,
+                'counts' => $counts
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching alert counts',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

@@ -39,6 +39,7 @@
   @vite(['resources/js/teacher-grades.js'])
   @vite(['resources/js/teacher-grade-entry.js'])
   @vite(['resources/js/collapsible-sidebar.js'])
+  @vite(['resources/js/teacher-alerts-manager.js'])
 
   <style>
     .spin {

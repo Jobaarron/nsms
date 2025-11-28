@@ -38,6 +38,7 @@
   @vite(['resources/js/user-management.js'])
   @vite(['resources/js/admin-accounts-manager.js'])
   @vite(['resources/js/collapsible-sidebar.js'])
+  @vite(['resources/js/admin-alerts-manager.js'])
 </head>
 
 <body>
