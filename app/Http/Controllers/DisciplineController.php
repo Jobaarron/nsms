@@ -731,6 +731,21 @@ class DisciplineController extends Controller
      */
     public function updateViolation(Request $request, Violation $violation)
     {
+        // Check if student has replied
+        $hasStudentReply = !empty($violation->student_statement) || 
+                          !empty($violation->incident_feelings) || 
+                          !empty($violation->action_plan);
+        
+        if ($hasStudentReply && $violation->status === 'pending') {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Cannot edit violation: Student has already replied.'
+                ], 403);
+            }
+            return back()->withErrors(['error' => 'Cannot edit violation: Student has already replied.']);
+        }
+        
         try {
             $validatedData = $request->validate([
                 'student_id' => 'required|exists:students,id',
@@ -830,6 +845,21 @@ class DisciplineController extends Controller
      */
     public function destroyViolation(Request $request, Violation $violation)
     {
+        // Check if student has replied
+        $hasStudentReply = !empty($violation->student_statement) || 
+                          !empty($violation->incident_feelings) || 
+                          !empty($violation->action_plan);
+        
+        if ($hasStudentReply) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Cannot delete violation: Student has already replied.'
+                ], 403);
+            }
+            return back()->withErrors(['error' => 'Cannot delete violation: Student has already replied.']);
+        }
+        
         // Check if violation status allows deletion
         if ($violation->status !== 'pending') {
             if ($request->wantsJson() || $request->ajax()) {

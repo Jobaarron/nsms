@@ -159,30 +159,41 @@
                               title="View Details">
                         <i class="ri-eye-line"></i>
                       </button>
+                      @php
+                        // Check if student has replied
+                        $hasStudentReply = !empty($violation->student_statement) || 
+                                          !empty($violation->incident_feelings) || 
+                                          !empty($violation->action_plan);
+                        // Disable edit button if status is not pending or if student has replied
+                        $canEdit = $violation->status === 'pending' && !$hasStudentReply;
+                        $editTooltip = !$canEdit ? 
+                          ($hasStudentReply ? 'Cannot edit: Student has already replied' : 'Cannot edit: Violation is ' . $violation->status) : 
+                          'Edit';
+                      @endphp
                       <button type="button" class="btn btn-sm btn-outline-warning"
                               onclick="editViolation({{ $violation->id }})"
-                              title="Edit"
-                              @if(in_array($violation->status, ['resolved', 'dismissed'])) disabled @endif>
+                              title="{{ $editTooltip }}"
+                              @if(!$canEdit) disabled @endif>
                         <i class="ri-edit-line"></i>
                       </button>
                       @php
                         // Check if violation can be forwarded
-                        $canForward = true;
+                        $canForward = false;
                         $forwardTooltip = 'Forward to Case Meeting';
                         
-                        // Disable if already resolved, dismissed, in_progress, or case_closed
-                        if (in_array($violation->status, ['resolved', 'dismissed', 'in_progress', 'case_closed'])) {
-                            $canForward = false;
-                            $forwardTooltip = 'Cannot forward: Violation is already ' . $violation->status;
-                        } elseif ($violation->severity === 'major' || ($violation->effective_severity === 'major')) {
-                            $hasStudentReply = !empty($violation->student_statement) || 
-                                              !empty($violation->incident_feelings) || 
-                                              !empty($violation->action_plan);
-                            
-                            if (!$hasStudentReply) {
-                                $canForward = false;
-                                $forwardTooltip = 'Cannot forward: Student must reply to narrative report first';
-                            }
+                        // Check if student has replied (reuse from above)
+                        $hasStudentReplyForForward = !empty($violation->student_statement) || 
+                                                     !empty($violation->incident_feelings) || 
+                                                     !empty($violation->action_plan);
+                        
+                        // Only enable if status is pending AND student has replied
+                        if ($violation->status === 'pending' && $hasStudentReplyForForward) {
+                            $canForward = true;
+                            $forwardTooltip = 'Forward to Case Meeting';
+                        } elseif (!$hasStudentReplyForForward) {
+                            $forwardTooltip = 'Cannot forward: Student must reply to narrative report first';
+                        } elseif ($violation->status !== 'pending') {
+                            $forwardTooltip = 'Cannot forward: Violation is ' . $violation->status;
                         }
                       @endphp
                       <button type="button" class="btn btn-sm btn-outline-info"
@@ -191,10 +202,17 @@
                               @if(!$canForward) disabled @endif>
                         <i class="ri-send-plane-line"></i>
                       </button>
+                      @php
+                        // Disable delete button if status is not pending or if student has replied
+                        $canDelete = $violation->status === 'pending' && !$hasStudentReply;
+                        $deleteTooltip = !$canDelete ? 
+                          ($hasStudentReply ? 'Cannot delete: Student has already replied' : 'Can only delete pending violations without student reply') : 
+                          'Delete';
+                      @endphp
                       <button type="button" class="btn btn-sm btn-outline-danger"
                               onclick="deleteViolation({{ $violation->id }})"
-                              title="{{ $violation->status === 'pending' ? 'Delete' : 'Can only delete pending violations' }}"
-                              @if($violation->status !== 'pending') disabled @endif>
+                              title="{{ $deleteTooltip }}"
+                              @if(!$canDelete) disabled @endif>
                         <i class="ri-delete-bin-line"></i>
                       </button>
                     </div>
