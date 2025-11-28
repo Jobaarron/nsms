@@ -469,9 +469,9 @@ class TeacherGradeController extends Controller
                 
                 $rowNumber = $index + 1;
                 
-                // Validate required fields
-                if (empty($studentId) || empty($lastName) || empty($firstName) || empty($grade)) {
-                    $errors[] = "Row {$rowNumber}: Missing required fields (student_id, last_name, first_name, or grade)";
+                // Validate required fields (grade is optional for draft submissions)
+                if (empty($studentId) || empty($lastName) || empty($firstName)) {
+                    $errors[] = "Row {$rowNumber}: Missing required fields (student_id, last_name, first_name)";
                     continue;
                 }
                 
@@ -481,8 +481,8 @@ class TeacherGradeController extends Controller
                     continue;
                 }
                 
-                // Validate grade range
-                if (!is_numeric($grade) || $grade < 0 || $grade > 100) {
+                // Validate grade range (if grade is provided)
+                if (!empty($grade) && (!is_numeric($grade) || $grade < 0 || $grade > 100)) {
                     $errors[] = "Row {$rowNumber}: Invalid grade '{$grade}'. Must be 0-100";
                     continue;
                 }
