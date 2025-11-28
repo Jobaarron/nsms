@@ -121,7 +121,7 @@
                 <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin: 25px 0;">
                     <tr>
                         <td align="center">
-                            <a href="{{ $receiptUrl }}" style="display: inline-block; background-color: #1976d2; color: white; text-decoration: none; padding: 15px 30px; border-radius: 8px; font-weight: 600; font-size: 18px;">
+                            <a href="{{ url('/receipt?transaction_id=' . $payment->transaction_id) }}" style="display: inline-block; background-color: #1976d2; color: white; text-decoration: none; padding: 15px 30px; border-radius: 8px; font-weight: 600; font-size: 18px;">
                                 📄 View Receipt
                             </a>
                         </td>

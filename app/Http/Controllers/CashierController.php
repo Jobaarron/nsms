@@ -298,22 +298,27 @@ class CashierController extends Controller
             }
         }
 
-        // Send payment confirmation email with receipt link
+        // Send payment confirmation email
         try {
-            $student = null;
+            $studentEmail = null;
             if ($payment->payable_type === 'App\\Models\\Student') {
                 $student = $payment->payable;
+                $studentEmail = $student->email;
             } elseif ($payment->payable_type === 'App\\Models\\Enrollee') {
                 $enrollee = $payment->payable;
-                $student = $enrollee->student;
+                $studentEmail = $enrollee->email;
             }
 
-            if ($student && $student->email) {
-                Mail::to($student->email)->send(new PaymentConfirmedMail($payment));
-                Log::info("Payment confirmation email sent to {$student->email} for payment ID: {$payment->id}");
+            if ($studentEmail) {
+                Mail::to($studentEmail)->send(new PaymentConfirmedMail($payment));
+                Log::info('Payment confirmation email sent', [
+                    'payment_id' => $payment->id,
+                    'email' => $studentEmail,
+                    'transaction_id' => $payment->transaction_id
+                ]);
             }
-        } catch (\Exception $e) {
-            Log::error('Failed to send payment confirmation email: ' . $e->getMessage());
+        } catch (\Exception $emailError) {
+            Log::error('Payment confirmation email error: ' . $emailError->getMessage());
         }
 
         return response()->json([

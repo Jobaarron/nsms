@@ -15,7 +15,6 @@ class PaymentConfirmedMail extends Mailable
     use Queueable, SerializesModels;
 
     public $payment;
-    public $receiptUrl;
 
     /**
      * Create a new message instance.
@@ -23,7 +22,6 @@ class PaymentConfirmedMail extends Mailable
     public function __construct(Payment $payment)
     {
         $this->payment = $payment;
-        $this->receiptUrl = url('/receipt?transaction_id=' . $payment->transaction_id);
     }
 
     /**
