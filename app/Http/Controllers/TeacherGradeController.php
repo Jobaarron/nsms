@@ -175,7 +175,7 @@ class TeacherGradeController extends Controller
             'quarter' => 'required|in:1st,2nd,3rd,4th',
             'grades' => 'required|array',
             'grades.*.student_id' => 'required|exists:students,id',
-            'grades.*.grade' => 'required|numeric|min:0|max:100',
+            'grades.*.grade' => 'nullable|numeric|min:0|max:100',
             'grades.*.remarks' => 'nullable|string|max:255',
             'action' => 'required|in:save_draft,submit_for_review'
         ]);
