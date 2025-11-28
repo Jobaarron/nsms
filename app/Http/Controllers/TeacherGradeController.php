@@ -107,7 +107,9 @@ class TeacherGradeController extends Controller
         $studentsQuery = Student::where('grade_level', $assignment->grade_level)
                                ->where('section', $assignment->section)
                                ->where('academic_year', $assignment->academic_year)
-                               ->where('is_active', true);
+                               ->where('is_active', true)
+                               ->where('enrollment_status', 'enrolled')
+                               ->where('is_paid', true);
 
         // For Senior High School, match strand and track
         if (in_array($assignment->grade_level, ['Grade 11', 'Grade 12'])) {
@@ -384,10 +386,18 @@ class TeacherGradeController extends Controller
      */
     public function upload(Request $request)
     {
-        $request->validate([
-            'submission_id' => 'required|exists:grade_submissions,id',
-            'grades_file' => 'required|file|mimes:xlsx,xls,csv|max:2048'
-        ]);
+        try {
+            $request->validate([
+                'submission_id' => 'required|exists:grade_submissions,id',
+                'grades_file' => 'required|file|mimes:xlsx,xls,csv|max:2048'
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        }
 
         $teacher = Auth::user();
         $teacherRecord = \App\Models\Teacher::where('user_id', $teacher->id)->first();
@@ -409,7 +419,9 @@ class TeacherGradeController extends Controller
             $studentsQuery = Student::where('grade_level', $submission->grade_level)
                                    ->where('section', $submission->section)
                                    ->where('academic_year', $submission->academic_year)
-                                   ->where('is_active', true);
+                                   ->where('is_active', true)
+                                   ->where('enrollment_status', 'enrolled')
+                                   ->where('is_paid', true);
 
             // Get the faculty assignment to check for strand/track filtering
             $assignment = FacultyAssignment::where('teacher_id', $submission->teacher_id)
