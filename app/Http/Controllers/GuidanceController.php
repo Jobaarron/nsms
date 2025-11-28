@@ -2887,4 +2887,29 @@ public function getDisciplineVsTotalStats(Request $request)
         
         return response()->json(['success' => true]);
     }
+
+    /**
+     * Get real-time alert counts for guidance
+     */
+    public function getAlertCounts()
+    {
+        try {
+            $counts = [
+                'recommended_counseling' => CounselingSession::where('status', 'pending')
+                    ->orWhere('status', 'scheduled')
+                    ->count(),
+            ];
+            
+            return response()->json([
+                'success' => true,
+                'counts' => $counts
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching alert counts',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

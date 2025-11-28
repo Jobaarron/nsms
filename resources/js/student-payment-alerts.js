@@ -4,8 +4,11 @@
  * Removes highlight when student opens the payments page
  */
 
+let paymentPollingInterval = null;
+
 document.addEventListener('DOMContentLoaded', function() {
     initializePaymentAlerts();
+    startPaymentPolling();
 });
 
 function initializePaymentAlerts() {
@@ -23,6 +26,28 @@ function initializePaymentAlerts() {
         console.log('Not on payments page, checking for upcoming payments');
         checkUpcomingPayments();
     }
+}
+
+function startPaymentPolling() {
+    const POLL_INTERVAL = 3000; // 3 seconds
+    
+    console.log('🔄 Starting payment alert polling (every 3 seconds)');
+    
+    // Poll every 3 seconds
+    paymentPollingInterval = setInterval(() => {
+        const isPaymentsPage = window.location.pathname.includes('/student/payments');
+        if (!isPaymentsPage) {
+            console.log('⏰ Polling for payment updates...');
+            checkUpcomingPayments();
+        }
+    }, POLL_INTERVAL);
+    
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+        if (paymentPollingInterval) {
+            clearInterval(paymentPollingInterval);
+        }
+    });
 }
 
 function checkUpcomingPayments() {

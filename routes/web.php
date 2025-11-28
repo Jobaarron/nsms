@@ -138,6 +138,9 @@ Route::prefix('admin')->group(function () {
         
         // Mark alert as viewed
         Route::post('/mark-alert-viewed', [AdminController::class, 'markAlertViewed'])->name('mark-alert-viewed');
+        
+        // Get alert counts
+        Route::get('/alerts/counts', [AdminController::class, 'getAlertCounts'])->name('alerts.counts');
             
         });
     });
@@ -289,6 +292,10 @@ Route::middleware(['auth', 'role:teacher|faculty_head'])->prefix('teacher')->nam
     // Mark alert as viewed
     Route::post('/mark-alert-viewed', [App\Http\Controllers\TeacherController::class, 'markAlertViewed'])
         ->name('mark-alert-viewed');
+    
+    // Get alert counts
+    Route::get('/alerts/counts', [App\Http\Controllers\TeacherController::class, 'getAlertCounts'])
+        ->name('alerts.counts');
 });
 
 
@@ -393,6 +400,10 @@ Route::middleware(['auth', 'role:faculty_head'])->prefix('faculty-head')->name('
     // Mark alert as viewed
     Route::post('/mark-alert-viewed', [App\Http\Controllers\FacultyHeadController::class, 'markAlertViewed'])
         ->name('mark-alert-viewed');
+    
+    // Get alert counts
+    Route::get('/alerts/counts', [App\Http\Controllers\FacultyHeadController::class, 'getAlertCounts'])
+        ->name('alerts.counts');
 });
 
 
@@ -492,6 +503,12 @@ Route::prefix('discipline')->name('discipline.')->group(function () {
         // Disciplinary Conference Report PDF (for discipline staff access)
         Route::get('/case-meetings/{caseMeeting}/disciplinary-conference-report/pdf', [PdfController::class, 'DisciplinaryConReports'])
             ->name('case-meetings.disciplinary-conference-report.pdf');
+        
+        // Alert management
+        Route::post('/mark-alert-viewed', [App\Http\Controllers\DisciplineController::class, 'markAlertViewed'])
+            ->name('mark-alert-viewed');
+        Route::get('/alerts/counts', [App\Http\Controllers\DisciplineController::class, 'getAlertCounts'])
+            ->name('alerts.counts');
     });
 });
 
@@ -538,6 +555,9 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
         
         // Alert dismissal
         Route::post('/mark-alert-viewed', [App\Http\Controllers\GuidanceController::class, 'markAlertViewed'])->name('mark-alert-viewed');
+        
+        // Get alert counts
+        Route::get('/alerts/counts', [App\Http\Controllers\GuidanceController::class, 'getAlertCounts'])->name('alerts.counts');
             
         // Logout
         Route::post('/logout', [App\Http\Controllers\GuidanceController::class, 'logout'])->name('logout');
@@ -685,6 +705,7 @@ Route::prefix('student')->name('student.')->group(function () {
             Route::get('/payments', [StudentController::class, 'payments'])->name('payments');
             Route::post('/payment/mode/update', [StudentController::class, 'updatePaymentMode'])->name('payment.mode.update');
             Route::post('/mark-alert-viewed', [StudentController::class, 'markAlertViewed'])->name('mark-alert-viewed');
+            Route::get('/alerts/counts', [StudentController::class, 'getAlertCounts'])->name('alerts.counts');
         });
         
         // Routes that require both enrollment completion AND payment settlement
@@ -766,6 +787,9 @@ Route::prefix('enrollee')->name('enrollee.')->group(function () {
         Route::get('/data-change-requests/{id}', [EnrolleeController::class, 'showDataChangeRequest'])->name('data-change-requests.show');
         Route::put('/data-change-requests/{id}', [EnrolleeController::class, 'updateDataChangeRequest'])->name('data-change-requests.update');
         Route::delete('/data-change-requests/{id}', [EnrolleeController::class, 'destroyDataChangeRequest'])->name('data-change-requests.destroy');
+        
+        // Get alert counts
+        Route::get('/alerts/counts', [EnrolleeController::class, 'getAlertCounts'])->name('alerts.counts');
         
         // Logout
         Route::post('/logout', [EnrolleeController::class, 'logout'])->name('logout');
@@ -898,6 +922,9 @@ Route::prefix('registrar')->name('registrar.')->group(function () {
         // Mark alert as viewed
         Route::post('/mark-alert-viewed', [RegistrarController::class, 'markAlertViewed'])->name('mark-alert-viewed');
         
+        // Get alert counts
+        Route::get('/alerts/counts', [RegistrarController::class, 'getAlertCounts'])->name('alerts.counts');
+        
         // Logout
         Route::post('/logout', function(Request $request) {
             // Clear all authentication guards to prevent session conflicts
@@ -975,6 +1002,9 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
         
         // Mark alert as viewed
         Route::post('/mark-alert-viewed', [CashierController::class, 'markAlertViewed'])->name('mark-alert-viewed');
+        
+        // Get alert counts
+        Route::get('/alerts/counts', [CashierController::class, 'getAlertCounts'])->name('alerts.counts');
         
         // Logout
         Route::post('/logout', [CashierController::class, 'logout'])->name('logout');

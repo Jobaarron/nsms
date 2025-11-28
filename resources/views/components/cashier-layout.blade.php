@@ -45,6 +45,7 @@
   @vite(['resources/js/cashier-dashboard.js'])
   @vite(['resources/js/cashier-payment-archives.js'])
   @vite(['resources/js/collapsible-sidebar.js'])
+  @vite(['resources/js/cashier-alerts-manager.js'])
   @stack('scripts')
   @stack('styles')
 

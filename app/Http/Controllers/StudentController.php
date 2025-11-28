@@ -969,4 +969,48 @@ class StudentController extends Controller
         
         return response()->json(['success' => true]);
     }
+
+    public function getAlertCounts()
+    {
+        $student = Auth::guard('student')->user();
+        
+        if (!$student) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ], 401);
+        }
+        
+        try {
+            // Get due payments count (due within 7 days)
+            $duePaymentsCount = Payment::getDuePaymentsCountForStudent($student->id);
+            
+            // Get new grades count (updated within 24 hours)
+            $newGradesCount = Grade::getNewGradesCountForStudent($student->id);
+            
+            // Get new violations count (created within 24 hours)
+            $newViolationsCount = Violation::getNewViolationsCountForStudent($student->id);
+            
+            return response()->json([
+                'success' => true,
+                'counts' => [
+                    'payments' => $duePaymentsCount,
+                    'grades' => $newGradesCount,
+                    'violations' => $newViolationsCount
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching alert counts: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching alerts',
+                'counts' => [
+                    'payments' => 0,
+                    'grades' => 0,
+                    'violations' => 0
+                ]
+            ], 500);
+        }
+    }
 }

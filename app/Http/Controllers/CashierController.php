@@ -712,4 +712,27 @@ class CashierController extends Controller
         return response()->json(['success' => true]);
     }
 
+    /**
+     * Get real-time alert counts for cashier
+     */
+    public function getAlertCounts()
+    {
+        try {
+            $counts = [
+                'pending_payments' => Payment::where('confirmation_status', 'pending')->count(),
+            ];
+            
+            return response()->json([
+                'success' => true,
+                'counts' => $counts
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching alert counts',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
 }

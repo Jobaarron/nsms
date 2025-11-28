@@ -1797,4 +1797,27 @@ class RegistrarController extends Controller
         
         return response()->json(['success' => true]);
     }
+
+    /**
+     * Get real-time alert counts for registrar
+     */
+    public function getAlertCounts()
+    {
+        try {
+            $counts = [
+                'new_applications' => Enrollee::where('enrollment_status', 'pending')->count(),
+            ];
+            
+            return response()->json([
+                'success' => true,
+                'counts' => $counts
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching alert counts',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }
