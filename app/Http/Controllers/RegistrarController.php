@@ -299,6 +299,20 @@ class RegistrarController extends Controller
                 'created_by' => Auth::guard('registrar')->id(),
             ]);
 
+            // Send rejection email immediately
+            try {
+                Mail::to($application->email)->send(new \App\Mail\ApplicationRejectionMail($application));
+                Log::info('Rejection email sent', [
+                    'application_id' => $application->application_id,
+                    'email' => $application->email
+                ]);
+            } catch (\Exception $emailError) {
+                Log::error('Failed to send rejection email', [
+                    'application_id' => $application->application_id,
+                    'error' => $emailError->getMessage()
+                ]);
+            }
+
             Log::info('Application declined', [
                 'application_id' => $application->application_id,
                 'declined_by' => Auth::guard('registrar')->id(),

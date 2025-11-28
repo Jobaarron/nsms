@@ -95,5 +95,16 @@ return Application::configure(basePath: dirname(__DIR__))
             ->onFailure(function () {
                 \Illuminate\Support\Facades\Log::error('DeleteGrade12CompletedData command failed');
             });
+
+        // Delete rejected applications after 3 days
+        $schedule->command('app:delete-rejected-applications')
+            ->dailyAt('02:00') // Run daily at 2 AM
+            ->withoutOverlapping()
+            ->onFailure(function () {
+                \Illuminate\Support\Facades\Log::error('DeleteRejectedApplications command failed');
+            })
+            ->onSuccess(function () {
+                \Illuminate\Support\Facades\Log::info('DeleteRejectedApplications command completed successfully');
+            });
     })
     ->create();
