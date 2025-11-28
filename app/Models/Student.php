@@ -457,17 +457,18 @@ class Student extends Authenticatable
         }
 
         // Quarterly payment - check if this quarter is paid
+        // Check ALL quarterly payments, not just the first one
         if ($paymentMethods->contains('quarterly')) {
-            $quarterlyPayment = $confirmedPayments->firstWhere('payment_method', 'quarterly');
-            if ($quarterlyPayment && $quarterlyPayment->period_name) {
-                // period_name format: "1st Quarter", "2nd Quarter", etc.
-                return strpos($quarterlyPayment->period_name, $quarter) !== false;
+            $quarterlyPayments = $confirmedPayments->where('payment_method', 'quarterly');
+            foreach ($quarterlyPayments as $payment) {
+                if ($payment->period_name && strpos($payment->period_name, $quarter) !== false) {
+                    return true;
+                }
             }
         }
 
-        // Monthly payment - check if current month of quarter is paid
+        // Monthly payment - check if any month in this quarter has been paid
         if ($paymentMethods->contains('monthly')) {
-            $currentMonth = now()->month;
             $quarterMonths = $this->getQuarterMonths($quarter);
             
             // Check if any month in this quarter is paid
@@ -478,7 +479,8 @@ class Student extends Authenticatable
                            strpos($payment->period_name, $this->getMonthName($month)) !== false;
                 });
                 
-                if ($monthlyPayment && $month <= $currentMonth) {
+                // If any month in this quarter is paid, allow access to the quarter
+                if ($monthlyPayment) {
                     return true;
                 }
             }
@@ -489,14 +491,15 @@ class Student extends Authenticatable
 
     /**
      * Get months for a specific quarter
+     * Academic year structure: June to May
      */
     private function getQuarterMonths($quarter)
     {
         $quarterMonths = [
-            '1st' => [6, 7, 8],        // June, July, August
-            '2nd' => [9, 10, 11],      // September, October, November
-            '3rd' => [12, 1, 2],       // December, January, February
-            '4th' => [3, 4, 5]         // March, April, May
+            '1st' => [6, 7, 8],        // June, July, August (1st Grading Period)
+            '2nd' => [9, 10, 11],      // September, October, November (2nd Grading Period)
+            '3rd' => [12, 1, 2],       // December, January, February (3rd Grading Period)
+            '4th' => [3, 4, 5]         // March, April, May (4th Grading Period)
         ];
         
         return $quarterMonths[$quarter] ?? [];
