@@ -669,6 +669,7 @@ class GuidanceController extends Controller
             // 'meeting_type' => 'required|in:case_meeting,house_visit',
             'scheduled_date' => 'required|date|after:today',
             'scheduled_time' => 'required',
+            'summary' => 'nullable|string',
             'location' => 'nullable|string|max:255',
             'urgency_level' => 'nullable|in:low,medium,high,urgent',
             // 'reason' => 'required|string',
@@ -685,18 +686,230 @@ class GuidanceController extends Controller
             }
         }
 
+        // Process intervention fields if provided
+        if ($request->has('intervention_fields')) {
+            $interventionFields = json_decode($request->intervention_fields, true);
+            
+            if ($interventionFields && is_array($interventionFields)) {
+                // Clear existing sanctions for this case meeting
+                $caseMeeting->sanctions()->delete();
+                
+                // Reset all intervention fields to false first
+                $validatedData = array_merge($validatedData, [
+                    'written_reflection' => false,
+                    'mentorship_counseling' => false,
+                    'parent_teacher_communication' => false,
+                    'restorative_justice_activity' => false,
+                    'follow_up_meeting' => false,
+                    'community_service' => false,
+                    'suspension' => false,
+                    'suspension_3days' => false,
+                    'suspension_5days' => false,
+                    'expulsion' => false,
+                ]);
+                
+                // Create new sanctions based on selected interventions
+                $sanctionDescriptions = [];
+                
+                foreach ($interventionFields as $interventionType => $details) {
+                    $sanctionText = $this->createSanctionFromIntervention($interventionType, $details);
+                    if ($sanctionText) {
+                        // Update the specific intervention fields
+                        $this->updateInterventionFields($validatedData, $interventionType, $details);
+                        
+                        // Create sanction record
+                        $caseMeeting->sanctions()->create([
+                            'case_meeting_id' => $caseMeeting->id,
+                            'violation_id' => $caseMeeting->violation_id,
+                            'severity' => $this->getSeverityFromIntervention($interventionType),
+                            'category' => 'intervention',
+                            'sanction' => $sanctionText,
+                            'deportment_grade_action' => 'none', // Add required field with default value
+                            'offense_number' => 1, // Add required field
+                            'major_category' => $interventionType, // Add required field
+                            'suspension' => 'none', // Add required field with default value
+                            'is_automatic' => false,
+                            'is_approved' => false,
+                        ]);
+                        
+                        $sanctionDescriptions[] = $sanctionText;
+                    }
+                }
+                
+                // Don't modify the summary - it should remain as entered by the user
+                // The interventions are now stored as sanctions, not in the summary
+            }
+        }
+
         $caseMeeting->update($validatedData);
 
         if ($request->ajax()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Case meeting updated successfully.',
-                'meeting' => $caseMeeting->load(['student', 'counselor'])
+                'message' => 'Case meeting updated successfully with selected interventions.',
+                'meeting' => $caseMeeting->load(['student', 'counselor', 'sanctions'])
             ]);
         }
 
         return redirect()->route('guidance.case-meetings.index')
-            ->with('success', 'Case meeting updated successfully.');
+            ->with('success', 'Case meeting updated successfully with selected interventions.');
+    }
+
+    /**
+     * Update intervention fields in the validated data array
+     */
+    private function updateInterventionFields(&$validatedData, $interventionType, $details)
+    {
+        switch ($interventionType) {
+            case 'written_reflection':
+                $validatedData['written_reflection'] = true;
+                if (isset($details['written_reflection_due'])) {
+                    $validatedData['written_reflection_due'] = $details['written_reflection_due'];
+                }
+                break;
+                
+            case 'mentorship':
+                $validatedData['mentorship_counseling'] = true;
+                if (isset($details['mentor_name'])) {
+                    $validatedData['mentor_name'] = $details['mentor_name'];
+                }
+                break;
+                
+            case 'parent_teacher':
+                $validatedData['parent_teacher_communication'] = true;
+                if (isset($details['parent_teacher_date'])) {
+                    $validatedData['parent_teacher_date'] = $details['parent_teacher_date'];
+                }
+                break;
+                
+            case 'restorative_justice':
+                $validatedData['restorative_justice_activity'] = true;
+                if (isset($details['restorative_justice_date'])) {
+                    $validatedData['restorative_justice_date'] = $details['restorative_justice_date'];
+                }
+                break;
+                
+            case 'follow_up_meeting':
+                $validatedData['follow_up_meeting'] = true;
+                if (isset($details['follow_up_meeting_date'])) {
+                    $validatedData['follow_up_meeting_date'] = $details['follow_up_meeting_date'];
+                }
+                break;
+                
+            case 'community_service':
+                $validatedData['community_service'] = true;
+                if (isset($details['community_service_date'])) {
+                    $validatedData['community_service_date'] = $details['community_service_date'];
+                }
+                if (isset($details['community_service_area'])) {
+                    $validatedData['community_service_area'] = $details['community_service_area'];
+                }
+                break;
+                
+            case 'suspension':
+                $validatedData['suspension'] = true;
+                if (isset($details['suspension_days'])) {
+                    if ($details['suspension_days'] == '3') {
+                        $validatedData['suspension_3days'] = true;
+                    } elseif ($details['suspension_days'] == '5') {
+                        $validatedData['suspension_5days'] = true;
+                    } else {
+                        $validatedData['suspension_other_days'] = (int)$details['suspension_days'];
+                    }
+                }
+                if (isset($details['suspension_start'])) {
+                    $validatedData['suspension_start'] = $details['suspension_start'];
+                }
+                if (isset($details['suspension_end'])) {
+                    $validatedData['suspension_end'] = $details['suspension_end'];
+                }
+                if (isset($details['suspension_return'])) {
+                    $validatedData['suspension_return'] = $details['suspension_return'];
+                }
+                break;
+                
+            case 'expulsion':
+                $validatedData['expulsion'] = true;
+                if (isset($details['expulsion_date'])) {
+                    $validatedData['expulsion_date'] = $details['expulsion_date'];
+                }
+                break;
+        }
+    }
+
+    /**
+     * Create sanction text from intervention type and details
+     */
+    private function createSanctionFromIntervention($interventionType, $details)
+    {
+        switch ($interventionType) {
+            case 'written_reflection':
+                $dueDate = $details['written_reflection_due'] ?? 'within 3 days';
+                return "Student must write a one-page reflection on the importance of respect, responsibility, and self-control. Due date: " . date('M j, Y', strtotime($dueDate));
+                
+            case 'mentorship':
+                $mentorName = $details['mentor_name'] ?? 'assigned counselor';
+                return "Student will attend mentorship/counseling sessions with {$mentorName}.";
+                
+            case 'parent_teacher':
+                $date = $details['parent_teacher_date'] ?? 'within 1 week';
+                return "Parent-teacher communication scheduled for " . date('M j, Y', strtotime($date));
+                
+            case 'restorative_justice':
+                $date = $details['restorative_justice_date'] ?? 'within 1 week';
+                return "Student will participate in restorative justice activity on " . date('M j, Y', strtotime($date));
+                
+            case 'follow_up_meeting':
+                $date = $details['follow_up_meeting_date'] ?? 'within 2 weeks';
+                return "Follow-up meeting scheduled for " . date('M j, Y', strtotime($date)) . " to assess progress and compliance.";
+                
+            case 'community_service':
+                $date = $details['community_service_date'] ?? 'within 1 week';
+                $area = $details['community_service_area'] ?? 'school maintenance';
+                return "Student must complete community service: {$area} on " . date('M j, Y', strtotime($date));
+                
+            case 'suspension':
+                $days = $details['suspension_days'] ?? '1';
+                $startDate = $details['suspension_start'] ?? 'next school day';
+                $endDate = $details['suspension_end'] ?? '';
+                $suspensionText = "Student will serve {$days}-day suspension starting " . date('M j, Y', strtotime($startDate));
+                if ($endDate) {
+                    $suspensionText .= " until " . date('M j, Y', strtotime($endDate));
+                }
+                return $suspensionText;
+                
+            case 'expulsion':
+                $date = $details['expulsion_date'] ?? 'immediately';
+                return "Student expulsion effective " . date('M j, Y', strtotime($date)) . ". Requires administrative approval.";
+                
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * Get severity level based on intervention type
+     */
+    private function getSeverityFromIntervention($interventionType)
+    {
+        switch ($interventionType) {
+            case 'written_reflection':
+            case 'mentorship':
+            case 'parent_teacher':
+                return 'minor';
+                
+            case 'restorative_justice':
+            case 'follow_up_meeting':
+            case 'community_service':
+                return 'major';
+                
+            case 'suspension':
+            case 'expulsion':
+                return 'severe';
+                
+            default:
+                return 'minor';
+        }
     }
 
     /**

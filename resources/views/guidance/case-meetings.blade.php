@@ -202,7 +202,7 @@
         <div class="col-12">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white border-0">
-                    <h5 class="card-title mb-0">Interventions Applied</h5>
+                    <h5 class="card-title mb-0">AGREED ACTIONS AND INTERVENTION</h5>
                 </div>
                 <div class="card-body">
                     <div class="list-group list-group-flush">
