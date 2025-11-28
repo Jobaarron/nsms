@@ -104,29 +104,55 @@ window.uploadGradesFile = function() {
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
         }
     })
-    .then(response => response.json())
-    .then(data => {
+    .then(response => {
+        console.log('Upload response status:', response.status);
+        console.log('Upload response headers:', response.headers);
+        return response.json().then(data => ({
+            status: response.status,
+            data: data
+        }));
+    })
+    .then(result => {
         if (progressElement) {
             progressElement.style.display = 'none';
         }
         
-        if (data.success) {
+        const { status, data } = result;
+        console.log('Upload response data:', data);
+        
+        // Handle both success (200) and validation error (422) responses
+        if (status === 200 && data.success) {
             alert(`Success! Uploaded ${data.processed} grades out of ${data.total_expected} students`);
             location.reload(); // Reload to show updated grades
         } else {
+            // Handle validation errors or other failures
             let errorMsg = data.message || 'Upload failed';
-            if (data.errors && data.errors.length > 0) {
-                errorMsg += '\n\nDetailed Errors:\n' + data.errors.join('\n');
-                
-                // If there are too many errors, show only first 10
-                if (data.errors.length > 10) {
-                    const remainingErrors = data.errors.length - 10;
-                    errorMsg += `\n... and ${remainingErrors} more errors`;
+            
+            // Handle validation errors from 422 response
+            if (data.errors) {
+                if (typeof data.errors === 'object' && !Array.isArray(data.errors)) {
+                    // Object format: {field: [errors]}
+                    const errorLines = [];
+                    for (const field in data.errors) {
+                        const fieldErrors = data.errors[field];
+                        if (Array.isArray(fieldErrors)) {
+                            errorLines.push(`${field}: ${fieldErrors.join(', ')}`);
+                        } else {
+                            errorLines.push(`${field}: ${fieldErrors}`);
+                        }
+                    }
+                    errorMsg += '\n\nValidation Errors:\n' + errorLines.join('\n');
+                } else if (Array.isArray(data.errors)) {
+                    // Array format: [error1, error2]
+                    errorMsg += '\n\nDetailed Errors:\n' + data.errors.join('\n');
                 }
             }
+            
             if (data.total_rows) {
                 errorMsg += `\n\nProcessed: ${data.processed || 0} out of ${data.total_rows} rows`;
             }
+            
+            console.error('Upload error:', errorMsg);
             alert(errorMsg);
         }
     })
@@ -134,6 +160,7 @@ window.uploadGradesFile = function() {
         if (progressElement) {
             progressElement.style.display = 'none';
         }
+        console.error('Upload fetch error:', error);
         alert('Upload failed: ' + error.message);
     });
 };
@@ -185,8 +212,8 @@ window.downloadTemplate = function() {
     window.URL.revokeObjectURL(url);
 };
 
-// Auto-save functionality
-function initializeAutoSave() {
+// Make initializeAutoSave global
+window.initializeAutoSave = function() {
     let autoSaveTimer;
     
     document.addEventListener('input', function(e) {
@@ -203,7 +230,7 @@ function initializeAutoSave() {
 }
 
 // Enhanced grade validation with real-time feedback
-function enhanceGradeInputs() {
+window.enhanceGradeInputs = function() {
     const gradeInputs = document.querySelectorAll('.grade-input');
     
     gradeInputs.forEach(input => {
@@ -226,7 +253,7 @@ function enhanceGradeInputs() {
 // Initialize enhanced features when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
     if (window.location.pathname.includes('/grades/submit/')) {
-        enhanceGradeInputs();
+        window.enhanceGradeInputs();
     }
 });
 
