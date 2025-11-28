@@ -1968,6 +1968,17 @@ window.forwardViolation = function(violationId) {
       button.innerHTML = '<i class="ri-loader-line spinner-border spinner-border-sm"></i>';
       button.disabled = true;
 
+      // Get CSRF token
+      const csrfTokenMeta = document.querySelector('meta[name="csrf-token"]');
+      const csrfToken = csrfTokenMeta?.getAttribute('content') || '';
+      
+      if (!csrfToken) {
+        alert('Security token not found. Please refresh the page and try again.');
+        button.innerHTML = originalHTML;
+        button.disabled = false;
+        return;
+      }
+
       // Use AJAX to forward violation
       fetch(`/discipline/violations/${violationId}/forward`, {
         method: 'POST',
@@ -1976,17 +1987,24 @@ window.forwardViolation = function(violationId) {
           'Content-Type': 'application/json',
           'X-Requested-With': 'XMLHttpRequest',
           'Accept': 'application/json',
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+          'X-CSRF-TOKEN': csrfToken
         },
         body: JSON.stringify({
-          '_token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+          '_token': csrfToken
         })
       })
       .then(response => {
+        if (response.status === 419) {
+          throw new Error('Session expired. Please refresh the page and try again.');
+        }
         if (response.ok) {
           return response.json();
         } else {
-          throw new Error('Forward failed with status: ' + response.status);
+          return response.json().then(data => {
+            throw new Error(data.message || 'Forward failed with status: ' + response.status);
+          }).catch(() => {
+            throw new Error('Forward failed with status: ' + response.status);
+          });
         }
       })
       .then(data => {
