@@ -165,7 +165,7 @@ class Enrollee extends Authenticatable
 
     public function processedBy()
     {
-        return $this->belongsTo(User::class, 'processed_by');
+        return $this->belongsTo(Registrar::class, 'processed_by');
     }
 
     public function student()

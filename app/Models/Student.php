@@ -15,7 +15,6 @@ class Student extends Authenticatable
     use HasFactory, Notifiable, HasRoles;
 
     protected $fillable = [
-        'user_id',
         'enrollee_id',
         'student_id',
         'lrn',
@@ -29,7 +28,6 @@ class Student extends Authenticatable
         'suffix',
         'full_name',
         'date_of_birth',
-        'place_of_birth',
         'gender',
         'nationality',
         'religion',

@@ -232,6 +232,7 @@ class RegistrarController extends Controller
                 'enrollment_status' => 'approved',
                 'approved_at' => now(),
                 'approved_by' => Auth::guard('registrar')->id(),
+                'processed_by' => Auth::guard('registrar')->id(),
                 'evaluation_completed_at' => now(),
                 'evaluation_completed_by' => Auth::guard('registrar')->id(),
             ]);
@@ -283,6 +284,7 @@ class RegistrarController extends Controller
                 'enrollment_status' => 'rejected',
                 'rejected_at' => now(),
                 'rejected_by' => Auth::guard('registrar')->id(),
+                'processed_by' => Auth::guard('registrar')->id(),
                 'status_reason' => $request->reason,
                 'evaluation_completed_at' => now(),
                 'evaluation_completed_by' => Auth::guard('registrar')->id(),

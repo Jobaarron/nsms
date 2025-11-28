@@ -35,6 +35,9 @@ class Payment extends Model
         'period_name',
         // 'payment_mode', // Removed - redundant with payment_method
         'amount_received',
+        'receipt_token',
+        'receipt_token_expires_at',
+        'receipt_access_count',
     ];
 
     /**
@@ -75,6 +78,7 @@ class Payment extends Model
         'others_fee' => 'decimal:2',
         'total_fee' => 'decimal:2',
         'amount_received' => 'decimal:2',
+        'receipt_token_expires_at' => 'datetime',
     ];
 
     /**

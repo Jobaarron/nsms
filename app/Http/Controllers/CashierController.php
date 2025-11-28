@@ -13,6 +13,8 @@ use App\Models\Enrollee;
 use App\Models\Fee;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\PaymentConfirmedMail;
 
 class CashierController extends Controller
 {
@@ -294,6 +296,24 @@ class CashierController extends Controller
                 
                 Log::info("Student payment updated - ID: {$student->id}, Total Paid: {$totalPaid}, Fully Paid: " . ($isFullyPaid ? 'Yes' : 'No'));
             }
+        }
+
+        // Send payment confirmation email with receipt link
+        try {
+            $student = null;
+            if ($payment->payable_type === 'App\\Models\\Student') {
+                $student = $payment->payable;
+            } elseif ($payment->payable_type === 'App\\Models\\Enrollee') {
+                $enrollee = $payment->payable;
+                $student = $enrollee->student;
+            }
+
+            if ($student && $student->email) {
+                Mail::to($student->email)->send(new PaymentConfirmedMail($payment));
+                Log::info("Payment confirmation email sent to {$student->email} for payment ID: {$payment->id}");
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to send payment confirmation email: ' . $e->getMessage());
         }
 
         return response()->json([
