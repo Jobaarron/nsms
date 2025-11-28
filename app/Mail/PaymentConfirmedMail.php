@@ -9,19 +9,22 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 use App\Models\Payment;
+use App\Models\Student;
 
 class PaymentConfirmedMail extends Mailable
 {
     use Queueable, SerializesModels;
 
     public $payment;
+    public $student;
 
     /**
      * Create a new message instance.
      */
-    public function __construct(Payment $payment)
+    public function __construct(Payment $payment, Student $student)
     {
         $this->payment = $payment;
+        $this->student = $student;
     }
 
     /**

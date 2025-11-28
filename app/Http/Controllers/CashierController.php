@@ -300,25 +300,25 @@ class CashierController extends Controller
 
         // Send payment confirmation email
         try {
-            $studentEmail = null;
+            $student = null;
             if ($payment->payable_type === 'App\\Models\\Student') {
                 $student = $payment->payable;
-                $studentEmail = $student->email;
             } elseif ($payment->payable_type === 'App\\Models\\Enrollee') {
                 $enrollee = $payment->payable;
-                $studentEmail = $enrollee->email;
+                $student = $enrollee->student;
             }
 
-            if ($studentEmail) {
-                Mail::to($studentEmail)->send(new PaymentConfirmedMail($payment));
+            if ($student && $student->email) {
+                Mail::to($student->email)->send(new PaymentConfirmedMail($payment, $student));
                 Log::info('Payment confirmation email sent', [
                     'payment_id' => $payment->id,
-                    'email' => $studentEmail,
-                    'transaction_id' => $payment->transaction_id
+                    'student_id' => $student->id,
+                    'email' => $student->email,
+                    'time' => now()->toDateTimeString()
                 ]);
             }
         } catch (\Exception $emailError) {
-            Log::error('Payment confirmation email error: ' . $emailError->getMessage());
+            Log::error('Failed to send payment confirmation: ' . $emailError->getMessage());
         }
 
         return response()->json([
