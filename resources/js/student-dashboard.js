@@ -111,8 +111,19 @@ function showAlert(message, type = 'info') {
 
 // Alert Manager Functions
 const ALERT_STORAGE_PREFIX = 'student_alert_';
-const ALERT_DURATION_DAYS = 7;
+const ALERT_DURATION_DAYS = 14; // Alerts disappear after 14 days OR when quarter ends
 const ALERT_DURATION_MS = ALERT_DURATION_DAYS * 24 * 60 * 60 * 1000;
+
+// Academic Calendar - Philippine Academic Year (June to May)
+const QUARTER_END_DATES = {
+    '1st': { month: 8, day: 31 },   // August 31 - End of 1st Quarter (June, July, August)
+    '2nd': { month: 11, day: 30 },  // November 30 - End of 2nd Quarter (Sept, Oct, Nov)
+    '3rd': { month: 2, day: 28 },   // February 28 - End of 3rd Quarter (Dec, Jan, Feb)
+    '4th': { month: 5, day: 31 }    // May 31 - End of 4th Quarter (March, April, May)
+};
+
+// Days before quarter end to show alert
+const DAYS_BEFORE_QUARTER_END = 14;
 
 function getAlertStorageKey(alertType) {
     return `${ALERT_STORAGE_PREFIX}${alertType}`;
@@ -132,12 +143,54 @@ function shouldHideAlert(alertType) {
         const currentTime = new Date().getTime();
         const timePassed = currentTime - dismissedTime;
 
-        // If 7 days have passed, return true (should hide)
-        return timePassed >= ALERT_DURATION_MS;
+        // Check if 14 days have passed
+        if (timePassed >= ALERT_DURATION_MS) {
+            return true; // Hide if 14 days passed
+        }
+
+        // Check if quarter is about to end (within 14 days)
+        if (isQuarterAboutToEnd()) {
+            return false; // Keep showing if quarter ending soon
+        }
+
+        return false;
     } catch (e) {
         console.error('Error parsing alert data:', e);
         return false;
     }
+}
+
+/**
+ * Check if current date is within 14 days of any quarter end date
+ */
+function isQuarterAboutToEnd() {
+    const today = new Date();
+    const currentMonth = today.getMonth() + 1; // JavaScript months are 0-indexed
+    const currentDay = today.getDate();
+
+    // Check each quarter end date
+    for (const [quarter, endDate] of Object.entries(QUARTER_END_DATES)) {
+        const quarterEndDate = new Date(today.getFullYear(), endDate.month - 1, endDate.day);
+        
+        // Handle year boundary for 3rd quarter (December-February)
+        if (quarter === '3rd' && currentMonth < 3) {
+            // We're in Jan/Feb, so quarter end is in current year
+            quarterEndDate.setFullYear(today.getFullYear());
+        } else if (quarter === '3rd' && currentMonth >= 12) {
+            // We're in Dec, so quarter end is next year
+            quarterEndDate.setFullYear(today.getFullYear() + 1);
+        }
+
+        const daysUntilEnd = Math.ceil((quarterEndDate - today) / (1000 * 60 * 60 * 24));
+        
+        // If within 14 days before quarter end, show alert
+        if (daysUntilEnd > 0 && daysUntilEnd <= DAYS_BEFORE_QUARTER_END) {
+            console.log(`📅 Quarter ending soon: ${quarter} Quarter ends in ${daysUntilEnd} days`);
+            return true;
+        }
+    }
+
+    return false;
 }
 
 function dismissAlert(alertType) {
@@ -206,6 +259,11 @@ function getRemainingDays(alertType) {
         const timePassed = currentTime - dismissedTime;
         const remainingMs = ALERT_DURATION_MS - timePassed;
         const remainingDays = Math.ceil(remainingMs / (24 * 60 * 60 * 1000));
+
+        // Check if quarter is ending soon
+        if (isQuarterAboutToEnd()) {
+            return -1; // Special value indicating "quarter ending soon"
+        }
 
         return Math.max(0, remainingDays);
     } catch (e) {
