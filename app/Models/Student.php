@@ -429,12 +429,91 @@ class Student extends Authenticatable
 
     /**
      * Check if student has paid for a specific quarter
+     * Supports full, quarterly, and monthly payment methods
      */
     public function hasPaidForQuarter($quarter)
     {
-        // Integration with existing payment system
-        // This checks if the student has made payments for the required fees
-        return $this->is_paid || $this->total_paid > 0;
+        // If fully paid, can access all quarters
+        if ($this->is_paid && $this->enrollment_status === 'enrolled') {
+            return true;
+        }
+
+        // Check payment method and quarter-specific access
+        $confirmedPayments = $this->payments()
+            ->where('confirmation_status', 'confirmed')
+            ->where('status', 'paid')
+            ->get();
+
+        if ($confirmedPayments->isEmpty()) {
+            return false;
+        }
+
+        // Check payment method
+        $paymentMethods = $confirmedPayments->pluck('payment_method')->unique();
+
+        // Full payment - access all quarters
+        if ($paymentMethods->contains('full')) {
+            return true;
+        }
+
+        // Quarterly payment - check if this quarter is paid
+        if ($paymentMethods->contains('quarterly')) {
+            $quarterlyPayment = $confirmedPayments->firstWhere('payment_method', 'quarterly');
+            if ($quarterlyPayment && $quarterlyPayment->period_name) {
+                // period_name format: "1st Quarter", "2nd Quarter", etc.
+                return strpos($quarterlyPayment->period_name, $quarter) !== false;
+            }
+        }
+
+        // Monthly payment - check if current month of quarter is paid
+        if ($paymentMethods->contains('monthly')) {
+            $currentMonth = now()->month;
+            $quarterMonths = $this->getQuarterMonths($quarter);
+            
+            // Check if any month in this quarter is paid
+            foreach ($quarterMonths as $month) {
+                $monthlyPayment = $confirmedPayments->firstWhere(function ($payment) use ($month) {
+                    return $payment->payment_method === 'monthly' && 
+                           $payment->period_name && 
+                           strpos($payment->period_name, $this->getMonthName($month)) !== false;
+                });
+                
+                if ($monthlyPayment && $month <= $currentMonth) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Get months for a specific quarter
+     */
+    private function getQuarterMonths($quarter)
+    {
+        $quarterMonths = [
+            '1st' => [6, 7, 8],        // June, July, August
+            '2nd' => [9, 10, 11],      // September, October, November
+            '3rd' => [12, 1, 2],       // December, January, February
+            '4th' => [3, 4, 5]         // March, April, May
+        ];
+        
+        return $quarterMonths[$quarter] ?? [];
+    }
+
+    /**
+     * Get month name from month number
+     */
+    private function getMonthName($month)
+    {
+        $months = [
+            1 => 'January', 2 => 'February', 3 => 'March', 4 => 'April',
+            5 => 'May', 6 => 'June', 7 => 'July', 8 => 'August',
+            9 => 'September', 10 => 'October', 11 => 'November', 12 => 'December'
+        ];
+        
+        return $months[$month] ?? '';
     }
 
     /**

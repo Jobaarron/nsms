@@ -289,15 +289,6 @@ Route::middleware(['auth', 'role:teacher|faculty_head'])->prefix('teacher')->nam
         ->name('mark-alert-viewed');
 });
 
-// Student Schedule Routes (requires payment)
-Route::middleware(['auth:student', 'student.payment'])->prefix('student')->name('student.')->group(function () {
-    Route::get('/schedule', [App\Http\Controllers\StudentScheduleController::class, 'index'])
-        ->name('schedule.index');
-    Route::get('/schedule/calendar', [App\Http\Controllers\StudentScheduleController::class, 'weeklyCalendar'])
-        ->name('schedule.calendar');
-    Route::get('/schedule/data', [App\Http\Controllers\StudentScheduleController::class, 'getScheduleData'])
-        ->name('schedule.data');
-});
 
 // Student Grade Routes (requires payment)
 Route::middleware(['auth:student', 'student.payment'])->prefix('student')->name('student.')->group(function () {

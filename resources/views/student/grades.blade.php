@@ -25,6 +25,18 @@
     </div>
   @endif
 
+  <!-- Payment Status Check -->
+  @if(!$student->is_paid || $student->enrollment_status !== 'enrolled')
+    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+      <h5><i class="ri-alert-line me-2"></i>Payment Required</h5>
+      <p class="mb-2">To view your grades, please ensure your payments are up to date and your enrollment is complete.</p>
+      <a href="{{ route('student.payments') }}" class="btn btn-outline-primary btn-sm">
+        <i class="ri-money-dollar-circle-line me-2"></i>View Payments
+      </a>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  @endif
+
     {{-- ACADEMIC PERFORMANCE OVERVIEW - COMMENTED OUT FOR TESTING --}}
     {{-- @if(isset($performance) && !empty($performance['quarters']))
     <div class="card mb-4">
@@ -110,6 +122,7 @@
     <!-- @endif -->
 
     <!-- QUARTERS SELECTION -->
+    @if($student->is_paid && $student->enrollment_status === 'enrolled')
     <div class="card mb-4">
       <div class="card-header">
         <h5 class="mb-0">
@@ -124,9 +137,10 @@
               $quarterData = collect($availableQuarters)->firstWhere('quarter', $quarter);
               $hasGrades = $quarterData !== null;
               $lastGradeUpdate = $quarterData['last_updated_at'] ?? null;
+              $hasPaidForQuarter = $student->hasPaidForQuarter($quarter);
             @endphp
             
-            @if($hasGrades)
+            @if($hasGrades && $hasPaidForQuarter)
               <button type="button" class="btn p-0 w-100 text-decoration-none" onclick="viewQuarterGrades('{{ $quarter }}')">
                 <div class="card card-summary card-application h-100" data-quarter="{{ $quarter }} Quarter" data-updated-at="{{ $lastGradeUpdate }}">
                   <div class="card-body text-center">
@@ -137,13 +151,13 @@
                 </div>
               </button>
             @else
-              <div class="card h-100 opacity-50" data-quarter="{{ $quarter }} Quarter">
+              <div class="card h-100 opacity-50" data-quarter="{{ $quarter }} Quarter" title="@if(!$hasPaidForQuarter)Payment required for this quarter@else No grades available yet@endif">
                 <div class="card-body text-center">
                   <i class="ri-file-line display-6 mb-2 text-muted"></i>
                   <div class="text-muted">{{ $quarter }} Quarter</div>
                   <small class="text-muted">
-                    @if(!$student->hasPaidForQuarter($quarter))
-                      Payment Required
+                    @if(!$hasPaidForQuarter)
+                      <i class="ri-lock-line me-1"></i>Payment Required
                     @else
                       No Grades Yet
                     @endif
@@ -156,15 +170,15 @@
         </div>
       </div>
     </div>
-
-    <!-- PAYMENT STATUS INFO -->
-    @if(!$student->is_paid && $student->total_paid <= 0)
-    <div class="alert alert-warning">
-      <h5><i class="ri-alert-line me-2"></i>Payment Required</h5>
-      <p class="mb-2">To view your grades, please ensure your payments are up to date.</p>
-      <a href="{{ route('student.payments') }}" class="btn btn-outline-primary">
-        <i class="ri-money-dollar-circle-line me-2"></i>View Payments
+    @else
+    <!-- Payment Required Alert -->
+    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+      <h5><i class="ri-alert-line me-2"></i>Payment Required to View Grades</h5>
+      <p class="mb-2">To access your grades, please complete your enrollment and settle your payment.</p>
+      <a href="{{ route('student.payments') }}" class="btn btn-outline-primary btn-sm">
+        <i class="ri-money-dollar-circle-line me-2"></i>View Payment Options
       </a>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
     @endif
 

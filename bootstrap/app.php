@@ -87,5 +87,13 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions) {
        
     })
-  
+    ->withSchedule(function ($schedule) {
+        // Delete Grade 12 completed data after 3 days
+        $schedule->command('app:delete-grade12-completed-data')
+            ->dailyAt('03:00') // Run daily at 3 AM
+            ->withoutOverlapping()
+            ->onFailure(function () {
+                \Illuminate\Support\Facades\Log::error('DeleteGrade12CompletedData command failed');
+            });
+    })
     ->create();
