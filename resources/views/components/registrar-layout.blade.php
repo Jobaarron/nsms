@@ -51,23 +51,23 @@
 
 </head>
 <body>
-  <!-- Sidebar Toggle Button (Desktop & Mobile) -->
+
   <button class="sidebar-toggle d-block" type="button">
     <i class="ri-menu-line"></i>
   </button>
 
-  <!-- SIDEBAR -->
+  
   <nav class="sidebar py-4 bg-white border-end">
-    <!-- School Logo -->
+    
     <div class="text-center mb-3">
       <img src="{{ Vite::asset('resources/assets/images/nms-logo.png') }}" alt="Nicolites Montessori School" class="sidebar-logo">
     </div>
         
-        <!-- User Info -->
-        {{-- <div class="user-info">
-          <div class="user-name">{{ auth('registrar')->user()->name ?? 'Registrar' }}</div>
-          <div class="user-role">Registrar</div>
-        </div> --}}
+    <!-- User Info -->
+    <div class="user-info">
+      <div class="user-name">{{ Auth::user()->name }}</div>
+      <div class="user-role">{{ ucwords(str_replace('_', ' ', Auth::user()->getRoleNames()->first())) }}</div>
+    </div>
 
         <ul class="nav flex-column px-3">
           <li class="nav-item">

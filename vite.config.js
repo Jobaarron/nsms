@@ -66,6 +66,7 @@ export default defineConfig({
                 'resources/js/enrollee-application.js',
                 'resources/js/admin-role-access.js',
                 'resources/js/role-modals.js',
+                'resources/js/admin-accounts-manager.js',
 
                 'resources/js/user-management.js',
                 'resources/js/enrollee-index.js',

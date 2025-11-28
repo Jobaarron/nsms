@@ -56,11 +56,11 @@
       <img src="{{ Vite::asset('resources/assets/images/nms-logo.png') }}" alt="Nicolites Montessori School" class="sidebar-logo">
     </div>
         
-        <!-- User Info -->
-        {{-- <div class="user-info">
-          <div class="user-name">{{ Auth::check() ? Auth::user()->name : 'Guest' }}</div>
-          <div class="user-role">{{ Auth::check() ? ucwords(str_replace('_', ' ', Auth::user()->getRoleNames()->first())) : 'Discipline Portal' }}</div>
-        </div> --}}
+    <!-- User Info -->
+    <div class="user-info">
+      <div class="user-name">{{ Auth::user()->name }}</div>
+      <div class="user-role">{{ ucwords(str_replace('_', ' ', Auth::user()->getRoleNames()->first())) }}</div>
+    </div>
 
         <!-- Navigation -->
         <ul class="nav flex-column">

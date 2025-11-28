@@ -83,18 +83,11 @@
       <img src="{{ Vite::asset('resources/assets/images/nms-logo.png') }}" alt="Nicolites Montessori School" class="sidebar-logo">
     </div>
         
-        <!-- User Info -->
-        {{-- <div class="user-info mb-4 p-3 bg-light rounded">
-          <div class="d-flex align-items-center">
-            <div class="avatar-circle me-3">
-              <i class="ri-money-dollar-circle-line"></i>
-            </div>
-            <div>
-              <h6 class="mb-0">{{ Auth::guard('cashier')->user()->first_name ?? 'Cashier' }}</h6>
-              <small class="text-muted">{{ Auth::guard('cashier')->user()->employee_id ?? 'ID: N/A' }}</small>
-            </div>
-          </div>
-        </div> --}}
+    <!-- User Info -->
+    <div class="user-info">
+      <div class="user-name">{{ Auth::user()->full_name }}</div>
+      <div class="user-role">{{ ucwords(str_replace('_', ' ', Auth::user()->getRoleNames()->first())) }}</div>
+    </div>
 
         <ul class="nav flex-column">
           <li class="nav-item mb-2">

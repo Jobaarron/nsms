@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
@@ -386,23 +387,27 @@ public function getUserRoles(User $user)
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required|min:8|confirmed',
-            'roles' => 'array'
+            'password' => 'required|string|min:6',
+            'role' => 'required|string|in:admin,teacher,faculty_head,registrar,cashier,guidance_counselor,discipline_officer'
         ]);
+
+        $password = $request->password;
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'password' => Hash::make($request->password)
+            'password' => Hash::make($password)
         ]);
 
-        if ($request->roles) {
-            $user->assignRole($request->roles);
-        }
+        // Assign the specified role
+        $user->assignRole($request->role);
+
+        // Store plain password in database for admin viewing
+        $user->update(['plain_password' => $password]);
 
         return response()->json([
             'success' => true,
-            'message' => "User '{$request->name}' created successfully!"
+            'message' => "Account for '{$request->name}' created successfully!"
         ]);
     }
 
@@ -417,8 +422,8 @@ public function getUserRoles(User $user)
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $id,
-            'password' => 'nullable|min:8|confirmed',
-            'roles' => 'array'
+            'password' => 'nullable|string|min:6',
+            'role' => 'required|string|in:admin,teacher,faculty_head,registrar,cashier,guidance_counselor,discipline_officer'
         ]);
 
         $user = User::findOrFail($id);
@@ -427,17 +432,20 @@ public function getUserRoles(User $user)
             'email' => $request->email,
         ]);
 
+        // Update password if provided
         if ($request->password) {
-            $user->update(['password' => Hash::make($request->password)]);
+            $user->update([
+                'password' => Hash::make($request->password),
+                'plain_password' => $request->password
+            ]);
         }
 
-        if ($request->has('roles')) {
-            $user->syncRoles($request->roles ?? []);
-        }
+        // Sync the role
+        $user->syncRoles([$request->role]);
 
         return response()->json([
             'success' => true,
-            'message' => "User '{$request->name}' updated successfully!"
+            'message' => "Account for '{$request->name}' updated successfully!"
         ]);
     }
 
@@ -459,6 +467,29 @@ public function getUserRoles(User $user)
         return response()->json([
             'success' => true,
             'message' => "User '{$userName}' deleted successfully!"
+        ]);
+    }
+
+    public function getUserPassword($id)
+    {
+        $user = User::findOrFail($id);
+        
+        // Fetch the real password from plain_password column
+        $plainPassword = $user->plain_password;
+        
+        // If no plain password found, return empty (user will need to set new password)
+        if (!$plainPassword) {
+            return response()->json([
+                'success' => true,
+                'password' => '',
+                'message' => 'Password not available. Please set a new password.'
+            ]);
+        }
+        
+        return response()->json([
+            'success' => true,
+            'password' => $plainPassword,
+            'message' => 'Current password retrieved.'
         ]);
     }
 

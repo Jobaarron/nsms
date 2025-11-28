@@ -123,6 +123,11 @@ Route::prefix('admin')->group(function () {
             // User Management
             Route::get('/user-management', [UserManagementController::class, 'index'])->name('user.management');
 
+            // Account Management (Add, Edit, Delete)
+            Route::post('/accounts', [AdminController::class, 'storeUser'])->name('accounts.store');
+            Route::put('/accounts/{user}', [AdminController::class, 'updateUser'])->name('accounts.update');
+            Route::delete('/accounts/{user}', [AdminController::class, 'destroyUser'])->name('accounts.destroy');
+            Route::get('/accounts/{user}/password', [AdminController::class, 'getUserPassword'])->name('accounts.password');
             
         // Contact Messages Management
         Route::get('/contact-messages', [ContactController::class, 'adminIndex'])->name('contact.messages');
