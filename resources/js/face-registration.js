@@ -267,15 +267,27 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.log('🎉 Registration successful!');
                     faceStatus.textContent = 'Face registered successfully!';
                     faceStatus.style.background = 'rgba(40,167,69,0.8)';
-                    alert('✅ Face registration completed successfully!');
-                    // Update face image in UI if new image URL is returned
+                    
+                    // Update all UI elements in real-time
                     if (json.face_image_data_url) {
                         updateCurrentFaceImage(
                             json.face_image_data_url, 
-                            json.registration_date || 'Today', 
+                            json.registration_date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }), 
                             json.source || 'Camera Capture'
                         );
                     }
+                    
+                    // Update face status badge in page header
+                    updateFaceStatusBadge(true);
+                    
+                    // Update success alert
+                    updateSuccessAlert();
+                    
+                    // Update registration history
+                    if (json.registration_date) {
+                        updateRegistrationHistory(json.registration_date, json.source || 'camera_capture');
+                    }
+                    
                     // Clear captured photo and reset UI
                     const capturedPhotosCard = document.getElementById('capturedPhotosCard');
                     if (capturedPhotosCard) {
@@ -285,6 +297,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     faceData = { landmarks: null, confidence: 0, encoding: null };
                     savePhotosBtn.disabled = true;
                     savePhotosBtn.innerHTML = '<i class="ri-save-line me-2"></i>Save Face Registration';
+                    
+                    alert('✅ Face registration completed successfully!');
                 } else {
                     console.warn('⚠️ Registration failed:', json.message);
                     faceStatus.textContent = 'Registration failed: ' + (json.message || 'Unknown error');
@@ -414,13 +428,24 @@ savePhotosBtn.addEventListener('click', async function() {
             faceStatus.textContent = 'Face registered successfully!';
             faceStatus.style.background = 'rgba(40,167,69,0.8)';
             
-            // Update the current face image display without page reload
+            // Update all UI elements in real-time
             if (json.face_image_data_url) {
                 updateCurrentFaceImage(
                     json.face_image_data_url, 
-                    json.registration_date || 'Today', 
+                    json.registration_date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }), 
                     json.source || 'Camera Capture'
                 );
+            }
+            
+            // Update face status badge in page header
+            updateFaceStatusBadge(true);
+            
+            // Update success alert
+            updateSuccessAlert();
+            
+            // Update registration history
+            if (json.registration_date) {
+                updateRegistrationHistory(json.registration_date, json.source || 'camera_capture');
             }
             
             // Clear the captured photo and reset UI
@@ -470,11 +495,21 @@ savePhotosBtn.addEventListener('click', async function() {
     // Display captured photo
     function displayCapturedPhoto() {
         const capturedPhotosCard = document.getElementById('capturedPhotosCard');
-        const capturedImage = document.getElementById('capturedImage');
-        if (capturedPhotosCard && capturedImage && capturedPhoto) {
-            capturedImage.src = capturedPhoto;
+        const capturedPhotos = document.getElementById('capturedPhotos');
+        
+        if (capturedPhotosCard && capturedPhotos && capturedPhoto) {
+            // Create image preview
+            capturedPhotos.innerHTML = `
+                <div class="col-12 text-center">
+                    <img src="${capturedPhoto}" alt="Captured Face" class="img-fluid" style="max-width: 300px; border-radius: 0.5rem; border: 3px solid var(--primary-color);">
+                    <div class="mt-2">
+                        <span class="badge bg-success">Ready to Save</span>
+                        ${faceData.confidence > 0 ? `<span class="badge bg-info ms-2">Confidence: ${faceData.confidence}%</span>` : ''}
+                    </div>
+                </div>
+            `;
             capturedPhotosCard.style.display = 'block';
-            console.log('🖼️ Captured photo displayed');
+            console.log('🖼️ Captured photo displayed with preview');
         }
     }
 
@@ -567,6 +602,108 @@ savePhotosBtn.addEventListener('click', async function() {
         return Math.abs(hash).toString(36);
     }
 
+    // Helper function to update face status badge in real-time
+    function updateFaceStatusBadge(isRegistered) {
+        const statusBadge = document.querySelector('.text-end .badge');
+        if (statusBadge) {
+            statusBadge.className = isRegistered ? 'badge bg-success' : 'badge bg-warning';
+            statusBadge.textContent = isRegistered ? 'Registered' : 'Not Registered';
+            console.log('✅ Face status badge updated to:', isRegistered ? 'Registered' : 'Not Registered');
+        }
+    }
+    
+    // Helper function to show/update success alert in real-time
+    function updateSuccessAlert() {
+        // Check if alert already exists
+        let alertDiv = document.querySelector('.alert-success');
+        
+        if (!alertDiv) {
+            // Create new alert if it doesn't exist
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'row mb-4';
+            rowDiv.innerHTML = `
+                <div class="col-12">
+                    <div class="alert alert-success border-0 shadow-sm">
+                        <div class="d-flex align-items-center">
+                            <i class="ri-check-line fs-4 me-3"></i>
+                            <div>
+                                <h6 class="alert-heading mb-1">Face Already Registered</h6>
+                                <p class="mb-0">Your facial data has been successfully registered. You can update it below if needed.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Insert after page header
+            const pageHeader = document.querySelector('.row.mb-4');
+            if (pageHeader && pageHeader.nextElementSibling) {
+                pageHeader.parentNode.insertBefore(rowDiv, pageHeader.nextElementSibling);
+            } else if (pageHeader) {
+                pageHeader.parentNode.appendChild(rowDiv);
+            }
+            console.log('✅ Success alert created');
+        } else {
+            console.log('✅ Success alert already exists');
+        }
+    }
+    
+    // Helper function to update registration history in real-time
+    function updateRegistrationHistory(registrationDate, source) {
+        const historyCard = document.querySelector('.card .ri-history-line')?.closest('.card');
+        if (!historyCard) {
+            console.log('Registration history card not found, skipping update');
+            return;
+        }
+        
+        const timeline = historyCard.querySelector('.timeline');
+        if (!timeline) {
+            console.log('Timeline not found, creating new history section');
+            const cardBody = historyCard.querySelector('.card-body');
+            if (cardBody) {
+                cardBody.innerHTML = '<div class="timeline"></div>';
+            }
+        }
+        
+        const timelineContainer = historyCard.querySelector('.timeline');
+        if (timelineContainer) {
+            // Mark all existing items as inactive
+            const existingItems = timelineContainer.querySelectorAll('.timeline-item');
+            existingItems.forEach(item => {
+                item.classList.remove('completed');
+                const heading = item.querySelector('h6');
+                if (heading) {
+                    heading.classList.remove('text-success');
+                    heading.classList.add('text-muted');
+                    const badge = heading.querySelector('.badge');
+                    if (badge) badge.remove();
+                }
+            });
+            
+            // Add new active registration at the top
+            const newItem = document.createElement('div');
+            newItem.className = 'timeline-item completed';
+            const formattedDate = new Date(registrationDate).toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric', 
+                year: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+            });
+            newItem.innerHTML = `
+                <h6 class="mb-1 text-success">
+                    <i class="ri-camera-line me-1"></i>Face Registration
+                    <span class="badge bg-success ms-2">Active</span>
+                </h6>
+                <small class="text-muted d-block">${formattedDate}</small>
+                <small class="text-muted">Source: ${source.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</small>
+            `;
+            timelineContainer.insertBefore(newItem, timelineContainer.firstChild);
+            console.log('✅ Registration history updated');
+        }
+    }
+    
     // Delete face registration
     window.confirmDeleteFace = function() {
         if (confirm('Are you sure you want to delete your face registration data?')) {
@@ -590,7 +727,35 @@ savePhotosBtn.addEventListener('click', async function() {
             const data = JSON.parse(text);
             if (data.success) {
                 alert('Face registration removed successfully!');
-                window.location.reload();
+                
+                // Update UI in real-time instead of page reload
+                updateFaceStatusBadge(false);
+                
+                // Remove success alert
+                const successAlert = document.querySelector('.alert-success');
+                if (successAlert && successAlert.closest('.row')) {
+                    successAlert.closest('.row').remove();
+                }
+                
+                // Remove current registration card
+                const currentRegCard = document.querySelector('.card .ri-id-card-line')?.closest('.card');
+                if (currentRegCard) {
+                    currentRegCard.remove();
+                }
+                
+                // Clear registration history
+                const historyCard = document.querySelector('.card .ri-history-line')?.closest('.card');
+                if (historyCard) {
+                    historyCard.remove();
+                }
+                
+                // Remove delete button from quick actions
+                const deleteButton = document.querySelector('.btn-outline-danger');
+                if (deleteButton) {
+                    deleteButton.remove();
+                }
+                
+                console.log('✅ UI updated after face registration deletion');
             } else {
                 throw new Error(data.message || 'Failed to delete registration');
             }

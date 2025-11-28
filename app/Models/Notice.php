@@ -218,10 +218,12 @@ class Notice extends Model
 
     /**
      * Get notices for a specific enrollee (including global notices)
+     * Excludes guidance-specific notifications (teacher replies, counseling recommendations, etc.)
      */
     public static function getForEnrollee($enrolleeId, $limit = null)
     {
         $query = static::forEnrollee($enrolleeId)
+            ->excludeGuidanceSpecific()
             ->orderBy('created_at', 'desc');
 
         if ($limit) {
@@ -236,7 +238,7 @@ class Notice extends Model
      */
     public static function getUnreadCountForEnrollee($enrolleeId)
     {
-        return static::forEnrollee($enrolleeId)->unread()->count();
+        return static::forEnrollee($enrolleeId)->excludeGuidanceSpecific()->unread()->count();
     }
 
     /**
@@ -383,19 +385,36 @@ class Notice extends Model
         return $query->where(function($q) {
             $q->where('title', 'NOT LIKE', '%case meeting%')
               ->where('title', 'NOT LIKE', '%counseling session%')
+              ->where('title', 'NOT LIKE', '%counseling%')
               ->where('title', 'NOT LIKE', '%teacher reply%')
               ->where('title', 'NOT LIKE', '%Case Meeting%')
               ->where('title', 'NOT LIKE', '%Counseling Session%')
+              ->where('title', 'NOT LIKE', '%Counseling%')
               ->where('title', 'NOT LIKE', '%Teacher Reply%')
               ->where('title', 'NOT LIKE', '%forwarded%')
               ->where('title', 'NOT LIKE', '%Forwarded%')
               ->where('title', 'NOT LIKE', '%recommended%')
               ->where('title', 'NOT LIKE', '%Recommended%')
+              ->where('title', 'NOT LIKE', '%discipline%')
+              ->where('title', 'NOT LIKE', '%Discipline%')
+              ->where('title', 'NOT LIKE', '%Disciplinary%')
+              ->where('title', 'NOT LIKE', '%violation%')
+              ->where('title', 'NOT LIKE', '%Violation%')
+              ->where('title', 'NOT LIKE', '%Test %')
+              ->where('title', 'NOT LIKE', '%test %')
+              ->where('title', 'NOT LIKE', 'Test %')
               ->where('message', 'NOT LIKE', '%case meeting%')
               ->where('message', 'NOT LIKE', '%counseling session%')
+              ->where('message', 'NOT LIKE', '%counseling%')
               ->where('message', 'NOT LIKE', '%teacher reply%')
               ->where('message', 'NOT LIKE', '%forwarded%')
-              ->where('message', 'NOT LIKE', '%recommended%');
+              ->where('message', 'NOT LIKE', '%recommended%')
+              ->where('message', 'NOT LIKE', '%discipline officer%')
+              ->where('message', 'NOT LIKE', '%disciplinary case%')
+              ->where('message', 'NOT LIKE', '%violation case%')
+              ->where('message', 'NOT LIKE', '%test notification%')
+              ->where('message', 'NOT LIKE', '%test.php script%')
+              ->where('message', 'NOT LIKE', '%static method%');
         });
     }
 

@@ -550,11 +550,12 @@ class EnrolleeController extends Controller
                 ], 401);
             }
             
-            // Get unread notices count
+            // Get unread notices count (excluding guidance-specific notices)
             $unreadCount = Notice::where(function($query) use ($enrollee) {
                 $query->where('enrollee_id', $enrollee->id)
                       ->orWhere('is_global', true);
             })
+            ->excludeGuidanceSpecific()
             ->where('is_read', false)
             ->count();
             
@@ -586,6 +587,7 @@ class EnrolleeController extends Controller
                     $query->where('enrollee_id', $enrollee->id)
                           ->orWhere('is_global', true);
                 })
+                ->excludeGuidanceSpecific()
                 ->with('createdBy')
                 ->first();
 
@@ -629,6 +631,7 @@ class EnrolleeController extends Controller
                     $query->where('enrollee_id', $enrollee->id)
                           ->orWhere('is_global', true);
                 })
+                ->excludeGuidanceSpecific()
                 ->first();
 
             if (!$notice) {
@@ -671,11 +674,12 @@ class EnrolleeController extends Controller
                 ], 401);
             }
             
-            // Get all unread notices for this enrollee
+            // Get all unread notices for this enrollee (excluding guidance-specific notices)
             $notices = Notice::where(function($query) use ($enrollee) {
                 $query->where('enrollee_id', $enrollee->id)
                       ->orWhere('is_global', true);
             })
+            ->excludeGuidanceSpecific()
             ->where('is_read', false)
             ->get();
 

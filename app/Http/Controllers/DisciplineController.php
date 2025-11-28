@@ -715,7 +715,9 @@ class DisciplineController extends Controller
     public function editViolation(Violation $violation)
     {
         $students = Student::select('id', 'first_name', 'last_name', 'student_id')
+            ->where('enrollment_status', 'enrolled')
             ->orderBy('last_name', 'asc')
+            ->orderBy('first_name', 'asc')
             ->get();
 
         return response()->json([
@@ -1061,6 +1063,8 @@ class DisciplineController extends Controller
                   ->orWhere('last_name', 'like', "%{$query}%")
                   ->orWhere('student_id', 'like', "%{$query}%");
             })
+            ->orderBy('last_name', 'asc')
+            ->orderBy('first_name', 'asc')
             ->limit(10)
             ->get(['id', 'first_name', 'last_name', 'student_id', 'grade_level', 'section', 'enrollment_status']);
 

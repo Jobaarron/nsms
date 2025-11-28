@@ -137,7 +137,7 @@
             <div class="card border-0 shadow-sm" id="capturedPhotosCard" style="display: none;">
                 <div class="card-header bg-white border-0 pb-0">
                     <h5 class="card-title mb-0">
-                        <i class="ri-image-line me-2"></i>Captured Photos
+                        <i class="ri-image-line me-2"></i>Review Your Photo
                     </h5>
                 </div>
                 <div class="card-body">
@@ -149,7 +149,7 @@
                             <i class="ri-save-line me-2"></i>Save Face Registration
                         </button>
                         <button type="button" class="btn btn-outline-secondary" id="clearPhotos">
-                            <i class="ri-delete-bin-line me-2"></i>Clear All
+                            <i class="ri-delete-bin-line me-2"></i>Clear Photo
                         </button>
                     </div>
                 </div>
