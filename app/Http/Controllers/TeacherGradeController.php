@@ -387,9 +387,19 @@ class TeacherGradeController extends Controller
         try {
             $request->validate([
                 'submission_id' => 'required|exists:grade_submissions,id',
-                'grades_file' => 'required|file|mimes:xlsx,xls,csv|max:2048'
+                'grades_file' => 'required|file|mimetypes:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv,text/plain|max:2048'
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
+            // Log validation errors for debugging
+            \Log::warning('Grade upload validation failed', [
+                'errors' => $e->errors(),
+                'file_info' => $request->file('grades_file') ? [
+                    'name' => $request->file('grades_file')->getClientOriginalName(),
+                    'mime' => $request->file('grades_file')->getMimeType(),
+                    'extension' => $request->file('grades_file')->getClientOriginalExtension(),
+                    'size' => $request->file('grades_file')->getSize()
+                ] : 'No file'
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
