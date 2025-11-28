@@ -534,6 +534,9 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
         Route::get('/notifications/count', [App\Http\Controllers\GuidanceController::class, 'getNotificationCount'])->name('notifications.count');
         Route::post('/notifications/{notification}/read', [App\Http\Controllers\GuidanceController::class, 'markNotificationAsRead'])->name('notifications.read');
         Route::post('/notifications/mark-all-read', [App\Http\Controllers\GuidanceController::class, 'markAllNotificationsAsRead'])->name('notifications.mark-all-read');
+        
+        // Alert dismissal
+        Route::post('/mark-alert-viewed', [App\Http\Controllers\GuidanceController::class, 'markAlertViewed'])->name('mark-alert-viewed');
             
         // Logout
         Route::post('/logout', [App\Http\Controllers\GuidanceController::class, 'logout'])->name('logout');

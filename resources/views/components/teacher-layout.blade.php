@@ -102,7 +102,8 @@
             $currentUser = auth()->user();
             $currentTeacher = $currentUser && $currentUser->teacher ? $currentUser->teacher : null;
             $isClassAdviser = $currentTeacher ? $currentTeacher->isClassAdviser() : false;
-            $unrepliedObservationReportsCount = $currentTeacher ? \App\Models\CaseMeeting::getUnrepliedObservationReportsCountForTeacher($currentTeacher->id) : 0;
+            // Pass user_id (not teacher id) since adviser_id in case_meetings table references users.id
+            $unrepliedObservationReportsCount = $currentUser && $currentTeacher ? \App\Models\CaseMeeting::getUnrepliedObservationReportsCountForTeacher($currentUser->id) : 0;
             $observationReportsViewed = session('observation_reports_alert_viewed', false);
           @endphp
 
@@ -126,14 +127,15 @@
             
             <li class="nav-item mb-2">
               @php
-                $pendingCounselingCount = $currentTeacher ? \App\Models\CounselingSession::getPendingCounselingRecommendationsCountForTeacher($currentTeacher->id) : 0;
+                // Pass user_id (not teacher id) since recommended_by in counseling_sessions table references users.id
+                $scheduledCounselingCount = $currentUser && $currentTeacher ? \App\Models\CounselingSession::getScheduledCounselingCountForAdviser($currentUser->id) : 0;
                 $counselingViewed = session('counseling_alert_viewed', false);
               @endphp
-              <a class="nav-link {{ request()->routeIs('teacher.recommend-counseling.*') ? 'active' : '' }} position-relative" href="{{ route('teacher.recommend-counseling.form') }}" title="Recommend Counseling" id="counseling-link" data-alert-link="counseling" style="{{ ($pendingCounselingCount > 0 && !$counselingViewed) ? 'background-color: #f8d7da; border-left: 4px solid #dc3545; padding-left: calc(0.75rem - 4px);' : '' }}">
+              <a class="nav-link {{ request()->routeIs('teacher.recommend-counseling.*') ? 'active' : '' }} position-relative" href="{{ route('teacher.recommend-counseling.form') }}" title="Recommend Counseling" id="counseling-link" data-alert-link="counseling" style="{{ ($scheduledCounselingCount > 0 && !$counselingViewed) ? 'background-color: #f8d7da; border-left: 4px solid #dc3545; padding-left: calc(0.75rem - 4px);' : '' }}">
                 <i class="ri-heart-pulse-line me-2"></i><span>Recommend Counseling</span>
-                @if($pendingCounselingCount > 0 && !$counselingViewed)
+                @if($scheduledCounselingCount > 0 && !$counselingViewed)
                   <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem; padding: 0.25rem 0.4rem;">
-                    {{ $pendingCounselingCount }}
+                    {{ $scheduledCounselingCount }}
                   </span>
                 @endif
               </a>

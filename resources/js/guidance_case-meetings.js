@@ -940,6 +940,17 @@ window.confirmCaseMeetingScheduling = function() {
                     errorMsg = errorData.message || 'You do not have permission to schedule meetings.';
                 } else if (response.status === 401) {
                     errorMsg = errorData.message || 'Your session has expired. Please login again.';
+                } else if (response.status === 409) {
+                    // Handle duplicate meeting conflict
+                    errorMsg = errorData.message || 'A meeting conflict exists.';
+                    if (errorData.existing_meeting) {
+                        errorMsg += '\n\nExisting Meeting Details:';
+                        errorMsg += '\nStudent: ' + errorData.existing_meeting.student_name;
+                        errorMsg += '\nDate: ' + errorData.existing_meeting.scheduled_date;
+                        errorMsg += '\nTime: ' + errorData.existing_meeting.scheduled_time;
+                        errorMsg += '\nStatus: ' + errorData.existing_meeting.status;
+                        errorMsg += '\n\nPlease choose a different date or time.';
+                    }
                 } else if (errorData.message) {
                     errorMsg = errorData.message;
                 }

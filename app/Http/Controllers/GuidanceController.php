@@ -231,19 +231,30 @@ class GuidanceController extends Controller
             return back()->withErrors(['error' => 'Your guidance account is inactive. Please contact an administrator.']);
         }
 
-        // Check for duplicate meeting (only for completed/scheduled meetings, not pending/in_progress)
+        // Check for duplicate meeting (only for active meetings: scheduled or completed)
         $existingScheduledMeeting = CaseMeeting::where('student_id', $validatedData['student_id'])
             ->where('scheduled_date', $validatedData['scheduled_date'])
             ->where('scheduled_time', $validatedData['scheduled_time'])
-            ->whereNotIn('status', ['pending', 'in_progress'])
+            ->whereIn('status', ['scheduled', 'completed'])
             ->first();
 
         if ($existingScheduledMeeting) {
-            $message = 'A meeting for this student at the specified date and time already exists.';
+            $studentName = $existingScheduledMeeting->student ? $existingScheduledMeeting->student->full_name : 'Student';
+            $formattedDate = \Carbon\Carbon::parse($existingScheduledMeeting->scheduled_date)->format('F j, Y');
+            $formattedTime = \Carbon\Carbon::parse($existingScheduledMeeting->scheduled_time)->format('g:i A');
+            $message = "A {$existingScheduledMeeting->status} meeting for {$studentName} already exists at {$formattedDate} {$formattedTime}. Please choose a different date or time.";
+            
             if ($request->ajax()) {
                 return response()->json([
                     'success' => false,
                     'message' => $message,
+                    'error_type' => 'duplicate_meeting',
+                    'existing_meeting' => [
+                        'student_name' => $studentName,
+                        'scheduled_date' => $formattedDate,
+                        'scheduled_time' => $formattedTime,
+                        'status' => $existingScheduledMeeting->status
+                    ]
                 ], 409);
             }
             return back()->withErrors(['error' => $message]);
@@ -302,15 +313,17 @@ class GuidanceController extends Controller
             // Create new case meeting
             $caseMeeting = CaseMeeting::create($validatedData);
             
-            // Create notification for new case meeting
+            // Create notifications for new case meeting
             try {
                 $counselorName = Auth::user()->name ?? 'Guidance Counselor';
                 $studentName = $caseMeeting->student ? $caseMeeting->student->full_name : 'Student';
                 $meetingDate = $caseMeeting->scheduled_date ? \Carbon\Carbon::parse($caseMeeting->scheduled_date)->format('F j, Y') : 'TBD';
+                $meetingTime = $caseMeeting->scheduled_time ? \Carbon\Carbon::parse($caseMeeting->scheduled_time)->format('g:i A') : '';
                 
+                // Create global notification
                 \App\Models\Notice::createGlobal(
                     "New Case Meeting Scheduled",
-                    "A new case meeting has been scheduled by {$counselorName} for {$studentName} on {$meetingDate}. Reason: {$caseMeeting->reason}",
+                    "A new case meeting has been scheduled by {$counselorName} for {$studentName} on {$meetingDate} at {$meetingTime}. Reason: {$caseMeeting->reason}",
                     null, // created_by will be null for system-generated notices
                     null, // target_status
                     null  // target_grade_level
@@ -319,8 +332,15 @@ class GuidanceController extends Controller
                 \Log::info('Notification created for new case meeting', [
                     'case_meeting_id' => $caseMeeting->id,
                     'counselor_name' => $counselorName,
-                    'student_name' => $studentName
+                    'student_name' => $studentName,
+                    'adviser_assigned' => isset($validatedData['adviser_id']) ? 'yes' : 'no',
+                    'adviser_id' => $validatedData['adviser_id'] ?? 'none'
                 ]);
+                
+                // The adviser notification will automatically appear in their sidebar badge
+                // via the getUnrepliedObservationReportsCountForTeacher() method
+                // which counts case meetings with null teacher_statement
+                
             } catch (\Exception $notificationError) {
                 // Log notification error but don't fail the main operation
                 \Log::error('Failed to create notification for new case meeting', [
@@ -1676,8 +1696,37 @@ class GuidanceController extends Controller
             ->where('id', '!=', $session->id)
             ->count();
         $session->session_no = $sessionCount + 1;
+        $session->teacher_notified = false; // Mark as not notified so adviser badge appears
 
         $session->save();
+
+        // Notify the adviser who recommended this counseling
+        if ($session->recommended_by) {
+            try {
+                $adviser = \App\Models\User::find($session->recommended_by);
+                $student = \App\Models\Student::find($session->student_id);
+                $adviserName = $adviser ? $adviser->name : 'Adviser';
+                $studentName = $student ? $student->full_name : 'Student';
+                
+                // Create notice for the adviser
+                \App\Models\Notice::createForSpecificUser(
+                    $session->recommended_by,
+                    "Counseling Session Scheduled",
+                    "The counseling session you recommended for {$studentName} has been scheduled by guidance. Session will run from {$session->start_date->format('M d, Y')} to {$session->end_date->format('M d, Y')}."
+                );
+                
+                \Log::info('Notification sent to adviser about scheduled counseling', [
+                    'session_id' => $session->id,
+                    'adviser_id' => $session->recommended_by,
+                    'student_name' => $studentName
+                ]);
+            } catch (\Exception $notificationError) {
+                \Log::error('Failed to notify adviser about scheduled counseling', [
+                    'session_id' => $session->id,
+                    'error' => $notificationError->getMessage()
+                ]);
+            }
+        }
 
         // Archive the approved session in archive_violations
         $user = Auth::user();
@@ -2823,5 +2872,19 @@ public function getDisciplineVsTotalStats(Request $request)
         $unreadCount = $query->where('is_read', false)->count();
 
         return view('guidance.notifications', compact('notifications', 'unreadCount'));
+    }
+
+    /**
+     * Mark alert as viewed (for dismissing notification badges)
+     */
+    public function markAlertViewed(Request $request)
+    {
+        $alertType = $request->input('alert_type');
+        
+        if ($alertType === 'counseling_sessions') {
+            session(['counseling_sessions_alert_viewed' => true]);
+        }
+        
+        return response()->json(['success' => true]);
     }
 }

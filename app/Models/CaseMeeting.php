@@ -433,13 +433,17 @@ class CaseMeeting extends Model
      * Get count of unreplied observation reports for a teacher
      * Returns observation reports where teacher hasn't replied yet (no teacher_statement)
      */
-    public static function getUnrepliedObservationReportsCountForTeacher($teacherId)
+    /**
+     * Get count of unreplied observation reports for a teacher (adviser)
+     * @param int $userId - The user ID of the teacher (not teacher table id)
+     * @return int
+     */
+    public static function getUnrepliedObservationReportsCountForTeacher($userId)
     {
-        $oneDayAgo = now()->subDay();
-        
-        return self::where('adviser_id', $teacherId)
+        // Count all active case meetings where teacher hasn't submitted their observation yet
+        return self::where('adviser_id', $userId)
             ->whereNull('teacher_statement')
-            ->where('created_at', '>=', $oneDayAgo)
+            ->whereIn('status', ['pending', 'scheduled', 'in_progress', 'pre_completed'])
             ->count();
     }
 
