@@ -42,7 +42,6 @@
   @vite(['resources/css/index_discipline.css'])
   @vite(['resources/css/collapsible-sidebar.css'])
   @vite(['resources/js/collapsible-sidebar.js'])
-  @vite(['resources/js/discipline-alerts-manager.js'])
 </head>
 <body>
   <!-- Sidebar Toggle Button (Desktop & Mobile) -->

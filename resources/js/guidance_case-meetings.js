@@ -647,7 +647,7 @@ window.viewCaseMeeting = function(meetingId) {
                     <!-- Sanctions (if any) -->
                     ${(meeting.sanctions && meeting.sanctions.length > 0) ? `
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Sanctions:</label>
+                            <label class="form-label fw-bold">AGREED ACTIONS AND INTERVENTION:</label>
                             <ul class="list-group">
                                 ${meeting.sanctions.map(sanction => `
                                     <li class="list-group-item d-flex justify-content-between align-items-center">
@@ -1200,8 +1200,16 @@ window.submitEditCaseMeeting = function(event) {
             // Show success message
             showAlert('success', data.message);
 
-            // Reload page to show updated meeting
-            setTimeout(() => location.reload(), 1500);
+            // If we're on the details page, refresh the sanctions and summary sections
+            if (window.location.pathname.includes('/case-meetings/') && !window.location.pathname.includes('/edit')) {
+                setTimeout(() => {
+                    // Reload the specific case meeting data to show updated sanctions
+                    location.reload();
+                }, 1000);
+            } else {
+                // Reload page to show updated meeting list
+                setTimeout(() => location.reload(), 1500);
+            }
         } else {
             throw new Error(data.message || 'Failed to update meeting');
         }
@@ -1247,7 +1255,42 @@ function collectEditInterventionFields() {
                 const inputs = conditionalField.querySelectorAll('input, select');
                 inputs.forEach(input => {
                     if (input.name && input.value) {
-                        interventionFields[interventionType][input.name] = input.value;
+                        // Map form field names to database column names
+                        let dbFieldName = input.name;
+                        
+                        // Convert form field names to match database schema
+                        switch (interventionType) {
+                            case 'written_reflection':
+                                if (input.name === 'due_date') dbFieldName = 'written_reflection_due';
+                                break;
+                            case 'mentorship':
+                                if (input.name === 'mentor') dbFieldName = 'mentor_name';
+                                break;
+                            case 'parent_teacher':
+                                if (input.name === 'date') dbFieldName = 'parent_teacher_date';
+                                break;
+                            case 'restorative_justice':
+                                if (input.name === 'date') dbFieldName = 'restorative_justice_date';
+                                break;
+                            case 'follow_up_meeting':
+                                if (input.name === 'date') dbFieldName = 'follow_up_meeting_date';
+                                break;
+                            case 'community_service':
+                                if (input.name === 'date') dbFieldName = 'community_service_date';
+                                if (input.name === 'area') dbFieldName = 'community_service_area';
+                                break;
+                            case 'suspension':
+                                if (input.name === 'days') dbFieldName = 'suspension_days';
+                                if (input.name === 'start_date') dbFieldName = 'suspension_start';
+                                if (input.name === 'end_date') dbFieldName = 'suspension_end';
+                                if (input.name === 'return_date') dbFieldName = 'suspension_return';
+                                break;
+                            case 'expulsion':
+                                if (input.name === 'date') dbFieldName = 'expulsion_date';
+                                break;
+                        }
+                        
+                        interventionFields[interventionType][dbFieldName] = input.value;
                     }
                 });
             }

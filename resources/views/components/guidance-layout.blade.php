@@ -44,7 +44,6 @@
   @vite(['resources/css/index_guidance.css'])
   @vite(['resources/css/collapsible-sidebar.css'])
   @vite(['resources/js/collapsible-sidebar.js'])
-  @vite(['resources/js/guidance-alerts-manager.js'])
   
 </head>
 <body>
@@ -80,17 +79,8 @@
           </li>
           
           <li class="nav-item mb-2">
-            @php
-              $recommendedCounselingCount = \App\Models\CounselingSession::getRecommendedCounselingSessionsCount();
-              $counselingViewed = session('counseling_sessions_alert_viewed', false);
-            @endphp
-            <a class="nav-link {{ request()->routeIs('guidance.counseling-sessions.*') && !request()->routeIs('guidance.counseling-sessions.archived') ? 'active' : '' }} position-relative" href="{{ route('guidance.counseling-sessions.index') }}" title="Counseling Sessions" id="counseling-sessions-link" data-alert-link="counseling_sessions" style="{{ ($recommendedCounselingCount > 0 && !$counselingViewed) ? 'background-color: #f8d7da; border-left: 4px solid #dc3545; padding-left: calc(0.75rem - 4px);' : '' }}">
+            <a class="nav-link {{ request()->routeIs('guidance.counseling-sessions.*') && !request()->routeIs('guidance.counseling-sessions.archived') ? 'active' : '' }}" href="{{ route('guidance.counseling-sessions.index') }}" title="Counseling Sessions">
               <i class="ri-heart-pulse-line me-2"></i><span>Counseling Sessions</span>
-              @if($recommendedCounselingCount > 0 && !$counselingViewed)
-                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem; padding: 0.25rem 0.4rem;">
-                  {{ $recommendedCounselingCount }}
-                </span>
-              @endif
             </a>
           </li>
           
