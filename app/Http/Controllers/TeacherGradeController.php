@@ -107,9 +107,7 @@ class TeacherGradeController extends Controller
         $studentsQuery = Student::where('grade_level', $assignment->grade_level)
                                ->where('section', $assignment->section)
                                ->where('academic_year', $assignment->academic_year)
-                               ->where('is_active', true)
-                               ->where('enrollment_status', 'enrolled')
-                               ->where('is_paid', true);
+                               ->where('is_active', true);
 
         // For Senior High School, match strand and track
         if (in_array($assignment->grade_level, ['Grade 11', 'Grade 12'])) {
@@ -419,9 +417,7 @@ class TeacherGradeController extends Controller
             $studentsQuery = Student::where('grade_level', $submission->grade_level)
                                    ->where('section', $submission->section)
                                    ->where('academic_year', $submission->academic_year)
-                                   ->where('is_active', true)
-                                   ->where('enrollment_status', 'enrolled')
-                                   ->where('is_paid', true);
+                                   ->where('is_active', true);
 
             // Get the faculty assignment to check for strand/track filtering
             $assignment = FacultyAssignment::where('teacher_id', $submission->teacher_id)
