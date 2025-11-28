@@ -5,6 +5,7 @@
  * Grade-Level Routing:
  * - Grade 1 & Grade 2: Uses elementary route (/teacher/report-card/elementary/pdf/{student})
  * - Grade 11: Uses STEM route (/teacher/report-card/grade11stem/pdf/{student})
+ * - Grade 12: Uses STEM route (/teacher/report-card/grade12stem/pdf/{student})
  * - Grade 10: Uses high school route (/teacher/report-card/pdf/{student}) 
  * - All other grades: Uses regular high school route (/teacher/report-card/pdf/{student})
  * 
@@ -111,10 +112,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // Test Grade 10 (should use high school route)
         console.log('Testing Grade 10:', getReportCardRoute(3, 'Grade 10'));
         
-        // Test Grade 11 (should use STEM route)
+        // Test Grade 11 (should use Grade 11 STEM route)
         console.log('Testing Grade 11:', getReportCardRoute(4, 'Grade 11'));
         
-        // Test Grade 12 (should use high school route)
+        // Test Grade 12 (should use Grade 12 STEM route)
         console.log('Testing Grade 12:', getReportCardRoute(5, 'Grade 12'));
         
         // Test Grade 7 (should use high school route)
@@ -141,6 +142,13 @@ function getReportCardRoute(studentId, gradeLevel) {
     if (gradeLevel === 'Grade 11') {
         const route = `/teacher/report-card/grade11stem/pdf/${studentId}`;
         console.log(`Using Grade 11 STEM route: ${route}`);
+        return route;
+    }
+    
+    // Check if it's Grade 12 for STEM route
+    if (gradeLevel === 'Grade 12') {
+        const route = `/teacher/report-card/grade12stem/pdf/${studentId}`;
+        console.log(`Using Grade 12 STEM route: ${route}`);
         return route;
     }
     

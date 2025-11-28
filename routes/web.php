@@ -224,6 +224,8 @@ Route::middleware(['auth', 'role:teacher'])->prefix('teacher')->name('teacher.')
             ->name('report-card.elementary.pdf');
         Route::get('/report-card/grade11stem/pdf/{student}', [App\Http\Controllers\PdfController::class, 'generateGrade11ReportCardPdf'])
             ->name('report-card.grade11stem.pdf');
+        Route::get('/report-card/grade12stem/pdf/{student}', [App\Http\Controllers\PdfController::class, 'generateGrade12ReportCardPdf'])
+            ->name('report-card.grade12stem.pdf');
         Route::get('/report-cards/print-all', [PdfController::class, 'printAllReportCards'])
             ->name('report-cards.print-all');
         
