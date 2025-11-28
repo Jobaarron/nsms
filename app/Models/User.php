@@ -134,15 +134,9 @@ class User extends Authenticatable
     //     return $this->disciplineOfficer()->exists() && $this->disciplineOfficer->is_active;
     // }
 
-    public function student()
-{
-    return $this->hasOne(Student::class);
-}
-
     public function isStudent()
     {
-        $student = $this->student;
-        return $student && $student->is_active;
+        return $this->hasRole('student');
     }
 
     public function getUserRole()

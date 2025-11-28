@@ -103,36 +103,30 @@
                                                 {{ $accountRoleLabels[$accountRole] }}
                                             </h6>
                                         </div>
-                                        <div class="card-body p-0">
+                                        <div class="card-body p-3">
                                             @if($accountsWithRole->count() > 0)
-                                                <div class="table-responsive">
-                                                    <table class="table table-sm table-hover mb-0">
-                                                        <tbody>
-                                                            @foreach($accountsWithRole as $staff)
-                                                            <tr>
-                                                                <td>
-                                                                    <div class="d-flex align-items-center">
-                                                                        <div class="avatar-sm bg-{{ $accountRoleBadges[$accountRole] }} rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
-                                                                            <span class="text-white fw-bold" style="font-size: 0.75rem;">{{ strtoupper(substr($staff->name, 0, 1)) }}</span>
-                                                                        </div>
-                                                                        <div>
-                                                                            <strong class="d-block">{{ $staff->name }}</strong>
-                                                                            <small class="text-muted">{{ $staff->email }}</small>
-                                                                        </div>
-                                                                    </div>
-                                                                </td>
-                                                                <td class="text-end" style="width: 100px;">
-                                                                    <button class="btn btn-xs btn-outline-primary" onclick="openEditAccountModal({{ $staff->id }}, '{{ $staff->name }}', '{{ $staff->email }}', '{{ $accountRole }}')" title="Edit">
-                                                                        <i class="ri-edit-line"></i>
-                                                                    </button>
-                                                                    <button class="btn btn-xs btn-outline-danger" onclick="deleteAccount({{ $staff->id }}, '{{ $staff->name }}')" title="Delete">
-                                                                        <i class="ri-delete-bin-line"></i>
-                                                                    </button>
-                                                                </td>
-                                                            </tr>
-                                                            @endforeach
-                                                        </tbody>
-                                                    </table>
+                                                <div class="space-y-2">
+                                                    @foreach($accountsWithRole as $staff)
+                                                        <div class="d-flex justify-content-between align-items-center p-2 border-bottom">
+                                                            <div class="d-flex align-items-center flex-grow-1 min-width-0">
+                                                                <div class="avatar-sm bg-{{ $accountRoleBadges[$accountRole] }} rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px; flex-shrink: 0;">
+                                                                    <span class="text-white fw-bold" style="font-size: 0.75rem;">{{ strtoupper(substr($staff->name, 0, 1)) }}</span>
+                                                                </div>
+                                                                <div class="min-width-0">
+                                                                    <strong class="d-block" style="font-size: 0.95rem;">{{ $staff->name }}</strong>
+                                                                    <small class="text-muted d-block" style="font-size: 0.85rem;">{{ $staff->email }}</small>
+                                                                </div>
+                                                            </div>
+                                                            <div class="ms-2 flex-shrink-0">
+                                                                <button class="btn btn-sm btn-outline-primary me-1" onclick="openEditAccountModal({{ $staff->id }}, '{{ $staff->name }}', '{{ $staff->email }}', '{{ $accountRole }}')" title="Edit">
+                                                                    <i class="ri-edit-line"></i>
+                                                                </button>
+                                                                <button class="btn btn-sm btn-outline-danger" onclick="deleteAccount({{ $staff->id }}, '{{ $staff->name }}')" title="Delete">
+                                                                    <i class="ri-delete-bin-line"></i>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    @endforeach
                                                 </div>
                                             @else
                                                 <div class="p-3 text-center text-muted">
@@ -218,30 +212,6 @@
                                                     <i class="ri-user-unfollow-line me-1"></i>Remove Role
                                                 </button>
                                             @endif
-                                        </td>
-                                    </tr>
-                                    @endforeach
-
-                                    {{-- Enrollees (Separate Auth Model) --}}
-                                    @foreach($enrollees as $enrollee)
-                                    <tr>
-                                        <td>
-                                            <div class="d-flex align-items-center">
-                                                <div class="avatar-sm bg-warning rounded-circle d-flex align-items-center justify-content-center me-2">
-                                                    <span class="text-white fw-bold">{{ strtoupper(substr($enrollee->first_name ?? 'E', 0, 1)) }}</span>
-                                                </div>
-                                                <div>
-                                                    <strong>{{ $enrollee->first_name }} {{ $enrollee->last_name }}</strong>
-                                                    <small class="d-block text-muted">Applicant</small>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="user-email-cell">{{ $enrollee->email }}</td>
-                                        <td>
-                                            <span class="badge bg-warning">applicant</span>
-                                        </td>
-                                        <td>
-                                            <span class="text-muted small">Separate auth system</span>
                                         </td>
                                     </tr>
                                     @endforeach
