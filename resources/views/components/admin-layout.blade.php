@@ -64,10 +64,10 @@
         </div>
         
         <!-- User Info -->
-        {{-- <div class="user-info">
+       <div class="user-info">
           <div class="user-name">{{ Auth::user()->name }}</div>
           <div class="user-role">{{ ucwords(str_replace('_', ' ', Auth::user()->getRoleNames()->first())) }}</div>
-        </div> --}}
+        </div> 
 
         <div class="px-3 mb-4">
           <h5>Admin Panel</h5>
@@ -86,15 +86,33 @@
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link {{ request()->routeIs('admin.contact.messages') ? 'active' : '' }}" href="{{ route('admin.contact.messages') }}" title="Contact Messages">
+            @php
+              $unreadMessagesCount = \App\Models\ContactMessage::getUnreadMessagesCount();
+              $contactMessagesViewed = session('contact_messages_alert_viewed', false);
+            @endphp
+            <a class="nav-link {{ request()->routeIs('admin.contact.messages') ? 'active' : '' }} position-relative" href="{{ route('admin.contact.messages') }}" title="Contact Messages" id="contact-messages-link" data-alert-link="contact_messages" style="{{ ($unreadMessagesCount > 0 && !$contactMessagesViewed) ? 'background-color: #f8d7da; border-left: 4px solid #dc3545; padding-left: calc(0.75rem - 4px);' : '' }}">
               <i class="ri-mail-line"></i>
               <span>Contact Messages</span>
+              @if($unreadMessagesCount > 0 && !$contactMessagesViewed)
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem; padding: 0.25rem 0.4rem;">
+                  {{ $unreadMessagesCount }}
+                </span>
+              @endif
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link {{ request()->routeIs('admin.forwarded.cases') ? 'active' : '' }}" href="{{ route('admin.forwarded.cases') }}" title="Forwarded Case Meetings">
+            @php
+              $pendingForwardedCasesCount = \App\Models\CaseMeeting::getPendingForwardedCasesCount();
+              $forwardedCasesViewed = session('forwarded_cases_alert_viewed', false);
+            @endphp
+            <a class="nav-link {{ request()->routeIs('admin.forwarded.cases') ? 'active' : '' }} position-relative" href="{{ route('admin.forwarded.cases') }}" title="Forwarded Case Meetings" id="forwarded-cases-link" data-alert-link="forwarded_cases" style="{{ ($pendingForwardedCasesCount > 0 && !$forwardedCasesViewed) ? 'background-color: #f8d7da; border-left: 4px solid #dc3545; padding-left: calc(0.75rem - 4px);' : '' }}">
               <i class="ri-file-list-3-line"></i>
               <span>Forwarded Case Meetings</span>
+              @if($pendingForwardedCasesCount > 0 && !$forwardedCasesViewed)
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem; padding: 0.25rem 0.4rem;">
+                  {{ $pendingForwardedCasesCount }}
+                </span>
+              @endif
             </a>
           </li>
           <li class="nav-item mt-4">

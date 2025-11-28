@@ -433,11 +433,6 @@ class CaseMeeting extends Model
      * Get count of unreplied observation reports for a teacher
      * Returns observation reports where teacher hasn't replied yet (no teacher_statement)
      */
-    /**
-     * Get count of unreplied observation reports for a teacher (adviser)
-     * @param int $userId - The user ID of the teacher (not teacher table id)
-     * @return int
-     */
     public static function getUnrepliedObservationReportsCountForTeacher($userId)
     {
         // Count all active case meetings where teacher hasn't submitted their observation yet
@@ -445,6 +440,15 @@ class CaseMeeting extends Model
             ->whereNull('teacher_statement')
             ->whereIn('status', ['pending', 'scheduled', 'in_progress', 'pre_completed'])
             ->count();
+    }
+
+    /**
+     * Get count of pending forwarded case meetings for admin
+     * Returns case meetings with status 'submitted' (awaiting admin review)
+     */
+    public static function getPendingForwardedCasesCount()
+    {
+        return self::where('status', 'submitted')->count();
     }
 
 }

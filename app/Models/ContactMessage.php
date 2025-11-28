@@ -88,4 +88,12 @@ class ContactMessage extends Model
             default => 'badge bg-secondary'
         };
     }
+
+    /**
+     * Get count of unread contact messages
+     */
+    public static function getUnreadMessagesCount()
+    {
+        return self::where('status', 'unread')->count();
+    }
 }

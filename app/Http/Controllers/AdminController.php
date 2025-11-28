@@ -1542,7 +1542,16 @@ public function updateEnrollment(Request $request, $id)
         }
     }
 
-
-
-
+    public function markAlertViewed(Request $request)
+    {
+        $alertType = $request->input('alert_type');
+        
+        if ($alertType === 'contact_messages') {
+            session(['contact_messages_alert_viewed' => true]);
+        } elseif ($alertType === 'forwarded_cases') {
+            session(['forwarded_cases_alert_viewed' => true]);
+        }
+        
+        return response()->json(['success' => true]);
+    }
 }

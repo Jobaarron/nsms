@@ -1019,5 +1019,39 @@
     </div>
 </div>
 
+@push('scripts')
+<script>
+    // Mark forwarded cases alert as viewed when admin visits this page
+    document.addEventListener('DOMContentLoaded', function() {
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]');
+            if (!csrfToken) {
+                console.warn('CSRF token not found');
+                return;
+            }
+            
+            fetch('{{ route("admin.mark-alert-viewed") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken.getAttribute('content')
+                },
+                body: JSON.stringify({
+                    alert_type: 'forwarded_cases'
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    console.error('Failed to mark forwarded cases alert as viewed:', response.status);
+                }
+            })
+            .catch(error => console.error('Error marking forwarded cases alert as viewed:', error));
+        } catch(error) {
+            console.error('Error in admin forwarded cases alert script:', error);
+        }
+    });
+</script>
+@endpush
+
 @vite('resources/js/forwarded-cases.js')
 </x-admin-layout>

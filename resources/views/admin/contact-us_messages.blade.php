@@ -445,4 +445,38 @@
         }
 
     </script>
+
+    @push('scripts')
+    <script>
+        // Mark contact messages alert as viewed when admin visits this page
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]');
+                if (!csrfToken) {
+                    console.warn('CSRF token not found');
+                    return;
+                }
+                
+                fetch('{{ route("admin.mark-alert-viewed") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken.getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        alert_type: 'contact_messages'
+                    })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        console.error('Failed to mark contact messages alert as viewed:', response.status);
+                    }
+                })
+                .catch(error => console.error('Error marking contact messages alert as viewed:', error));
+            } catch(error) {
+                console.error('Error in admin contact messages alert script:', error);
+            }
+        });
+    </script>
+    @endpush
 </x-admin-layout>

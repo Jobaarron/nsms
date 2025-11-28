@@ -130,6 +130,9 @@ Route::prefix('admin')->group(function () {
         Route::post('/contact-messages/{message}/status', [ContactController::class, 'updateStatus'])->name('contact.status');
         Route::delete('/contact-messages/{message}', [ContactController::class, 'destroy'])->name('contact.destroy');
         Route::post('/contact-messages/bulk-action', [ContactController::class, 'bulkAction'])->name('contact.bulk');
+        
+        // Mark alert as viewed
+        Route::post('/mark-alert-viewed', [AdminController::class, 'markAlertViewed'])->name('mark-alert-viewed');
             
         });
     });
