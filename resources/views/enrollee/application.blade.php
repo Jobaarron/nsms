@@ -625,6 +625,8 @@
                 <form id="changePasswordForm" method="POST" action="{{ route('enrollee.password.update') }}">
                     @csrf
                     @method('PUT')
+                    <!-- Hidden username field for accessibility -->
+                    <input type="text" name="username" autocomplete="username" value="{{ $enrollee->email }}" style="display: none;" readonly>
                     <div class="modal-body">
                         @if(session('success'))
                         <div class="alert alert-success alert-dismissible fade show">
@@ -651,7 +653,7 @@
                         <div class="mb-3">
                             <label for="current_password" class="form-label">Current Password</label>
                             <div class="input-group">
-                                <input type="password" class="form-control @error('current_password') is-invalid @enderror" id="current_password" name="current_password" required>
+                                <input type="password" class="form-control @error('current_password') is-invalid @enderror" id="current_password" name="current_password" autocomplete="current-password" required>
                                 <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('current_password')">
                                     <i class="ri-eye-line" id="current_password_icon"></i>
                                 </button>
@@ -664,7 +666,7 @@
                         <div class="mb-3">
                             <label for="new_password" class="form-label">New Password</label>
                             <div class="input-group">
-                                <input type="password" class="form-control @error('new_password') is-invalid @enderror" id="new_password" name="new_password" required minlength="8">
+                                <input type="password" class="form-control @error('new_password') is-invalid @enderror" id="new_password" name="new_password" autocomplete="new-password" required minlength="8">
                                 <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('new_password')">
                                     <i class="ri-eye-line" id="new_password_icon"></i>
                                 </button>
@@ -678,7 +680,7 @@
                         <div class="mb-3">
                             <label for="new_password_confirmation" class="form-label">Confirm New Password</label>
                             <div class="input-group">
-                                <input type="password" class="form-control" id="new_password_confirmation" name="new_password_confirmation" required minlength="8">
+                                <input type="password" class="form-control" id="new_password_confirmation" name="new_password_confirmation" autocomplete="new-password" required minlength="8">
                                 <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('new_password_confirmation')">
                                     <i class="ri-eye-line" id="new_password_confirmation_icon"></i>
                                 </button>

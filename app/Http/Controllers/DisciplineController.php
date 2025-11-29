@@ -155,7 +155,26 @@ class DisciplineController extends Controller
             ->orderBy('last_name', 'asc')
             ->paginate(20);
 
-        return view('discipline.student-profile', compact('students'));
+        // Define all possible grade levels (matching the enrollment system)
+        $gradeLevels = [
+            'Nursery',
+            'Junior Casa',
+            'Senior Casa',
+            'Grade 1',
+            'Grade 2',
+            'Grade 3',
+            'Grade 4',
+            'Grade 5',
+            'Grade 6',
+            'Grade 7',
+            'Grade 8',
+            'Grade 9',
+            'Grade 10',
+            'Grade 11',
+            'Grade 12'
+        ];
+
+        return view('discipline.student-profile', compact('students', 'gradeLevels'));
     }
 
     /**
