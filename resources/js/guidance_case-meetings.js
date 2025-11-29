@@ -1057,7 +1057,10 @@ window.editCaseMeeting = function(meetingId) {
             var scheduledTimeEl = document.getElementById('edit_scheduled_time');
             if (scheduledTimeEl) scheduledTimeEl.value = meeting.scheduled_time || '';
             var summaryEl = document.getElementById('edit_summary');
-            if (summaryEl) summaryEl.value = meeting.summary || '';
+            if (summaryEl) {
+                summaryEl.value = meeting.summary || '';
+                console.log('Summary populated:', meeting.summary); // Debug log
+            }
 
             // Populate intervention fields if they exist
             if (meeting.intervention_fields) {

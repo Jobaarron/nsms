@@ -89,39 +89,45 @@ class StudentController extends Controller
         }
 
         // Get all violations for the current student, ordered by most recent first
-        $violations = Violation::where('student_id', $student->id)
+        $allViolations = Violation::where('student_id', $student->id)
             ->with(['reportedBy', 'resolvedBy']) // Load relationships if needed
             ->orderBy('violation_date', 'desc')
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // Set effective_severity and escalated for all violations
-        // Group minor violations by title to count occurrences
-        $minorCountsByTitle = [];
-        foreach ($violations as $violation) {
-            if ($violation->severity === 'minor') {
-                $minorCountsByTitle[$violation->title] = ($minorCountsByTitle[$violation->title] ?? 0) + 1;
-            }
-        }
+        // Filter violations similar to discipline portal logic
+        $studentsWithGroupedViolations = $allViolations->where('title', 'Multiple Minor Violations - Escalated to Major')
+                                                       ->pluck('student_id')
+                                                       ->unique()
+                                                       ->toArray();
 
+        // Filter violations: exclude individual minor violations if grouped violations exist
+        $violations = $allViolations->filter(function ($violation) use ($studentsWithGroupedViolations) {
+            // Always show major violations and grouped violations
+            if ($violation->severity === 'major' || $violation->title === 'Multiple Minor Violations - Escalated to Major') {
+                return true;
+            }
+            
+            // For minor violations, only show if student doesn't have a grouped violation
+            return !in_array($violation->student_id, $studentsWithGroupedViolations);
+        });
+
+        // Set effective_severity and other properties for display
         foreach ($violations as $violation) {
-            if ($violation->severity === 'minor') {
-                $countForTitle = $minorCountsByTitle[$violation->title] ?? 0;
-                if ($countForTitle >= 3) {
-                    $violation->effective_severity = 'major';
-                    $violation->escalated = true;
-                    $violation->escalation_reason = '3rd minor offense - treated as major';
-                } else {
-                    $violation->effective_severity = 'minor';
-                    $violation->escalated = false;
-                }
-            } elseif ($violation->severity === 'major' || $violation->severity === 'severe') {
+            if ($violation->title === 'Multiple Minor Violations - Escalated to Major') {
+                $violation->effective_severity = 'major';
+                $violation->escalated = true;
+            } else {
                 $violation->effective_severity = $violation->severity;
-                $violation->escalated = false;
+                $violation->escalated = $violation->is_escalated ?? false;
             }
         }
 
-        return view('student.violations', compact('student', 'violations'));
+        // Separate violations by effective severity for the view
+        $minorViolations = $violations->where('effective_severity', 'minor');
+        $majorViolations = $violations->whereIn('effective_severity', ['major', 'severe']);
+
+        return view('student.violations', compact('student', 'violations', 'minorViolations', 'majorViolations'));
     }
 
     public function logout(Request $request)

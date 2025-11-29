@@ -416,6 +416,14 @@ class GuidanceController extends Controller
      */
     public function createCaseSummary(Request $request, CaseMeeting $caseMeeting)
     {
+        // Check if the case meeting status is 'scheduled'
+        if ($caseMeeting->status !== 'scheduled') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Summary can only be added to scheduled case meetings.'
+            ], 400);
+        }
+
         $validatedData = $request->validate([
             'summary' => 'required|string',
             'recommendations' => 'nullable|string',
@@ -646,6 +654,35 @@ class GuidanceController extends Controller
                     'urgency_level' => $caseMeeting->urgency_level,
                     'reason' => $caseMeeting->reason,
                     'notes' => $caseMeeting->notes,
+                    'summary' => $caseMeeting->summary,
+                    'recommendations' => $caseMeeting->recommendations,
+                    'follow_up_required' => $caseMeeting->follow_up_required,
+                    'follow_up_date' => $caseMeeting->follow_up_date,
+                    // Include all intervention fields
+                    'intervention_fields' => [
+                        'written_reflection' => $caseMeeting->written_reflection,
+                        'written_reflection_due' => $caseMeeting->written_reflection_due,
+                        'mentorship_counseling' => $caseMeeting->mentorship_counseling,
+                        'mentor_name' => $caseMeeting->mentor_name,
+                        'parent_teacher_communication' => $caseMeeting->parent_teacher_communication,
+                        'parent_teacher_date' => $caseMeeting->parent_teacher_date,
+                        'restorative_justice_activity' => $caseMeeting->restorative_justice_activity,
+                        'restorative_justice_date' => $caseMeeting->restorative_justice_date,
+                        'follow_up_meeting' => $caseMeeting->follow_up_meeting,
+                        'follow_up_meeting_date' => $caseMeeting->follow_up_meeting_date,
+                        'community_service' => $caseMeeting->community_service,
+                        'community_service_date' => $caseMeeting->community_service_date,
+                        'community_service_area' => $caseMeeting->community_service_area,
+                        'suspension' => $caseMeeting->suspension,
+                        'suspension_3days' => $caseMeeting->suspension_3days,
+                        'suspension_5days' => $caseMeeting->suspension_5days,
+                        'suspension_other_days' => $caseMeeting->suspension_other_days,
+                        'suspension_start' => $caseMeeting->suspension_start,
+                        'suspension_end' => $caseMeeting->suspension_end,
+                        'suspension_return' => $caseMeeting->suspension_return,
+                        'expulsion' => $caseMeeting->expulsion,
+                        'expulsion_date' => $caseMeeting->expulsion_date,
+                    ],
                 ],
                 'students' => $students->map(function ($student) {
                     return [
