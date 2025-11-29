@@ -98,6 +98,7 @@ export default defineConfig({
                 'resources/js/teacher-dashboard.js',
                 'resources/js/teacher-recommend-counseling.js',
                 'resources/js/teacher-advisory.js',
+                'resources/js/teacher-observation-reports.js',
                 'resources/js/student-dashboard.js',
                 'resources/js/student-grades.js',
                 'resources/js/student-schedule.js',

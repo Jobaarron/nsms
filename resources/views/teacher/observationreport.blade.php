@@ -1,6 +1,6 @@
 
 <x-teacher-layout>
-@vite(['resources/css/student_violations.css'])
+@vite(['resources/css/student_violations.css', 'resources/js/teacher-observation-reports.js'])
 
 <div class="container-fluid py-4">
     <h2 class="mb-4" style="color:#198754;">Observation Reports</h2>
@@ -123,7 +123,7 @@
                                     <button 
                                         type="button" 
                                         class="btn btn-sm btn-outline-info reply-btn {{ ($report->teacher_statement && $report->action_plan) ? 'disabled' : '' }}" 
-                                        {{ ($report->teacher_statement && $report->action_plan) ? '' : 'data-bs-toggle=modal data-bs-target=#replyModal' }}
+                                        {{ ($report->teacher_statement && $report->action_plan) ? '' : 'data-bs-toggle="modal" data-bs-target="#replyModal"' }}
                                         data-id="{{ $report->id }}" 
                                         data-teacher_statement="{{ $report->teacher_statement ?? '' }}"
                                         data-action_plan="{{ $report->action_plan ?? '' }}"
@@ -220,199 +220,7 @@
     </div>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    let currentCaseMeetingId = null;
-    
+<!-- JavaScript functionality moved to separate file: resources/js/teacher-observation-reports.js -->
 
-    
-    // Handle Reply button click to populate modal and set form action
-    document.querySelectorAll('.reply-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            currentCaseMeetingId = btn.getAttribute('data-id');
-            const teacherStatement = btn.getAttribute('data-teacher_statement') || '';
-            const actionPlan = btn.getAttribute('data-action_plan') || '';
-            
-            // Populate form fields
-            document.getElementById('teacher_statement').value = teacherStatement;
-            document.getElementById('action_plan').value = actionPlan;
-            
-            // Reset button states
-            resetButtonStates();
-            
-            // Check if already replied (has existing data)
-            if (teacherStatement || actionPlan) {
-                document.getElementById('submitReplyBtn').textContent = 'Update Reply';
-            } else {
-                document.getElementById('submitReplyBtn').textContent = 'Submit Reply';
-            }
-        });
-    });
-
-    // Handle Submit Reply button click - show confirmation
-    document.getElementById('submitReplyBtn').addEventListener('click', function() {
-        const teacherStatement = document.getElementById('teacher_statement').value.trim();
-        const actionPlan = document.getElementById('action_plan').value.trim();
-        
-        // Validate required fields
-        if (!teacherStatement || !actionPlan) {
-            alert('Please fill in both Teacher Statement and Action Plan before submitting.');
-            return;
-        }
-        
-        // Populate confirmation modal
-        document.getElementById('confirmTeacherStatement').textContent = teacherStatement;
-        document.getElementById('confirmActionPlan').textContent = actionPlan;
-        
-        // Hide reply modal and show confirmation
-        const replyModal = bootstrap.Modal.getInstance(document.getElementById('replyModal'));
-        const confirmationModal = new bootstrap.Modal(document.getElementById('confirmationModal'));
-        
-        replyModal.hide();
-        setTimeout(() => {
-            confirmationModal.show();
-        }, 300);
-    });
-
-    // Handle final confirmation submit
-    document.getElementById('confirmSubmitBtn').addEventListener('click', function() {
-        if (!currentCaseMeetingId) {
-            alert('Error: No case meeting ID found. Please try again.');
-            return;
-        }
-        
-        // Disable button and show spinner
-        const submitBtn = document.getElementById('confirmSubmitBtn');
-        const submitBtnText = document.getElementById('submitBtnText');
-        const submitSpinner = document.getElementById('submitSpinner');
-        
-        submitBtn.disabled = true;
-        submitBtnText.textContent = 'Submitting...';
-        submitSpinner.style.display = 'inline-block';
-        
-        // Create and submit form
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = '/teacher/observationreport/reply/' + currentCaseMeetingId;
-        
-        // Add CSRF token
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || 
-                         document.querySelector('input[name="_token"]')?.value;
-        if (csrfToken) {
-            const tokenInput = document.createElement('input');
-            tokenInput.type = 'hidden';
-            tokenInput.name = '_token';
-            tokenInput.value = csrfToken;
-            form.appendChild(tokenInput);
-        }
-        
-        // Add form data
-        const teacherStatementInput = document.createElement('input');
-        teacherStatementInput.type = 'hidden';
-        teacherStatementInput.name = 'teacher_statement';
-        teacherStatementInput.value = document.getElementById('teacher_statement').value;
-        form.appendChild(teacherStatementInput);
-        
-        const actionPlanInput = document.createElement('input');
-        actionPlanInput.type = 'hidden';
-        actionPlanInput.name = 'action_plan';
-        actionPlanInput.value = document.getElementById('action_plan').value;
-        form.appendChild(actionPlanInput);
-        
-        // Submit form with success handling
-        document.body.appendChild(form);
-        
-        form.submit();
-    });
-
-    // Reset button states when modals are hidden
-    document.getElementById('confirmationModal').addEventListener('hidden.bs.modal', function() {
-        resetButtonStates();
-    });
-    
-    document.getElementById('replyModal').addEventListener('hidden.bs.modal', function() {
-        resetButtonStates();
-    });
-    
-    function resetButtonStates() {
-        const submitBtn = document.getElementById('confirmSubmitBtn');
-        const submitBtnText = document.getElementById('submitBtnText');
-        const submitSpinner = document.getElementById('submitSpinner');
-        
-        submitBtn.disabled = false;
-        submitBtnText.textContent = 'Yes, Submit Reply';
-        submitSpinner.style.display = 'none';
-    }
-
-    // Handle View Report button to show PDF in modal
-    document.querySelectorAll('.view-pdf-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            const pdfUrl = btn.getAttribute('data-pdf-url');
-            document.getElementById('pdfFrame').src = pdfUrl;
-        });
-    });
-
-    // Clear PDF src when modal is closed (optional, for cleanup)
-    const pdfModal = document.getElementById('pdfModal');
-    if (pdfModal) {
-        pdfModal.addEventListener('hidden.bs.modal', function () {
-            document.getElementById('pdfFrame').src = '';
-        });
-    }
-    
-    // Add search functionality
-    const searchInput = document.getElementById('reportSearch');
-    if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase();
-            const rows = document.querySelectorAll('.report-row');
-            
-            rows.forEach(function(row) {
-                const studentName = row.getAttribute('data-student');
-                const violationTitle = row.getAttribute('data-violation');
-                
-                if (studentName.includes(searchTerm) || violationTitle.includes(searchTerm)) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-        });
-    }
-});
-</script>
-
-@push('scripts')
-<script>
-    // Mark observation reports alert as viewed when teacher visits this page
-    document.addEventListener('DOMContentLoaded', function() {
-        try {
-            const csrfToken = document.querySelector('meta[name="csrf-token"]');
-            if (!csrfToken) {
-                console.warn('CSRF token not found');
-                return;
-            }
-            
-            fetch('{{ route("teacher.mark-alert-viewed") }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken.getAttribute('content')
-                },
-                body: JSON.stringify({
-                    alert_type: 'observation_reports'
-                })
-            })
-            .then(response => {
-                if (!response.ok) {
-                    console.error('Failed to mark observation reports alert as viewed:', response.status);
-                }
-            })
-            .catch(error => console.error('Error marking observation reports alert as viewed:', error));
-        } catch(error) {
-            console.error('Error in teacher observation reports alert script:', error);
-        }
-    });
-</script>
-@endpush
+<!-- Alert marking functionality moved to teacher-observation-reports.js -->
 </x-teacher-layout>
