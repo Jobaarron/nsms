@@ -12,6 +12,14 @@
     border-color: #0dcaf0 !important;
     box-shadow: 0 0 0 0.2rem rgba(13,202,240,.25);
   }
+  /* Escalated violation styling */
+  .escalated-violation {
+    background-color: #f8d7da !important;
+    border-left: 4px solid #dc3545 !important;
+  }
+  .escalated-violation:hover {
+    background-color: #f1b2b7 !important;
+  }
 </style>
 <x-student-layout>
   @vite(['resources/css/student_violations.css'])
@@ -169,11 +177,29 @@
                   </tr>
                 </thead>
                 <tbody id="minor-violations-tbody">
-                  @forelse($minorViolations as $violation)
-                    <tr class="minor-violation-row" data-title="{{ strtolower($violation->title) }}">
-                      <td>{{ $violation->title }}</td>
-                      <td>{{ $violation->violation_date->format('M d, Y') }}</td>
-                      <td>{{ $violation->reported_by_name ?? '-' }}</td>
+                  @php
+                    $groupedMinorViolations = $minorViolations->groupBy('title');
+                  @endphp
+                  @forelse($groupedMinorViolations as $title => $violationsGroup)
+                    @php
+                      $count = $violationsGroup->count();
+                      $latestViolation = $violationsGroup->sortByDesc('violation_date')->first();
+                      $isEscalated = $latestViolation->escalated ?? false;
+                    @endphp
+                    <tr class="minor-violation-row {{ $isEscalated ? 'escalated-violation' : '' }}" data-title="{{ strtolower($title) }}">
+                      <td>
+                        {{ $title }}
+                        @if($count > 1)
+                          <span class="badge {{ $isEscalated ? 'bg-danger' : 'bg-warning text-dark' }} ms-2">
+                            {{ $isEscalated ? 'Escalated' : 'Repeated' }} ({{ $count }}x)
+                          </span>
+                        @endif
+                        @if($latestViolation->escalated && $latestViolation->escalation_reason)
+                          <br><small class="text-muted"><em>{{ $latestViolation->escalation_reason }}</em></small>
+                        @endif
+                      </td>
+                      <td>{{ $latestViolation->violation_date->format('M d, Y') }}</td>
+                      <td>{{ $latestViolation->reported_by_name ?? '-' }}</td>
                     </tr>
                   @empty
                     <tr>
@@ -223,41 +249,67 @@
                   </tr>
                 </thead>
                 <tbody id="major-violations-tbody">
-                  @forelse($majorViolations as $violation)
-                    <tr class="major-violation-row" data-title="{{ strtolower($violation->title) }}">
-                      <td>{{ $violation->title }}</td>
-                      <td>{{ $violation->violation_date->format('M d, Y') }}</td>
-                      <td>{{ $violation->reported_by_name ?? '-' }}</td>
+                  @php
+                    // Group violations by title and count occurrences
+                    $groupedViolations = $majorViolations->groupBy('title');
+                  @endphp
+                  @forelse($groupedViolations as $title => $violationsGroup)
+                    @php
+                      $count = $violationsGroup->count();
+                      $latestViolation = $violationsGroup->sortByDesc('violation_date')->first();
+                      $isEscalated = $count >= 3;
+                    @endphp
+                    <tr class="major-violation-row {{ $isEscalated ? 'escalated-violation' : '' }}" data-title="{{ strtolower($title) }}" data-count="{{ $count }}">
                       <td>
-                        {{ $violation->action_taken ?? '-' }}
-                        @if($violation->disciplinary_action)
-                          <br><small class="text-info"><strong>Disciplinary Action:</strong> {{ $violation->disciplinary_action }}</small>
+                        {{ $title }}
+                        @if($isEscalated)
+                          <br><span class="badge bg-danger mt-1"><i class="ri-arrow-up-line me-1"></i>Escalated ({{ $count }}x)</span>
+                        @elseif($count > 1)
+                          <br><span class="badge bg-warning mt-1"><i class="ri-repeat-line me-1"></i>Repeated ({{ $count }}x)</span>
                         @endif
-                        @if($violation->student_attachment_path)
+                        @if($latestViolation->escalated && $latestViolation->escalation_reason)
+                          <br><small class="text-muted"><em>{{ $latestViolation->escalation_reason }}</em></small>
+                        @endif
+                      </td>
+                      <td>{{ $latestViolation->violation_date->format('M d, Y') }}</td>
+                      <td>{{ $latestViolation->reported_by_name ?? '-' }}</td>
+                      <td>
+                        {{ $latestViolation->action_taken ?? '-' }}
+                        @if($latestViolation->disciplinary_action)
+                          <br><small class="text-info"><strong>Disciplinary Action:</strong> {{ $latestViolation->disciplinary_action }}</small>
+                        @endif
+                        @if($latestViolation->student_attachment_path)
                           <br><small class="text-success"><i class="ri-attachment-line"></i> Attachment uploaded</small>
-                        @elseif($violation->disciplinary_action)
+                        @elseif($latestViolation->disciplinary_action)
                           <br><small class="text-warning"><i class="ri-attachment-line"></i> Attachment required</small>
                         @endif
                       </td>
                       <td>
                         <div class="btn-group" role="group">
+                          @if($title === 'Multiple Minor Violations - Escalated to Major')
+                            <button type="button" class="btn btn-sm btn-outline-primary"
+                                    onclick="viewEscalatedViolations({{ $latestViolation->id }})"
+                                    title="View Related Violations">
+                              <i class="ri-eye-line"></i> View Details
+                            </button>
+                          @endif
                           <button type="button" class="btn btn-sm btn-outline-primary"
                                   data-bs-toggle="modal"
                                   data-bs-target="#pdfModal"
-                                  onclick="document.getElementById('pdfFrame').src='{{ route('student.pdf.studentNarrative', ['studentId' => $violation->student_id, 'violationId' => $violation->id]) }}'"
+                                  onclick="document.getElementById('pdfFrame').src='{{ route('student.pdf.studentNarrative', ['studentId' => $latestViolation->student_id, 'violationId' => $latestViolation->id]) }}'"
                                   title="View PDF">
                             <i class="ri-file-pdf-line"></i> View PDF
                           </button>
                           <button type="button" class="btn btn-sm btn-outline-info"
                                   data-bs-toggle="modal"
                                   data-bs-target="#replyModal"
-                                  data-id="{{ $violation->id }}"
+                                  data-id="{{ $latestViolation->id }}"
                                   title="Reply to Report">
                             <i class="ri-reply-line"></i> Reply
                           </button>
-                          @if($violation->disciplinary_action)
-                            @if($violation->student_attachment_path)
-                              <a href="{{ route('student.violations.download-attachment', $violation->id) }}" 
+                          @if($latestViolation->disciplinary_action)
+                            @if($latestViolation->student_attachment_path)
+                              <a href="{{ route('student.violations.download-attachment', $latestViolation->id) }}" 
                                  class="btn btn-sm btn-outline-success" 
                                  title="Download Attachment" target="_blank">
                                 <i class="ri-download-line"></i> Download
@@ -266,7 +318,7 @@
                               <button type="button" class="btn btn-sm btn-outline-warning"
                                       data-bs-toggle="modal"
                                       data-bs-target="#attachmentModal"
-                                      data-violation-id="{{ $violation->id }}"
+                                      data-violation-id="{{ $latestViolation->id }}"
                                       title="Upload Attachment for Approved Disciplinary Action">
                                 <i class="ri-attachment-line"></i> Upload
                               </button>
@@ -380,6 +432,101 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 
+  // Handle viewing escalated violations
+  window.viewEscalatedViolations = function(violationId) {
+    var modal = new bootstrap.Modal(document.getElementById('escalatedViolationsModal'));
+    var content = document.getElementById('escalatedViolationsContent');
+    
+    // Show loading state
+    content.innerHTML = `
+      <div class="text-center py-4">
+        <div class="spinner-border" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2">Loading related violations...</p>
+      </div>
+    `;
+    
+    modal.show();
+    
+    // Fetch violation details
+    fetch('/discipline/violations/' + violationId, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.related_violations && data.related_violations.length > 0) {
+        var html = `
+          <div class="alert alert-info mb-3">
+            <i class="ri-information-line me-2"></i>
+            <strong>Note:</strong> These ${data.related_violations.length} minor violations were automatically escalated to major severity due to accumulating 3+ minor violations within the same week.
+          </div>
+          <div class="table-responsive">
+            <table class="table table-sm table-hover">
+              <thead>
+                <tr>
+                  <th>Violation</th>
+                  <th>Date</th>
+                  <th>Time</th>
+                </tr>
+              </thead>
+              <tbody>
+        `;
+        
+        data.related_violations.forEach(function(rv) {
+          var date = rv.violation_date ? new Date(rv.violation_date).toLocaleDateString() : 'N/A';
+          var time = 'N/A';
+          
+          if (rv.violation_time) {
+            try {
+              var timeStr = rv.violation_time.length > 5 ? rv.violation_time.substring(0, 5) : rv.violation_time;
+              var timeDate = new Date('1970-01-01T' + timeStr);
+              time = isNaN(timeDate) ? rv.violation_time : timeDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+            } catch(e) {
+              time = rv.violation_time;
+            }
+          }
+          
+          html += `
+            <tr>
+              <td><strong>${rv.title}</strong></td>
+              <td>${date}</td>
+              <td>${time}</td>
+            </tr>
+          `;
+        });
+        
+        html += `
+              </tbody>
+            </table>
+          </div>
+        `;
+        
+        content.innerHTML = html;
+      } else {
+        content.innerHTML = `
+          <div class="alert alert-warning">
+            <i class="ri-alert-line me-2"></i>
+            No related violations found.
+          </div>
+        `;
+      }
+    })
+    .catch(error => {
+      console.error('Error fetching violation details:', error);
+      content.innerHTML = `
+        <div class="alert alert-danger">
+          <i class="ri-error-warning-line me-2"></i>
+          Error loading violation details. Please try again.
+        </div>
+      `;
+    });
+  };
+
   // Handle attachment form submission
   if (attachmentForm) {
     attachmentForm.addEventListener('submit', function(e) {
@@ -440,6 +587,28 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
             <div class="modal-body" style="height:80vh;">
               <iframe id="pdfFrame" src="" width="100%" height="100%" style="border:1px solid #198754;border-radius:8px;"></iframe>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Escalated Violations Details Modal -->
+      <div class="modal fade" id="escalatedViolationsModal" tabindex="-1" aria-labelledby="escalatedViolationsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="escalatedViolationsModalLabel">Related Minor Violations (Escalated)</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <div id="escalatedViolationsContent">
+                <div class="text-center py-4">
+                  <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                  </div>
+                  <p class="mt-2">Loading related violations...</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>

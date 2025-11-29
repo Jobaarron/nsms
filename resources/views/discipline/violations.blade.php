@@ -103,7 +103,6 @@
             </thead>
             <tbody>
               @forelse($violations as $violation)
-                @if($violation->effective_severity === 'major')
                 <tr>
                   <td>
                     <div>
@@ -114,8 +113,13 @@
                   <td>
                     <strong>{{ $violation->title }}</strong>
                     <br><small class="text-muted">{{ Str::limit($violation->description, 50) }}</small>
+                    
                     @if($violation->is_escalated ?? false)
-                      <br><span class="badge bg-danger mt-1"><i class="ri-arrow-up-line me-1"></i>Escalated ({{ $violation->occurrence_count }}x)</span>
+                      <br><span class="badge bg-danger mt-1"><i class="ri-arrow-up-line me-1"></i>Escalated</span>
+                    @endif
+                    
+                    @if($violation->escalation_reason ?? false)
+                      <br><small class="text-muted"><em>{{ $violation->escalation_reason }}</em></small>
                     @endif
                   </td>
                   <td>
@@ -218,7 +222,6 @@
                     </div>
                   </td>
                 </tr>
-                @endif
               @empty
               <tr>
                 <td colspan="7" class="text-center py-5">

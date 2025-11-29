@@ -422,39 +422,72 @@ class TeacherController extends Controller
      */
     public function submitObservationReply(Request $request, $caseMeetingId)
     {
-        $request->validate([
-            'teacher_statement' => 'required|string',
-            'action_plan' => 'required|string',
-        ]);
+        try {
+            // Debug incoming request data
+            \Log::info('Teacher observation reply - incoming request data', [
+                'case_meeting_id' => $caseMeetingId,
+                'has_teacher_statement' => $request->has('teacher_statement'),
+                'teacher_statement_length' => strlen($request->get('teacher_statement', '')),
+                'has_action_plan' => $request->has('action_plan'),
+                'action_plan_length' => strlen($request->get('action_plan', '')),
+                'has_token' => $request->has('_token'),
+                'request_method' => $request->method(),
+                'content_type' => $request->header('Content-Type'),
+                'all_data' => $request->all()
+            ]);
 
-        $caseMeeting = \App\Models\CaseMeeting::with(['student', 'adviser'])->findOrFail($caseMeetingId);
-        $currentUser = Auth::user();
-        
-        // Check if current user is the assigned adviser for this case meeting
-        if (!$caseMeeting->adviser_id || $caseMeeting->adviser_id !== $currentUser->id) {
-            // If no adviser_id is set, check if user is the class adviser for this student
-            if ($caseMeeting->student) {
-                $student = $caseMeeting->student;
-                $teacherRecord = Teacher::where('user_id', $currentUser->id)->first();
-                
-                if (!$teacherRecord) {
+            $request->validate([
+                'teacher_statement' => 'required|string',
+                'action_plan' => 'required|string',
+            ]);
+
+            $caseMeeting = \App\Models\CaseMeeting::with(['student', 'adviser'])->findOrFail($caseMeetingId);
+            $currentUser = Auth::user();
+            
+            // Check if current user is the assigned adviser for this case meeting
+            if (!$caseMeeting->adviser_id || $caseMeeting->adviser_id !== $currentUser->id) {
+                // If no adviser_id is set, check if user is the class adviser for this student
+                if ($caseMeeting->student) {
+                    $student = $caseMeeting->student;
+                    $teacherRecord = Teacher::where('user_id', $currentUser->id)->first();
+                    
+                    if (!$teacherRecord) {
+                        if ($request->ajax()) {
+                            return response()->json(['message' => 'You are not authorized to reply to this case meeting.'], 403);
+                        }
+                        abort(403, 'You are not authorized to reply to this case meeting.');
+                    }
+                    
+                    $currentAcademicYear = date('Y') . '-' . (date('Y') + 1);
+                    $advisoryAssignment = \App\Models\FacultyAssignment::where('teacher_id', $teacherRecord->id)
+                        ->where('grade_level', $student->grade_level)
+                        ->where('section', $student->section)
+                        ->where('academic_year', $currentAcademicYear)
+                        ->where('assignment_type', 'class_adviser')
+                        ->where('status', 'active')
+                        ->first();
+                        
+                    if (!$advisoryAssignment) {
+                        if ($request->ajax()) {
+                            return response()->json(['message' => 'You are not the assigned adviser for this student.'], 403);
+                        }
+                        abort(403, 'You are not the assigned adviser for this student.');
+                    }
+                } else {
+                    if ($request->ajax()) {
+                        return response()->json(['message' => 'You are not authorized to reply to this case meeting.'], 403);
+                    }
                     abort(403, 'You are not authorized to reply to this case meeting.');
                 }
-                
-                $advisoryAssignment = \App\Models\FacultyAssignment::where('teacher_id', $teacherRecord->id)
-                    ->where('grade_level', $student->grade_level)
-                    ->where('section', $student->section)
-                    ->where('academic_year', $student->academic_year)
-                    ->where('assignment_type', 'class_adviser')
-                    ->where('status', 'active')
-                    ->first();
-                    
-                if (!$advisoryAssignment) {
-                    abort(403, 'You are not the assigned adviser for this student.');
-                }
-            } else {
-                abort(403, 'You are not authorized to reply to this case meeting.');
             }
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'message' => 'Validation failed',
+                    'errors' => $e->errors()
+                ], 422);
+            }
+            throw $e;
         }
 
         try {
@@ -510,6 +543,13 @@ class TeacherController extends Controller
                 'case_meeting_id' => $caseMeetingId,
                 'teacher_id' => $currentUser->id
             ]);
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Your observation report reply has been successfully submitted. The guidance office will review your response.'
+                ]);
+            }
 
             return redirect()->back()->with('success', 'Your observation report reply has been successfully submitted. The guidance office will review your response .');
             
@@ -582,9 +622,32 @@ class TeacherController extends Controller
                     ->where('status', 'draft')
                     ->count();
                 
-                // Count unreplied observation reports
-                $counts['unreplied_reports'] = \App\Models\CaseMeeting::where('teacher_id', $teacherRecord->id)
-                    ->whereNull('teacher_reply')
+                // Count unreplied observation reports using the same logic as showObservationReport
+                $currentAcademicYear = date('Y') . '-' . (date('Y') + 1);
+                $counts['unreplied_reports'] = \App\Models\CaseMeeting::with(['student'])
+                    ->whereIn('status', ['scheduled', 'pre_completed'])
+                    ->where(function($query) use ($teacher, $teacherRecord, $currentAcademicYear) {
+                        // Case 1: Direct adviser_id match
+                        $query->where('adviser_id', $teacher->id)
+                              // Case 2: OR check if teacher is class adviser for the student
+                              ->orWhereHas('student', function($studentQuery) use ($teacherRecord, $currentAcademicYear) {
+                                  $studentQuery->whereExists(function($advisoryQuery) use ($teacherRecord, $currentAcademicYear) {
+                                      $advisoryQuery->select(DB::raw(1))
+                                                  ->from('faculty_assignments')
+                                                  ->whereColumn('faculty_assignments.grade_level', 'students.grade_level')
+                                                  ->whereColumn('faculty_assignments.section', 'students.section')
+                                                  ->where('faculty_assignments.teacher_id', $teacherRecord->id)
+                                                  ->where('faculty_assignments.academic_year', $currentAcademicYear)
+                                                  ->where('faculty_assignments.assignment_type', 'class_adviser')
+                                                  ->where('faculty_assignments.status', 'active');
+                                  });
+                              });
+                    })
+                    ->where(function($query) {
+                        // Only count those without both teacher_statement AND action_plan (not fully replied)
+                        $query->whereNull('teacher_statement')
+                              ->orWhereNull('action_plan');
+                    })
                     ->count();
                 
                 // Count scheduled counseling sessions

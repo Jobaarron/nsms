@@ -50,6 +50,9 @@ class Violation extends Model
         'student_attachment_path',
         'student_attachment_description',
         'student_attachment_uploaded_at',
+        'is_escalated',
+        'escalation_reason',
+        'occurrence_count',
     ];
 
     protected $attributes = [
@@ -63,6 +66,7 @@ class Violation extends Model
         'parent_notified' => 'boolean',
         'incident_feelings' => 'string',
         'action_plan' => 'string',
+        'is_escalated' => 'boolean',
     ];
 
     /**

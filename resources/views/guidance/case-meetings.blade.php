@@ -39,7 +39,7 @@
                             <i class="ri-checkbox-circle-line me-2"></i>Mark Complete
                         </button>
                     @endif
-                    @if(!$caseMeeting->summary || $caseMeeting->sanctions->isEmpty())
+                    @if($caseMeeting->status === 'scheduled')
                         <button class="btn btn-info" onclick="openCreateSummaryModal({{ $caseMeeting->id }})">
                             <i class="ri-file-text-line me-2"></i>Add Summary
                         </button>
@@ -366,10 +366,10 @@
                                                 <i class="ri-calendar-event-line"></i>
                                             </button>
 
-                                            <!-- Summary Button - Disabled when summary exists or status is in_progress -->
-                                            <button class="btn btn-outline-info {{ ($meeting->summary || $meeting->status === 'in_progress') ? 'disabled' : '' }}"
-                                                onclick="{{ (!$meeting->summary && $meeting->status !== 'in_progress') ? 'openCreateSummaryModal(' . $meeting->id . ')' : '' }}"
-                                                title="{{ $meeting->summary ? 'Summary already added' : ($meeting->status === 'in_progress' ? 'Cannot add summary while meeting is in progress' : 'Add Summary') }}">
+                                            <!-- Summary Button - Only enabled when status is scheduled -->
+                                            <button class="btn btn-outline-info {{ $meeting->status !== 'scheduled' ? 'disabled' : '' }}"
+                                                onclick="{{ $meeting->status === 'scheduled' ? 'openCreateSummaryModal(' . $meeting->id . ')' : '' }}"
+                                                title="{{ $meeting->status === 'scheduled' ? 'Add Summary' : 'Add Summary only available for scheduled meetings' }}">
                                                 <i class="ri-file-text-line"></i>
                                             </button>
 

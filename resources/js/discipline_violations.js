@@ -64,73 +64,63 @@ window.SanctionSystem = {
             this.addViolationToHistory(
                 violation.student_id, 
                 violation.severity, 
-                violation.category
+                violation.category,
+                violation.title // Pass violation title
             );
         });
     },
     
     // Add violation to student history
-    addViolationToHistory(studentId, severity, category) {
+    addViolationToHistory(studentId, severity, category, violationTitle) {
     if (!this.studentViolations.has(studentId)) {
             this.studentViolations.set(studentId, {
                 minorCount: 0,
                 majorCount: 0,
                 majorByCategory: { 1: 0, 2: 0, 3: 0 },
-                allViolations: []
+                allViolations: [],
+                violationTitles: new Map() // Track occurrences by title
             });
         }
 
         const studentRecord = this.studentViolations.get(studentId);
+        
+        // Track violation titles
+        if (violationTitle) {
+            const titleCount = studentRecord.violationTitles.get(violationTitle) || 0;
+            studentRecord.violationTitles.set(violationTitle, titleCount + 1);
+        }
+        
         const violationRecord = {
             severity,
             category,
             date: new Date().toISOString(),
-            sanction: null
+            sanction: null,
+            title: violationTitle
         };
 
         if (severity === 'minor') {
             studentRecord.minorCount++;
 
-            // Check for escalation: if minor count reaches 3, escalate to major
-            if (studentRecord.minorCount >= 3) {
-                // Remove the previous 2 minor violations from history
-                const minorViolations = studentRecord.allViolations.filter(v => v.severity === 'minor');
-                if (minorViolations.length >= 2) {
-                    // Remove the first 2 minor violations
-                    const indicesToRemove = [];
-                    let minorCount = 0;
-                    for (let i = 0; i < studentRecord.allViolations.length; i++) {
-                        if (studentRecord.allViolations[i].severity === 'minor') {
-                            minorCount++;
-                            if (minorCount <= 2) {
-                                indicesToRemove.push(i);
-                            }
-                        }
-                    }
-
-                    // Remove indices in reverse order to maintain correct indices
-                    indicesToRemove.reverse().forEach(index => {
-                        studentRecord.allViolations.splice(index, 1);
-                    });
-
-                    // Decrement minor count by 2
-                    studentRecord.minorCount -= 2;
-
-                    // Increment major count
-                    studentRecord.majorCount++;
-
-                    // Add escalation record as major violation (Category 1 by default)
-                    const escalationRecord = {
-                        severity: 'major',
-                        category: 1,
-                        date: new Date().toISOString(),
-                        sanction: 'Escalated from 3 minor violations',
-                        isEscalation: true
-                    };
-                    studentRecord.allViolations.push(escalationRecord);
-                    studentRecord.majorByCategory[1] = (studentRecord.majorByCategory[1] || 0) + 1;
-                }
+            // Check escalation: 3+ total minor violations (same or different)
+            const totalMinors = studentRecord.minorCount;
+            
+            if (totalMinors >= 3) {
+                // This minor violation becomes a major violation
+                const escalationReason = '3+ minor violations - escalated to major';
+                
+                // Change current violation to major
+                violationRecord.severity = 'major';
+                violationRecord.category = category || 1;
+                violationRecord.escalationReason = escalationReason;
+                violationRecord.isEscalation = true;
+                
+                // Increment major count
+                studentRecord.majorCount++;
+                studentRecord.majorByCategory[violationRecord.category] = (studentRecord.majorByCategory[violationRecord.category] || 0) + 1;
+                
+                console.log(`Student ${studentId}: Minor violation escalated to major: ${escalationReason}`);
             }
+            // Minor violations that don't escalate remain minor
         } else if (severity === 'major') {
             studentRecord.majorCount++;
             if (category) {
@@ -144,8 +134,8 @@ window.SanctionSystem = {
     },
     
     // Calculate automatic sanction based on policy
-    calculateAutomaticSanction(studentId, severity, category) {
-        const studentRecord = this.addViolationToHistory(studentId, severity, category);
+    calculateAutomaticSanction(studentId, severity, category, violationTitle) {
+        const studentRecord = this.addViolationToHistory(studentId, severity, category, violationTitle);
         
         if (severity === 'minor') {
             return this.calculateMinorSanction(studentRecord.minorCount);
@@ -1796,6 +1786,48 @@ window.viewViolation = function(violationId) {
             
             ${reportsSection}
             
+            ${data.related_violations && data.related_violations.length > 0 ? `
+              <div class="col-12 mt-4">
+                <div class="card">
+                  <div class="card-header bg-warning bg-opacity-10">
+                    <h6 class="mb-0"><i class="ri-alert-line me-2"></i>Related Minor Violations (Escalated)</h6>
+                  </div>
+                  <div class="card-body">
+                    <div class="table-responsive">
+                      <table class="table table-sm table-hover">
+                        <thead>
+                          <tr>
+                            <th>Violation</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          ${data.related_violations.map(rv => `
+                            <tr>
+                              <td><strong>${rv.title}</strong></td>
+                              <td>${rv.violation_date ? new Date(rv.violation_date).toLocaleDateString() : 'N/A'}</td>
+                              <td>${rv.violation_time ? (function() { 
+                                try {
+                                  const timeStr = rv.violation_time.length > 5 ? rv.violation_time.substring(0, 5) : rv.violation_time;
+                                  const date = new Date('1970-01-01T' + timeStr);
+                                  return isNaN(date) ? rv.violation_time : date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+                                } catch(e) {
+                                  return rv.violation_time;
+                                }
+                              })() : 'N/A'}</td>
+                            </tr>
+                          `).join('')}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div class="alert alert-warning mt-3 mb-0">
+                      <small><i class="ri-information-line me-1"></i><strong>Note:</strong> These ${data.related_violations.length} minor violations were automatically escalated to major severity due to accumulating 3+ minor violations.</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ` : ''}
 
           </div>
           

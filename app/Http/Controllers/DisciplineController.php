@@ -300,44 +300,67 @@ class DisciplineController extends Controller
             ->get();
 
         // Group violations by student and title to count occurrences
-        $counts = [];
-        $grouped = [];
+        $countsByTitle = [];
+        $countsByStudent = [];
         foreach ($allViolations as $violation) {
             $key = $violation->student_id . '|' . $violation->title;
-            $counts[$key] = ($counts[$key] ?? 0) + 1;
+            $countsByTitle[$key] = ($countsByTitle[$key] ?? 0) + 1;
             
-            // Store violations grouped by key
-            if (!isset($grouped[$key])) {
-                $grouped[$key] = [];
+            // Count minor violations per student
+            if ($violation->severity === 'minor') {
+                $countsByStudent[$violation->student_id] = ($countsByStudent[$violation->student_id] ?? 0) + 1;
             }
-            $grouped[$key][] = $violation;
         }
 
         // Process violations and handle escalated cases
         $processed = collect();
-        $seenKeys = [];
+        $escalatedStudents = []; // Track which students have escalated violations
         
+        // First pass: identify students with 3+ minor violations
         foreach ($allViolations as $violation) {
-            $key = $violation->student_id . '|' . $violation->title;
-            
-            // Skip if we've already processed this student-violation combination
-            if (in_array($key, $seenKeys)) {
+            if ($violation->severity === 'minor') {
+                $totalMinorForStudent = $countsByStudent[$violation->student_id] ?? 0;
+                if ($totalMinorForStudent >= 3) {
+                    $escalatedStudents[$violation->student_id] = true;
+                }
+            }
+        }
+        
+        // Get students who have grouped violations to avoid showing individual violations
+        $studentsWithGroupedViolations = $allViolations->where('title', 'Multiple Minor Violations - Escalated to Major')
+                                                       ->pluck('student_id')
+                                                       ->unique()
+                                                       ->toArray();
+
+        // Process all violations
+        foreach ($allViolations as $violation) {
+            // Skip individual minor violations completely
+            if ($violation->severity === 'minor') {
                 continue;
             }
             
-            // Add effective_severity property based on count
-            if (($counts[$key] ?? 0) >= 3) {
-                $violation->effective_severity = 'major';
-                $violation->is_escalated = true;
-                $violation->occurrence_count = $counts[$key];
-                $seenKeys[] = $key;
-                $processed->push($violation);
-            } elseif ($violation->severity === 'major') {
-                $violation->effective_severity = 'major';
-                $violation->is_escalated = false;
-                $processed->push($violation);
+            // For major violations, skip individual escalated ones if there's a grouped violation for this student
+            if ($violation->severity === 'major' && $violation->is_escalated && 
+                $violation->title !== 'Multiple Minor Violations - Escalated to Major' &&
+                in_array($violation->student_id, $studentsWithGroupedViolations)) {
+                continue;
             }
+                
+            // Show this violation
+            $key = $violation->student_id . '|' . $violation->title;
+            $countForTitle = $countsByTitle[$key] ?? 0;
+            $violation->effective_severity = $violation->severity;
+            
+            // Check if this is an escalated group violation
+            if ($violation->title === 'Multiple Minor Violations - Escalated to Major') {
+                $violation->is_escalated = true;
+                $violation->escalation_reason = $violation->escalation_reason ?? '3+ minor violations - escalated to major';
+            }
+            
+            $violation->occurrence_count = $countForTitle;
+            $processed->push($violation);
         }
+
 
         // Filter to only include major effective_severity violations
         $filtered = $processed;
@@ -572,79 +595,67 @@ class DisciplineController extends Controller
                 'student_id' => $violation->student_id
             ]);
 
-            // Check if this makes it a major offense (3 or more same violations)
-            $sameViolationCount = Violation::where('student_id', $validatedData['student_id'])
-                ->where('title', $validatedData['title'])
-                ->count();
+        // Check for escalation: 3+ minor violations within the same week
+        $violationDate = \Carbon\Carbon::parse($validatedData['violation_date']);
+        $weekStart = $violationDate->copy()->startOfWeek();
+        $weekEnd = $violationDate->copy()->endOfWeek();
+        
+        $weeklyMinorViolations = Violation::where('student_id', $validatedData['student_id'])
+            ->where('severity', 'minor')
+            ->whereBetween('violation_date', [$weekStart, $weekEnd])
+            ->count();
 
-            if ($sameViolationCount >= 3) {
-                try {
-                    // Get all same violations (including the newly created one)
-                    $violationsToEscalate = Violation::where('student_id', $validatedData['student_id'])
-                        ->where('title', $validatedData['title'])
-                        ->get();
-
-                    // Archive all violations except one, which will become major
-                    $keepOne = true;
-                    foreach ($violationsToEscalate as $violationToEscalate) {
-                        if ($keepOne) {
-                            // Keep this one and make it major
-                            $updated = $violationToEscalate->update([
-                                'severity' => 'major',
-                                'major_category' => $validatedData['major_category'] ?? 1,
-                                'title' => 'Escalated: ' . $violationToEscalate->title,
-                                'description' => 'This violation has been escalated to major due to multiple occurrences (' . $sameViolationCount . ' total). Original description: ' . $violationToEscalate->description
-                            ]);
-                            if ($updated) {
-                                \Log::info("Kept violation ID {$violationToEscalate->id} updated to major.");
-                            } else {
-                                \Log::error("Failed to update kept violation ID {$violationToEscalate->id} to major.");
-                            }
-                            $keepOne = false;
-                        } else {
-                            // Archive the others
-                            ArchiveViolation::create([
-                                'student_id' => $violationToEscalate->student_id,
-                                'reported_by' => $violationToEscalate->reported_by,
-                                'violation_type' => $violationToEscalate->violation_type,
-                                'title' => $violationToEscalate->title,
-                                'description' => $violationToEscalate->description,
-                                'severity' => $violationToEscalate->severity,
-                                'major_category' => $violationToEscalate->major_category,
-                                'sanction' => $violationToEscalate->sanction,
-                                'violation_date' => $violationToEscalate->violation_date,
-                                'violation_time' => $violationToEscalate->violation_time,
-                                'location' => $violationToEscalate->location,
-                                'witnesses' => $violationToEscalate->witnesses,
-                                'evidence' => $violationToEscalate->evidence,
-                                'attachments' => $violationToEscalate->attachments,
-                                'status' => $violationToEscalate->status,
-                                'resolution' => $violationToEscalate->resolution,
-                                'resolved_by' => $violationToEscalate->resolved_by,
-                                'resolved_at' => $violationToEscalate->resolved_at,
-                                'student_statement' => $violationToEscalate->student_statement,
-                                'disciplinary_action' => $violationToEscalate->disciplinary_action,
-                                'parent_notified' => $violationToEscalate->parent_notified,
-                                'parent_notification_date' => $violationToEscalate->parent_notification_date,
-                                'notes' => $violationToEscalate->notes,
-                                'archived_at' => now(),
-                                'archive_reason' => 'escalation_to_major',
-                            ]);
-                            // Delete the archived violation from student_violations table
-                            $violationToEscalate->delete();
-                        }
-                    }
-                } catch (\Exception $e) {
-                    \Log::error('Failed to escalate and archive violations: ' . $e->getMessage(), [
-                        'student_id' => $validatedData['student_id'],
-                        'title' => $validatedData['title'],
-                        'error' => $e->getTraceAsString()
+        if ($validatedData['severity'] === 'minor' && $weeklyMinorViolations >= 3) {
+            try {
+                // Create/update a grouped escalated violation ONLY for this week
+                $weekLabel = $weekStart->format('M d') . ' - ' . $weekEnd->format('M d, Y');
+                $escalationReason = "3+ minor violations in week of {$weekLabel} - escalated to major";
+                
+                // Check if there's already an escalated group violation for this student for this week
+                $existingEscalated = Violation::where('student_id', $validatedData['student_id'])
+                    ->where('title', 'Multiple Minor Violations - Escalated to Major')
+                    ->whereBetween('violation_date', [$weekStart, $weekEnd])
+                    ->first();
+                
+                if ($existingEscalated) {
+                    // Update the existing escalated violation count
+                    $existingEscalated->update([
+                        'occurrence_count' => $weeklyMinorViolations,
+                        'description' => "Escalated violation group containing {$weeklyMinorViolations} minor violations for week of {$weekLabel}"
                     ]);
-                    // Continue without escalation - violation is still created
+                } else {
+                    // Create a new grouped escalated violation for this week
+                    Violation::create([
+                        'student_id' => $validatedData['student_id'],
+                        'title' => 'Multiple Minor Violations - Escalated to Major',
+                        'description' => "Escalated violation group containing {$weeklyMinorViolations} minor violations for week of {$weekLabel}",
+                        'severity' => 'major',
+                        'violation_date' => $validatedData['violation_date'],
+                        'violation_time' => $validatedData['violation_time'],
+                        'reported_by' => $validatedData['reported_by'] ?? auth()->user()->discipline->id,
+                        'status' => 'pending',
+                        'sanction' => 'One step lower in the Deportment Grade, Community Service',
+                        'escalation_reason' => $escalationReason,
+                        'is_escalated' => true,
+                        'occurrence_count' => $weeklyMinorViolations
+                    ]);
                 }
+                
+                // DO NOT MODIFY the individual minor violation - keep it as minor
+                
+                \Log::info("Grouped escalated violation created/updated for student {$validatedData['student_id']} with {$weeklyMinorViolations} minor violations for week {$weekLabel}");
+            } catch (\Exception $e) {
+                \Log::error('Failed to create grouped escalated violation: ' . $e->getMessage(), [
+                    'student_id' => $validatedData['student_id'],
+                    'weekly_minor_violations' => $weeklyMinorViolations,
+                    'week_period' => $weekLabel ?? 'unknown',
+                    'error' => $e->getTraceAsString()
+                ]);
+                // Continue without escalation - violation is still created
             }
+        }
 
-            if ($request->wantsJson() || $request->ajax()) {
+        if ($request->wantsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => true,
                     'message' => 'Violation reported successfully.',
@@ -697,6 +708,24 @@ class DisciplineController extends Controller
         
         // Convert to array and add case meeting details if exists
         $violationData = $violation->toArray();
+        
+        // If this is a grouped escalated violation, get related minor violations from the same week
+        if ($violation->title === 'Multiple Minor Violations - Escalated to Major') {
+            $violationDate = \Carbon\Carbon::parse($violation->violation_date);
+            $weekStart = $violationDate->copy()->startOfWeek();
+            $weekEnd = $violationDate->copy()->endOfWeek();
+            
+            $relatedViolations = Violation::where('student_id', $violation->student_id)
+                ->where('severity', 'minor')
+                ->whereBetween('violation_date', [$weekStart, $weekEnd])
+                ->with(['reportedBy'])
+                ->orderBy('violation_date', 'desc')
+                ->get();
+            
+
+            
+            $violationData['related_violations'] = $relatedViolations->toArray();
+        }
         
         if ($violation->caseMeeting) {
             $violationData['case_meeting'] = array_merge($violation->caseMeeting->toArray(), [
