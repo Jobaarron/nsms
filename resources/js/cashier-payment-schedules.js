@@ -11,7 +11,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeCashierPayments() {
-    console.log('Cashier Payment Schedules initialized');
     
     // Load initial data
     loadPaymentStatistics();
@@ -34,7 +33,6 @@ function setupRealTimeUpdates() {
         }
     }, 30000);
     
-    console.log('Real-time updates enabled for pending payments');
 }
 
 function loadPaymentStatistics() {
@@ -52,7 +50,6 @@ function loadPaymentStatistics() {
         }
     })
     .catch(error => {
-        console.error('Error loading statistics:', error);
     });
 }
 
@@ -92,7 +89,6 @@ function loadPaymentSchedules(filters = {}) {
         }
     })
     .catch(error => {
-        console.error('Error loading payment schedules:', error);
     });
 }
 
@@ -319,7 +315,6 @@ function processPayment(paymentId, action) {
         }
     })
     .catch(error => {
-        console.error('Error processing payment:', error);
         showAlert('An error occurred while processing the payment.', 'danger');
     });
 }
@@ -347,11 +342,9 @@ function processIndividualPayment(paymentId, action) {
         .then(data => {
             if (data.success) {
                 // Debug: Log the response data
-                console.log('processIndividualPayment response:', data);
                 
                 // Show PDF modal after approval - ensure we use transaction_id from response
                 const transactionId = data.transaction_id || (data.payment && data.payment.transaction_id);
-                console.log('Extracted transaction ID:', transactionId);
                 
                 if (transactionId) {
                     if (typeof showPdfModal === 'function') {
@@ -360,7 +353,6 @@ function processIndividualPayment(paymentId, action) {
                         window.showPdfModal(transactionId);
                     }
                 } else {
-                    console.error('No transaction_id returned from server:', data);
                     showAlert('Payment approved but receipt cannot be generated. Missing transaction ID.', 'warning');
                 }
                 showAlert(data.message, 'success');
@@ -372,7 +364,6 @@ function processIndividualPayment(paymentId, action) {
             }
         })
         .catch(error => {
-            console.error('Error processing individual payment:', error);
             showAlert(`Error processing payment: ${error.message}`, 'danger');
         });
     } else {
@@ -406,7 +397,6 @@ function processIndividualPayment(paymentId, action) {
             }
         })
         .catch(error => {
-            console.error('Error processing individual payment:', error);
             showAlert(`Error processing payment: ${error.message}`, 'danger');
         });
     }
@@ -450,7 +440,6 @@ function viewPaymentDetails(paymentId) {
         }
     })
     .catch(error => {
-        console.error('Error loading payment details:', error);
         showAlert('An error occurred while loading payment details.', 'danger');
     });
 }
@@ -611,7 +600,6 @@ window.viewPaymentScheduleDetails = function(studentId, paymentMethod) {
         }
     })
     .catch(error => {
-        console.error('Error loading payment schedule:', error);
     });
 };
 
@@ -764,12 +752,6 @@ window.rejectPaymentSchedule = function(studentId, paymentMethod) {
 };
 
 function processPaymentSchedule(studentId, paymentMethod, action, reason = null, onSuccess = null) {
-    console.log('Processing payment schedule:', {
-        studentId: studentId,
-        paymentMethod: paymentMethod,
-        action: action,
-        reason: reason
-    });
     const url = `/cashier/api/payment-schedules/student/${studentId}/${paymentMethod}/process`;
     fetch(url, {
         method: 'POST',
@@ -807,7 +789,6 @@ function processPaymentSchedule(studentId, paymentMethod, action, reason = null,
         }
     })
     .catch(error => {
-        console.error('Error processing payment schedule:', error);
         alert('An error occurred while processing the payment schedule.');
     });
 }
@@ -819,25 +800,21 @@ function showPdfModal(paymentId) {
     if (existingModal) existingModal.remove();
 
     // Debug: Log the received paymentId
-    console.log('showPdfModal called with paymentId:', paymentId, 'Type:', typeof paymentId);
 
     // Validate transaction ID format - ensure it's a proper transaction ID
     if (!paymentId || paymentId === 'undefined' || paymentId === 'null') {
-        console.error('Invalid payment ID:', paymentId);
         showAlert('Invalid transaction ID. Cannot generate receipt.', 'danger');
         return;
     }
 
     // If paymentId is just a number, we need to fetch the actual transaction_id
     if (/^\d+$/.test(paymentId)) {
-        console.error('Payment ID appears to be a database ID instead of transaction_id:', paymentId);
         showAlert('Invalid transaction ID format. Please use the full transaction ID.', 'danger');
         return;
     }
 
     // Check for invalid formats like "28:1"
     if (paymentId.includes(':')) {
-        console.error('Invalid transaction ID format (contains colon):', paymentId);
         showAlert('Invalid transaction ID format. Expected format: TXN-NS-XXXXX-XXXXXXXXX-XXX', 'danger');
         return;
     }
@@ -939,7 +916,6 @@ function updatePagination(payments) {
     const paginationContainer = document.getElementById('pagination-container');
     if (paginationContainer && payments.links) {
         // Implementation depends on your pagination structure
-        console.log('Update pagination:', payments);
     }
 }
 
@@ -1076,7 +1052,6 @@ function processConfirmation() {
             }
         })
         .catch(error => {
-            console.error('Error confirming payment:', error);
             showAlert('An error occurred while confirming the payment.', 'danger');
         });
     }
@@ -1125,7 +1100,6 @@ function processRejection() {
             }
         })
         .catch(error => {
-            console.error('Error rejecting payment:', error);
             showAlert('An error occurred while rejecting the payment.', 'danger');
         });
     }

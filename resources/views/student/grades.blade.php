@@ -232,7 +232,7 @@
                 body: JSON.stringify({
                     alert_type: 'grades'
                 })
-            }).catch(error => console.error('Error marking grades alert as viewed:', error));
+            }).catch(error => {});
         });
     </script>
     @endpush

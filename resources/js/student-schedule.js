@@ -16,7 +16,6 @@ function loadScheduleData() {
             }
         })
         .catch(error => {
-            console.error('Error loading schedule:', error);
             showError('Failed to load schedule data');
         });
 }
@@ -69,7 +68,6 @@ function loadSubjectsList() {
             }
         })
         .catch(error => {
-            console.error('Error loading subjects:', error);
         });
 }
 

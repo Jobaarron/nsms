@@ -68,7 +68,6 @@ function applyApprovedFilters() {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
         showAlert('Error loading approved applications', 'danger');
     })
     .finally(() => {
@@ -139,7 +138,6 @@ function viewApprovedApplication(applicationId) {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
         showAlert('Error loading application details', 'danger');
     })
     .finally(() => {
@@ -247,7 +245,6 @@ function processCredentialsGeneration(applicationId) {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
         showAlert('Error generating credentials', 'danger');
     })
     .finally(() => {

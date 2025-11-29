@@ -222,14 +222,6 @@ function handleFailedAttempt() {
         showPasswordError(`Incorrect password. ${remainingAttempts} attempt(s) remaining.`);
         updateAttemptCounter();
     }
-    
-    // Log failed attempt
-    console.warn('Failed archive access attempt:', {
-        user: userName,
-        timestamp: new Date().toISOString(),
-        attempt: failedAttempts,
-        ip: userIP
-    });
 }
 
 function generateSessionId() {
@@ -387,7 +379,6 @@ function viewArchivedRecord(type, recordId) {
     })
     .catch(error => {
         document.getElementById('sessionDetailsContent').innerHTML = `<div class="alert alert-danger">An error occurred while loading the ${recordType.toLowerCase()} details.</div>`;
-        console.error(error);
     });
 }
 

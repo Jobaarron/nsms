@@ -1046,7 +1046,6 @@
             if (typeof loadAllDashboardData === 'function') {
                 loadAllDashboardData();
             } else {
-                console.log('Enhanced dashboard functions not loaded yet');
             }
             
             // Add personalized welcome message
@@ -1055,7 +1054,6 @@
                 if (typeof showAlert === 'function') {
                     showAlert(`Welcome back, ${userName}! 🎉`, 'success', 3000);
                 } else {
-                    console.log(`Welcome back, ${userName}! 🎉`);
                 }
             }, 1000);
             
@@ -1069,7 +1067,6 @@
         // Check for urgent tasks and notify user
         function checkForUrgentTasks() {
             if (!window.guidanceApiEndpoints || !window.guidanceApiEndpoints.upcomingTasks) {
-                console.warn('Upcoming tasks API endpoint not configured');
                 return;
             }
             
@@ -1087,13 +1084,11 @@
                             if (typeof showAlert === 'function') {
                                 showAlert(`⚠️ You have ${urgentTasks} urgent task${urgentTasks > 1 ? 's' : ''} requiring attention!`, 'warning', 8000);
                             } else {
-                                console.warn(`⚠️ You have ${urgentTasks} urgent task${urgentTasks > 1 ? 's' : ''} requiring attention!`);
                             }
                         }
                     }
                 })
                 .catch(error => {
-                    console.warn('Could not fetch urgent tasks:', error.message);
                     // Fail silently for better user experience
                 });
         }
@@ -1139,7 +1134,6 @@
                     }
                 })
                 .catch(error => {
-                    console.warn('Could not update statistics:', error.message);
                     // Fail silently for better user experience
                 });
         }

@@ -69,7 +69,6 @@ window.handleGradeSubmission = function(form) {
         }
     })
     .catch(error => {
-        console.error('Grade submission error:', error);
         window.showErrorMessage('Error submitting grades. Please try again.');
     })
     .finally(() => {
@@ -118,7 +117,6 @@ window.handleGradeFileUpload = function(file) {
         }
     })
     .catch(error => {
-        console.error('File upload error:', error);
         window.hideUploadProgress();
         window.showErrorMessage('Error uploading file. Please try again.');
     });
@@ -284,7 +282,6 @@ window.submitGradeForReview = function(submissionId) {
         }
     })
     .catch(error => {
-        console.error('Submit for review error:', error);
         window.showErrorMessage('Error submitting grades for review. Please try again.');
     });
 };
@@ -309,7 +306,6 @@ window.deleteDraftSubmission = function(submissionId) {
         }
     })
     .catch(error => {
-        console.error('Delete draft error:', error);
         window.showErrorMessage('Error deleting draft. Please try again.');
     });
 };
@@ -409,49 +405,30 @@ window.handleSubjectSelection = function() {
     const gradeLevelInput = document.getElementById('gradeLevel');
     const sectionInput = document.getElementById('section');
     
-    console.log('Subject selection handler setup:');
-    console.log('Subject select found:', !!subjectSelect);
-    console.log('Grade level input found:', !!gradeLevelInput);
-    console.log('Section input found:', !!sectionInput);
     
     if (subjectSelect && gradeLevelInput && sectionInput) {
-        console.log('All elements found, attaching change listener');
         
         subjectSelect.addEventListener('change', function() {
-            console.log('Subject selection changed');
             const selectedOption = this.options[this.selectedIndex];
-            console.log('Selected option:', selectedOption);
-            console.log('Selected value:', selectedOption.value);
             
             if (selectedOption.value) {
                 // Get data attributes from selected option
                 const gradeLevel = selectedOption.getAttribute('data-grade');
                 const section = selectedOption.getAttribute('data-section');
                 
-                console.log('Data attributes:');
-                console.log('data-grade:', gradeLevel);
-                console.log('data-section:', section);
                 
                 // Populate hidden fields
                 gradeLevelInput.value = gradeLevel || '';
                 sectionInput.value = section || '';
                 
-                console.log('Hidden fields populated:');
-                console.log('Grade Level input value:', gradeLevelInput.value);
-                console.log('Section input value:', sectionInput.value);
                 
-                console.log('Selected subject:', selectedOption.value);
-                console.log('Grade Level:', gradeLevel);
-                console.log('Section:', section);
             } else {
                 // Clear hidden fields if no subject selected
                 gradeLevelInput.value = '';
                 sectionInput.value = '';
-                console.log('Cleared hidden fields');
             }
         });
     } else {
-        console.log('Missing elements for subject selection handler');
     }
 };
 
@@ -465,7 +442,6 @@ window.handleGradeSubmission = function() {
     }
     
     const assignmentId = assignmentSelect.value;
-    console.log('Submit grades for assignment:', assignmentId);
     
     // Check if grade submission is active and get active quarters
     fetch('/teacher/check-submission-status')
@@ -493,7 +469,6 @@ window.handleGradeSubmission = function() {
             }
         })
         .catch(error => {
-            console.error('Error checking submission status:', error);
             alert('Unable to check grade submission status. Please try again.');
         });
 };
@@ -563,17 +538,11 @@ window.handleCreateSubmissionForm = function() {
     const form = document.getElementById('createSubmissionForm');
     
     if (form) {
-        console.log('Create submission form found and handler attached');
         
         form.addEventListener('submit', function(e) {
-            console.log('Form submission triggered');
             
             // Get form data for debugging
             const formData = new FormData(this);
-            console.log('Form data:');
-            for (let [key, value] of formData.entries()) {
-                console.log(`${key}: ${value}`);
-            }
             
             // Check if required fields are filled
             const subjectId = formData.get('subject_id');
@@ -581,36 +550,25 @@ window.handleCreateSubmissionForm = function() {
             const gradeLevel = formData.get('grade_level');
             const section = formData.get('section');
             
-            console.log('Validation check:');
-            console.log('Subject ID:', subjectId);
-            console.log('Quarter:', quarter);
-            console.log('Grade Level:', gradeLevel);
-            console.log('Section:', section);
             
             if (!subjectId) {
                 e.preventDefault();
                 alert('Please select a subject');
-                console.log('Form blocked: No subject selected');
                 return false;
             }
             
             if (!quarter) {
                 e.preventDefault();
                 alert('Please select a quarter');
-                console.log('Form blocked: No quarter selected');
                 return false;
             }
             
             if (!gradeLevel || !section) {
                 e.preventDefault();
                 alert('Grade level and section are required. Please select a subject first.');
-                console.log('Form blocked: Missing grade level or section');
                 return false;
             }
             
-            console.log('Form validation passed, submitting...');
-            console.log('Form action:', this.action);
-            console.log('Form method:', this.method);
             // Let the form submit normally
         });
         
@@ -618,19 +576,14 @@ window.handleCreateSubmissionForm = function() {
         const submitButton = form.querySelector('button[type="submit"]');
         if (submitButton) {
             submitButton.addEventListener('click', function(e) {
-                console.log('Submit button clicked');
-                console.log('Button type:', this.type);
-                console.log('Form valid:', form.checkValidity());
             });
         }
     } else {
-        console.log('Create submission form NOT found');
     }
 };
 
 // Grade upload function - Define immediately for onclick access
 window.uploadGrades = function(submissionId) {
-    console.log('uploadGrades called with ID:', submissionId);
     if (!confirm('Are you sure you want to upload these grades? Once uploaded, grades will be visible to students.')) {
         return;
     }
@@ -671,7 +624,6 @@ window.uploadGrades = function(submissionId) {
         }
     })
     .catch(error => {
-        console.error('Upload error:', error);
         window.showErrorMessage('Error: ' + error.message);
         
         // Restore button state
@@ -703,15 +655,11 @@ document.addEventListener('DOMContentLoaded', function() {
             window.handleCreateSubmissionForm();
         }
         
-        console.log('Teacher Grades JavaScript loaded with upload support');
-        console.log('uploadGrades function available:', typeof window.uploadGrades);
     } catch (error) {
-        console.log('Teacher Grades initialization error:', error);
     }
 });
 
 // Test function to verify script loading
 window.testUpload = function() {
-    console.log('Test function called - script is loaded');
     return 'Script loaded successfully';
 };

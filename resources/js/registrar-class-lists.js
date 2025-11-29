@@ -3,14 +3,12 @@
  * Handles accordion-style navigation for grade levels, strands, tracks, and sections
  */
 
-console.log('Registrar Class Lists JS loaded');
 
 // Global variables
 let loadedGrades = new Set();
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Registrar Class Lists: DOM loaded, initializing accordion...');
     
     // Add hover effects and styling
     addCustomStyles();
@@ -64,7 +62,6 @@ window.loadGradeStudentCount = async function(grade) {
             badge.className = 'badge bg-danger ms-auto me-3';
         }
     } catch (error) {
-        console.error('Error loading student count for grade:', grade, error);
         badge.textContent = 'Error';
         badge.className = 'badge bg-danger ms-auto me-3';
     }
@@ -87,7 +84,6 @@ window.loadGradeSections = async function(grade) {
             await loadElementaryJuniorSections(grade, sectionsContainer, badge);
         }
     } catch (error) {
-        console.error('Error loading grade sections:', error);
         showErrorState(sectionsContainer, badge, 'Error loading sections');
     }
 }
@@ -145,7 +141,6 @@ window.loadStrandSections = async function(grade, strand) {
             await loadSectionsForStrand(grade, strand, null, sectionsContainer, badge);
         }
     } catch (error) {
-        console.error('Error loading strand sections:', error);
         showErrorState(sectionsContainer, badge, 'Error loading sections');
     }
 }
@@ -270,7 +265,6 @@ window.loadSectionsForStrand = async function(grade, strand = null, track = null
             badge.className = 'badge bg-danger ms-auto me-3';
         }
     } catch (error) {
-        console.error('Error loading sections:', error);
         showErrorState(sectionsContainer, badge, 'Error loading sections');
     }
 }
@@ -298,7 +292,6 @@ window.loadSectionStudents = async function(grade, section, strand = null, track
             alert('Failed to load students for this section');
         }
     } catch (error) {
-        console.error('Error loading students:', error);
         alert('Error loading students');
     }
 }
@@ -466,7 +459,6 @@ function showStudentsList(grade, section, students, classInfo, strand = null, tr
 let searchTimeout;
 let currentSearchParams = {};
 window.handleSearch = function(grade, section, strand, track, searchValue) {
-    console.log('Search triggered:', { grade, section, strand, track, searchValue });
     
     // Store current search parameters
     currentSearchParams = { grade, section, strand, track, searchValue };
@@ -474,7 +466,6 @@ window.handleSearch = function(grade, section, strand, track, searchValue) {
     // Don't perform search if input is being rebuilt
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
-        console.log('Executing search after debounce:', searchValue.trim());
         performSearch(grade, section, strand || null, track || null, searchValue.trim());
     }, 300); // Wait 300ms after user stops typing
 };
@@ -499,10 +490,8 @@ async function performSearch(grade, section, strand, track, search) {
         if (data.success && data.students) {
             updateStudentsList(data.students, search);
         } else {
-            console.error('Search failed:', data.message);
         }
     } catch (error) {
-        console.error('Error performing search:', error);
     }
 }
 
@@ -512,7 +501,6 @@ function updateStudentsList(students, currentSearch) {
     const countElement = document.querySelector('.total-students');
     
     if (!studentsContainer || !countElement) {
-        console.error('Students container or count element not found');
         return;
     }
     
@@ -621,7 +609,6 @@ window.viewStudentDetails = async function(studentId) {
             alert('Failed to load student details');
         }
     } catch (error) {
-        console.error('Error loading student details:', error);
         alert('Error loading student details');
     }
 }

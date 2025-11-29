@@ -10,7 +10,6 @@ window.enrolleeRoutes = {
 };
         
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Document management JavaScript loaded successfully');
     
     // Get all DOM elements once
     uploadBtn = document.getElementById('uploadBtn');
@@ -23,7 +22,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add manual click handlers if Bootstrap modal doesn't work
     if (uploadBtn && uploadModal) {
         uploadBtn.addEventListener('click', function(e) {
-            console.log('Upload button clicked');
             if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
                 const modal = new bootstrap.Modal(uploadModal);
                 modal.show();
@@ -44,7 +42,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (uploadFirstBtn && uploadModal) {
         uploadFirstBtn.addEventListener('click', function(e) {
-            console.log('Upload first button clicked');
             if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
                 const modal = new bootstrap.Modal(uploadModal);
                 modal.show();
@@ -67,7 +64,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const closeButtons = uploadModal?.querySelectorAll('[data-bs-dismiss="modal"], .btn-close');
     closeButtons?.forEach(btn => {
         btn.addEventListener('click', function() {
-            console.log('Modal close button clicked');
             closeModal();
         });
     });
@@ -107,7 +103,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (uploadForm) {
         uploadForm.addEventListener('submit', function(e) {
             e.preventDefault();
-            console.log('Upload form submitted');
             
             // Validate form before submission
             const documentFiles = document.getElementById('document_files').files;
@@ -117,7 +112,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            console.log('Form validation passed:', { fileCount: documentFiles.length });
         
         const formData = new FormData(this);
         const submitBtn = this.querySelector('button[type="submit"]');
@@ -142,8 +136,6 @@ document.addEventListener('DOMContentLoaded', function() {
         modalBody.insertAdjacentHTML('beforeend', progressHtml);
         
         // Submit form with progress tracking
-        console.log('Submitting to:', this.action);
-        console.log('FormData contents:', Array.from(formData.entries()));
         
         fetch(this.action, {
             method: 'POST',
@@ -154,19 +146,15 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         })
         .then(response => {
-            console.log('Response status:', response.status);
-            console.log('Response headers:', response.headers);
             
             if (!response.ok) {
                 return response.text().then(text => {
-                    console.error('Response text:', text);
                     throw new Error(`HTTP error! status: ${response.status} - ${text}`);
                 });
             }
             return response.json();
         })
         .then(data => {
-            console.log('Response data:', data);
             
             if (data.success) {
                 // Update progress to 100%
@@ -187,12 +175,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     window.location.reload();
                 }, 1500);
             } else {
-                console.error('Upload failed:', data);
                 throw new Error(data.message || 'Upload failed');
             }
         })
         .catch(error => {
-            console.error('Upload error:', error);
             showAlert(error.message || 'Failed to upload document. Please try again.', 'error');
             
             // Reset button state
@@ -332,7 +318,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Handle replace document form submission
         replaceDocumentForm.addEventListener('submit', function(e) {
             e.preventDefault();
-            console.log('Replace document form submitted');
             
             // Validate form
             const documentFile = document.getElementById('replace_document_file').files[0];
@@ -348,7 +333,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            console.log('Replace form validation passed:', { fileName: documentFile.name, documentIndex });
             
             const formData = new FormData(this);
             const submitBtn = this.querySelector('button[type="submit"]');
@@ -359,8 +343,6 @@ document.addEventListener('DOMContentLoaded', function() {
             submitBtn.disabled = true;
             
             // Submit form
-            console.log('Submitting to:', this.action);
-            console.log('FormData contents:', Array.from(formData.entries()));
             
             fetch(this.action, {
                 method: 'POST',
@@ -371,19 +353,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             })
             .then(response => {
-                console.log('Response status:', response.status);
                 
                 if (!response.ok) {
                     return response.text().then(text => {
-                        console.error('Response text:', text);
                         throw new Error(`HTTP error! status: ${response.status} - ${text}`);
                     });
                 }
                 return response.json();
             })
             .then(data => {
-                console.log('Response data:', data);
-                
+                    
                 if (data.success) {
                     showAlert(data.message || 'Document replaced successfully!', 'success');
                     
@@ -397,12 +376,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         window.location.href = '/enrollee/documents';
                     }, 1500);
                 } else {
-                    console.error('Replace failed:', data);
                     throw new Error(data.message || 'Replace failed');
                 }
             })
             .catch(error => {
-                console.error('Replace error:', error);
                 showAlert(error.message || 'Failed to replace document. Please try again.', 'error');
                 
                 // Reset button state
@@ -462,7 +439,6 @@ let currentDocumentPath = '';
 let currentDocumentName = '';
 
 function viewDocument(index, filename, path, type) {
-    console.log('viewDocument called:', { index, filename, path, type });
     
     if (!path) {
         showAlert('Document path not found', 'error');
@@ -529,14 +505,12 @@ function viewDocument(index, filename, path, type) {
 }
 
 function downloadDocument(index, filename, path) {
-    console.log('downloadDocument called:', { index, filename, path });
     
     // Use proper download route
     const downloadUrl = window.enrolleeRoutes?.downloadDocument ? 
         `${window.enrolleeRoutes.downloadDocument}/${index}` : 
         `/enrollee/documents/download/${index}`;
     
-    console.log('Download URL:', downloadUrl);
     
     const link = document.createElement('a');
     link.href = downloadUrl;
@@ -549,7 +523,6 @@ function downloadDocument(index, filename, path) {
 }
 
 function deleteDocument(index) {
-    console.log('deleteDocument called:', { index });
     
     if (confirm('Are you sure you want to delete this document? This action cannot be undone.')) {
         // Get CSRF token
@@ -599,7 +572,6 @@ function deleteDocument(index) {
             }
         })
         .catch(error => {
-            console.error('Error:', error);
             showAlert('An error occurred while deleting the document', 'error');
             if (deleteBtn) {
                 deleteBtn.innerHTML = originalText;
@@ -610,31 +582,16 @@ function deleteDocument(index) {
 }
 
 function testJavaScript() {
-    console.log('Test JavaScript function called');
     showAlert('JavaScript is working! Check console for detailed logs.', 'success');
     
     // Test Bootstrap
-    console.log('Bootstrap check:', {
-        bootstrap: typeof bootstrap !== 'undefined',
-        Modal: typeof bootstrap !== 'undefined' && !!bootstrap.Modal
-    });
     
     // Test form elements (reusing already declared variables)
     const documentType = document.getElementById('document_type');
     const documentFile = document.getElementById('document_file');
     
-    console.log('Form elements check:', {
-        uploadForm: !!uploadForm,
-        uploadModal: !!uploadModal,
-        documentType: !!documentType,
-        documentFile: !!documentFile,
-        uploadBtn: !!uploadBtn,
-        uploadFirstBtn: !!uploadFirstBtn
-    });
-    
     // Test CSRF token
     const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-    console.log('CSRF token:', token ? 'Present' : 'Missing');
     
     // Test route
     if (uploadForm) {

@@ -1,5 +1,4 @@
 // Registrar Applications Management JavaScript - Comprehensive Version
-console.log('Registrar Applications Management JavaScript: File loaded successfully');
 
 // Global variables
 let currentApplicationId = null;
@@ -15,7 +14,6 @@ let lastUpdateTimestamp = null;
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Registrar Applications Management: DOM loaded, initializing...');
     
     // Check if we're on the applications page
     if (window.location.pathname.includes('/registrar/applications')) {
@@ -56,13 +54,11 @@ function setupCSRFToken() {
 
 // Initialize the system
 function initializeSystem() {
-    console.log('Initializing registrar applications management system...');
     
     // Setup Bootstrap 5 tab navigation
     document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => {
         tab.addEventListener('shown.bs.tab', function (e) {
             const targetId = e.target.getAttribute('data-bs-target');
-            console.log('Tab switched to:', targetId);
             
             // Load data based on active tab
             switch(targetId) {
@@ -77,10 +73,8 @@ function initializeSystem() {
                     break;
                 case '#data-change-requests':
                     // Data change requests are handled by their own dedicated script
-                    console.log('Data change requests tab activated - handled by dedicated script');
                     break;
                 default:
-                    console.log('Unknown tab activated:', targetId);
                     break;
             }
         });
@@ -94,10 +88,8 @@ function initializeSystem() {
             if (specificDiv) {
                 if (this.value === 'specific') {
                     specificDiv.style.display = 'block';
-                    console.log('Showing specific applicant selection');
                 } else {
                     specificDiv.style.display = 'none';
-                    console.log('Hiding specific applicant selection, selected:', this.value);
                 }
             }
         });
@@ -153,7 +145,6 @@ function initializeModals() {
 
 // Setup event listeners
 function setupEventListeners() {
-    console.log('Setting up event listeners...');
     
     // Setup checkbox selection for bulk actions
     const selectAllCheckbox = document.getElementById('select-all');
@@ -219,7 +210,6 @@ function updateSelectAllCheckbox() {
 
 // Load applications data with AJAX and tab filtering
 function loadApplicationsData(tab = null) {
-    console.log('Loading applications data with AJAX...');
     
     // Get current tab if not specified
     if (!tab) {
@@ -268,7 +258,6 @@ function loadApplicationsData(tab = null) {
         }
     })
     .catch(error => {
-        console.error('Error loading applications:', error);
         showAlert('Error loading applications', 'danger');
     })
     .finally(() => {
@@ -278,7 +267,6 @@ function loadApplicationsData(tab = null) {
 
 // Load documents data
 function loadDocumentsData() {
-    console.log('Loading documents data...');
     const loadingDiv = document.getElementById('documents-loading');
     const contentDiv = document.getElementById('documents-content');
     const emptyDiv = document.getElementById('documents-empty');
@@ -306,14 +294,12 @@ function loadDocumentsData() {
         }
     })
         .then(response => {
-            console.log('Documents response status:', response.status);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             return response.json();
         })
         .then(data => {
-            console.log('Documents data received:', data);
             if (loadingDiv) loadingDiv.style.display = 'none';
             
             if (data.success && data.documents && data.documents.length > 0) {
@@ -353,12 +339,10 @@ function loadDocumentsData() {
                 }
                 if (contentDiv) contentDiv.style.display = 'block';
             } else {
-                console.log('No documents found or empty response');
                 if (emptyDiv) emptyDiv.style.display = 'block';
             }
         })
         .catch(error => {
-            console.error('Error loading documents:', error);
             if (loadingDiv) loadingDiv.style.display = 'none';
             if (emptyDiv) emptyDiv.style.display = 'block';
             showAlert('Failed to load documents: ' + error.message, 'error');
@@ -421,7 +405,6 @@ function approveApplication(applicationId) {
             }
         })
         .catch(error => {
-            console.error('Error:', error);
             alert('Error approving application. Please try again.');
         });
     }
@@ -451,7 +434,6 @@ function declineApplication(applicationId) {
             }
         })
         .catch(error => {
-            console.error('Error:', error);
             alert('Error declining application. Please try again.');
         });
     }
@@ -487,7 +469,6 @@ function applyFilters() {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
         showAlert('Error loading applications', 'danger');
     })
     .finally(() => {
@@ -593,7 +574,6 @@ function viewApplication(applicationId) {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
         showAlert('Error loading application details', 'danger');
     })
     .finally(() => {
@@ -607,7 +587,6 @@ function checkForAutoOpenModal() {
     const viewApplicationId = urlParams.get('view');
     
     if (viewApplicationId && window.location.pathname.includes('/registrar/applications')) {
-        console.log('Auto-opening application modal for ID:', viewApplicationId);
         
         // Wait a bit for the page to fully load, then open the modal
         setTimeout(() => {
@@ -866,7 +845,6 @@ function monitorDocumentStatusChanges() {
 
 // Update applications table in real-time
 function updateApplicationsTableRealTime(applicationId, newStatus) {
-    console.log('Updating applications table for application:', applicationId, 'to status:', newStatus);
     
     // Find the enrollment applications table - look for table inside the applications tab
     let enrollmentTable = document.querySelector('#applications .table');
@@ -878,16 +856,11 @@ function updateApplicationsTableRealTime(applicationId, newStatus) {
     }
     
     if (!enrollmentTable) {
-        console.error('Enrollment applications table not found');
-        console.log('Trying to find any table on page...');
-        const allTables = document.querySelectorAll('table');
-        console.log('Found', allTables.length, 'tables on page');
         return;
     }
     
     // Find the row in the applications table
     const tableRows = enrollmentTable.querySelectorAll('tbody tr');
-    console.log('Found', tableRows.length, 'rows in table');
     
     let rowFound = false;
     tableRows.forEach((row, index) => {
@@ -898,11 +871,9 @@ function updateApplicationsTableRealTime(applicationId, newStatus) {
             const appIdCell = cells[1];
             const cellText = appIdCell.textContent.trim();
             
-            console.log('Row', index, '- Application ID:', cellText);
             
             // Check if this row matches the application ID
             if (cellText === applicationId || cellText.includes(applicationId)) {
-                console.log('Found matching row at index:', index);
                 rowFound = true;
                 
                 // Status is in column 5 (index 5)
@@ -916,7 +887,6 @@ function updateApplicationsTableRealTime(applicationId, newStatus) {
                         statusBadge.textContent = statusText;
                         statusBadge.className = `badge bg-${getStatusColor(newStatus)}`;
                         
-                        console.log('Status badge updated to:', statusText, 'with color: bg-' + getStatusColor(newStatus));
                         
                         // Add a subtle animation to highlight the change
                         statusCell.style.backgroundColor = '#d4edda';
@@ -924,17 +894,14 @@ function updateApplicationsTableRealTime(applicationId, newStatus) {
                             statusCell.style.backgroundColor = '';
                         }, 1000);
                     } else {
-                        console.warn('Status badge not found in cell');
                     }
                 } else {
-                    console.warn('Not enough cells in row. Expected at least 5, got:', cells.length);
                 }
             }
         }
     });
     
     if (!rowFound) {
-        console.warn('No matching row found for application ID:', applicationId);
     }
     
     // Update the summary statistics
@@ -943,7 +910,6 @@ function updateApplicationsTableRealTime(applicationId, newStatus) {
 
 // Update applications statistics in real-time
 function updateApplicationsStatistics() {
-    console.log('Updating applications statistics...');
     
     // Update statistics by counting visible rows
     try {
@@ -955,7 +921,6 @@ function updateApplicationsStatistics() {
         
         if (enrollmentTable) {
             const tableRows = enrollmentTable.querySelectorAll('tbody tr');
-            console.log('Found', tableRows.length, 'total rows in table');
             
             // Count pending applications
             let pendingCount = 0;
@@ -969,24 +934,20 @@ function updateApplicationsStatistics() {
                 }
             });
             
-            console.log('Pending applications count:', pendingCount);
             
             // Update pending applications card
             const pendingCard = document.querySelector('[data-stat="pending-applications"]');
             if (pendingCard) {
                 pendingCard.textContent = pendingCount;
-                console.log('Updated pending card to:', pendingCount);
             }
             
             // Update total applications card
             const totalCard = document.querySelector('[data-stat="total-applications"]');
             if (totalCard) {
                 totalCard.textContent = tableRows.length;
-                console.log('Updated total card to:', tableRows.length);
             }
         }
     } catch (error) {
-        console.error('Error updating statistics:', error);
     }
 }
 
@@ -1054,7 +1015,6 @@ function confirmDecline() {
         }
     })
     .catch(error => {
-        console.error('Error declining application:', error);
         showAlert('Error declining application', 'error');
     })
     .finally(() => {
@@ -1127,7 +1087,6 @@ function processApplicationAction(applicationId, action, data = {}) {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
         showAlert('Error processing request', 'danger');
     })
     .finally(() => {
@@ -1168,7 +1127,6 @@ function formatDate(dateString) {
 
 // View document in new tab from documents tab
 function viewDocumentInTab(applicationId, documentIndex) {
-    console.log('Viewing document:', applicationId, documentIndex);
     
     // First get the document details
     fetch(`/registrar/applications/${applicationId}/documents`, {
@@ -1195,7 +1153,6 @@ function viewDocumentInTab(applicationId, documentIndex) {
         }
     })
     .catch(error => {
-        console.error('Error fetching document:', error);
         showAlert('Failed to load document', 'error');
     });
 }
@@ -1247,7 +1204,6 @@ function updateDocumentStatusInTab(applicationId, documentIndex, status, notes =
         }
     })
     .catch(error => {
-        console.error('Error updating document status:', error);
         showAlert(`Failed to ${status} document`, 'error');
     })
     .finally(() => {
@@ -1317,7 +1273,6 @@ function setupTabEventListeners() {
 
 // Load notifications data
 function loadNotificationsData() {
-    console.log('Loading notifications data...');
     const loadingDiv = document.getElementById('notices-loading');
     const contentDiv = document.getElementById('notices-content');
     const emptyDiv = document.getElementById('notices-empty');
@@ -1337,14 +1292,12 @@ function loadNotificationsData() {
         }
     })
         .then(response => {
-            console.log('Notifications response status:', response.status);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             return response.json();
         })
         .then(data => {
-            console.log('Notifications data received:', data);
             if (loadingDiv) loadingDiv.style.display = 'none';
             
             if (data.success && data.notices && data.notices.length > 0) {
@@ -1387,12 +1340,10 @@ function loadNotificationsData() {
                 }
                 if (contentDiv) contentDiv.style.display = 'block';
             } else {
-                console.log('No notifications found or empty response');
                 if (emptyDiv) emptyDiv.style.display = 'block';
             }
         })
         .catch(error => {
-            console.error('Error loading notifications:', error);
             if (loadingDiv) loadingDiv.style.display = 'none';
             if (emptyDiv) emptyDiv.style.display = 'block';
             showAlert('Failed to load notifications: ' + error.message, 'error');
@@ -1454,7 +1405,6 @@ function formatDateTime(dateTimeString) {
 
 // View documents for an application
 function viewDocuments(applicationId) {
-    console.log('Viewing documents for application:', applicationId);
     currentApplicationId = applicationId;
     
     // Fetch documents data
@@ -1476,7 +1426,6 @@ function viewDocuments(applicationId) {
         }
     })
     .catch(error => {
-        console.error('Error loading documents:', error);
         showAlert('error', 'Failed to load documents');
     });
 }
@@ -1644,7 +1593,6 @@ function updateDocumentStatus(documentIndex, status, notes = '') {
         }
     })
     .catch(error => {
-        console.error('Error updating document status:', error);
         showAlert('error', `Failed to ${status} document`);
     })
     .finally(() => {
@@ -1654,8 +1602,6 @@ function updateDocumentStatus(documentIndex, status, notes = '') {
 
 // Send notice to applicant
 function sendNotificationToApplicant(applicationId) {
-    console.log('sendNoticeToApplicant called with:', applicationId);
-    console.log('Call stack:', new Error().stack);
     
     // Check if modal already exists and is visible
     const existingModal = document.getElementById('noticeModal');
@@ -1683,7 +1629,6 @@ function sendNotificationToApplicant(applicationId) {
             if (subjectEl && !subjectEl.hasAttribute('data-listener-added')) {
                 subjectEl.addEventListener('input', function() {
                     window.currentFormValues.subject = this.value;
-                    console.log('Subject updated:', this.value);
                 });
                 subjectEl.setAttribute('data-listener-added', 'true');
             }
@@ -1691,15 +1636,12 @@ function sendNotificationToApplicant(applicationId) {
             if (messageEl && !messageEl.hasAttribute('data-listener-added')) {
                 messageEl.addEventListener('input', function() {
                     window.currentFormValues.message = this.value;
-                    console.log('Message updated:', this.value);
                 });
                 messageEl.setAttribute('data-listener-added', 'true');
             }
             
-            console.log('Event listeners ensured for reused modal');
         }, 100);
         
-        console.log('Reusing existing modal');
         return; // Don't recreate, just reuse
     }
     
@@ -1716,7 +1658,6 @@ function sendNotificationToApplicant(applicationId) {
             message: messageEl?.value || ''
         };
         
-        console.log('Preserving existing form values:', existingValues);
     }
     
     // Create a simple notification modal
@@ -1771,7 +1712,6 @@ function sendNotificationToApplicant(applicationId) {
         // Clear stored values
         window.currentFormValues = {};
         
-        console.log('Modal closed, form cleared');
     }, { once: true }); // Only add this listener once
     
     modal.show();
@@ -1790,47 +1730,20 @@ function sendNotificationToApplicant(applicationId) {
         if (subjectEl) {
             subjectEl.addEventListener('input', function() {
                 window.currentFormValues.subject = this.value;
-                console.log('Subject updated:', this.value);
             });
         }
         
         // Track message changes (now using input field)
         if (messageEl) {
-            console.log('Setting up message event listeners on:', messageEl);
-            console.log('Message element details:', {
-                id: messageEl.id,
-                tagName: messageEl.tagName,
-                type: messageEl.type,
-                value: messageEl.value,
-                className: messageEl.className
-            });
-            
             // Test immediate value setting
             messageEl.value = 'TEST_IMMEDIATE';
-            console.log('After setting test value:', messageEl.value);
             messageEl.value = '';
             
             messageEl.addEventListener('input', function() {
                 window.currentFormValues.message = this.value;
-                console.log('Message updated via input event:', this.value);
-            });
-            
-            // Also try other events as backup
-            messageEl.addEventListener('keyup', function() {
-                console.log('Message keyup event:', this.value);
-            });
-            
-            messageEl.addEventListener('change', function() {
-                console.log('Message change event:', this.value);
-            });
-            
-            // Test focus event
-            messageEl.addEventListener('focus', function() {
-                console.log('Message field focused');
             });
         }
         
-        console.log('Real-time value tracking enabled');
     }, 100);
     
     // Ensure values are properly set after modal is shown
@@ -1845,74 +1758,19 @@ function sendNotificationToApplicant(applicationId) {
             newMessageEl.value = existingValues.message;
         }
         
-        console.log('Values set after modal creation:', {
-            subject: newSubjectEl?.value,
-            message: newMessageEl?.value
-        });
     }, 100);
     
-    const messageEl = document.getElementById('simple-notice-message');
-    if (messageEl) {
-        console.log('Testing textarea manipulation:');
-        console.log('Element found:', messageEl);
-        console.log('Before setting:', messageEl.value);
-        
-        messageEl.value = 'TEST VALUE';
-        console.log('After setting via .value:', messageEl.value);
-        
-        messageEl.textContent = 'TEST CONTENT';
-        console.log('After setting via .textContent:', messageEl.value, messageEl.textContent);
-        
-        messageEl.innerHTML = 'TEST HTML';
-        console.log('After setting via .innerHTML:', messageEl.value, messageEl.innerHTML);
-        
-        // Test if we can focus and type
-        messageEl.focus();
-        console.log('Focused on textarea');
-        
-        // Simulate typing
-        messageEl.value = 'SIMULATED TYPING';
-        messageEl.dispatchEvent(new Event('input', { bubbles: true }));
-        console.log('After simulated typing:', messageEl.value);
-        
-    } else {
-        console.log('Input field with id "simple-notice-message" not found!');
-        
-        // Check if any textarea exists
-        const allTextareas = document.querySelectorAll('textarea');
-        console.log('All textareas found:', allTextareas);
-        
-        // Check if modal exists
-        const modal = document.getElementById('noticeModal');
-        console.log('Modal found:', modal);
-        if (modal) {
-            console.log('Modal HTML:', modal.outerHTML);
-        }
-    }
 }
 
 // Check current form state
 function checkFormState() {
-    console.log('=== FORM STATE CHECK ===');
     
     const modal = document.getElementById('noticeModal');
-    console.log('Modal exists:', !!modal);
     
     const subjectEl = document.getElementById('notice-subject');
     const messageEl = document.getElementById('simple-notice-message');
     
-    console.log('Form elements:', {
-        subject: !!subjectEl,
-        message: !!messageEl
-    });
     
-    if (subjectEl) console.log('Subject value:', `"${subjectEl.value}"`);
-    if (messageEl) console.log('Message value:', `"${messageEl.value}"`);
-    
-    console.log('Tracked values:', window.currentFormValues);
-    console.log('Current application ID:', currentApplicationId);
-    
-    console.log('=== END FORM STATE ===');
 }
 
 
@@ -1921,7 +1779,6 @@ function submitNotification() {
     // Prevent multiple submissions
     const submitBtn = document.querySelector('#noticeModal .btn-primary');
     if (submitBtn && submitBtn.disabled) {
-        console.log('Submit already in progress, ignoring...');
         return;
     }
     
@@ -1935,19 +1792,11 @@ function submitNotification() {
         const subjectElement = document.getElementById('notice-subject');
         const messageElement = document.getElementById('simple-notice-message');
         
-        console.log('Form elements found:', {
-            subjectElement: !!subjectElement,
-            messageElement: !!messageElement
-        });
         
         // Manually capture current values right before validation
         const currentSubject = subjectElement?.value?.trim() || '';
         const currentMessage = messageElement?.value?.trim() || '';
         
-        console.log('Current DOM values at submit time:', {
-            subject: currentSubject,
-            message: currentMessage
-        });
         
         // Force update tracked values with current DOM values
         if (!window.currentFormValues) {
@@ -1961,46 +1810,13 @@ function submitNotification() {
         title = currentSubject;
         message = currentMessage;
         
-        console.log('Using current DOM values (forced sync):', {
-            subject: title,
-            message: message
-        });
-        
-        // Additional debugging for message field
-        console.log('Message element details:', {
-            element: messageElement,
-            value: messageElement?.value,
-            innerHTML: messageElement?.innerHTML,
-            textContent: messageElement?.textContent,
-            outerHTML: messageElement?.outerHTML
-        });
-        
-        // Try alternative methods to get textarea value
-        if (messageElement) {
-            console.log('Alternative value retrieval methods:', {
-                getAttribute: messageElement.getAttribute('value'),
-                defaultValue: messageElement.defaultValue,
-                innerText: messageElement.innerText,
-                nodeValue: messageElement.nodeValue
-            });
-        }
-        
         // Set default values for simple modal
         type = 'info';
         recipients = 'specific';
         specificApplicant = currentApplicationId;
         
-        console.log('Simple modal values:', { 
-            title: `"${title}"`, 
-            message: `"${message}"`, 
-            specificApplicant 
-        });
         
         if (!title || !message) {
-            console.log('Validation failed - missing fields:', {
-                titleEmpty: !title,
-                messageEmpty: !message
-            });
             
             // Show specific field that's missing
             let missingFields = [];
@@ -2020,10 +1836,6 @@ function submitNotification() {
         }
         
         if (!specificApplicant) {
-            console.log('Validation failed - no application ID:', {
-                currentApplicationId,
-                specificApplicant
-            });
             showAlert('No application selected', 'error');
             return;
         }
@@ -2065,7 +1877,6 @@ function submitNotification() {
             subject: title,
             message: message
         };
-        console.log('Simple modal request:', { url, method, requestData });
     } else {
         // Complex notification modal - use the original logic
         requestData = {
@@ -2088,7 +1899,6 @@ function submitNotification() {
     
     // Get CSRF token
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || window.csrfToken || '';
-    console.log('CSRF Token:', csrfToken ? 'Found' : 'Not found');
     
     fetch(url, {
         method: method,
@@ -2126,7 +1936,6 @@ function submitNotification() {
         }
     })
     .catch(error => {
-        console.error(`Error ${isUpdate ? 'updating' : 'sending'} notice:`, error);
         showAlert(`Failed to ${isUpdate ? 'update' : 'send'} notice`, 'error');
     })
     .finally(() => {
@@ -2272,7 +2081,6 @@ function confirmBulkAction() {
         }
     })
     .catch(error => {
-        console.error(`Error in bulk ${currentBulkAction}:`, error);
         showAlert('error', `Failed to ${currentBulkAction} applications`);
     })
     .finally(() => {
@@ -2292,13 +2100,13 @@ function openStudentSelectionModal() {
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title">
-                            <i class="ri-user-search-line me-2"></i>Select Student for Notice
+                            <i class="ri-user-search-line me-2"></i>Select Applicant for Notice
                         </h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label for="student-search" class="form-label">Search Student</label>
+                            <label for="student-search" class="form-label">Search Applicant</label>
                             <input type="text" class="form-control" id="student-search" placeholder="Search by name or application ID...">
                         </div>
                         <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
@@ -2306,7 +2114,7 @@ function openStudentSelectionModal() {
                                 <thead class="table-light sticky-top">
                                     <tr>
                                         <th>Application ID</th>
-                                        <th>Student Name</th>
+                                        <th>Applicant Name</th>
                                         <th>Status</th>
                                         <th>Action</th>
                                     </tr>
@@ -2317,7 +2125,7 @@ function openStudentSelectionModal() {
                                             <div class="spinner-border text-primary" role="status">
                                                 <span class="visually-hidden">Loading...</span>
                                             </div>
-                                            <p class="text-muted mt-2">Loading students...</p>
+                                            <p class="text-muted mt-2">Loading applicants...</p>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -2382,7 +2190,6 @@ function loadStudentsForSelection() {
         }
     })
     .catch(error => {
-        console.error('Error loading students:', error);
         showStudentsError('Failed to load students');
     });
 }
@@ -2397,7 +2204,7 @@ function displayStudentsList(applications) {
             <tr>
                 <td colspan="4" class="text-center py-4">
                     <i class="ri-user-line fs-2 text-muted"></i>
-                    <p class="text-muted mt-2">No students found</p>
+                    <p class="text-muted mt-2">No applicants found</p>
                 </td>
             </tr>
         `;
@@ -2532,7 +2339,6 @@ function submitBulkNotice() {
         }
     })
     .catch(error => {
-        console.error('Error sending bulk notice:', error);
         showAlert('Failed to send notices. Please try again.', 'error');
     })
     .finally(() => {
@@ -2591,7 +2397,6 @@ function refreshData() {
     const activeTab = document.querySelector('.nav-link.active, button[data-bs-toggle="tab"].active');
     const activeTabId = activeTab ? activeTab.getAttribute('data-bs-target') : '#applications';
     
-    console.log('Refreshing data for tab:', activeTabId);
     
     switch(activeTabId) {
         case '#applications':
@@ -2605,7 +2410,6 @@ function refreshData() {
             break;
         case '#data-change-requests':
             // Data change requests are handled by their own dedicated script
-            console.log('Data change requests refresh handled by dedicated script');
             break;
         default:
             location.reload();
@@ -2619,7 +2423,6 @@ function exportData() {
     const activeTab = document.querySelector('.nav-link.active, button[data-bs-toggle="tab"].active');
     const activeTabId = activeTab ? activeTab.getAttribute('data-bs-target') : '#applications';
     
-    console.log('Exporting data for tab:', activeTabId);
     
     const baseUrl = '/registrar/applications/export';
     const params = new URLSearchParams();
@@ -2687,7 +2490,6 @@ function openCreateNoticeModal() {
         modalLabel.innerHTML = '<i class="ri-notification-line me-2"></i>Create Notice';
     }
     
-    console.log('Opening create notice modal');
     modal.show();
 }
 
@@ -2745,7 +2547,6 @@ function editNotice(noticeId) {
         }
     })
     .catch(error => {
-        console.error('Error loading notice:', error);
         showAlert('Failed to load notice', 'error');
     });
 }
@@ -2806,7 +2607,6 @@ function sendNotice() {
             }
         })
         .catch(error => {
-            console.error('Error sending notice:', error);
             showAlert('Failed to send notice', 'error');
         });
     }
@@ -2838,7 +2638,6 @@ function previewRecipients() {
             }
         })
         .catch(error => {
-            console.error('Error previewing recipients:', error);
             const preview = document.getElementById('recipients-preview');
             if (preview) preview.innerHTML = '<span class="text-danger">Error loading recipients</span>';
         });
@@ -2909,7 +2708,6 @@ function viewNotice(noticeId) {
         }
     })
     .catch(error => {
-        console.error('Error loading notice:', error);
         showAlert('Failed to load notice', 'error');
     });
 }
@@ -2968,7 +2766,6 @@ function approveAppointment(appointmentId) {
         }
     })
     .catch(error => {
-        console.error('Error approving appointment:', error);
         showAlert('Failed to approve appointment', 'error');
     });
 }
@@ -2996,7 +2793,6 @@ function rejectAppointment(appointmentId) {
         }
     })
     .catch(error => {
-        console.error('Error rejecting appointment:', error);
         showAlert('Failed to reject appointment', 'error');
     });
 }
@@ -3058,7 +2854,6 @@ window.confirmDecline = confirmDecline;
 
 // Load appointments data (placeholder function)
 function loadAppointmentsData() {
-    console.log('Loading appointments data...');
     // This function should load appointments data if needed
     // For now, it's a placeholder to prevent errors
 }
@@ -3067,7 +2862,6 @@ function loadAppointmentsData() {
  * Initialize real-time updates
  */
 function initializeRealTimeUpdates() {
-    console.log('Initializing real-time updates for applications page');
     
     // Start seamless auto-refresh
     startApplicationsAutoRefresh();
@@ -3095,7 +2889,6 @@ function startApplicationsAutoRefresh() {
             refreshApplicationsData();
         }, REFRESH_INTERVAL);
         
-        console.log('Applications auto-refresh started (every 30 seconds)');
     }
 }
 
@@ -3106,7 +2899,6 @@ function stopApplicationsAutoRefresh() {
     if (autoRefreshInterval) {
         clearInterval(autoRefreshInterval);
         autoRefreshInterval = null;
-        console.log('Applications auto-refresh stopped');
     }
 }
 
@@ -3135,11 +2927,9 @@ function refreshApplicationsData() {
             updateLastUpdatedTimestamp('applications-last-updated');
             lastUpdateTimestamp = new Date();
         } else {
-            console.error('Failed to refresh applications:', data.message);
         }
     })
     .catch(error => {
-        console.error('Error refreshing applications:', error);
     });
 }
 

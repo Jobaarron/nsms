@@ -18,25 +18,20 @@ function initializeActivityAlerts() {
     const isGradesPage = window.location.pathname.includes('/student/grades');
     const isViolationsPage = window.location.pathname.includes('/student/violations');
     
-    console.log('Initializing activity alerts - Grades page:', isGradesPage, 'Violations page:', isViolationsPage);
     
     if (isGradesPage) {
         // Clear the alert when user opens grades page
-        console.log('On grades page, clearing alert');
         clearGradesAlert();
     } else {
         // Check for new grades and highlight if needed
-        console.log('Not on grades page, checking for new grades');
         checkNewGrades();
     }
     
     if (isViolationsPage) {
         // Clear the alert when user opens violations page
-        console.log('On violations page, clearing alert');
         clearViolationsAlert();
     } else {
         // Check for new violations and highlight if needed
-        console.log('Not on violations page, checking for new violations');
         checkNewViolations();
     }
 }
@@ -44,7 +39,6 @@ function initializeActivityAlerts() {
 function startActivityPolling() {
     const POLL_INTERVAL = 3000; // 3 seconds
     
-    console.log('🔄 Starting activity alert polling (every 3 seconds)');
     
     // Poll every 3 seconds
     activityPollingInterval = setInterval(() => {
@@ -52,12 +46,10 @@ function startActivityPolling() {
         const isViolationsPage = window.location.pathname.includes('/student/violations');
         
         if (!isGradesPage) {
-            console.log('⏰ Polling for grade updates...');
             checkNewGrades();
         }
         
         if (!isViolationsPage) {
-            console.log('⏰ Polling for violation updates...');
             checkNewViolations();
         }
     }, POLL_INTERVAL);
@@ -93,7 +85,6 @@ function checkNewGrades() {
             storeGradesAlertState(false, currentQuarter);
         }
     } catch (error) {
-        console.error('Error checking new grades:', error);
     }
 }
 
@@ -101,7 +92,6 @@ function checkForNewGradesInQuarter(quarter) {
     // Look for grade cards or indicators showing new grades
     const gradeCards = document.querySelectorAll('[data-quarter], .quarter-card, .grade-card');
     
-    console.log(`Checking for new grades in ${quarter}, found ${gradeCards.length} cards`);
     
     let hasNewGrades = false;
     
@@ -109,11 +99,9 @@ function checkForNewGradesInQuarter(quarter) {
         const cardQuarter = card.getAttribute('data-quarter') || card.textContent;
         const timestamp = card.getAttribute('data-updated-at');
         
-        console.log(`Card ${index}: quarter="${cardQuarter}", timestamp="${timestamp}"`);
         
         // Check if this card is for the current quarter
         if (cardQuarter.toLowerCase().includes(quarter.toLowerCase())) {
-            console.log(`Found matching quarter card: ${cardQuarter}`);
             
             // Check for "new" indicator or badge
             const newBadge = card.querySelector('[data-new], .badge-new, .new-indicator');
@@ -121,7 +109,6 @@ function checkForNewGradesInQuarter(quarter) {
             
             if (newBadge || updatedIndicator) {
                 hasNewGrades = true;
-                console.log('Found new badge or updated indicator');
             }
             
             // Also check if the card has recent update timestamp
@@ -130,18 +117,15 @@ function checkForNewGradesInQuarter(quarter) {
                 const now = new Date();
                 const hoursSinceUpdate = (now - lastUpdate) / (1000 * 60 * 60);
                 
-                console.log(`Hours since update: ${hoursSinceUpdate}`);
                 
                 // If updated within last 24 hours, consider it new
                 if (hoursSinceUpdate < 24) {
                     hasNewGrades = true;
-                    console.log('Grade updated within 24 hours');
                 }
             }
         }
     });
     
-    console.log(`Has new grades: ${hasNewGrades}`);
     return hasNewGrades;
 }
 
@@ -233,7 +217,6 @@ function checkNewViolations() {
             storeViolationsAlertState(false);
         }
     } catch (error) {
-        console.error('Error checking new violations:', error);
     }
 }
 
@@ -241,13 +224,11 @@ function checkForNewViolationRecords() {
     // Look for violation cards or indicators showing new violations
     const violationCards = document.querySelectorAll('[data-violation], .violation-card, .violation-item');
     
-    console.log(`Checking for new violations, found ${violationCards.length} violation records`);
     
     let hasNewViolations = false;
     
     violationCards.forEach((card, index) => {
         const timestamp = card.getAttribute('data-created-at') || card.getAttribute('data-date');
-        console.log(`Violation ${index}: timestamp="${timestamp}"`);
         
         // Check for "new" indicator or badge
         const newBadge = card.querySelector('[data-new], .badge-new, .new-indicator');
@@ -255,7 +236,6 @@ function checkForNewViolationRecords() {
         
         if (newBadge || recentIndicator) {
             hasNewViolations = true;
-            console.log('Found new badge or recent indicator');
         }
         
         // Also check if the card has recent timestamp
@@ -264,17 +244,14 @@ function checkForNewViolationRecords() {
             const now = new Date();
             const hoursSinceViolation = (now - violationDate) / (1000 * 60 * 60);
             
-            console.log(`Hours since violation: ${hoursSinceViolation}`);
             
             // If violation recorded within last 24 hours, consider it new
             if (hoursSinceViolation < 24) {
                 hasNewViolations = true;
-                console.log('Violation recorded within 24 hours');
             }
         }
     });
     
-    console.log(`Has new violations: ${hasNewViolations}`);
     return hasNewViolations;
 }
 

@@ -3,7 +3,6 @@
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize any charts or interactive elements if needed
-    console.log('Registrar Reports initialized');
 });
 
 // Export all applications

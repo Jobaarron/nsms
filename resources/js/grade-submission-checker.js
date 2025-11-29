@@ -78,7 +78,6 @@ class GradeSubmissionChecker {
                 return this.statusCache;
             }
         } catch (error) {
-            console.error('Failed to check grade submission status:', error);
         }
         
         return null;

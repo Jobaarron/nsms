@@ -1,6 +1,5 @@
 // User Management JavaScript (Roles & Permissions Only)
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('User Management JavaScript loaded - Roles & Permissions functionality only');
     
     // This file now only handles the roles & permissions interface
     // User creation functionality has been removed

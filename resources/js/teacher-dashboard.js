@@ -1,20 +1,15 @@
 // Teacher Dashboard JavaScript
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Teacher dashboard JS loaded');
     
     // Check if we're on the teacher dashboard by looking for the exact title
     const titleElement = document.querySelector('h1.section-title');
     const titleText = titleElement?.textContent?.trim() || '';
     
-    console.log('Page title:', titleText);
-    console.log('Current URL:', window.location.pathname);
     
     // Only run dashboard functionality if we're on the actual dashboard
     if (titleText === 'Teacher Dashboard' && window.location.pathname === '/teacher') {
-        console.log('On teacher dashboard - initializing functionality');
         initializeDashboard();
     } else {
-        console.log('Not on teacher dashboard - skipping dashboard functionality');
         // Still initialize basic functionality for other teacher pages
         initializeBasicFunctionality();
     }
@@ -44,7 +39,6 @@ function initializeBasicFunctionality() {
 }
 
 function initializeDashboard() {
-    console.log('Initializing teacher dashboard functionality');
     
     // Load statistics immediately
     loadDashboardStats();
@@ -74,7 +68,6 @@ function initializeDashboard() {
 }
 
 function loadDashboardStats() {
-    console.log('Loading dashboard stats from API...');
     
     fetch('/teacher/dashboard/stats')
         .then(response => {
@@ -84,17 +77,14 @@ function loadDashboardStats() {
             return response.json();
         })
         .then(data => {
-            console.log('Dashboard stats received:', data);
             updateStatistics(data);
         })
         .catch(error => {
-            console.error('Error loading dashboard stats:', error);
             // Don't show error to user for background updates
         });
 }
 
 function updateStatistics(stats) {
-    console.log('updateStatistics called with:', stats);
     
     // Update statistics cards - look for the specific teacher dashboard structure
     const statElements = {
@@ -104,16 +94,13 @@ function updateStatistics(stats) {
         'weekly_hours': document.querySelector('.card-schedule h3')
     };
     
-    console.log('Found stat elements:', statElements);
     
     Object.keys(statElements).forEach(key => {
         const element = statElements[key];
         if (element && stats[key] !== undefined) {
-            console.log(`Updating ${key} from ${element.textContent} to ${stats[key]}`);
             // Directly set the value without animation for now to debug
             element.textContent = stats[key];
         } else {
-            console.log(`Skipping ${key}: element=${!!element}, value=${stats[key]}`);
         }
     });
 }
@@ -161,7 +148,6 @@ document.head.appendChild(style);
 
 // Teacher Assignment Actions
 window.submitGrades = function(assignmentId) {
-    console.log('Submit grades for assignment:', assignmentId);
     
     // Check if grade submission is active and get active quarters
     fetch('/teacher/check-submission-status')
@@ -189,7 +175,6 @@ window.submitGrades = function(assignmentId) {
             }
         })
         .catch(error => {
-            console.error('Error checking submission status:', error);
             alert('Unable to check grade submission status. Please try again.');
         });
 };
@@ -270,13 +255,11 @@ window.handleGradeSubmission = function() {
 };
 
 window.viewClassDetails = function(assignmentId) {
-    console.log('View class details for assignment:', assignmentId);
     // Redirect to teacher grades page to view submissions for this assignment
     window.location.href = '/teacher/grades';
 };
 
 window.manageClass = function(assignmentId) {
-    console.log('Manage class for assignment:', assignmentId);
     // Redirect to teacher grades page to manage submissions for this assignment
     window.location.href = '/teacher/grades';
 };

@@ -286,5 +286,4 @@
 <script>
 
 window.gradeEntryData = {!! json_encode($gradeEntryData) !!};
-console.log('Grade entry data injected:', window.gradeEntryData);
 </script>

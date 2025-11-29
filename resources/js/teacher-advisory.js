@@ -14,16 +14,13 @@
 
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Teacher Advisory JS loaded');
     
     // Verify functions are available globally
     if (typeof window.viewStudentGrades === 'function' && 
         typeof window.viewAllGrades === 'function' && 
         typeof window.printReportCard === 'function' && 
         typeof window.printAllReportCards === 'function') {
-        console.log('✅ All advisory functions loaded successfully');
     } else {
-        console.error('❌ Some advisory functions failed to load');
     }
     
     // Initialize tooltips for action buttons
@@ -43,19 +40,15 @@ document.addEventListener('DOMContentLoaded', function() {
      * Test function to simulate all functionality
      */
     window.testAdvisoryFunctions = function() {
-        console.log('=== Testing Advisory Functions ===');
         
         // Test individual student grades
-        console.log('1. Testing viewStudentGrades...');
         viewStudentGrades(1, 'Grade 11'); // Test with Grade 11
         
         setTimeout(() => {
-            console.log('2. Testing viewAllGrades...');
             viewAllGrades();
         }, 2000);
         
         setTimeout(() => {
-            console.log('3. Testing printReportCard...');
             // Create a mock event target
             const mockButton = document.createElement('button');
             mockButton.innerHTML = '<i class="ri-printer-line"></i>';
@@ -64,7 +57,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 4000);
         
         setTimeout(() => {
-            console.log('4. Testing printAllReportCards...');
             // Mock confirm dialog
             window.confirm = () => true;
             const mockButton = document.createElement('button');
@@ -73,14 +65,12 @@ document.addEventListener('DOMContentLoaded', function() {
             printAllReportCards();
         }, 6000);
         
-        console.log('All tests initiated. Check console and modals for results.');
     };
     
     /**
      * Enable debug mode
      */
     window.enableAdvisoryDebug = function() {
-        console.log('=== Advisory Debug Mode Enabled ===');
         window.advisoryDebug = true;
         
         // Add debug info to buttons
@@ -94,34 +84,25 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.title += ' [DEBUG: Print Report]';
         });
         
-        console.log('Debug styling applied to buttons');
     };
 
     /**
      * Test grade-level routing
      */
     window.testGradeRouting = function() {
-        console.log('=== Testing Grade-Level Routing ===');
         
         // Test Grade 1 (should use elementary route)
-        console.log('Testing Grade 1:', getReportCardRoute(1, 'Grade 1'));
         
         // Test Grade 2 (should use elementary route)
-        console.log('Testing Grade 2:', getReportCardRoute(2, 'Grade 2'));
         
         // Test Grade 10 (should use high school route)
-        console.log('Testing Grade 10:', getReportCardRoute(3, 'Grade 10'));
         
         // Test Grade 11 (should use Grade 11 STEM route)
-        console.log('Testing Grade 11:', getReportCardRoute(4, 'Grade 11'));
         
         // Test Grade 12 (should use Grade 12 STEM route)
-        console.log('Testing Grade 12:', getReportCardRoute(5, 'Grade 12'));
         
         // Test Grade 7 (should use high school route)
-        console.log('Testing Grade 7:', getReportCardRoute(6, 'Grade 7'));
         
-        console.log('Grade routing test completed. Check console for results.');
     };
 });
 
@@ -129,39 +110,33 @@ document.addEventListener('DOMContentLoaded', function() {
  * Determine the correct report card route based on grade level
  */
 function getReportCardRoute(studentId, gradeLevel) {
-    console.log(`Determining route for Student ID: ${studentId}, Grade Level: ${gradeLevel}`);
     
     // Check if it's Grade 1 or Grade 2 for elementary route
     if (gradeLevel === 'Grade 1' || gradeLevel === 'Grade 2') {
         const route = `/teacher/report-card/elementary/pdf/${studentId}`;
-        console.log(`Using elementary route: ${route}`);
         return route;
     }
     
     // Check if it's Grade 11 for STEM route
     if (gradeLevel === 'Grade 11') {
         const route = `/teacher/report-card/grade11stem/pdf/${studentId}`;
-        console.log(`Using Grade 11 STEM route: ${route}`);
         return route;
     }
     
     // Check if it's Grade 12 for STEM route
     if (gradeLevel === 'Grade 12') {
         const route = `/teacher/report-card/grade12stem/pdf/${studentId}`;
-        console.log(`Using Grade 12 STEM route: ${route}`);
         return route;
     }
     
     // Check if it's Grade 10 for high school route
     if (gradeLevel === 'Grade 10') {
         const route = `/teacher/report-card/pdf/${studentId}`;
-        console.log(`Using Grade 10 high school route: ${route}`);
         return route;
     }
     
     // Default to high school route for all other grades
     const route = `/teacher/report-card/pdf/${studentId}`;
-    console.log(`Using high school route: ${route}`);
     return route;
 }
 
@@ -311,7 +286,6 @@ window.printReportCard = function(studentId, gradeLevel) {
             
         })
         .catch(error => {
-            console.error('Error loading PDF for printing:', error);
             alert('Error loading report card. Please try again.');
         })
         .finally(() => {
@@ -387,7 +361,6 @@ window.printAllReportCards = function(event) {
             }, 1000);
         })
         .catch(error => {
-            console.error('Error generating report cards:', error);
             alert('Error generating report cards. Please try again.');
         })
         .finally(() => {

@@ -42,7 +42,6 @@ function preRegisterStudent() {
         }
     })
     .catch(error => {
-        console.error('Pre-registration error:', error);
         showAlert('An error occurred during pre-registration. Please try again.', 'danger');
         
         // Re-enable button

@@ -303,7 +303,6 @@
           if (recentUsersEl) recentUsersEl.textContent = data.recent_users;
         })
         .catch(error => {
-          console.error('Error fetching dashboard stats:', error);
         });
     }
   </script>

@@ -252,7 +252,6 @@
                 }
             })
             .catch(error => {
-                console.error('Error marking notification as read:', error);
             });
         }
 
@@ -315,7 +314,6 @@
                 }
             })
             .catch(error => {
-                console.error('Error marking all as read:', error);
             });
         }
 

@@ -181,7 +181,6 @@ window.viewViolation = function(violationId) {
         showModal('viewViolationModal');
       })
       .catch(error => {
-        console.error('Error:', error);
         alert('Error loading violation details');
       });
   }
@@ -394,8 +393,6 @@ window.editViolation = function(violationId) {
             }
           })
           .catch(error => {
-            console.error('Error:', error);
-            
             // Show error message
             const alertDiv = document.createElement('div');
             alertDiv.className = 'alert alert-danger alert-dismissible fade show';
@@ -421,7 +418,6 @@ window.editViolation = function(violationId) {
         };
       })
       .catch(error => {
-        console.error('Error:', error);
         alert('Error loading violation for editing');
       });
   }
@@ -488,8 +484,6 @@ window.deleteViolation = function(violationId) {
         }
       })
       .catch(error => {
-        console.error('Error:', error);
-        
         // Restore button state
         button.innerHTML = originalHTML;
         button.disabled = false;
@@ -557,7 +551,6 @@ window.updateViolationRow = function(violationId, violation) {
       try {
         const modalElement = document.getElementById(modalId);
         if (!modalElement) {
-          console.error('Modal not found:', modalId);
           return false;
         }
 
@@ -583,7 +576,6 @@ window.updateViolationRow = function(violationId, violation) {
         return this.showFallback(modalId);
         
       } catch (error) {
-        console.error('Error showing modal:', error);
         return this.showFallback(modalId);
       }
     },
@@ -606,7 +598,6 @@ window.updateViolationRow = function(violationId, violation) {
         return this.hideFallback(modalId);
         
       } catch (error) {
-        console.error('Error hiding modal:', error);
         return this.hideFallback(modalId);
       }
     },

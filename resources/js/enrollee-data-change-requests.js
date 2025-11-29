@@ -14,7 +14,6 @@ document.addEventListener('DOMContentLoaded', function() {
  * Initialize data change requests functionality
  */
 function initializeDataChangeRequests() {
-    console.log('Initializing data change requests...');
     
     // Load enrollee data for field population
     loadEnrolleeData();
@@ -33,7 +32,6 @@ function loadEnrolleeData() {
     // First try to get data from window.enrolleeData (set by the Blade template)
     if (window.enrolleeData && Object.keys(window.enrolleeData).length > 0) {
         currentEnrolleeData = window.enrolleeData;
-        console.log('Available enrollee data:', currentEnrolleeData);
         return;
     }
     
@@ -43,7 +41,6 @@ function loadEnrolleeData() {
         try {
             currentEnrolleeData = JSON.parse(enrolleeDataElement.textContent);
         } catch (error) {
-            console.error('Error parsing enrollee data:', error);
         }
     }
     
@@ -136,13 +133,9 @@ function handleFieldSelection(event) {
     const selectedField = event.target.value;
     const currentValueInput = document.getElementById('current_value');
     
-    console.log('Selected field:', selectedField);
-    console.log('Enrollee data keys:', Object.keys(currentEnrolleeData));
-    console.log('Field exists in data:', selectedField in currentEnrolleeData);
     
     if (selectedField && currentValueInput) {
         let currentValue = currentEnrolleeData[selectedField];
-        console.log('Raw current value for', selectedField, ':', currentValue);
         
         // Handle different data types and null/empty values
         let displayValue = '';
@@ -167,7 +160,6 @@ function handleFieldSelection(event) {
             }
         }
         
-        console.log('Display value:', displayValue);
         currentValueInput.value = displayValue;
         
         // Store the old value for the form
@@ -181,7 +173,6 @@ function handleFieldSelection(event) {
         }
         oldValueInput.value = String(currentValue || ''); // Store raw value for form submission
     } else {
-        console.log('Field not found in enrollee data or no field selected');
         if (currentValueInput) {
             currentValueInput.value = 'Not provided';
         }
@@ -250,7 +241,6 @@ function handleNewRequestSubmit(event) {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
         showAlert('Error submitting request. Please try again.', 'error');
     })
     .finally(() => {
@@ -302,7 +292,6 @@ function handleEditRequestSubmit(event) {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
         showAlert('Error updating request. Please try again.', 'error');
     })
     .finally(() => {
@@ -337,7 +326,6 @@ function viewChangeRequest(requestId) {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
         showAlert('Error loading request details. Please try again.', 'error');
     });
 }
@@ -367,7 +355,6 @@ function editChangeRequest(requestId) {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
         showAlert('Error loading request details. Please try again.', 'error');
     });
 }
@@ -402,7 +389,6 @@ function cancelChangeRequest(requestId) {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
         showAlert('Error cancelling request. Please try again.', 'error');
     });
 }

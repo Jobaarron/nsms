@@ -715,7 +715,7 @@
             }
             
             // Log failed attempt
-            console.warn('Failed archive access attempt:', {
+            const failedAccessData = {
                 user: '{{ Auth::user()->name ?? "Unknown" }}',
                 timestamp: new Date().toISOString(),
                 attempt: failedAttempts,
@@ -892,7 +892,6 @@
             })
             .catch(error => {
                 document.getElementById('sessionDetailsContent').innerHTML = `<div class="alert alert-danger">An error occurred while loading the ${recordType.toLowerCase()} details.</div>`;
-                console.error(error);
             });
         }
 

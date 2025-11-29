@@ -377,7 +377,6 @@
         document.getElementById('markAsViewedBtn').addEventListener('click', function() {
           const csrfToken = document.querySelector('meta[name="csrf-token"]');
           if (!csrfToken) {
-            console.warn('CSRF token not found');
             return;
           }
           
@@ -422,7 +421,6 @@
             }
           })
           .catch(error => {
-            console.error('Error marking counseling alert as viewed:', error);
             btn.disabled = false;
             btn.innerHTML = '<i class="ri-check-line me-1"></i>Mark as Viewed';
             alert('Failed to mark as viewed. Please try again.');

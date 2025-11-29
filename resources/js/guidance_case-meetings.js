@@ -298,7 +298,6 @@ function initializeInterventionToggles() {
         const checkbox = document.getElementById(mapping.checkboxId);
         
         if (!checkbox) {
-            console.warn(`Checkbox with ID ${mapping.checkboxId} not found`);
             return;
         }
         
@@ -365,9 +364,7 @@ function initializeInterventionToggles() {
                 }
             });
             
-            console.log(`Initialized toggle for ${mapping.checkboxId} → ${mapping.target}`);
         } else {
-            console.warn(`Conditional field with data-target="${mapping.target}" not found`);
         }
     });
 }
@@ -390,7 +387,6 @@ function initializeEditInterventionToggles() {
         const checkbox = document.getElementById(mapping.checkboxId);
         
         if (!checkbox) {
-            console.warn(`Edit modal checkbox with ID ${mapping.checkboxId} not found`);
             return;
         }
         
@@ -457,7 +453,6 @@ function initializeEditInterventionToggles() {
                 }
             });
         } else {
-            console.warn(`Conditional field for target ${mapping.target} not found in edit modal`);
         }
     });
 }
@@ -529,8 +524,6 @@ window.viewCaseMeeting = function(meetingId) {
     .then(data => {
         if (data.success) {
             const meeting = data.meeting;
-            // Debug: log meeting object to check for student_id, violation_id, and possible narrative_report_url
-            console.log('Meeting data:', meeting);
 
             // Build the PDF URL for the narrative report - only show if student has replied
             let narrativePdfUrl = '';
@@ -673,7 +666,6 @@ window.viewCaseMeeting = function(meetingId) {
                 }
         })
         .catch(error => {
-                console.error('Error:', error);
                 showAlert('danger', 'Error loading meeting details');
         });
 };
@@ -1006,7 +998,6 @@ window.confirmCaseMeetingScheduling = function() {
                     }
                 })
                 .catch((error) => {
-                    console.log('Forward error:', error);
                     hideForwardingProgress();
                     updateSuccessMessage('Meeting scheduled successfully. Note: Could not forward report to adviser.');
                 });
@@ -1020,7 +1011,6 @@ window.confirmCaseMeetingScheduling = function() {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
         showAlert('danger', error.message);
     })
     .finally(() => {
@@ -1059,7 +1049,6 @@ window.editCaseMeeting = function(meetingId) {
             var summaryEl = document.getElementById('edit_summary');
             if (summaryEl) {
                 summaryEl.value = meeting.summary || '';
-                console.log('Summary populated:', meeting.summary); // Debug log
             }
 
             // Populate intervention fields if they exist
@@ -1078,7 +1067,6 @@ window.editCaseMeeting = function(meetingId) {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
         showAlert('danger', 'Error loading meeting for editing');
     });
 };
@@ -1218,7 +1206,6 @@ window.submitEditCaseMeeting = function(event) {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
         showAlert('danger', error.message);
     })
     .finally(() => {
@@ -1326,7 +1313,6 @@ window.completeCaseMeeting = function(meetingId) {
             }
         })
         .catch(error => {
-            console.error('Error:', error);
             showAlert('danger', 'Error completing case meeting');
         });
     }
@@ -1412,13 +1398,11 @@ window.forwardToPresident = function(meetingId) {
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
                 showAlert('danger', 'Error forwarding case to president');
             });
         }
     })
     .catch(error => {
-        console.error('Error fetching meeting details:', error);
         showAlert('danger', 'Error validating meeting details');
     });
 };
@@ -1499,7 +1483,6 @@ window.submitCaseSummary = function(event) {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
         showAlert('danger', error.message);
     })
     .finally(() => {

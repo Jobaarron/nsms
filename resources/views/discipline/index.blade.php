@@ -243,7 +243,6 @@
         <script>
         // Charts will be loaded by discipline_dashboard.js
         document.addEventListener('DOMContentLoaded', function () {
-          console.log('Dashboard initialized - charts loading handled by external JS');
           
           // Force all dropdowns to open downwards
           const dropdowns = document.querySelectorAll('.card-header .dropdown-toggle');

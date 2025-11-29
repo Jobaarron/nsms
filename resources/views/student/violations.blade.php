@@ -517,7 +517,6 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     })
     .catch(error => {
-      console.error('Error fetching violation details:', error);
       content.innerHTML = `
         <div class="alert alert-danger">
           <i class="ri-error-warning-line me-2"></i>
@@ -561,7 +560,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       })
       .catch(error => {
-        console.error('Error:', error);
         alert('An error occurred while uploading the attachment.');
       })
       .finally(() => {
@@ -672,7 +670,7 @@ document.addEventListener('DOMContentLoaded', function() {
               body: JSON.stringify({
                   alert_type: 'violations'
               })
-          }).catch(error => console.error('Error marking violations alert as viewed:', error));
+          }).catch(error => {});
       });
   </script>
   @endpush

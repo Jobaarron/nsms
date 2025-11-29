@@ -1,11 +1,9 @@
 // Role Modals JavaScript - Utility functions for modal management
-console.log('role-modals.js loading...');
 
 // Show Alert Function
 window.showAlert = function(message, type = 'success') {
     const alertContainer = document.getElementById('alert-container');
     if (!alertContainer) {
-        console.error('Alert container not found');
         return;
     }
     
@@ -31,7 +29,6 @@ window.showAlert = function(message, type = 'success') {
 window.showModal = function(modalId) {
     const modalElement = document.getElementById(modalId);
     if (!modalElement) {
-        console.error('Modal not found:', modalId);
         return;
     }
 
@@ -54,14 +51,12 @@ window.showModal = function(modalId) {
             document.body.appendChild(backdrop);
         }
     } catch (error) {
-        console.error('Error showing modal:', error);
     }
 };
 
 window.hideModal = function(modalId) {
     const modalElement = document.getElementById(modalId);
     if (!modalElement) {
-        console.error('Modal not found:', modalId);
         return;
     }
 
@@ -90,7 +85,6 @@ window.hideModal = function(modalId) {
             }
         }
     } catch (error) {
-        console.error('Error hiding modal:', error);
     }
 };
 
@@ -202,12 +196,10 @@ function setupModalEventHandlers() {
         });
     });
     
-    console.log('Modal event handlers setup complete');
 }
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('role-modals.js DOM ready');
     
     // Setup modal close handlers
     setupModalCloseHandlers();
@@ -224,10 +216,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Debug: Check if Bootstrap is loaded
-    console.log('Bootstrap available:', typeof bootstrap !== 'undefined');
-    console.log('jQuery available:', typeof $ !== 'undefined');
     
     // Mark as ready for other scripts
     window.roleModalsReady = true;
-    console.log('role-modals.js initialized successfully');
 });

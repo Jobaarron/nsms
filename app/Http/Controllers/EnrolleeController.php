@@ -1118,10 +1118,9 @@ class EnrolleeController extends Controller
             $enrollee = Auth::guard('enrollee')->user();
             
             $counts = [
-                'unread_notices' => Notice::where('target_audience', 'like', '%enrollees%')
-                    ->whereDoesntHave('readBy', function ($query) use ($enrollee) {
-                        $query->where('enrollee_id', $enrollee->id);
-                    })
+                'unread_notices' => Notice::forEnrollee($enrollee->id)
+                    ->excludeGuidanceSpecific()
+                    ->unread()
                     ->count(),
             ];
             

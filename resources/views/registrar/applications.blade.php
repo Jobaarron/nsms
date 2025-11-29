@@ -696,7 +696,6 @@
             try {
                 const csrfToken = document.querySelector('meta[name="csrf-token"]');
                 if (!csrfToken) {
-                    console.warn('CSRF token not found');
                     return;
                 }
                 
@@ -712,12 +711,10 @@
                 })
                 .then(response => {
                     if (!response.ok) {
-                        console.error('Failed to mark applications alert as viewed:', response.status);
                     }
                 })
-                .catch(error => console.error('Error marking applications alert as viewed:', error));
+                .catch(error => {});
             } catch(error) {
-                console.error('Error in registrar applications alert script:', error);
             }
         });
     </script>

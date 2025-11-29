@@ -1,5 +1,4 @@
 // Admin Role Access JavaScript - Main controller
-console.log('admin-role-access.js loading...');
 
 // Get CSRF token and base URLs from page
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
@@ -29,10 +28,8 @@ function waitForUtils(callback) {
 
 // Initialize when ready
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('admin-role-access.js DOM ready');
     
     waitForUtils(function() {
-        console.log('Role modals utilities ready, initializing main functions...');
         initializeRoleAccess();
     });
 });
@@ -61,7 +58,6 @@ function initializeRoleAccess() {
                 });
             })
             .catch(error => {
-                console.error('Error fetching user roles:', error);
                 window.showAlert('Error loading user roles', 'danger');
             });
         
@@ -96,7 +92,6 @@ function initializeRoleAccess() {
             }
         })
         .catch(error => {
-            console.error('Error:', error);
             window.showAlert('An error occurred while assigning the role.', 'danger');
         });
     };
@@ -129,7 +124,6 @@ function initializeRoleAccess() {
             }
         })
         .catch(error => {
-            console.error('Error:', error);
             window.showAlert('An error occurred while removing the role.', 'danger');
         });
     };
@@ -191,7 +185,6 @@ function initializeRoleAccess() {
             }
         })
         .catch(error => {
-            console.error('Error:', error);
             window.showAlert('An error occurred while creating the role.', 'danger');
         });
     };
@@ -228,7 +221,6 @@ function initializeRoleAccess() {
             }
         })
         .catch(error => {
-            console.error('Error:', error);
             window.showAlert('An error occurred while updating the role.', 'danger');
         });
     };
@@ -252,7 +244,6 @@ function initializeRoleAccess() {
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
                 window.showAlert('An error occurred while deleting the role.', 'danger');
             });
         }
@@ -300,7 +291,6 @@ function initializeRoleAccess() {
             }
         })
         .catch(error => {
-            console.error('Error:', error);
             window.showAlert('An error occurred while creating the permission.', 'danger');
         });
     };
@@ -336,7 +326,6 @@ function initializeRoleAccess() {
             }
         })
         .catch(error => {
-            console.error('Error:', error);
             window.showAlert('An error occurred while updating the permission.', 'danger');
         });
     };
@@ -360,7 +349,6 @@ function initializeRoleAccess() {
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
                 window.showAlert('An error occurred while deleting the permission.', 'danger');
             });
         }
@@ -374,6 +362,4 @@ function initializeRoleAccess() {
         });
     }
 
-    console.log('admin-role-access.js initialized successfully');
-    console.log('Available functions:', Object.keys(window).filter(key => key.includes('Role') || key.includes('Permission')));
 }

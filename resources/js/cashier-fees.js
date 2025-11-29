@@ -5,7 +5,6 @@
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Cashier Fee Management initialized');
     
     // Setup CSRF token for all AJAX requests
     const csrfToken = document.querySelector('meta[name="csrf-token"]');
@@ -50,7 +49,6 @@ function initializeGradeLevels() {
     
     function updateGradeLevels() {
         const level = educationalLevelSelect.value;
-        console.log('Selected educational level:', level);
         
         if (level && gradeLevels[level]) {
             let html = '<div class="row">';
@@ -135,7 +133,6 @@ function toggleFeeStatus(feeId) {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
         showAlert('An error occurred while updating the fee status: ' + error.message, 'error');
         
         // Re-enable button

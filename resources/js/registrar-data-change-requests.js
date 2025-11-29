@@ -23,7 +23,6 @@ window.RegistrarDataChangeRequests = (function() {
                     isInitialized = true;
                 }
             } catch (error) {
-                console.error('Error initializing data change requests:', error);
             }
         }
     });
@@ -31,7 +30,6 @@ window.RegistrarDataChangeRequests = (function() {
     // Add global error handler to prevent page refresh
     window.addEventListener('error', function(event) {
         if (event.filename && event.filename.includes('registrar-data-change-requests')) {
-            console.error('Registrar Data Change Requests Error:', event.error);
             event.preventDefault();
             return false;
         }
@@ -41,7 +39,6 @@ window.RegistrarDataChangeRequests = (function() {
  * Initialize the data change requests system
  */
 function initializeDataChangeRequests() {
-    console.log('Initializing registrar data change requests...');
     
     // Setup CSRF token first
     setupCSRFToken();
@@ -51,23 +48,17 @@ function initializeDataChangeRequests() {
     const pane = document.getElementById('data-change-requests');
     const tableBody = document.getElementById('changeRequestsTableBody');
     
-    console.log('Tab element:', tab);
-    console.log('Pane element:', pane);
-    console.log('Table body element:', tableBody);
     
     if (!tab || !pane || !tableBody) {
-        console.error('Required elements not found for data change requests');
         return;
     }
     
-    console.log('Data change requests elements found, setting up event listeners...');
     
     // Setup all event listeners immediately
     setupEventListeners();
     
     // Add tab click event listener - only load data when tab is clicked
     tab.addEventListener('click', function(e) {
-        console.log('Data change requests tab clicked');
         
         // Add a small delay to ensure the tab pane is shown
         setTimeout(() => {
@@ -84,7 +75,6 @@ function setupCSRFToken() {
     if (token) {
         window.csrfToken = token.getAttribute('content');
     } else {
-        console.error('CSRF token not found in meta tags');
     }
 }
 
@@ -92,23 +82,18 @@ function setupCSRFToken() {
  * Setup event listeners
  */
 function setupEventListeners() {
-    console.log('Setting up event listeners for data change requests...');
     
     // Filter buttons
     const filterButtons = document.querySelectorAll('input[name="changeRequestStatus"]');
-    console.log('Found filter buttons:', filterButtons.length);
     
     filterButtons.forEach((button, index) => {
-        console.log(`Filter button ${index}:`, button.id, button.value);
         button.addEventListener('change', function() {
-            console.log('Filter button clicked:', this.value);
             filterChangeRequests(this.value);
         });
     });
     
     // Search input
     const searchInput = document.getElementById('changeRequestSearch');
-    console.log('Search input found:', !!searchInput);
     
     if (searchInput) {
         let searchTimeout;
@@ -125,12 +110,10 @@ function setupEventListeners() {
  * Load change requests data from server
  */
 function loadChangeRequestsData() {
-    console.log('Loading change requests data...');
     
     const tableBody = document.getElementById('changeRequestsTableBody');
     
     if (!tableBody) {
-        console.error('Change requests table body not found');
         return;
     }
     
@@ -148,7 +131,6 @@ function loadChangeRequestsData() {
     
     // Get CSRF token
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-    console.log('CSRF Token:', csrfToken ? 'Found' : 'Not found');
     
     fetch('/registrar/data-change-requests', {
         method: 'GET',
@@ -160,7 +142,6 @@ function loadChangeRequestsData() {
         credentials: 'same-origin'
     })
     .then(response => {
-        console.log('Response status:', response.status);
         
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -169,7 +150,6 @@ function loadChangeRequestsData() {
         return response.json();
     })
     .then(data => {
-        console.log('Change requests data loaded:', data);
         
         if (data.success && data.requests) {
             changeRequestsData = data.requests;
@@ -186,7 +166,6 @@ function loadChangeRequestsData() {
                     </tr>
                 `;
             } else {
-                console.log('Found ' + changeRequestsData.length + ' requests');
                 displayChangeRequests(filteredChangeRequests);
             }
         } else {
@@ -194,7 +173,6 @@ function loadChangeRequestsData() {
         }
     })
     .catch(error => {
-        console.error('Error loading change requests:', error);
         
         // Show error state
         tableBody.innerHTML = `
@@ -308,8 +286,6 @@ function displayChangeRequests(requests) {
  * Filter change requests by status
  */
 function filterChangeRequests(status) {
-    console.log('Filtering change requests by status:', status);
-    console.log('Total change requests data:', changeRequestsData.length);
     
     if (!status) {
         filteredChangeRequests = [...changeRequestsData];
@@ -317,7 +293,6 @@ function filterChangeRequests(status) {
         filteredChangeRequests = changeRequestsData.filter(request => request.status === status);
     }
     
-    console.log('Filtered results:', filteredChangeRequests.length);
     displayChangeRequests(filteredChangeRequests);
 }
 
@@ -328,7 +303,6 @@ function searchChangeRequests(searchTerm = '') {
     const searchInput = document.getElementById('changeRequestSearch');
     const query = searchTerm || (searchInput ? searchInput.value.trim() : '');
     
-    console.log('Searching change requests:', query);
     
     if (!query) {
         // Get current filter status
@@ -563,7 +537,6 @@ function processChangeRequest(requestId, action, notes = '') {
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || window.csrfToken || '';
     
     if (!csrfToken) {
-        console.error('CSRF token not available');
         showAlert('Security token not found. Please refresh the page.', 'error');
         return;
     }
@@ -604,7 +577,6 @@ function processChangeRequest(requestId, action, notes = '') {
         }
     })
     .catch(error => {
-        console.error(`Error ${action}ing change request:`, error);
         showAlert(`Failed to ${action} change request: ${error.message}`, 'error');
     })
     .finally(() => {
@@ -717,13 +689,11 @@ function testDataChangeRequests() {
     })
     .then(response => response.json())
     .then(data => {
-        console.log('Test result:', data);
         if (testResult) {
             testResult.innerHTML = `<span class="text-success">✓ Connected! Requests: ${data.total_requests}, User: ${data.auth_user}</span>`;
         }
     })
     .catch(error => {
-        console.error('Test failed:', error);
         if (testResult) {
             testResult.innerHTML = `<span class="text-danger">✗ Failed: ${error.message}</span>`;
         }

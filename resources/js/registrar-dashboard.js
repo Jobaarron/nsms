@@ -11,7 +11,6 @@ const REFRESH_INTERVAL = 5000; // 5 seconds for seamless updates
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Registrar Dashboard initialized with real-time updates');
     
     // Add hover effects to elements with hover-bg-light class
     document.querySelectorAll('.hover-bg-light').forEach(element => {
@@ -48,7 +47,6 @@ function approveApplication(applicationId) {
             }
         })
         .catch(error => {
-            console.error('Error:', error);
             alert('Error approving application. Please try again.');
         });
     }
@@ -77,7 +75,6 @@ function declineApplication(applicationId) {
             }
         })
         .catch(error => {
-            console.error('Error:', error);
             alert('Error declining application. Please try again.');
         });
     }
@@ -132,7 +129,6 @@ function startAutoRefresh() {
             refreshDashboardStats();
         }, REFRESH_INTERVAL);
         
-        console.log('Auto-refresh started (every 30 seconds)');
     }
 }
 
@@ -143,7 +139,6 @@ function stopAutoRefresh() {
     if (autoRefreshInterval) {
         clearInterval(autoRefreshInterval);
         autoRefreshInterval = null;
-        console.log('Auto-refresh stopped');
     }
 }
 
@@ -167,11 +162,9 @@ function refreshDashboardStats() {
             updateRecentApplications(data.recent_applications);
             updateLastUpdatedTimestamp('dashboard-last-updated');
         } else {
-            console.error('Failed to refresh stats:', data.message);
         }
     })
     .catch(error => {
-        console.error('Error refreshing stats:', error);
     });
 }
 
@@ -208,7 +201,6 @@ function updateStatsCards(stats) {
 function updateRecentApplications(applications) {
     // For now, we'll just update the counts
     // In a more advanced implementation, we could update the entire list
-    console.log('Recent applications updated:', applications.length);
 }
 
 /**

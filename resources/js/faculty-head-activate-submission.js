@@ -1,14 +1,9 @@
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Faculty Head Activate Submission JS loaded');
-    console.log('Current URL:', window.location.pathname);
-    console.log('Page title:', document.title);
     
     // Check if we're on the activate submission page
     const isActivateSubmissionPage = window.location.pathname.includes('/activate-submission');
-    console.log('Is activate submission page:', isActivateSubmissionPage);
     
     if (!isActivateSubmissionPage) {
-        console.log('Not on activate submission page, skipping initialization');
         return;
     }
     
@@ -17,42 +12,24 @@ document.addEventListener('DOMContentLoaded', function() {
     let toggleText = document.getElementById('toggleText');
     const quarterSwitches = document.querySelectorAll('.quarter-switch');
     
-    console.log('Elements found:', {
-        toggleBtn: toggleBtn,
-        toggleIcon: toggleIcon,
-        toggleText: toggleText,
-        quarterSwitches: quarterSwitches.length,
-        csrfToken: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
-    });
-    
     // Test if elements exist
     if (!toggleBtn) {
-        console.error('Toggle button not found! Check if ID matches.');
         return;
     }
     
     if (!document.querySelector('meta[name="csrf-token"]')) {
-        console.error('CSRF token not found! Check if meta tag exists.');
         return;
     }
     
     // Add global debug function
     window.debugActivateSubmission = function() {
-        console.log('Debug info:', {
-            toggleBtn: toggleBtn,
-            isActive: toggleBtn?.dataset?.active,
-            csrfToken: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
-        });
+        // Debug function
     };
     
     // Add global test function
     window.testActivateSubmission = function() {
-        console.log('Test function called - JavaScript is loaded!');
         if (toggleBtn) {
-            console.log('Toggle button found:', toggleBtn);
             toggleBtn.click();
-        } else {
-            console.log('Toggle button NOT found');
         }
     };
     
@@ -61,21 +38,14 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Handle main toggle button
     if (toggleBtn) {
-        console.log('Adding click listener to toggle button');
         toggleBtn.addEventListener('click', function() {
-            console.log('Toggle button clicked!');
             const isCurrentlyActive = this.dataset.active === '1';
             const newStatus = !isCurrentlyActive;
-            
-            console.log('Current status:', isCurrentlyActive, 'New status:', newStatus);
             
             // Simple confirmation and direct call
             const action = newStatus ? 'activate' : 'deactivate';
             if (confirm(`Are you sure you want to ${action} grade submission? This will ${newStatus ? 'allow' : 'prevent'} teachers from submitting grades.`)) {
-                console.log(`User confirmed to ${action} grade submission`);
                 toggleGradeSubmission(newStatus);
-            } else {
-                console.log('User cancelled the action');
             }
             
             // Original modal code (commented out for debugging)
@@ -89,18 +59,13 @@ document.addEventListener('DOMContentLoaded', function() {
             );
             */
         });
-    } else {
-        console.error('Toggle button not found!');
     }
     
     // Handle quarter switches
     quarterSwitches.forEach(switchElement => {
-        console.log('Adding listener to quarter switch:', switchElement.dataset.quarter);
         switchElement.addEventListener('change', function() {
             const quarter = this.dataset.quarter;
             const isActive = this.checked;
-            
-            console.log(`Quarter ${quarter} switched to:`, isActive);
             updateQuarterSetting(quarter, isActive, this);
         });
     });
@@ -167,7 +132,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         })
         .catch(error => {
-            console.log('Status check failed:', error);
         });
     }
     
@@ -175,7 +139,6 @@ document.addEventListener('DOMContentLoaded', function() {
      * Toggle grade submission status
      */
     function toggleGradeSubmission(newStatus) {
-        console.log('toggleGradeSubmission called with status:', newStatus);
         
         // Disable button during request and show loading state
         toggleBtn.disabled = true;
@@ -186,7 +149,6 @@ document.addEventListener('DOMContentLoaded', function() {
         toggleBtn.className = 'btn btn-lg btn-secondary btn-updating';
         toggleBtn.innerHTML = `<i class="ri-loader-4-line me-2 spin"></i>${actionText}`;
         
-        console.log('Making request to:', '/faculty-head/activate-submission/toggle');
         
         fetch('/faculty-head/activate-submission/toggle', {
             method: 'POST',
@@ -201,14 +163,12 @@ document.addEventListener('DOMContentLoaded', function() {
             })
         })
         .then(response => {
-            console.log('Response received:', response.status, response.statusText);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             return response.json();
         })
         .then(data => {
-            console.log('Response data:', data);
             if (data.success) {
                 // Update page data first
                 toggleBtn.dataset.active = data.active ? '1' : '0';
@@ -226,7 +186,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // Force another repaint
                     requestAnimationFrame(() => {
-                        console.log('UI updates completed - Button active:', data.active);
                         
                         // Show success message with quarter info if available
                         let message = data.message;
@@ -250,7 +209,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         })
         .catch(error => {
-            console.error('Error toggling grade submission:', error);
             showAlert('danger', 'Failed to update grade submission status. Please try again.');
             
             // Restore original button state on error
@@ -297,7 +255,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         })
         .catch(error => {
-            console.error('Error updating quarter setting:', error);
             
             // Revert switch state
             switchElement.checked = originalState;
@@ -310,7 +267,6 @@ document.addEventListener('DOMContentLoaded', function() {
      * Update toggle button appearance
      */
     function updateToggleButton(isActive) {
-        console.log('Updating button - Active:', isActive);
         
         // Remove all existing classes and force DOM update
         toggleBtn.removeAttribute('class');
@@ -339,7 +295,6 @@ document.addEventListener('DOMContentLoaded', function() {
             toggleBtn.style.transform = '';
         }, 50);
         
-        console.log('Button update completed - Classes:', toggleBtn.className, 'Text:', buttonText);
     }
 
     /**
@@ -350,7 +305,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const switchElement = document.getElementById(`${quarter}Switch`);
             if (switchElement) {
                 switchElement.checked = quartersData[quarter];
-                console.log(`Updated ${quarter} switch to:`, quartersData[quarter]);
             }
         });
     }
@@ -359,7 +313,6 @@ document.addEventListener('DOMContentLoaded', function() {
      * Update status card
      */
     function updateStatusCard(isActive) {
-        console.log('Updating status card - Active:', isActive);
         
         const statusCard = document.querySelector('.card-summary');
         const statusIcon = statusCard?.querySelector('i');
@@ -396,7 +349,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Force repaint
                 statusCard.offsetHeight;
                 
-                console.log('Status card update completed - Active:', isActive, 'Classes:', statusCard.className);
             }, 100);
         }
     }

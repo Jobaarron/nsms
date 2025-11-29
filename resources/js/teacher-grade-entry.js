@@ -4,17 +4,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const isGradeEntryPage = window.location.pathname.includes('/grades/submit/');
     
     if (!isGradeEntryPage) {
-        console.log('Not on grade entry page, skipping initialization');
         return;
     }
     
-    console.log('Teacher Grade Entry JavaScript loaded');
     
     // Check if grade entry data is available
     if (window.gradeEntryData) {
-        console.log('Grade entry data found:', window.gradeEntryData);
     } else {
-        console.log('Grade entry data not found - functions will use fallback behavior');
     }
     
     // Initialize auto-save functionality
@@ -105,8 +101,6 @@ window.uploadGradesFile = function() {
         }
     })
     .then(response => {
-        console.log('Upload response status:', response.status);
-        console.log('Upload response headers:', response.headers);
         return response.json().then(data => ({
             status: response.status,
             data: data
@@ -118,7 +112,6 @@ window.uploadGradesFile = function() {
         }
         
         const { status, data } = result;
-        console.log('Upload response data:', data);
         
         // Handle both success (200) and validation error (422) responses
         if (status === 200 && data.success) {
@@ -152,7 +145,6 @@ window.uploadGradesFile = function() {
                 errorMsg += `\n\nProcessed: ${data.processed || 0} out of ${data.total_rows} rows`;
             }
             
-            console.error('Upload error:', errorMsg);
             alert(errorMsg);
         }
     })
@@ -160,7 +152,6 @@ window.uploadGradesFile = function() {
         if (progressElement) {
             progressElement.style.display = 'none';
         }
-        console.error('Upload fetch error:', error);
         alert('Upload failed: ' + error.message);
     });
 };
@@ -221,12 +212,10 @@ window.initializeAutoSave = function() {
             clearTimeout(autoSaveTimer);
             autoSaveTimer = setTimeout(() => {
                 // Could implement auto-save here
-                console.log('Auto-save triggered for:', e.target.name);
             }, 2000);
         }
     });
     
-    console.log('Auto-save functionality initialized');
 }
 
 // Enhanced grade validation with real-time feedback

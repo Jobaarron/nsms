@@ -467,12 +467,10 @@
                 } else {
                     let msg = data && typeof data.message === 'string' ? data.message : (typeof data === 'object' ? JSON.stringify(data) : 'Failed to save summary report.');
                     alert(msg);
-                    console.error('Summary report error:', data);
                 }
             })
             .catch(error => {
                 alert(error && error.message ? error.message : 'Error submitting summary report.');
-                console.error('Network or JS error:', error);
             });
         }
 
@@ -481,7 +479,6 @@
             try {
                 const csrfToken = document.querySelector('meta[name="csrf-token"]');
                 if (!csrfToken) {
-                    console.warn('CSRF token not found');
                     return;
                 }
                 
@@ -497,12 +494,10 @@
                 })
                 .then(response => {
                     if (!response.ok) {
-                        console.error('Failed to mark counseling sessions alert as viewed:', response.status);
                     }
                 })
-                .catch(error => console.error('Error marking counseling sessions alert as viewed:', error));
+                .catch(error => {});
             } catch(error) {
-                console.error('Error in guidance counseling sessions alert script:', error);
             }
         });
     </script>

@@ -11,21 +11,18 @@ document.addEventListener('DOMContentLoaded', function() {
     try {
         startRealTimeAlertPolling();
     } catch(error) {
-        console.error('Error initializing admin alerts:', error);
     }
 });
 
 function startRealTimeAlertPolling() {
     const POLL_INTERVAL = 3000; // 3 seconds
     
-    console.log('🔄 Starting admin alert polling (every 3 seconds)');
     
     // Initial check
     fetchAlertCounts();
     
     // Poll every 3 seconds
     pollingInterval = setInterval(() => {
-        console.log('⏰ Polling for admin alerts...');
         fetchAlertCounts();
     }, POLL_INTERVAL);
     
@@ -56,11 +53,9 @@ async function fetchAlertCounts() {
         const data = await response.json();
         
         if (data.success) {
-            console.log('📊 Admin alert counts received:', data.counts);
             updateAlertBadges(data.counts);
         }
     } catch (error) {
-        console.error('Error fetching admin alert counts:', error);
     }
 }
 

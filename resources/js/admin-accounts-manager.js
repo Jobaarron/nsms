@@ -69,7 +69,6 @@ window.openEditAccountModal = function(userId, userName, userEmail, userRole) {
         }
     })
     .catch(error => {
-        console.error('Error fetching password:', error);
         document.getElementById('accountPassword').value = '';
         document.getElementById('passwordHint').textContent = 'Leave empty to keep current password';
     });
@@ -110,7 +109,6 @@ window.deleteAccount = function(userId, userName) {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
         if (typeof showAlert === 'function') {
             showAlert(error.message || 'Error deleting account', 'danger', 3000);
         }
@@ -216,7 +214,6 @@ window.submitAccountForm = function() {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
         if (typeof showAlert === 'function') {
             showAlert(error.message || 'Error saving account', 'danger', 3000);
         }

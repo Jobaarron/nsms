@@ -9,7 +9,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeArchives() {
-    console.log('Applicant Archives initialized');
 }
 
 function viewArchiveApplication(applicationId) {
@@ -39,7 +38,6 @@ function viewArchiveApplication(applicationId) {
             }
         })
         .catch(error => {
-            console.error('Error fetching application details:', error);
             detailsContainer.innerHTML = '<div class="alert alert-danger">Error loading application details</div>';
         });
 }
@@ -152,7 +150,6 @@ function confirmReconsider() {
         }
     })
     .catch(error => {
-        console.error('Error reconsidering application:', error);
         alert('Error reconsidering application');
     })
     .finally(() => {

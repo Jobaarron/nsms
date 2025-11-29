@@ -22,7 +22,6 @@ function initializeAlertManager() {
 }
 
 function initializeDashboard() {
-    console.log('Student Dashboard initialized');
     
     // Add any dashboard-specific initialization here
     setupQuickActions();
@@ -155,7 +154,6 @@ function shouldHideAlert(alertType) {
 
         return false;
     } catch (e) {
-        console.error('Error parsing alert data:', e);
         return false;
     }
 }
@@ -185,7 +183,6 @@ function isQuarterAboutToEnd() {
         
         // If within 14 days before quarter end, show alert
         if (daysUntilEnd > 0 && daysUntilEnd <= DAYS_BEFORE_QUARTER_END) {
-            console.log(`📅 Quarter ending soon: ${quarter} Quarter ends in ${daysUntilEnd} days`);
             return true;
         }
     }
@@ -267,7 +264,6 @@ function getRemainingDays(alertType) {
 
         return Math.max(0, remainingDays);
     } catch (e) {
-        console.error('Error calculating remaining days:', e);
         return null;
     }
 }

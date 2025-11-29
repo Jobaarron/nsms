@@ -5,7 +5,6 @@ window.viewQuarterGrades = viewQuarterGrades;
 window.closeModal = closeModal;
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Student grades JS loaded');
 });
 
 function viewQuarterGrades(quarter) {
@@ -55,7 +54,6 @@ function viewQuarterGrades(quarter) {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
         displayError('An error occurred while loading grades');
     });
 }

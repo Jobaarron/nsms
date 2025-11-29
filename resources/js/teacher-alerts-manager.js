@@ -12,21 +12,18 @@ document.addEventListener('DOMContentLoaded', function() {
     try {
         startRealTimeAlertPolling();
     } catch(error) {
-        console.error('Error initializing teacher alerts:', error);
     }
 });
 
 function startRealTimeAlertPolling() {
     const POLL_INTERVAL = 3000; // 3 seconds
     
-    console.log('🔄 Starting teacher alert polling (every 3 seconds)');
     
     // Initial check
     fetchAlertCounts();
     
     // Poll every 3 seconds
     pollingInterval = setInterval(() => {
-        console.log('⏰ Polling for teacher alerts...');
         fetchAlertCounts();
     }, POLL_INTERVAL);
     
@@ -57,11 +54,9 @@ async function fetchAlertCounts() {
         const data = await response.json();
         
         if (data.success) {
-            console.log('📊 Teacher alert counts received:', data.counts);
             updateAlertBadges(data.counts);
         }
     } catch (error) {
-        console.error('Error fetching teacher alert counts:', error);
     }
 }
 

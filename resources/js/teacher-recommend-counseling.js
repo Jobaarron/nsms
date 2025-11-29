@@ -18,7 +18,6 @@ function initializeRecommendCounseling() {
     const studentIdInput = document.getElementById('student_id');
 
     if (!studentSearch || !studentSuggestions || !studentIdInput) {
-        console.warn('Required elements not found for recommend counseling functionality');
         return;
     }
 

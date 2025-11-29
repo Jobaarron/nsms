@@ -311,7 +311,6 @@
                     }
                 })
                 .catch(error => {
-                    console.error('Error:', error);
                     alert('Error loading message details');
                 });
         }
@@ -334,7 +333,6 @@
                     }
                 })
                 .catch(error => {
-                    console.error('Error:', error);
                     alert('Error deleting message');
                 });
             }
@@ -393,7 +391,6 @@
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
                 alert('Error updating status');
             });
         }
@@ -438,7 +435,6 @@
                     }
                 })
                 .catch(error => {
-                    console.error('Error:', error);
                     alert('Error performing bulk action');
                 });
             }
@@ -453,7 +449,6 @@
             try {
                 const csrfToken = document.querySelector('meta[name="csrf-token"]');
                 if (!csrfToken) {
-                    console.warn('CSRF token not found');
                     return;
                 }
                 
@@ -469,12 +464,10 @@
                 })
                 .then(response => {
                     if (!response.ok) {
-                        console.error('Failed to mark contact messages alert as viewed:', response.status);
                     }
                 })
-                .catch(error => console.error('Error marking contact messages alert as viewed:', error));
+                .catch(error => {});
             } catch(error) {
-                console.error('Error in admin contact messages alert script:', error);
             }
         });
     </script>

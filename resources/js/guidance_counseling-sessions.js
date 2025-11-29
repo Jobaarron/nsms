@@ -127,7 +127,6 @@ function showSessionDetailModal(sessionId) {
                         }
                 })
                 .catch((error) => {
-                        console.error('Error loading counseling session details:', error);
                         modalBody.innerHTML = '<div class="alert alert-danger m-3">Error loading session details. Please try again.</div>';
                 });
 }
@@ -179,10 +178,6 @@ function submitApproveSession(event) {
         formData.set('time', time24Hour);
     }
 
-    // Debug: log form data
-    for (let [key, value] of formData.entries()) {
-        console.log(key + ':', value);
-    }
 
     fetch('/guidance/counseling-sessions/approve', {
         method: 'POST',
@@ -363,7 +358,6 @@ document.addEventListener('DOMContentLoaded', function() {
     `;
     document.head.appendChild(style);
 
-    console.log('Counseling Sessions page loaded');
     // Initialize page functionality
     initializeCounselingSessions();
     
@@ -463,7 +457,6 @@ function setupDateTimeConstraints() {
 // Initialize comprehensive flatpickr date and time pickers
 function initializeDateTimePickers() {
     if (typeof flatpickr === 'undefined') {
-        console.warn('Flatpickr library not loaded');
         return;
     }
 
@@ -600,7 +593,6 @@ window.submitCounselingSession = function(event) {
         }
     })
     .catch(error => {
-        console.error('Error scheduling counseling session:', error);
         if (!error.message || !error.message.includes('<ul')) {
             showModalError('scheduleCounselingModal', 'An error occurred while scheduling the session', 'danger');
         }
@@ -648,7 +640,6 @@ function completeCounselingSession(sessionId) {
         }
     })
     .catch(error => {
-        console.error('Error completing session:', error);
         showAlert('Error completing session', 'danger');
     });
 }
@@ -776,7 +767,6 @@ function loadCounselors() {
         }
     })
     .catch(error => {
-        console.error('Error loading counselors:', error);
     });
 }
 
@@ -826,7 +816,6 @@ function submitScheduleRecommended(event, sessionId) {
         }
     })
     .catch(error => {
-        console.error('Error scheduling recommended session:', error);
         if (!error.message || !error.message.includes('<ul')) {
             showModalError('scheduleRecommendedModal', 'An error occurred while scheduling the session', 'danger');
         }
@@ -885,7 +874,6 @@ function rescheduleCounselingSession(sessionId) {
         }
     })
     .catch(error => {
-        console.error('Error rescheduling session:', error);
         showAlert('Error rescheduling session', 'danger');
     });
 }
@@ -1104,7 +1092,6 @@ function saveInlineScheduling(sessionId) {
         }
     })
     .catch(error => {
-        console.error('Error scheduling session:', error);
         showAlert('Error scheduling session', 'danger');
     });
 }
@@ -1150,9 +1137,6 @@ function showPdfModal(sessionId = null) {
         if (sessionId) {
             pdfUrl += `?session_id=${sessionId}`;
         }
-        // Debug: log PDF URL and sessionId
-        console.log('PDF URL:', pdfUrl);
-        console.log('Session ID:', sessionId);
 
         const pdfFrame = document.getElementById('pdfFrame');
         const modalElement = document.getElementById('pdfPreviewModal');
@@ -1226,28 +1210,9 @@ function acceptPdfSession(sessionId = null) {
     }, 400); // Wait for fade-out
 }
 
-// Debug PDF modal function
-function debugPdfModal() {
-    console.log('=== PDF Modal Debug Info ===');
-    console.log('Bootstrap:', typeof bootstrap);
-    console.log('Modal Element:', document.getElementById('pdfPreviewModal'));
-    console.log('PDF Frame:', document.getElementById('pdfFrame'));
-    console.log('showPdfModal function:', typeof showPdfModal);
-    
-    // Test if we can create a modal
-    const testModal = document.getElementById('pdfPreviewModal');
-    if (testModal) {
-        console.log('Modal found, attempting to show...');
-        const modal = new bootstrap.Modal(testModal);
-        modal.show();
-    } else {
-        console.error('Modal not found in DOM');
-    }
-}
 
 // Expose functions to global scope for onclick handlers
 window.showPdfModal = showPdfModal;
-window.debugPdfModal = debugPdfModal;
 window.acceptPdfSession = acceptPdfSession;
 window.completeCounselingSession = completeCounselingSession;
 window.scheduleRecommendedSession = scheduleRecommendedSession;

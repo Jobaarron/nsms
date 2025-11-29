@@ -2,7 +2,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Wait a bit for Bootstrap to initialize
     // setTimeout(function() {
-    //   console.log('Page loaded, Bootstrap status:', typeof window.bootstrap !== 'undefined' ? 'Available' : 'Not Available');
     //   initializeModalEventListeners();
     // }, 100);
 
@@ -194,7 +193,6 @@ document.addEventListener('DOMContentLoaded', function() {
       try {
         const modalElement = document.getElementById(modalId);
         if (!modalElement) {
-          console.error('Modal not found:', modalId);
           return false;
         }
 
@@ -220,7 +218,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return this.showFallback(modalId);
         
       } catch (error) {
-        console.error('Error showing modal:', error);
         return this.showFallback(modalId);
       }
     },
@@ -243,7 +240,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return this.hideFallback(modalId);
         
       } catch (error) {
-        console.error('Error hiding modal:', error);
         return this.hideFallback(modalId);
       }
     },
@@ -418,7 +414,6 @@ window.viewStudent = function(studentId) {
         showModal('studentModal');
       })
       .catch(error => {
-        console.error('Error:', error);
         alert('Error loading student information');
       });
   }
@@ -448,7 +443,6 @@ window.registerFace = function(studentId) {
         showModal('faceRegistrationModal');
       })
       .catch(error => {
-        console.error('Error:', error);
         document.getElementById('studentInfoForRegistration').innerHTML = `
           <div class="card">
             <div class="card-body">

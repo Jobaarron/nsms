@@ -4,13 +4,11 @@ let totalAmount = 0;
 let preferredScheduleDate = '';
 
 // Log when script loads
-console.log('student-enrollment.js loaded, totalAmount:', totalAmount);
 
 // Global variables will be initialized by initializeEnrollmentData() function called from PHP
 
 // Define functions globally so they can be accessed by onclick handlers
 window.populatePaymentDates = function() {
-    console.log('Populating payment dates with preferred schedule:', preferredScheduleDate);
     
     // Validate and create base date
     let baseDate;
@@ -18,7 +16,6 @@ window.populatePaymentDates = function() {
         baseDate = new Date(preferredScheduleDate);
         // Check if date is valid
         if (isNaN(baseDate.getTime())) {
-            console.warn('Invalid preferredScheduleDate, using default');
             baseDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days from now
         }
     } else {
@@ -31,9 +28,7 @@ window.populatePaymentDates = function() {
         const fullPaymentDate = document.querySelector('input[name="full_payment_date"]');
         if (fullPaymentDate) {
             fullPaymentDate.value = preferredScheduleDate;
-            console.log('Set full payment date to:', preferredScheduleDate);
         } else {
-            console.log('Full payment date input not found');
         }
         
         // Quarterly payment dates
@@ -47,12 +42,9 @@ window.populatePaymentDates = function() {
                 if (!isNaN(date.getTime())) {
                     const formattedDate = date.toISOString().split('T')[0];
                     quarterlyDate.value = formattedDate;
-                    console.log(`Set quarterly date ${i} to:`, formattedDate);
                 } else {
-                    console.warn(`Invalid quarterly date ${i} calculated`);
                 }
             } else {
-                console.log(`Quarterly date ${i} input not found`);
             }
         }
         
@@ -67,12 +59,9 @@ window.populatePaymentDates = function() {
                 if (!isNaN(date.getTime())) {
                     const formattedDate = date.toISOString().split('T')[0];
                     monthlyDate.value = formattedDate;
-                    console.log(`Set monthly date ${i} to:`, formattedDate);
                 } else {
-                    console.warn(`Invalid monthly date ${i} calculated`);
                 }
             } else {
-                console.log(`Monthly date ${i} input not found`);
             }
         }
         
@@ -82,16 +71,13 @@ window.populatePaymentDates = function() {
 }
 
 window.populatePaymentAmounts = function() {
-    console.log('populatePaymentAmounts called, totalAmount:', totalAmount);
     
     // Full payment amount
     const fullPaymentAmount = document.querySelector('input[name="full_payment_amount"]');
     if (fullPaymentAmount) {
         fullPaymentAmount.value = totalAmount.toFixed(2);
-        console.log('Set full payment amount to:', totalAmount.toFixed(2));
         fullPaymentAmount.readOnly = true;
     } else {
-        console.log('Full payment amount input NOT found');
     }
     
     // Quarterly amounts
@@ -130,14 +116,11 @@ window.populatePaymentAmounts = function() {
     const monthlyTotalElement = document.getElementById('monthly-total-amount');
     const monthlyPerPaymentElement = document.getElementById('monthly-per-payment');
     
-    console.log('Updating breakdown totals with totalAmount:', totalAmount);
     if (fullTotalElement) {
         fullTotalElement.textContent = totalAmount.toLocaleString('en-US', {minimumFractionDigits: 2});
-        console.log('Updated full-total-amount to:', totalAmount);
     }
     if (quarterlyTotalElement) {
         quarterlyTotalElement.textContent = totalAmount.toLocaleString('en-US', {minimumFractionDigits: 2});
-        console.log('Updated quarterly-total-amount to:', totalAmount);
     }
     if (quarterlyPerPaymentElement) quarterlyPerPaymentElement.textContent = parseFloat(quarterlyAmount).toLocaleString('en-US', {minimumFractionDigits: 2});
     if (monthlyTotalElement) monthlyTotalElement.textContent = totalAmount.toLocaleString('en-US', {minimumFractionDigits: 2});
@@ -165,24 +148,18 @@ window.showPaymentScheduleCard = function(mode) {
 
 // Initialize global variables from Laravel data
 window.initializeEnrollmentData = function(amount, scheduleDate) {
-    console.log('initializeEnrollmentData called with:', { amount, scheduleDate });
     totalAmount = amount;
     preferredScheduleDate = scheduleDate;
-    console.log('Enrollment data initialized, totalAmount is now:', totalAmount);
     
     // Update amount displays immediately
     if (typeof window.populatePaymentAmounts === 'function') {
-        console.log('Calling populatePaymentAmounts immediately');
         window.populatePaymentAmounts();
     } else {
-        console.log('populatePaymentAmounts function NOT available');
     }
     
     // If DOM is already loaded, populate dates immediately
     if (document.readyState === 'loading') {
-        console.log('DOM still loading, will wait for DOMContentLoaded');
     } else {
-        console.log('DOM already loaded, calling populatePaymentDates immediately');
         window.populatePaymentDates();
     }
 }
@@ -211,7 +188,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (typeof window.submitEnrollmentForm === 'function') {
                     window.submitEnrollmentForm();
                 } else {
-                    console.error('submitEnrollmentForm function not found');
                     alert('Submission function not available. Please refresh the page and try again.');
                 }
             }
@@ -224,7 +200,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     paymentOptions.forEach(option => {
         option.addEventListener('change', function() {
-            console.log('Payment mode changed to:', this.value);
             
             // Show confirmation for payment method selection
             const paymentModeNames = {
@@ -421,12 +396,9 @@ function showAlert(message, type = 'info') {
 
 // Initialize enrollment data when page loads
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOMContentLoaded - window.enrollmentTotalAmount:', window.enrollmentTotalAmount);
-    console.log('DOMContentLoaded - window.enrollmentScheduleDate:', window.enrollmentScheduleDate);
     
     // Use window variables set by Blade template
     if (window.enrollmentTotalAmount !== undefined && window.enrollmentTotalAmount > 0) {
-        console.log('Using window.enrollmentTotalAmount:', window.enrollmentTotalAmount);
         if (typeof window.initializeEnrollmentData === 'function') {
             window.initializeEnrollmentData(
                 parseFloat(window.enrollmentTotalAmount),
@@ -434,17 +406,14 @@ document.addEventListener('DOMContentLoaded', function() {
             );
         }
     } else {
-        console.warn('window.enrollmentTotalAmount not set or is 0');
     }
 });
 
 // Form submission function with PDF modal integration
 window.submitEnrollmentForm = function() {
-    console.log('submitEnrollmentForm called');
     
     const form = document.getElementById('enrollmentForm');
     if (!form) {
-        console.error('Enrollment form not found');
         alert('Form not found. Please refresh the page and try again.');
         return false;
     }
@@ -456,17 +425,14 @@ window.submitEnrollmentForm = function() {
         return false;
     }
     
-    console.log('Form validated, preparing submission...');
     const formData = new FormData(form);
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
     
     if (!csrfToken) {
-        console.error('CSRF token not found');
         alert('Security token not found. Please refresh the page and try again.');
         return false;
     }
     
-    console.log('Sending AJAX request to:', form.action);
     fetch(form.action, {
         method: 'POST',
         headers: {
@@ -477,29 +443,23 @@ window.submitEnrollmentForm = function() {
         body: formData
     })
     .then(response => {
-        console.log('Response status:', response.status);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         return response.json();
     })
     .then(data => {
-        console.log('Response data:', data);
         
         if (data.success && data.transaction_id) {
-            console.log('Success! Transaction ID:', data.transaction_id);
             
             if (typeof window.showPDFModal === 'function') {
-                console.log('Calling showPDFModal...');
                 window.showPDFModal({
                     transactionId: data.transaction_id,
                     onClose: function() {
-                        console.log('Modal closed, redirecting to:', data.redirect_url);
                         window.location.href = data.redirect_url || '/student/dashboard';
                     }
                 });
             } else {
-                console.warn('showPDFModal function not found, redirecting directly');
                 if (window.showAlert) {
                     window.showAlert(data.message || 'Payment schedule submitted successfully!', 'success');
                 } else {
@@ -510,7 +470,6 @@ window.submitEnrollmentForm = function() {
                 }, 2000);
             }
         } else {
-            console.error('Submission failed:', data.message);
             if (window.showAlert) {
                 window.showAlert(data.message || 'Failed to submit payment schedule.', 'danger');
             } else {
@@ -519,7 +478,6 @@ window.submitEnrollmentForm = function() {
         }
     })
     .catch(error => {
-        console.error('Error submitting enrollment:', error);
         if (window.showAlert) {
             window.showAlert('An error occurred while submitting. Please check your internet connection and try again.', 'danger');
         } else {

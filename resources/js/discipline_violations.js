@@ -42,10 +42,8 @@ async function fetchViolationOptions() {
         }
         const data = await response.json();
         window.offenseOptions = data.options;
-        console.log('Violation options loaded from database:', window.offenseOptions);
         return window.offenseOptions;
     } catch (error) {
-        console.error('Failed to fetch violation options:', error);
         // Fallback to empty options if fetch fails
         window.offenseOptions = { minor: [], major: { "Category 1": [], "Category 2": [], "Category 3": [] } };
         return window.offenseOptions;
@@ -118,7 +116,6 @@ window.SanctionSystem = {
                 studentRecord.majorCount++;
                 studentRecord.majorByCategory[violationRecord.category] = (studentRecord.majorByCategory[violationRecord.category] || 0) + 1;
                 
-                console.log(`Student ${studentId}: Minor violation escalated to major: ${escalationReason}`);
             }
             // Minor violations that don't escalate remain minor
         } else if (severity === 'major') {
@@ -284,7 +281,6 @@ function setupEnhancedViolationSubmission() {
       // Process each student
       const results = [];
       for (const student of window.selectedStudents) {
-        console.log(`Processing violation for student: ${student.name} (ID: ${student.id})`);
         
         const formData = new FormData();
         formData.append('student_id', student.id);
@@ -299,14 +295,6 @@ function setupEnhancedViolationSubmission() {
         const csrfToken = csrfTokenEl ? csrfTokenEl.getAttribute('content') : '';
         formData.append('_token', csrfToken);
 
-        console.log('Submitting violation data:', {
-          student_id: student.id,
-          title: title,
-          violation_date: document.getElementById('violationDate').value,
-          violation_time: document.getElementById('violationTime').value,
-          severity: severity,
-          major_category: category
-        });
 
         const response = await fetch('/discipline/violations', {
           method: 'POST',
@@ -318,7 +306,6 @@ function setupEnhancedViolationSubmission() {
           body: formData
         });
 
-        console.log(`Response status: ${response.status} ${response.statusText}`);
 
         if (response.status === 401) {
           // User is not authenticated, redirect to login
@@ -332,10 +319,8 @@ function setupEnhancedViolationSubmission() {
           let errorMessage = 'Validation failed.';
           try {
             const errorData = await response.json();
-            console.log('422 Validation error:', errorData);
             errorMessage = errorData.message || 'Validation failed: ' + Object.values(errorData.errors || {}).flat().join(', ');
           } catch (parseError) {
-            console.warn('Could not parse 422 response as JSON:', parseError);
           }
           throw new Error(errorMessage);
         }
@@ -346,21 +331,16 @@ function setupEnhancedViolationSubmission() {
           let responseText = '';
           try {
             responseText = await response.text();
-            console.log('409 response text:', responseText);
             
             // Try to parse as JSON
             const errorData = JSON.parse(responseText);
-            console.log('409 response parsed:', errorData);
             errorMessage = errorData.message || errorMessage;
             
             // Check if this is actually a duplicate or some other validation error
             if (!errorData.is_duplicate) {
-              console.warn('409 error is not marked as duplicate:', errorData);
               throw new Error(errorMessage);
             }
           } catch (parseError) {
-            console.warn('Could not parse 409 response as JSON:', parseError);
-            console.log('Raw response text:', responseText);
             
             // If it's not JSON, it might be a different kind of error
             if (responseText && !responseText.includes('duplicate') && !responseText.includes('already exists')) {
@@ -375,10 +355,8 @@ function setupEnhancedViolationSubmission() {
             const violationTimeElement = document.getElementById('violationTime');
             
             if (!violationDateElement) {
-              console.error('violationDate element not found');
             }
             if (!violationTimeElement) {
-              console.error('violationTime element not found');
             }
             
             violationData = {
@@ -396,9 +374,7 @@ function setupEnhancedViolationSubmission() {
               notes: document.getElementById('violationNotes')?.value || '',
               _token: csrfToken
             };
-            console.log('Violation data created successfully:', violationData);
           } catch (error) {
-            console.error('Error creating violation data:', error);
             violationData = {
               student_id: student.id,
               title: title,
@@ -415,14 +391,7 @@ function setupEnhancedViolationSubmission() {
               _token: csrfToken
             };
           }
-          console.log('=== CALLING showDuplicateViolationModal ===');
-          console.log('Error message:', errorMessage);
-          console.log('Violation data being passed:', violationData);
-          console.log('violationData type:', typeof violationData);
-          console.log('violationData is null:', violationData === null);
-          console.log('violationData is undefined:', violationData === undefined);
           showDuplicateViolationModal(errorMessage, violationData);
-          console.log('window.pendingDuplicateViolation after modal call:', window.pendingDuplicateViolation);
           submitBtn.textContent = originalText;
           submitBtn.disabled = false;
           return;
@@ -451,8 +420,6 @@ function setupEnhancedViolationSubmission() {
       window.location.reload();
 
     } catch (err) {
-      console.error('Violation submission error:', err);
-      
       // Provide more specific error messages
       let errorMessage = 'Error submitting violation: ';
       if (err.name === 'TypeError' && err.message.includes('fetch')) {
@@ -476,18 +443,11 @@ function setupEnhancedViolationSubmission() {
 
 // Show modal for duplicate violation
 function showDuplicateViolationModal(message, violationData = null) {
-  console.log('showDuplicateViolationModal called with:', { message, violationData });
   
   // Always store the violation data immediately
   if (violationData && typeof violationData === 'object' && violationData.student_id) {
-    console.log('=== STORING VIOLATION DATA IMMEDIATELY ===');
-    console.log('Data to store:', violationData);
     window.pendingDuplicateViolation = violationData;
-    console.log('Data stored in window.pendingDuplicateViolation:', window.pendingDuplicateViolation);
   } else {
-    console.warn('No violation data provided to store or invalid data:', violationData);
-    console.warn('Data type:', typeof violationData);
-    console.warn('Has student_id:', violationData?.student_id);
     alert('Unable to store violation data for duplicate handling. Please try submitting again.');
     return; // Don't show modal if no data
   }
@@ -533,9 +493,6 @@ function showDuplicateViolationModal(message, violationData = null) {
   const proceedBtn = modal.querySelector('#proceedWithDuplicateBtn');
   if (proceedBtn) {
     proceedBtn.addEventListener('click', function() {
-      console.log('=== PROCEED BUTTON CLICKED ===');
-      console.log('pendingDuplicateViolation exists:', !!window.pendingDuplicateViolation);
-      console.log('Current pendingDuplicateViolation:', window.pendingDuplicateViolation);
       
       // Close modal first
       const bsModal = bootstrap.Modal.getInstance(modal);
@@ -544,42 +501,29 @@ function showDuplicateViolationModal(message, violationData = null) {
       // Small delay to ensure modal is closed before proceeding
       setTimeout(() => {
         if (window.pendingDuplicateViolation) {
-          console.log('Calling proceedWithDuplicateViolation...');
           proceedWithDuplicateViolation();
         } else {
-          console.error('No pending violation data available');
           alert('No pending violation data available. Please try submitting again.');
         }
       }, 100);
     });
-    console.log('Event listener attached to proceed button using addEventListener');
   } else {
-    console.error('Proceed button not found in modal');
   }
 
   // Show modal
   const bsModal = new bootstrap.Modal(modal);
   bsModal.show();
   
-  console.log('=== MODAL SHOWN, DATA SHOULD BE AVAILABLE FOR PROCEED ===');
 }
 
 // Function to proceed with duplicate violation submission
 async function proceedWithDuplicateViolation() {
-  console.log('=== proceedWithDuplicateViolation CALLED ===');
-  console.log('window.pendingDuplicateViolation status:', {
-    exists: !!window.pendingDuplicateViolation,
-    data: window.pendingDuplicateViolation
-  });
   
   if (!window.pendingDuplicateViolation) {
-    console.error('No pending violation data found');
     alert('No pending violation data found. The page may need to be refreshed.');
     return;
   }
 
-  console.log('Proceeding with violation data:', window.pendingDuplicateViolation);
-  console.log('=== STARTING FORCE DUPLICATE SUBMISSION ===');
 
   const violationData = window.pendingDuplicateViolation;
   
@@ -621,17 +565,6 @@ async function proceedWithDuplicateViolation() {
     formData.append('force_duplicate', 'true'); // Force duplicate flag
     formData.append('_token', violationData._token);
 
-    // Log all FormData entries for debugging
-    console.log('=== FORMDATA CONTENTS FOR FORCE DUPLICATE ===');
-    for (let [key, value] of formData.entries()) {
-      console.log(`${key}: ${value}`);
-    }
-    console.log('=== END FORMDATA ===');
-    
-    console.log('=== SUBMITTING DUPLICATE WITH FORCE FLAG ===');
-    console.log('URL: /discipline/violations');
-    console.log('Method: POST');
-    console.log('Headers: Accept: application/json, X-CSRF-TOKEN:', violationData._token?.substring(0, 10) + '...');
 
     const response = await fetch('/discipline/violations', {
       method: 'POST',
@@ -643,16 +576,13 @@ async function proceedWithDuplicateViolation() {
       body: formData
     });
 
-    console.log(`Force submission response status: ${response.status} ${response.statusText}`);
 
     if (!response.ok) {
       let errorMessage = `Server error: ${response.status}`;
       try {
         const responseText = await response.text();
-        console.log('Error response text:', responseText);
         
         const errorData = JSON.parse(responseText);
-        console.log('Error response parsed:', errorData);
         
         if (response.status === 422) {
           // Validation error
@@ -664,7 +594,6 @@ async function proceedWithDuplicateViolation() {
           errorMessage = errorData.message || errorMessage;
         }
       } catch (parseError) {
-        console.warn('Could not parse error response as JSON:', parseError);
       }
       throw new Error(errorMessage);
     }
@@ -683,7 +612,6 @@ async function proceedWithDuplicateViolation() {
     }
 
   } catch (error) {
-    console.error('Error submitting duplicate violation:', error);
     alert('Error submitting violation: ' + error.message);
   } finally {
     if (submitBtn) {
@@ -778,7 +706,6 @@ function getNextSanctionWarning(summary) {
 }
 
 window.editViolation = function(violationId) {
-    console.log('🚀 editViolation called with id:', violationId);
 
     // Show loading state immediately
     const modalBody = document.getElementById('editViolationModalBody');
@@ -796,23 +723,13 @@ window.editViolation = function(violationId) {
     // Show modal immediately
     try {
         window.ModalManager.show('editViolationModal');
-        console.log('✅ Modal shown successfully');
     } catch (modalError) {
-        console.error('❌ Modal error:', modalError);
     }
 
     // Fetch violation data for editing
-    console.log('📡 Making API call to:', `/discipline/violations/${violationId}/edit`);
 
         fetch(`/discipline/violations/${violationId}/edit`, { credentials: 'include' })
         .then(response => {
-            console.log('📡 Response received:', {
-                status: response.status,
-                statusText: response.statusText,
-                ok: response.ok,
-                url: response.url
-            });
-
             if (response.status === 401) {
                 alert('Your session has expired. Please log in again.');
                 window.location.href = '/discipline/login';
@@ -839,8 +756,6 @@ window.editViolation = function(violationId) {
             return response.json();
         })
         .then(data => {
-            console.log('✅ Data received:', data);
-            
             if (!data) {
                 throw new Error('No data received from server');
             }
@@ -851,9 +766,6 @@ window.editViolation = function(violationId) {
 
             const violation = data.violation;
             const students = data.students || [];
-
-            console.log('📝 Violation data:', violation);
-            console.log('👥 Students data:', students);
 
             // Update form action
             const form = document.getElementById('editViolationForm');
@@ -945,7 +857,6 @@ window.editViolation = function(violationId) {
 `;
 
 
-            console.log('✅ Modal populated successfully');
 
             // Initialize flatpickr for the edit modal inputs
             const editModal = document.getElementById('editViolationModal');
@@ -1014,7 +925,6 @@ window.editViolation = function(violationId) {
       const currentViolationId = violationId;
       form.onsubmit = async function(e) {
         e.preventDefault();
-        console.log('📤 Form submission started');
 
         // If custom, set the value to the custom input
         if (editTitleSelect && editTitleCustom && editTitleSelect.value === 'custom') {
@@ -1059,7 +969,6 @@ window.editViolation = function(violationId) {
           }
         });
 
-                    console.log('📡 Update response status:', response.status);
 
                     if (!response.ok) {
                         const errorData = await response.json();
@@ -1078,7 +987,6 @@ window.editViolation = function(violationId) {
 
                     const data = await response.json();
                     if (data.success) {
-                        console.log('✅ Update successful:', data);
                         window.ModalManager.hide('editViolationModal');
 
                         // Show success message
@@ -1103,14 +1011,12 @@ window.editViolation = function(violationId) {
                         if (typeof updateViolationRow === 'function') {
                             updateViolationRow(currentViolationId, data.violation);
                         } else {
-                            console.warn('updateViolationRow function not found, reloading page');
                             window.location.reload();
                         }
                     } else {
                         throw new Error(data.message || 'Update failed');
                     }
                 } catch (error) {
-                    console.error('❌ Form submission error:', error);
 
                     // Show error message
                     const alertDiv = document.createElement('div');
@@ -1135,7 +1041,6 @@ window.editViolation = function(violationId) {
             };
         })
         .catch(error => {
-            console.error('❌ Fetch error:', error);
             
             // Show detailed error in modal
             if (modalBody) {
@@ -1159,7 +1064,6 @@ window.editViolation = function(violationId) {
             alert('Failed to load violation: ' + error.message);
         });
 };
-console.log('editViolation function defined on window:', typeof window.editViolation);
 
 // Helper function to get violation title
 function getViolationTitle() {
@@ -1184,7 +1088,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             window.SanctionSystem.initFromServer(data.violations);
         })
         .catch(error => {
-            console.error('Error loading violation summary:', error);
         });
 
     // Fetch violation options and initialize mappings
@@ -1273,7 +1176,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // Check if violation options are loaded
         if (!window.offenseOptions) {
-            console.warn('Violation options not loaded yet');
             return;
         }
 
@@ -1343,7 +1245,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         // Load sanction overview for the student
                         loadStudentSanctionOverview(student.id);
                     })
-                    .catch(error => console.error('Error fetching student:', error));
+                    .catch(error => {});
             }
 
             // Reset form
@@ -1463,7 +1365,6 @@ document.addEventListener('DOMContentLoaded', async function() {
           displaySuggestions(students);
         })
         .catch(error => {
-          console.error('Error searching students:', error);
           studentSuggestions.style.display = 'none';
         });
     }
@@ -1597,14 +1498,8 @@ window.viewViolation = function(violationId) {
         // Build available reports array
         const availableReports = [];
         
-        // Debug: Log the complete data structure
-        console.log('Complete violation data:', data);
-        console.log('Direct case_meeting_id:', data.case_meeting_id);
-        console.log('Case meeting object:', data.case_meeting);
-        
         // Get case meeting ID from either direct field or relationship
         const caseMeetingId = data.case_meeting_id || (data.case_meeting ? data.case_meeting.id : null);
-        console.log('Resolved case meeting ID:', caseMeetingId);
         
         // Student Narrative Report (for major violations with student responses)
         if (data.student && data.id && data.severity === 'major' && 
@@ -1841,7 +1736,6 @@ window.viewViolation = function(violationId) {
         showModal('viewViolationModal');
       })
       .catch(error => {
-        console.error('Error:', error);
         alert('Error loading violation details');
       });
   }
@@ -1915,7 +1809,6 @@ window.deleteViolation = function(violationId) {
         }
       })
       .catch(error => {
-        console.error('Error:', error);
 
         // Restore button state
         button.innerHTML = originalHTML;
@@ -2080,7 +1973,6 @@ window.forwardViolation = function(violationId) {
         }
       })
       .catch(error => {
-        console.error('Error:', error);
 
         // Restore button state
         button.innerHTML = originalHTML;
@@ -2109,7 +2001,6 @@ window.forwardViolation = function(violationId) {
 
 
   window.scheduleCaseMeeting = function(violationId) {
-    console.log('🚀 scheduleCaseMeeting called with id:', violationId);
 
     // Show loading state
     const modalBody = document.querySelector('#scheduleCaseMeetingModal .modal-body');
@@ -2128,23 +2019,13 @@ window.forwardViolation = function(violationId) {
     try {
       const modal = new bootstrap.Modal(document.getElementById('scheduleCaseMeetingModal'));
       modal.show();
-      console.log('✅ Modal shown successfully');
     } catch (modalError) {
-      console.error('❌ Modal error:', modalError);
     }
 
     // Fetch violation data
-    console.log('📡 Making API call to:', `/discipline/violations/${violationId}`);
 
     fetch(`/discipline/violations/${violationId}`, { credentials: 'include' })
       .then(response => {
-        console.log('📡 Response received:', {
-          status: response.status,
-          statusText: response.statusText,
-          ok: response.ok,
-          url: response.url
-        });
-
         if (response.status === 401) {
           alert('Your session has expired. Please log in again.');
           window.location.href = '/discipline/login';
@@ -2169,7 +2050,6 @@ window.forwardViolation = function(violationId) {
         return response.json();
       })
       .then(data => {
-        console.log('✅ Violation data received:', data);
 
         if (!data) {
           throw new Error('No data received from server');
@@ -2233,10 +2113,8 @@ window.forwardViolation = function(violationId) {
           </div>
         `;
 
-        console.log('✅ Modal populated successfully');
       })
       .catch(error => {
-        console.error('❌ Fetch error:', error);
 
         // Show error in modal
         if (modalBody) {
@@ -2268,7 +2146,6 @@ window.forwardViolation = function(violationId) {
       try {
         const modalElement = document.getElementById(modalId);
         if (!modalElement) {
-          console.error('Modal not found:', modalId);
           return false;
         }
 
@@ -2294,7 +2171,6 @@ window.forwardViolation = function(violationId) {
         return this.showFallback(modalId);
         
       } catch (error) {
-        console.error('Error showing modal:', error);
         return this.showFallback(modalId);
       }
     },
@@ -2317,7 +2193,6 @@ window.forwardViolation = function(violationId) {
         return this.hideFallback(modalId);
         
       } catch (error) {
-        console.error('Error hiding modal:', error);
         return this.hideFallback(modalId);
       }
     },
@@ -2504,8 +2379,7 @@ function initializeIncidentStudentSearch() {
                 incidentDisplaySuggestions(students);
             })
             .catch(error => {
-                console.error('Error searching students:', error);
-                incidentStudentSuggestions.style.display = 'none';
+                      incidentStudentSuggestions.style.display = 'none';
             });
     }
 
@@ -2681,7 +2555,6 @@ function showIncidentForm() {
 
         // Check if violation options are loaded
         if (!window.offenseOptions) {
-            console.warn('Violation options not loaded yet for incident form');
             return;
         }
 
@@ -2850,8 +2723,6 @@ function showIncidentForm() {
             _token: document.querySelector('meta[name="csrf-token"]').getAttribute('content')
           };
           
-          console.log('=== INCIDENT FORM DUPLICATE DETECTED ===');
-          console.log('Incident violation data:', incidentViolationData);
           showDuplicateViolationModal('A violation with the same title already exists for this student on this date.', incidentViolationData);
           submitBtn.textContent = originalText;
           submitBtn.disabled = false;
@@ -2922,7 +2793,6 @@ function showIncidentForm() {
           alert('A violation with the same title already exists for this student on this date. Please check existing violations before proceeding.');
         }
       } else {
-        console.error('Incident submission error:', err);
         alert('Error submitting incident: ' + err.message);
       }
         } finally {
@@ -2960,9 +2830,7 @@ function showIncidentForm() {
                 clickOpens: true
             });
             
-            console.log('Flatpickr initialized for incident form');
         } else {
-            console.warn('Flatpickr not loaded for incident form');
         }
     }, 100);
 
@@ -3086,10 +2954,8 @@ window.generateIncidentForm = function() {
 
 // Initialize flatpickr date and time pickers (similar to guidance_case-meetings.js)
 function initializeDateTimeInputs() {
-    console.log('Initializing flatpickr date and time inputs...');
     
     if (typeof flatpickr === 'undefined') {
-        console.warn('Flatpickr library not loaded');
         return;
     }
 
@@ -3119,7 +2985,6 @@ function initializeDateTimeInputs() {
     // Note: Incident form flatpickr is initialized separately in showIncidentForm() 
     // since the incident modal is dynamically created
     
-    console.log('Flatpickr date/time inputs initialized successfully');
 }
 
 // Enhanced time validation for flatpickr time inputs
@@ -3171,10 +3036,8 @@ function convertTo24Hour(time12) {
 
 // Helper function to reinitialize flatpickr after dynamic content loading
 function reinitializeFlatpickrForModal(modalId) {
-    console.log(`Reinitializing flatpickr for modal: ${modalId}`);
     
     if (typeof flatpickr === 'undefined') {
-        console.warn('Flatpickr library not loaded');
         return;
     }
     

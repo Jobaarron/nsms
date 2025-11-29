@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Face registration JS loaded');
 
     // Check if we're on the face registration page
     const video = document.getElementById('video');
@@ -7,7 +6,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Exit early if face registration elements don't exist
     if (!video || !canvas) {
-        console.log('Face registration elements not found on this page, skipping initialization');
         return;
     }
     
@@ -36,23 +34,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Debug: Test all endpoints on load
     async function testEndpoints() {
-        console.log('=== DEBUG: Testing Endpoints ===');
         
         // Test CSRF token
         const csrfToken = document.querySelector('meta[name="csrf-token"]');
-        console.log('CSRF Token exists:', !!csrfToken);
         if (csrfToken) {
-            console.log('CSRF Token length:', csrfToken.getAttribute('content')?.length);
         }
         
         // Test save URL
-        console.log('faceRegistrationSaveUrl:', window.faceRegistrationSaveUrl);
-        console.log('faceRegistrationDeleteUrl:', window.faceRegistrationDeleteUrl);
         
         if (!window.faceRegistrationSaveUrl) {
-            console.error('❌ faceRegistrationSaveUrl is NOT defined!');
         } else {
-            console.log('✅ faceRegistrationSaveUrl is defined');
         }
         
         // Test Flask server
@@ -61,12 +52,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 method: 'GET',
                 signal: AbortSignal.timeout(3000)
             });
-            console.log('Flask server accessible:', flaskTest.ok);
         } catch (error) {
-            console.warn('Flask server test failed:', error.message);
         }
         
-        console.log('=== DEBUG: Endpoint Tests Complete ===');
     }
 
     // Call debug test on load
@@ -79,10 +67,8 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const response = await fetch(`${FLASK_SERVER_URL}/health`, { method: 'GET', signal: AbortSignal.timeout(5000) });
             isFlaskServerAvailable = response.ok;
-            if (isFlaskServerAvailable) console.log('Flask server is available');
         } catch (error) {
             isFlaskServerAvailable = false;
-            console.warn('Flask server is not available:', error.message);
             faceStatus.textContent = 'Note: AI face encoding unavailable';
             faceStatus.style.background = 'rgba(255,193,7,0.8)';
         }
@@ -90,7 +76,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Start camera
     startCameraBtn.addEventListener('click', async function() {
-        console.log('Start camera button clicked');
         try {
             stream = await navigator.mediaDevices.getUserMedia({
                 video: { width: 640, height: 480, facingMode: 'user' }
@@ -107,7 +92,6 @@ document.addEventListener('DOMContentLoaded', function() {
             faceStatus.textContent = 'Camera ready - Position your face';
             faceStatus.style.background = 'rgba(40,167,69,0.8)';
         } catch (err) {
-            console.error('Error accessing camera:', err);
             alert('Unable to access camera. Please check permissions.');
             faceStatus.textContent = 'Camera access denied';
             faceStatus.style.background = 'rgba(220,53,69,0.8)';
@@ -140,7 +124,6 @@ document.addEventListener('DOMContentLoaded', function() {
             ctx.drawImage(video, 0, 0);
 
             capturedPhoto = canvas.toDataURL('image/jpeg', 0.8);
-            console.log('📸 Photo captured, data URL length:', capturedPhoto.length);
 
             faceStatus.textContent = 'Encoding face...';
             faceStatus.style.background = 'rgba(23,162,184,0.8)';
@@ -152,7 +135,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     const blob = dataURLtoBlob(capturedPhoto);
                     formData.append('image', blob, 'face.jpg');
 
-                    console.log('🔄 Sending face to Flask for encoding...');
                     const encodeResp = await fetch(`${FLASK_SERVER_URL}/encode`, {
                         method: 'POST',
                         body: formData,
@@ -161,7 +143,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     if (encodeResp.ok) {
                         const encodeData = await encodeResp.json();
-                        console.log('✅ Flask encoding response:', encodeData);
                         
                         if (encodeData?.confidence !== undefined) {
                             faceData = {
@@ -169,10 +150,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 confidence: (encodeData.confidence * 100).toFixed(1),
                                 encoding: encodeData.encoding ?? null
                             };
-                            console.log('✅ Face encoded successfully. Confidence:', faceData.confidence);
-                            console.log('✅ Encoding array length:', faceData.encoding ? faceData.encoding.length : 'null');
                         } else if (encodeData?.error) {
-                            console.warn('❌ No face detected in photo');
                             alert('Face Detection: No face detected. Please try again.');
                             capturedPhoto = null;
                             encodingPhoto = false;
@@ -184,12 +162,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         throw new Error(`Encoding failed: ${encodeResp.status}`);
                     }
                 } catch (encodeError) {
-                    console.error('❌ Face encoding error:', encodeError);
                     // Continue to review step even if encoding fails
                     faceData = { landmarks: null, confidence: 0, encoding: null };
                 }
             } else {
-                console.log('ℹ️ Using default face data (Flask server unavailable)');
                 // Create a dummy encoding array with 128 zeros (standard face encoding size)
                 faceData = { landmarks: null, confidence: 50, encoding: Array(128).fill(0) };
             }
@@ -236,7 +212,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     alert('CSRF token missing. Refresh the page.');
                     throw new Error('Missing CSRF token');
                 }
-                console.log('🚀 Sending data to Laravel:', saveUrl);
                 const response = await fetch(saveUrl, {
                     method: 'POST',
                     headers: {
@@ -247,24 +222,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     credentials: 'include'
                 });
 
-                console.log('📨 Laravel raw status:', response.status, response.statusText);
 
                 const textResponse = await response.text();
-                console.log('📄 Laravel raw response:', textResponse);
 
                 let json;
                 try {
                     json = JSON.parse(textResponse);
                 } catch (e) {
-                    console.error('❌ Laravel did not return JSON:', e);
                     alert('Unexpected server response. Check your Laravel controller.');
                     throw e;
                 }
 
-                console.log('✅ Parsed Laravel response:', json);
 
                 if (json.success) {
-                    console.log('🎉 Registration successful!');
                     faceStatus.textContent = 'Face registered successfully!';
                     faceStatus.style.background = 'rgba(40,167,69,0.8)';
                     
@@ -300,23 +270,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     alert('✅ Face registration completed successfully!');
                 } else {
-                    console.warn('⚠️ Registration failed:', json.message);
                     faceStatus.textContent = 'Registration failed: ' + (json.message || 'Unknown error');
                     faceStatus.style.background = 'rgba(220,53,69,0.8)';
                     alert('❌ Registration failed: ' + (json.message || 'Please try again.'));
                 }
             } catch (err) {
-                console.error('❌ Registration error:', err);
                 faceStatus.textContent = 'Registration failed';
                 faceStatus.style.background = 'rgba(220,53,69,0.8)';
                 alert('Failed to register face: ' + err.message);
             }
-            console.log('✅ Capture process completed');
         } catch (e) {
             encodingPhoto = false;
             captureBtn.disabled = false;
             captureBtn.innerHTML = '<i class="ri-camera-line me-2"></i>Capture Photo';
-            console.error('❌ Capture error:', e);
             alert('Capture error: ' + e.message);
         }
     });
@@ -345,7 +311,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Save photos (register face) - WITH COMPREHENSIVE DEBUGGING
     // Save photos (register face)
 savePhotosBtn.addEventListener('click', async function() {
-    console.log('💾 Save photos button clicked');
 
     if (!capturedPhoto) {
         alert('Please capture a photo first.');
@@ -353,7 +318,6 @@ savePhotosBtn.addEventListener('click', async function() {
     }
 
     if (!window.faceRegistrationSaveUrl) {
-        console.error('❌ faceRegistrationSaveUrl is not defined!');
         alert('Save URL missing. Refresh the page.');
         return;
     }
@@ -398,21 +362,17 @@ savePhotosBtn.addEventListener('click', async function() {
             credentials: 'include'
         });
 
-        console.log('📨 Laravel raw status:', response.status, response.statusText);
 
         const textResponse = await response.text();
-        console.log('📄 Laravel raw response:', textResponse);
 
         let json;
         try {
             json = JSON.parse(textResponse);
         } catch (e) {
-            console.error('❌ Laravel did not return JSON:', e);
             alert('Unexpected server response. Check your Laravel controller.');
             throw e;
         }
 
-        console.log('✅ Parsed Laravel response:', json);
 
         if (response.status === 409 && json.message && json.message.includes('already registered')) {
             faceStatus.textContent = json.message;
@@ -424,7 +384,6 @@ savePhotosBtn.addEventListener('click', async function() {
         }
 
         if (json.success) {
-            console.log('🎉 Registration successful!');
             faceStatus.textContent = 'Face registered successfully!';
             faceStatus.style.background = 'rgba(40,167,69,0.8)';
             
@@ -464,13 +423,11 @@ savePhotosBtn.addEventListener('click', async function() {
             
             alert('✅ Face registration completed successfully!');
         } else {
-            console.warn('⚠️ Registration failed:', json.message);
             faceStatus.textContent = 'Registration failed: ' + (json.message || 'Unknown error');
             faceStatus.style.background = 'rgba(220,53,69,0.8)';
             alert('❌ Registration failed: ' + (json.message || 'Please try again.'));
         }
     } catch (err) {
-        console.error('❌ Registration error:', err);
         faceStatus.textContent = 'Registration failed';
         faceStatus.style.background = 'rgba(220,53,69,0.8)';
         alert('Failed to register face: ' + err.message);
@@ -480,7 +437,6 @@ savePhotosBtn.addEventListener('click', async function() {
 
     // Clear photo
     clearPhotosBtn.addEventListener('click', function() {
-        console.log('🗑️ Clearing captured photo');
         const capturedPhotosCard = document.getElementById('capturedPhotosCard');
         if (capturedPhotosCard) capturedPhotosCard.style.display = 'none';
         capturedPhoto = null;
@@ -509,7 +465,6 @@ savePhotosBtn.addEventListener('click', async function() {
                 </div>
             `;
             capturedPhotosCard.style.display = 'block';
-            console.log('🖼️ Captured photo displayed with preview');
         }
     }
 
@@ -520,7 +475,6 @@ savePhotosBtn.addEventListener('click', async function() {
 
     // Function to update current face image without page reload
     function updateCurrentFaceImage(imageDataUrl, registrationDate, source) {
-        console.log('🖼️ Updating current face image display');
         
         // Update the current face image
         const currentFaceImage = document.getElementById('currentFaceImage');
@@ -571,7 +525,6 @@ savePhotosBtn.addEventListener('click', async function() {
             sourceSpan.textContent = source;
         }
         
-        console.log('✅ Current face image updated successfully');
     }
 
     // Helper functions
@@ -583,10 +536,8 @@ savePhotosBtn.addEventListener('click', async function() {
             const ia = new Uint8Array(ab);
             for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
             const blob = new Blob([ab], { type: mimeString });
-            console.log('📸 Created blob:', { size: blob.size, type: blob.type });
             return blob;
         } catch (error) {
-            console.error('❌ Error converting dataURL to blob:', error);
             return null;
         }
     }
@@ -608,7 +559,6 @@ savePhotosBtn.addEventListener('click', async function() {
         if (statusBadge) {
             statusBadge.className = isRegistered ? 'badge bg-success' : 'badge bg-warning';
             statusBadge.textContent = isRegistered ? 'Registered' : 'Not Registered';
-            console.log('✅ Face status badge updated to:', isRegistered ? 'Registered' : 'Not Registered');
         }
     }
     
@@ -642,9 +592,7 @@ savePhotosBtn.addEventListener('click', async function() {
             } else if (pageHeader) {
                 pageHeader.parentNode.appendChild(rowDiv);
             }
-            console.log('✅ Success alert created');
         } else {
-            console.log('✅ Success alert already exists');
         }
     }
     
@@ -652,13 +600,11 @@ savePhotosBtn.addEventListener('click', async function() {
     function updateRegistrationHistory(registrationDate, source) {
         const historyCard = document.querySelector('.card .ri-history-line')?.closest('.card');
         if (!historyCard) {
-            console.log('Registration history card not found, skipping update');
             return;
         }
         
         const timeline = historyCard.querySelector('.timeline');
         if (!timeline) {
-            console.log('Timeline not found, creating new history section');
             const cardBody = historyCard.querySelector('.card-body');
             if (cardBody) {
                 cardBody.innerHTML = '<div class="timeline"></div>';
@@ -700,7 +646,6 @@ savePhotosBtn.addEventListener('click', async function() {
                 <small class="text-muted">Source: ${source.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</small>
             `;
             timelineContainer.insertBefore(newItem, timelineContainer.firstChild);
-            console.log('✅ Registration history updated');
         }
     }
     
@@ -755,12 +700,10 @@ savePhotosBtn.addEventListener('click', async function() {
                     deleteButton.remove();
                 }
                 
-                console.log('✅ UI updated after face registration deletion');
             } else {
                 throw new Error(data.message || 'Failed to delete registration');
             }
         } catch (error) {
-            console.error('Error deleting face registration:', error);
             alert('Failed to remove face registration. Please try again.');
         }
     }

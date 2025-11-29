@@ -37,11 +37,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 const teacherStatement = btn.getAttribute('data-teacher_statement') || '';
                 const actionPlan = btn.getAttribute('data-action_plan') || '';
                 
-                console.log('Reply button clicked:', {
-                    caseMeetingId: currentCaseMeetingId,
-                    existingTeacherStatement: teacherStatement,
-                    existingActionPlan: actionPlan
-                });
                 
                 // Populate form fields with existing data
                 const teacherStatementField = document.getElementById('teacher_statement');
@@ -76,12 +71,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const submitReplyBtn = document.getElementById('submitReplyBtn');
         if (submitReplyBtn) {
             submitReplyBtn.addEventListener('click', function() {
-                console.log('Submit Reply button clicked, currentCaseMeetingId:', currentCaseMeetingId);
                 
                 const teacherStatement = document.getElementById('teacher_statement').value.trim();
                 const actionPlan = document.getElementById('action_plan').value.trim();
                 
-                console.log('Form values:', { teacherStatement: teacherStatement.length, actionPlan: actionPlan.length });
                 
                 // Validate required fields
                 if (!teacherStatement || !actionPlan) {
@@ -231,7 +224,6 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        console.log('submitObservationReply called with case meeting ID:', currentCaseMeetingId);
         
         // Disable button and show spinner
         const submitBtn = document.getElementById('confirmSubmitBtn');
@@ -254,12 +246,6 @@ document.addEventListener('DOMContentLoaded', function() {
             teacherStatement = confirmTeacherStatementEl.textContent.trim();
             actionPlan = confirmActionPlanEl.textContent.trim();
             
-            console.log('Data from confirmation modal:', {
-                teacherStatement: teacherStatement,
-                actionPlan: actionPlan,
-                teacherStatementLength: teacherStatement.length,
-                actionPlanLength: actionPlan.length
-            });
         }
         
         // If confirmation modal data is empty, try to get from original form fields
@@ -278,32 +264,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 teacherStatement = teacherStatement || teacherStatementField.value.trim();
                 actionPlan = actionPlan || actionPlanField.value.trim();
                 
-                console.log('Fallback data from form fields:', {
-                    teacherStatementField: teacherStatementField,
-                    actionPlanField: actionPlanField,
-                    teacherStatementValue: teacherStatementField.value,
-                    actionPlanValue: actionPlanField.value,
-                    teacherStatement: teacherStatement,
-                    actionPlan: actionPlan
-                });
             }
         }
         
-        console.log('Final field values after processing:', {
-            teacherStatement: teacherStatement,
-            teacherStatementLength: teacherStatement.length,
-            actionPlan: actionPlan,
-            actionPlanLength: actionPlan.length
-        });
-        
         if (!teacherStatement || !actionPlan) {
-            console.error('Form validation failed:', {
-                teacher_statement_empty: !teacherStatement,
-                action_plan_empty: !actionPlan,
-                teacher_statement_value: teacherStatement,
-                action_plan_value: actionPlan,
-                confirmation_modal_found: !!confirmTeacherStatementEl && !!confirmActionPlanEl
-            });
             showAlert('Please fill in all required fields before submitting.', 'error');
             resetButtonStates();
             return;
@@ -317,18 +281,7 @@ document.addEventListener('DOMContentLoaded', function() {
         formData.append('teacher_statement', teacherStatement);
         formData.append('action_plan', actionPlan);
         
-        // Debug form data
-        console.log('Form data being sent:', {
-            _token: csrfToken ? 'present' : 'missing',
-            teacher_statement: teacherStatement,
-            teacher_statement_length: teacherStatement.length,
-            action_plan: actionPlan,
-            action_plan_length: actionPlan.length,
-            case_meeting_id: currentCaseMeetingId
-        });
-        
         const actionUrl = `/teacher/observationreport/reply/${currentCaseMeetingId}`;
-        console.log('Submitting to:', actionUrl);
         
         // Submit using fetch
         fetch(actionUrl, {
@@ -339,7 +292,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         })
         .then(response => {
-            console.log('Response status:', response.status);
             if (response.redirected) {
                 // Handle redirect (success case)
                 window.location.href = response.url;
@@ -347,12 +299,9 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (response.status === 422) {
                 // Handle validation errors
                 return response.json().then(errorData => {
-                    console.error('Validation errors:', errorData);
-                    console.log('Full error object:', JSON.stringify(errorData, null, 2));
                     
                     let errorMessage = 'Validation failed: ';
                     if (errorData.errors) {
-                        console.log('Individual errors:', errorData.errors);
                         const errors = Object.values(errorData.errors).flat();
                         errorMessage += errors.join(', ');
                     } else if (errorData.message) {
@@ -367,7 +316,6 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (response.status === 403) {
                 // Handle authorization errors
                 return response.json().then(errorData => {
-                    console.error('Authorization error:', errorData);
                     showAlert(errorData.message || 'You are not authorized to perform this action.', 'error');
                     resetButtonStates();
                     throw new Error('Authorization failed');
@@ -379,7 +327,6 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(data => {
             if (data && data.success) {
-                console.log('Success response received');
                 showAlert(data.message, 'success');
                 
                 // Close modals
@@ -397,7 +344,6 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             if (error.message !== 'Validation failed') { // Don't show generic error for validation
-                console.error('Submission error:', error);
                 showAlert('Failed to submit reply. Please try again.', 'error');
                 resetButtonStates();
             }
@@ -499,7 +445,6 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const csrfToken = getCSRFToken();
             if (!csrfToken) {
-                console.warn('CSRF token not found for marking alert as viewed');
                 return;
             }
             
@@ -515,12 +460,10 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(response => {
                 if (!response.ok) {
-                    console.error('Failed to mark observation reports alert as viewed:', response.status);
                 }
             })
-            .catch(error => console.error('Error marking observation reports alert as viewed:', error));
+            .catch(error => {});
         } catch(error) {
-            console.error('Error in teacher observation reports alert script:', error);
         }
     }
 

@@ -1,8 +1,6 @@
 
-console.log('=== EXTERNAL FACULTY HEAD SCRIPT LOADING ===');
 
 function removeAssignment(assignmentId) {
-    console.log('=== EXTERNAL removeAssignment called with ID:', assignmentId);
     
     if (!confirm('Are you sure you want to remove this assignment?')) {
         return false;
@@ -55,7 +53,6 @@ function removeAssignment(assignmentId) {
         }
     })
     .catch(error => {
-        console.error('Error removing assignment:', error);
         alert('Error: ' + error.message);
         
         // Restore button state
@@ -244,7 +241,6 @@ function showSectionDetails() {
         }
     })
     .catch(error => {
-        console.error('Error loading section details:', error);
         document.getElementById('loadingState').innerHTML = `
             <div class="alert alert-danger">
                 <i class="ri-error-warning-line me-2"></i>
@@ -427,7 +423,6 @@ function showSectionDetailsAdviser() {
         }
     })
     .catch(error => {
-        console.error('Error loading section details:', error);
         document.getElementById('loadingState').innerHTML = `
             <div class="alert alert-danger">
                 <i class="ri-error-warning-line me-2"></i>
@@ -601,7 +596,6 @@ function viewClassList(gradeLevel, section, strand, track) {
         }
     })
     .catch(error => {
-        console.error('Error loading section details:', error);
         document.getElementById('loadingState').innerHTML = `
             <div class="alert alert-danger">
                 <i class="ri-error-warning-line me-2"></i>
@@ -660,8 +654,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-console.log('=== EXTERNAL FACULTY HEAD SCRIPT LOADED ===');
-console.log('window.removeAssignment type:', typeof window.removeAssignment);
 
 // Dynamic subject filtering for unified faculty assignment view
 document.addEventListener('DOMContentLoaded', function() {
@@ -756,11 +748,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.success) {
                 allSubjects = data.subjects || [];
             } else {
-                console.error('Error loading subjects:', data.message);
             }
         })
         .catch(error => {
-            console.error('Error loading subjects:', error);
         });
     }
     
@@ -858,7 +848,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         })
         .catch(error => {
-            console.error('Error loading sections:', error);
             // Fallback to default sections
             ['A', 'B', 'C'].forEach(sectionName => {
                 const option = document.createElement('option');
@@ -914,7 +903,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.success) {
                     allSections = data.sections || [];
                 } else {
-                    console.error('Error loading sections:', data.message);
                     // Fallback to default sections
                     allSections = [
                         {section_name: 'A'}, {section_name: 'B'}, {section_name: 'C'},
@@ -923,8 +911,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             })
             .catch(error => {
-                console.error('Error loading sections:', error);
-                // Fallback to default sections
+                    // Fallback to default sections
                 allSections = [
                     {section_name: 'A'}, {section_name: 'B'}, {section_name: 'C'},
                     {section_name: 'D'}, {section_name: 'E'}, {section_name: 'F'}
@@ -1227,13 +1214,6 @@ function showSectionDetailsAccordion(sectionId, grade, section, strand, track) {
     });
     
     // Debug logging to help troubleshoot
-    console.log('=== SECTION DETAILS DEBUG ===');
-    console.log('Grade:', grade, 'Section:', section, 'Strand:', strand, 'Track:', track);
-    console.log('Found adviser:', adviser);
-    console.log('Found subjects:', subjects.length);
-    console.log('Found assignments:', assignments.length);
-    console.log('All assignments data:', window.facultyData.assignments);
-    console.log('Filtered assignments:', assignments);
     
     // Determine correct back function based on strand/track
     let backFunction;
@@ -1492,7 +1472,6 @@ function loadStudentsForSection(sectionId, grade, section, strand, track) {
     if (strand && strand !== '') queryParams += `&strand=${encodeURIComponent(strand)}`;
     if (track && track !== '') queryParams += `&track=${encodeURIComponent(track)}`;
     
-    console.log('Loading students for:', { grade, section, strand, track });
     
     fetch(`/faculty-head/get-section-details?${queryParams}`)
         .then(r => {
@@ -1502,7 +1481,6 @@ function loadStudentsForSection(sectionId, grade, section, strand, track) {
             return r.json();
         })
         .then(data => {
-            console.log('Student data received:', data);
             
             if (data.success && data.details && data.details.students) {
                 const students = data.details.students;
@@ -1595,7 +1573,6 @@ function loadStudentsForSection(sectionId, grade, section, strand, track) {
             loadedSections[sectionId] = true;
         })
         .catch(error => {
-            console.error('Error loading students:', error);
             badge.textContent = 'Error';
             badge.className = 'badge bg-danger ms-2';
             container.innerHTML = `<div class="alert alert-danger"><i class="ri-error-warning-line me-2"></i>Error loading students: ${error.message}</div>`;
@@ -1780,7 +1757,6 @@ function submitAdviserAssignment(event, sectionId, grade, section, strand, track
         }
     })
     .catch(error => {
-        console.error('Error submitting adviser assignment:', error);
         showAlert('Error: ' + error.message, 'error');
         
         // Restore button state
@@ -1836,7 +1812,6 @@ function submitTeacherAssignment(event, sectionId, grade, section, strand, track
         }
     })
     .catch(error => {
-        console.error('Error submitting teacher assignment:', error);
         showAlert('Error: ' + error.message, 'error');
         
         // Restore button state if form is still visible
@@ -1867,13 +1842,10 @@ function refreshFacultyDataFromServer() {
                 advisers: data.advisers || [],
                 sections: data.sections || []
             };
-            console.log('Faculty data refreshed from server');
         } else {
-            console.error('Failed to refresh faculty data:', data.message);
         }
     })
     .catch(error => {
-        console.error('Error refreshing faculty data:', error);
     });
 }
 
@@ -1962,7 +1934,6 @@ function startAutoRefresh() {
     
     // Set up auto-refresh every 30 seconds
     autoRefreshInterval = setInterval(() => {
-        console.log('Auto-refreshing faculty data...');
         refreshFacultyDataFromServer().then(() => {
             // If there's an open section details, refresh it
             const openSectionDetails = document.querySelector('.section-details[style*="block"]');
@@ -1971,7 +1942,6 @@ function startAutoRefresh() {
                 const sectionId = openSectionDetails.id.replace('details', '');
                 // We need to extract the grade, section, strand, track from the current view
                 // For now, just log that we detected an open section
-                console.log('Open section detected, but auto-refresh of section details requires more context');
             }
         });
     }, 30000); // 30 seconds
@@ -1988,8 +1958,6 @@ function stopAutoRefresh() {
 document.addEventListener('DOMContentLoaded', function() {
     startAutoRefresh();
     initializeSearchFunctionality();
-    console.log('Auto-refresh started - faculty data will refresh every 30 seconds');
-    console.log('Search functionality initialized');
 });
 
 // Stop auto-refresh when page is about to unload
@@ -2026,7 +1994,6 @@ let adviserSearchHandler = null;
 
 // Function to perform search on assignments
 function performAssignmentSearch(searchTerm) {
-    console.log('=== ASSIGNMENT SEARCH ===', searchTerm);
     
     const assignmentItems = document.querySelectorAll('.assignment-item');
     const searchTermLower = searchTerm.toLowerCase().trim();
@@ -2089,7 +2056,6 @@ function performAssignmentSearch(searchTerm) {
 
 // Function to perform search on advisers
 function performAdviserSearch(searchTerm) {
-    console.log('=== ADVISER SEARCH ===', searchTerm);
     
     const adviserItems = document.querySelectorAll('.adviser-item');
     const searchTermLower = searchTerm.toLowerCase().trim();
@@ -2151,7 +2117,6 @@ function performAdviserSearch(searchTerm) {
 
 // Initialize search functionality
 function initializeSearchFunctionality() {
-    console.log('=== INITIALIZING SEARCH FUNCTIONALITY ===');
     
     // Assignment search
     const assignmentSearchInput = document.getElementById('searchAssignments');
@@ -2169,7 +2134,6 @@ function initializeSearchFunctionality() {
         }, 300);
         
         assignmentSearchInput.addEventListener('input', assignmentSearchHandler);
-        console.log('Assignment search input listener attached');
     }
     
     if (clearAssignmentSearch) {
@@ -2180,7 +2144,6 @@ function initializeSearchFunctionality() {
                 assignmentSearchInput.focus();
             }
         });
-        console.log('Assignment clear button listener attached');
     }
     
     // Adviser search
@@ -2199,7 +2162,6 @@ function initializeSearchFunctionality() {
         }, 300);
         
         adviserSearchInput.addEventListener('input', adviserSearchHandler);
-        console.log('Adviser search input listener attached');
     }
     
     if (clearAdviserSearch) {
@@ -2210,7 +2172,6 @@ function initializeSearchFunctionality() {
                 adviserSearchInput.focus();
             }
         });
-        console.log('Adviser clear button listener attached');
     }
 }
 
@@ -2235,7 +2196,6 @@ let studentSearchHandler = null;
 
 // Function to perform search on students
 function performStudentSearch(searchTerm) {
-    console.log('=== STUDENT SEARCH ===', searchTerm);
     
     const studentRows = document.querySelectorAll('.student-row');
     const searchTermLower = searchTerm.toLowerCase().trim();
@@ -2312,7 +2272,6 @@ function performStudentSearch(searchTerm) {
 
 // Initialize student search functionality
 function initializeStudentSearch() {
-    console.log('=== INITIALIZING STUDENT SEARCH ===');
     
     const studentSearchInput = document.getElementById('searchStudents');
     const clearStudentSearch = document.getElementById('clearSearchStudents');
@@ -2336,7 +2295,6 @@ function initializeStudentSearch() {
         }, 300);
         
         studentSearchInput.addEventListener('input', studentSearchHandler);
-        console.log('Student search input listener attached');
         
         // Clear any existing search
         studentSearchInput.value = '';
@@ -2347,7 +2305,6 @@ function initializeStudentSearch() {
         clearStudentSearch.removeEventListener('click', clearStudentSearchHandler);
         
         clearStudentSearch.addEventListener('click', clearStudentSearchHandler);
-        console.log('Student clear button listener attached');
     }
 }
 
@@ -2434,7 +2391,6 @@ function observeStudentTableChanges() {
 
 // Initialize search for individual section student tables
 function initializeSectionStudentSearch(sectionId) {
-    console.log('=== INITIALIZING SECTION STUDENT SEARCH ===', sectionId);
     
     const searchInput = document.getElementById(`searchStudents${sectionId}`);
     const clearButton = document.getElementById(`clearSearchStudents${sectionId}`);
@@ -2466,12 +2422,10 @@ function initializeSectionStudentSearch(sectionId) {
         newSearchInput.focus();
     });
     
-    console.log('Section student search initialized for:', sectionId);
 }
 
 // Perform search on section student table
 function performSectionStudentSearch(sectionId, searchTerm) {
-    console.log('=== SECTION STUDENT SEARCH ===', sectionId, searchTerm);
     
     const studentRows = document.querySelectorAll(`#studentTableBody${sectionId} .student-row`);
     const searchTermLower = searchTerm.toLowerCase().trim();

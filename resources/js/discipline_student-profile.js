@@ -76,7 +76,6 @@ window.ModalManager = {
       }
       return this.showFallback(modalId);
     } catch (error) {
-      console.error('Error showing modal:', error);
       return this.showFallback(modalId);
     }
   },
@@ -95,7 +94,6 @@ window.ModalManager = {
       }
       return this.hideFallback(modalId);
     } catch (error) {
-      console.error('Error hiding modal:', error);
       return this.hideFallback(modalId);
     }
   },
@@ -238,7 +236,6 @@ window.viewStudent = function(studentId) {
       showModal('studentModal');
     })
     .catch(error => {
-      console.error('Error:', error);
       alert('Error loading student information');
     });
 }

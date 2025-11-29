@@ -4,7 +4,6 @@
  */
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Faculty Head Approve Grades loaded');
     
     // Add any grade approval functionality here
     // For example: approve/reject actions, bulk operations, etc.

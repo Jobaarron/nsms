@@ -8,11 +8,9 @@ let currentNoticeId = null;
 
 // Initialize notifications functionality
 function initializeNotificationsPage() {
-    console.log('Enrollee notifications page initialized');
     
     // Auto-refresh notices every 2 minutes
     setInterval(function() {
-        console.log('Auto-checking for new notices...');
         // In production, this would fetch new notices via AJAX
     }, 120000);
 }
@@ -38,7 +36,6 @@ function viewNotification(notificationId) {
             }
         })
         .catch(error => {
-            console.error('Error fetching notification:', error);
             showAlert('Error loading notification', 'danger');
         });
 }
@@ -83,7 +80,6 @@ function markAsRead(noticeId, showMessage = true) {
     .then(response => {
         if (!response.ok) {
             return response.text().then(text => {
-                console.error('Single notice response text:', text);
                 throw new Error(`HTTP error! status: ${response.status} - ${text}`);
             });
         }
@@ -106,7 +102,6 @@ function markAsRead(noticeId, showMessage = true) {
         }
     })
     .catch(error => {
-        console.error('Error marking notice as read:', error);
         showAlert('Error updating notice status', 'danger');
     });
 }
@@ -143,7 +138,6 @@ function markAllAsRead() {
         .then(response => {
             if (!response.ok) {
                 return response.text().then(text => {
-                    console.error('Response text:', text);
                     throw new Error(`HTTP error! status: ${response.status} - ${text}`);
                 });
             }
@@ -177,7 +171,6 @@ function markAllAsRead() {
             }
         })
         .catch(error => {
-            console.error('Error marking all notices as read:', error);
             showAlert('Error updating notices. Please try again.', 'danger');
         });
     }
@@ -259,7 +252,6 @@ function fetchAndUpdateUnreadCount() {
     fetch('/enrollee/notices/count/unread')
         .then(response => {
             if (!response.ok) {
-                console.error('Error fetching unread count:', response.status);
                 return null;
             }
             return response.json();
@@ -267,14 +259,12 @@ function fetchAndUpdateUnreadCount() {
         .then(data => {
             if (data && data.success) {
                 const unreadCount = data.count;
-                console.log('Updated unread count from server:', unreadCount);
                 
                 // Update sidebar badge with server count
                 updateSidebarBadge(unreadCount);
             }
         })
         .catch(error => {
-            console.error('Error updating unread count from server:', error);
         });
 }
 

@@ -254,7 +254,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 })
                 .catch(error => {
                     alert('An error occurred while approving the sanction.');
-                    console.error(error);
                 });
             }
         });
@@ -283,7 +282,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 })
                 .catch(error => {
                     alert('An error occurred while rejecting the sanction.');
-                    console.error(error);
                 });
             }
         });
@@ -326,23 +324,16 @@ document.addEventListener('DOMContentLoaded', function () {
             const formData = new FormData(this);
             
             // Debug: Log all form data being sent
-            console.log('Form data being submitted:');
-            for (let [key, value] of formData.entries()) {
-                console.log(`${key}: ${value}`);
-            }
             
             // Explicitly collect conditional field data to ensure they're included
             const selectedValue = selectedSanction.value;
-            console.log('Selected intervention:', selectedValue);
             
             // Get the visible conditional field and its inputs
             const visibleConditionalField = document.querySelector('#reviseSanctionModal .conditional-field[style*="block"]');
             if (visibleConditionalField) {
-                console.log('Found visible conditional field');
                 const conditionalInputs = visibleConditionalField.querySelectorAll('input, select, textarea');
                 conditionalInputs.forEach(input => {
                     if (input.value) {
-                        console.log(`Conditional field ${input.name}: ${input.value}`);
                         // Ensure the field is in formData
                         if (!formData.has(input.name)) {
                             formData.append(input.name, input.value);
@@ -350,7 +341,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 });
             } else {
-                console.log('No visible conditional field found');
             }
 
             fetch(`/admin/case-meetings/${meetingId}/sanctions`, {
@@ -373,22 +363,18 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .catch(error => {
                 alert('An error occurred while revising the sanction.');
-                console.error(error);
             });
         });
     }
 
     // Approve case meeting buttons
     const approveCaseButtons = document.querySelectorAll('.approve-case-meeting-btn');
-    console.log('Found approve buttons:', approveCaseButtons.length);
     
     approveCaseButtons.forEach(button => {
         button.addEventListener('click', function () {
             const meetingId = this.getAttribute('data-meeting-id');
-            console.log('Approve button clicked for meeting:', meetingId);
             
             if (confirm('Are you sure you want to approve this case? It will be archived after approval.')) {
-                console.log('Sending approve request to:', `/admin/case-meetings/${meetingId}/approve`);
                 
                 fetch(`/admin/case-meetings/${meetingId}/approve`, {
                     method: 'POST',
@@ -399,11 +385,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 })
                 .then(response => {
-                    console.log('Response status:', response.status);
                     return response.json();
                 })
                 .then(data => {
-                    console.log('Response data:', data);
                     alert(data.message);
                     if (data.success) {
                         // Reload page to update view
@@ -411,7 +395,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 })
                 .catch(error => {
-                    console.error('Error details:', error);
                     alert('An error occurred while approving the case.');
                 });
             }
@@ -447,7 +430,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 })
                 .catch(error => {
                     alert('An error occurred while closing the case.');
-                    console.error(error);
                 });
             }
         });
@@ -538,28 +520,10 @@ function loadSummaryReport(meetingId) {
     .then(data => {
         if (data.success) {
             const meeting = data.meeting;
-            console.log('Meeting data with interventions:', meeting);
             
             // Debug: Check intervention_fields structure
-            console.log('Intervention fields object:', meeting.intervention_fields);
             
             // Debug: Check specific intervention fields
-            console.log('Intervention field values:');
-            if (meeting.intervention_fields) {
-                console.log('mentor_name:', meeting.intervention_fields.mentor_name);
-                console.log('follow_up_date:', meeting.intervention_fields.follow_up_date);
-                console.log('service_area:', meeting.intervention_fields.service_area);
-                console.log('suspension_days:', meeting.intervention_fields.suspension_days);
-                console.log('suspension_start_date:', meeting.intervention_fields.suspension_start_date);
-                console.log('suspension_end_date:', meeting.intervention_fields.suspension_end_date);
-                console.log('activity_details:', meeting.intervention_fields.activity_details);
-                console.log('communication_method:', meeting.intervention_fields.communication_method);
-            } else {
-                console.log('No intervention_fields object found, checking direct fields...');
-                console.log('mentor_name (direct):', meeting.mentor_name);
-                console.log('follow_up_date (direct):', meeting.follow_up_date);
-                console.log('service_area (direct):', meeting.service_area);
-            }
             
             modalBody.innerHTML = generateSummaryHTML(meeting);
         } else {
@@ -568,7 +532,6 @@ function loadSummaryReport(meetingId) {
     })
     .catch(error => {
         modalBody.innerHTML = '<div class="alert alert-danger">An error occurred while loading the summary report.</div>';
-        console.error(error);
     });
 }
 
@@ -893,9 +856,7 @@ function generateSummaryHTML(meeting) {
 
         // Fallback: Check if intervention details are in sanctions data
         if (interventions.length === 0 && meeting.sanctions && meeting.sanctions.length > 0) {
-            console.log('Checking sanctions for intervention details...');
             meeting.sanctions.forEach(sanction => {
-                console.log('Sanction data:', sanction);
                 // Look for intervention-related fields in sanction notes or custom fields
                 if (sanction.notes || sanction.details) {
                     // Try to parse intervention details from sanction data
@@ -1026,7 +987,6 @@ function loadCurrentSanctions(meetingId) {
     })
     .then(response => response.json())
     .then(data => {
-        console.log('Received sanctions data:', data);
         if (data.success) {
             // Display current sanctions
             const sanctionsDisplay = document.getElementById('current-sanctions-display');
@@ -1079,20 +1039,16 @@ function loadCurrentSanctions(meetingId) {
                 }
             }
             
-            console.log('Current sanction disabled:', currentSanctionField);
         } else {
-            console.log('Failed to load sanctions:', data);
         }
     })
     .catch(error => {
-        console.error('Error loading sanctions:', error);
         document.getElementById('current-sanctions-display').innerHTML = 'Error loading current sanctions';
     });
 }
 
 // Function to populate conditional fields with existing data
 function populateConditionalFields(sanctionType, sanctionData) {
-    console.log('Populating conditional fields for:', sanctionType, sanctionData);
     
     switch(sanctionType) {
         case 'written_reflection':
@@ -1178,7 +1134,6 @@ function populateConditionalFields(sanctionType, sanctionData) {
             break;
             
         default:
-            console.log('Unknown sanction type:', sanctionType);
     }
 }
 

@@ -35,8 +35,6 @@
             medical_history: @json($enrollee->medical_history)
         };
         
-        // Debug: Log the enrollee data to console
-        console.log('Enrollee Data:', window.enrolleeData);
     </script>
     
     <div class="py-4">

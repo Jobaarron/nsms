@@ -284,7 +284,6 @@
                         dailyRevenue: @json($dailyRevenue)
                     });
                 } else {
-                    console.error('setCashierDashboardData function not found. Make sure cashier-dashboard.js is loaded.');
                 }
             });
         </script>

@@ -1594,9 +1594,7 @@ public function updateEnrollment(Request $request, $id)
         try {
             $counts = [
                 'unread_messages' => \App\Models\ContactMessage::where('status', 'unread')->count(),
-                'pending_cases' => \App\Models\CaseMeeting::where('forwarded_to_admin', true)
-                    ->whereNull('admin_action')
-                    ->count(),
+                'pending_cases' => \App\Models\CaseMeeting::where('status', 'submitted')->count(),
             ];
             
             return response()->json([

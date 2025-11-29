@@ -1,6 +1,5 @@
 // Enhanced Guidance Dashboard JavaScript
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Enhanced Guidance Dashboard loaded');
     
     // Initialize filter select boxes with default values
     initializeFilterDefaults();
@@ -394,7 +393,6 @@ function loadCaseStatusPieChart() {
         }
     })
     .catch(error => {
-        console.error('Error loading case status stats:', error);
     });
 }
 
@@ -415,7 +413,6 @@ function loadClosedCasesBarChart() {
         }
     })
     .catch(error => {
-        console.error('Error loading closed cases stats:', error);
     });
 }
 
@@ -484,7 +481,6 @@ function loadCounselingSessionsBarChart() {
         }
     })
     .catch(error => {
-        console.error('Error loading counseling sessions stats:', error);
     });
 }
 
@@ -553,7 +549,6 @@ function loadDisciplineVsTotalHistogram() {
         }
     })
     .catch(error => {
-        console.error('Error loading discipline vs total stats:', error);
     });
 }
 
@@ -729,7 +724,6 @@ function loadRecentActivities() {
         }
     })
     .catch(error => {
-        console.error('Error loading recent activities:', error);
         const container = document.getElementById('recent-activities');
         if (container) {
             container.innerHTML = '<div class="text-center text-danger py-4"><i class="ri-error-warning-line fs-4 d-block mb-2"></i>Failed to load activities</div>';
@@ -788,7 +782,6 @@ function loadUpcomingTasks() {
         }
     })
     .catch(error => {
-        console.error('Error loading upcoming tasks:', error);
         const container = document.getElementById('upcoming-tasks');
         if (container) {
             container.innerHTML = '<div class="text-center text-danger py-4"><i class="ri-error-warning-line fs-4 d-block mb-2"></i>Failed to load tasks</div>';
@@ -812,7 +805,6 @@ function loadViolationTrends(period = '12months') {
         }
     })
     .catch(error => {
-        console.error('Error loading violation trends:', error);
     });
 }
 
@@ -906,7 +898,6 @@ function loadCounselingEffectiveness() {
         }
     })
     .catch(error => {
-        console.error('Error loading counseling effectiveness:', error);
     });
 }
 
@@ -1010,7 +1001,6 @@ function loadGuidanceNotifications() {
         }
     })
     .catch(error => {
-        console.error('Error loading guidance notifications:', error);
         listContainer.innerHTML = `
             <div class="text-center py-3 text-muted">
                 <i class="ri-error-warning-line fs-4 d-block mb-2 text-danger"></i>
@@ -1132,7 +1122,6 @@ function viewNotification(notificationId) {
         }
     })
     .catch(error => {
-        console.error('Error marking notification as read:', error);
     });
     
     // Close guidance notification panel
@@ -1230,7 +1219,6 @@ function markNotificationAsRead(notificationId) {
         }
     })
     .catch(error => {
-        console.error('Error marking notification as read:', error);
     });
 }
 
@@ -1251,7 +1239,6 @@ function markAllGuidanceAsRead() {
         }
     })
     .catch(error => {
-        console.error('Error marking all as read:', error);
         showAlert('Error marking notifications as read', 'danger');
     });
 }
@@ -1285,7 +1272,6 @@ function loadGuidanceNotificationCount() {
         }
     })
     .catch(error => {
-        console.log('Could not load notification count:', error);
     });
 }
 
@@ -1389,7 +1375,6 @@ function applyTopCasesFilter() {
         renderTopCases(data.cases || []);
     })
     .catch(error => {
-        console.error('Error loading top cases:', error);
     });
 }
 
@@ -1419,7 +1404,6 @@ function applyViolationTrendsFilter() {
         }
     })
     .catch(error => {
-        console.error('Error loading violation trends:', error);
     });
 }
 
@@ -1451,7 +1435,6 @@ function applyCounselingEffectivenessFilter() {
         }
     })
     .catch(error => {
-        console.error('Error loading counseling effectiveness:', error);
     });
 }
 
@@ -1477,7 +1460,6 @@ function applyCaseStatusFilter() {
         }
     })
     .catch(error => {
-        console.error('Error loading case status:', error);
     });
 }
 
@@ -1505,7 +1487,6 @@ function applyClosedCasesFilter() {
         }
     })
     .catch(error => {
-        console.error('Error loading closed cases:', error);
     });
 }
 
@@ -1533,7 +1514,6 @@ function applyCounselingSessionsFilter() {
         }
     })
     .catch(error => {
-        console.error('Error loading counseling sessions:', error);
     });
 }
 
@@ -1561,7 +1541,6 @@ function applyDisciplineStatsFilter() {
         }
     })
     .catch(error => {
-        console.error('Error loading discipline stats:', error);
     });
 }
 
@@ -1607,7 +1586,6 @@ function loadFilteredRecentActivities(filterParams) {
         }
     })
     .catch(error => {
-        console.error('Error loading filtered recent activities:', error);
     });
 }
 
@@ -1661,7 +1639,6 @@ function loadFilteredUpcomingTasks(filterParams) {
         }
     })
     .catch(error => {
-        console.error('Error loading filtered upcoming tasks:', error);
         const container = document.getElementById('upcoming-tasks');
         if (container) {
             container.innerHTML = '<div class="text-center text-danger py-4"><i class="ri-error-warning-line fs-4 d-block mb-2"></i>Error loading tasks</div>';
@@ -1670,7 +1647,6 @@ function loadFilteredUpcomingTasks(filterParams) {
         if (typeof showAlert === 'function') {
             showAlert('Error loading tasks', 'danger', 3000);
         } else {
-            console.error('showAlert function not available');
         }
     });
 }
