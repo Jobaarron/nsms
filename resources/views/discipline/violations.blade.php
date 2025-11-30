@@ -129,7 +129,64 @@
                     @endif
                   </td>
                   <td>
-                    {{ $violation->sanction ?? 'N/A' }}
+                    @if($violation->status === 'case_closed' && $violation->caseMeeting)
+                      @php
+                        $interventions = [];
+                        // Build detailed intervention list with dates/details
+                        if($violation->caseMeeting->written_reflection) {
+                          $details = $violation->caseMeeting->written_reflection_due ? 'Due: ' . date('M j, Y', strtotime($violation->caseMeeting->written_reflection_due)) : '';
+                          $interventions[] = ['name' => 'Written Reflection', 'details' => $details, 'class' => 'bg-primary'];
+                        }
+                        if($violation->caseMeeting->follow_up_meeting) {
+                          $details = $violation->caseMeeting->follow_up_meeting_date ? 'Date: ' . date('M j, Y', strtotime($violation->caseMeeting->follow_up_meeting_date)) : '';
+                          $interventions[] = ['name' => 'Follow-up Meeting', 'details' => $details, 'class' => 'bg-info'];
+                        }
+                        if($violation->caseMeeting->mentorship_counseling) {
+                          $details = $violation->caseMeeting->mentor_name ? 'Mentor: ' . $violation->caseMeeting->mentor_name : '';
+                          $interventions[] = ['name' => 'Mentorship/Counseling', 'details' => $details, 'class' => 'bg-success'];
+                        }
+                        if($violation->caseMeeting->parent_teacher_communication) {
+                          $details = $violation->caseMeeting->parent_teacher_date ? 'Date: ' . date('M j, Y', strtotime($violation->caseMeeting->parent_teacher_date)) : '';
+                          $interventions[] = ['name' => 'Parent Communication', 'details' => $details, 'class' => 'bg-warning'];
+                        }
+                        if($violation->caseMeeting->community_service) {
+                          $details = [];
+                          if($violation->caseMeeting->community_service_date) $details[] = 'Date: ' . date('M j, Y', strtotime($violation->caseMeeting->community_service_date));
+                          if($violation->caseMeeting->community_service_area) $details[] = 'Area: ' . $violation->caseMeeting->community_service_area;
+                          $interventions[] = ['name' => 'Community Service', 'details' => implode(', ', $details), 'class' => 'bg-secondary'];
+                        }
+                        if($violation->caseMeeting->suspension) {
+                          $details = [];
+                          if($violation->caseMeeting->suspension_start) $details[] = 'Start: ' . date('M j, Y', strtotime($violation->caseMeeting->suspension_start));
+                          if($violation->caseMeeting->suspension_end) $details[] = 'End: ' . date('M j, Y', strtotime($violation->caseMeeting->suspension_end));
+                          if($violation->caseMeeting->suspension_other_days) $details[] = $violation->caseMeeting->suspension_other_days . ' days';
+                          elseif($violation->caseMeeting->suspension_3days) $details[] = '3 days';
+                          elseif($violation->caseMeeting->suspension_5days) $details[] = '5 days';
+                          $interventions[] = ['name' => 'Suspension', 'details' => implode(', ', $details), 'class' => 'bg-danger'];
+                        }
+                        if($violation->caseMeeting->expulsion) {
+                          $details = $violation->caseMeeting->expulsion_date ? 'Date: ' . date('M j, Y', strtotime($violation->caseMeeting->expulsion_date)) : '';
+                          $interventions[] = ['name' => 'Expulsion', 'details' => $details, 'class' => 'bg-danger'];
+                        }
+                      @endphp
+                      @if(count($interventions) > 0)
+                        @foreach(array_slice($interventions, 0, 2) as $intervention)
+                          <div class="mb-1">
+                            <span class="badge {{ $intervention['class'] }} text-white small">{{ $intervention['name'] }}</span>
+                            @if($intervention['details'])
+                              <br><small class="text-muted">{{ $intervention['details'] }}</small>
+                            @endif
+                          </div>
+                        @endforeach
+                        @if(count($interventions) > 2)
+                          <small class="text-muted">+{{ count($interventions) - 2 }} more interventions</small>
+                        @endif
+                      @else
+                        <span class="text-muted">No interventions assigned</span>
+                      @endif
+                    @else
+                      <span class="text-muted">{{ $violation->sanction ?? 'N/A' }}</span>
+                    @endif
                   </td>
                   <td>
                     @if($violation->status === 'pending')

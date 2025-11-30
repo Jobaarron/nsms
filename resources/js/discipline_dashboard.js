@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Load notification count
     loadNotificationCount();
-    setInterval(loadNotificationCount, 30000); // Update every 30 seconds
+    setInterval(loadNotificationCount, 5000); // Update every 5 seconds for real-time notifications
     
     // Setup notification modal event
     setupNotificationModal();
@@ -973,21 +973,63 @@ function markAllNotificationsAsRead() {
 
 // Load notification count
 function loadNotificationCount() {
+    // Add subtle loading indicator
+    const bell = document.getElementById('notificationBell');
+    if (bell) {
+        bell.style.opacity = '0.7';
+    }
+    
     fetch('/discipline/notification-count')
         .then(response => response.json())
         .then(data => {
             const badge = document.getElementById('notificationBadge');
-            if (badge) {
-                badge.textContent = data.count;
-                if (data.count > 0) {
+            const bell = document.getElementById('notificationBell');
+            
+            if (badge && bell) {
+                const currentCount = parseInt(badge.textContent) || 0;
+                const newCount = data.count || 0;
+                
+                badge.textContent = newCount;
+                
+                if (newCount > 0) {
                     badge.style.display = 'inline-block';
+                    
+                    // Add visual emphasis for new notifications
+                    if (newCount > currentCount && currentCount > 0) {
+                        // Animate the bell for new notifications
+                        bell.classList.add('shake');
+                        badge.classList.add('pulse');
+                        
+                        // Remove animation classes after animation completes
+                        setTimeout(() => {
+                            bell.classList.remove('shake');
+                            badge.classList.remove('pulse');
+                        }, 1000);
+                        
+                        // Optional: Play sound for new notifications (disabled by default)
+                        // if (typeof playNotificationSound === 'function') {
+                        //     playNotificationSound();
+                        // }
+                    }
                 } else {
                     badge.style.display = 'none';
+                    // Remove any existing animations
+                    bell.classList.remove('shake');
+                    badge.classList.remove('pulse');
                 }
+            }
+            
+            // Reset opacity to show update completed
+            if (bell) {
+                bell.style.opacity = '1';
             }
         })
         .catch(error => {
             console.error('Error loading notification count:', error);
+            // Reset opacity even on error
+            if (bell) {
+                bell.style.opacity = '1';
+            }
         });
 }
 
@@ -1020,52 +1062,22 @@ function loadNotifications() {
             <div class="spinner-border text-success" role="status">
                 <span class="visually-hidden">Loading...</span>
             </div>
-            <p class="mt-2 text-muted">Loading case closed violations...</p>
+            <p class="mt-2 text-muted">Loading case closed violations with approved interventions...</p>
         </div>
     `;
     
-    // Fetch case_closed violations
+    // Fetch case_closed violations with detailed interventions
     fetch('/discipline/violations-data?status=case_closed')
         .then(response => response.json())
         .then(data => {
-            if (data.violations && data.violations.length > 0) {
-                const html = data.violations.map(violation => `
-                    <div class="card mb-3 border-start border-success border-3">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div class="flex-grow-1">
-                                    <h6 class="mb-2">
-                                        <i class="ri-user-line me-1 text-success"></i>
-                                        <strong>${violation.student_name || 'N/A'}</strong>
-                                        <small class="text-muted">(${violation.student_id || 'N/A'})</small>
-                                    </h6>
-                                    <p class="mb-2">
-                                        <span class="badge bg-danger me-2">${violation.title || 'No Title'}</span>
-                                    </p>
-                                    <div class="mb-2">
-                                        <strong class="text-success">
-                                            <i class="ri-scales-line me-1"></i>Disciplinary Action:
-                                        </strong>
-                                        <span class="text-dark">${violation.disciplinary_action || 'N/A'}</span>
-                                    </div>
-                                    <small class="text-muted">
-                                        <i class="ri-calendar-line me-1"></i>
-                                        ${violation.violation_date || 'N/A'}
-                                        ${violation.violation_time ? ' at ' + violation.violation_time : ''}
-                                    </small>
-                                </div>
-                                <span class="badge bg-success">Case Closed</span>
-                            </div>
-                        </div>
-                    </div>
-                `).join('');
-                
-                modalBody.innerHTML = html;
+            if (data.status === 'success' && data.violations && data.violations.length > 0) {
+                renderNotificationViolations(data.violations);
             } else {
                 modalBody.innerHTML = `
                     <div class="text-center py-5">
-                        <i class="ri-notification-off-line display-1 text-muted"></i>
-                        <p class="mt-3 text-muted">No case closed violations at the moment</p>
+                        <i class="ri-shield-check-line fs-1 text-success mb-3"></i>
+                        <h5 class="text-muted">All Clear!</h5>
+                        <p class="text-muted mb-0">No case closed violations with approved interventions to review.</p>
                     </div>
                 `;
             }
@@ -1073,10 +1085,151 @@ function loadNotifications() {
         .catch(error => {
             console.error('Error loading notifications:', error);
             modalBody.innerHTML = `
-                <div class="alert alert-danger">
-                    <i class="ri-error-warning-line me-2"></i>
-                    Failed to load notifications. Please try again.
+                <div class="text-center py-4">
+                    <i class="ri-error-warning-line fs-1 text-danger mb-3"></i>
+                    <h5 class="text-danger">Failed to Load</h5>
+                    <p class="text-muted mb-0">Unable to load notifications. Please try again.</p>
                 </div>
             `;
         });
+}
+
+// Render notification violations with detailed interventions
+function renderNotificationViolations(violations) {
+    const modalBody = document.getElementById('notificationsModalBody');
+    if (!modalBody) return;
+    
+    // Filter only violations that have case meetings with interventions
+    const violationsWithInterventions = violations.filter(violation => 
+        violation.case_meeting && (
+            violation.case_meeting.written_reflection ||
+            violation.case_meeting.follow_up_meeting ||
+            violation.case_meeting.mentorship_counseling ||
+            violation.case_meeting.parent_teacher_communication ||
+            violation.case_meeting.community_service ||
+            violation.case_meeting.suspension ||
+            violation.case_meeting.expulsion
+        )
+    );
+    
+    if (violationsWithInterventions.length === 0) {
+        modalBody.innerHTML = `
+            <div class="text-center py-5">
+                <i class="ri-shield-check-line fs-1 text-success mb-3"></i>
+                <h5 class="text-muted">All Clear!</h5>
+                <p class="text-muted mb-0">No case closed violations with approved interventions to review.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const html = violationsWithInterventions.map(violation => {
+        const interventions = [];
+        
+        // Build intervention list with details
+        if (violation.case_meeting.written_reflection) {
+            const details = violation.case_meeting.written_reflection_due ? 
+                `Due: ${new Date(violation.case_meeting.written_reflection_due).toLocaleDateString()}` : '';
+            interventions.push({ name: 'Written Reflection', details, icon: 'ri-file-edit-line', class: 'bg-primary' });
+        }
+        
+        if (violation.case_meeting.follow_up_meeting) {
+            const details = violation.case_meeting.follow_up_meeting_date ? 
+                `Date: ${new Date(violation.case_meeting.follow_up_meeting_date).toLocaleDateString()}` : '';
+            interventions.push({ name: 'Follow-up Meeting', details, icon: 'ri-calendar-check-line', class: 'bg-info' });
+        }
+        
+        if (violation.case_meeting.mentorship_counseling) {
+            const details = violation.case_meeting.mentor_name ? `Mentor: ${violation.case_meeting.mentor_name}` : '';
+            interventions.push({ name: 'Mentorship/Counseling', details, icon: 'ri-user-heart-line', class: 'bg-success' });
+        }
+        
+        if (violation.case_meeting.parent_teacher_communication) {
+            const details = violation.case_meeting.parent_teacher_date ? 
+                `Date: ${new Date(violation.case_meeting.parent_teacher_date).toLocaleDateString()}` : '';
+            interventions.push({ name: 'Parent Communication', details, icon: 'ri-parent-line', class: 'bg-warning' });
+        }
+        
+        if (violation.case_meeting.community_service) {
+            const details = [];
+            if (violation.case_meeting.community_service_date) details.push(`Date: ${new Date(violation.case_meeting.community_service_date).toLocaleDateString()}`);
+            if (violation.case_meeting.community_service_area) details.push(`Area: ${violation.case_meeting.community_service_area}`);
+            interventions.push({ name: 'Community Service', details: details.join(', '), icon: 'ri-community-line', class: 'bg-secondary' });
+        }
+        
+        if (violation.case_meeting.suspension) {
+            const details = [];
+            if (violation.case_meeting.suspension_start) details.push(`Start: ${new Date(violation.case_meeting.suspension_start).toLocaleDateString()}`);
+            if (violation.case_meeting.suspension_end) details.push(`End: ${new Date(violation.case_meeting.suspension_end).toLocaleDateString()}`);
+            if (violation.case_meeting.suspension_other_days) details.push(`${violation.case_meeting.suspension_other_days} days`);
+            else if (violation.case_meeting.suspension_3days) details.push('3 days');
+            else if (violation.case_meeting.suspension_5days) details.push('5 days');
+            interventions.push({ name: 'Suspension', details: details.join(', '), icon: 'ri-pause-circle-line', class: 'bg-danger' });
+        }
+        
+        if (violation.case_meeting.expulsion) {
+            const details = violation.case_meeting.expulsion_date ? 
+                `Date: ${new Date(violation.case_meeting.expulsion_date).toLocaleDateString()}` : '';
+            interventions.push({ name: 'Expulsion', details, icon: 'ri-close-circle-line', class: 'bg-danger' });
+        }
+        
+        const interventionBadges = interventions.map(intervention => `
+            <div class="mb-2">
+                <span class="badge ${intervention.class} text-white d-flex align-items-center gap-1 p-2">
+                    <i class="${intervention.icon}"></i>
+                    <span>${intervention.name}</span>
+                </span>
+                ${intervention.details ? `<small class="text-muted d-block mt-1 ms-2">${intervention.details}</small>` : ''}
+            </div>
+        `).join('');
+        
+        return `
+            <div class="card mb-3 border-start border-success border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title mb-1">
+                                <i class="ri-user-line me-2 text-success"></i>
+                                ${violation.student ? violation.student.full_name : 'Unknown Student'}
+                            </h6>
+                            <p class="text-muted mb-2">
+                                <strong>Violation:</strong> ${violation.title || 'N/A'}
+                            </p>
+                            <small class="text-muted">
+                                <i class="ri-calendar-line me-1"></i>
+                                ${violation.violation_date ? new Date(violation.violation_date).toLocaleDateString() : 'N/A'}
+                                ${violation.violation_time ? ` at ${violation.violation_time}` : ''}
+                            </small>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-success">Case Closed</span>
+                            ${violation.case_meeting && violation.case_meeting.president_notes ? 
+                                '<br><small class="text-muted"><i class="ri-vip-crown-line me-1"></i>President Approved</small>' : ''}
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <h6 class="mb-2">
+                            <i class="ri-scales-line me-2 text-success"></i>
+                            Approved Interventions & Sanctions:
+                        </h6>
+                        <div class="interventions-list">
+                            ${interventionBadges}
+                        </div>
+                    </div>
+                    
+                    ${violation.case_meeting && violation.case_meeting.president_notes ? `
+                        <div class="mt-3 p-2 bg-warning-subtle rounded border border-warning">
+                            <strong class="text-warning-emphasis d-block mb-1">
+                                <i class="ri-vip-crown-line me-1"></i>President Notes:
+                            </strong>
+                            <small class="text-dark">${violation.case_meeting.president_notes}</small>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    modalBody.innerHTML = html;
 }

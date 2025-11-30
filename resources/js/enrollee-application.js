@@ -76,10 +76,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Data Change Request functionality
+    // Data Change Request functionality (only if elements exist)
     const fieldSelect = document.getElementById('field_name');
     const currentValueInput = document.getElementById('current_value');
     const oldValueInput = document.getElementById('old_value');
+    
+    // Only proceed if the data change request modal elements exist
+    if (!fieldSelect || !currentValueInput || !oldValueInput) {
+        return;
+    }
     
     // Get all new value input elements
     const newValueInputs = {
@@ -171,10 +176,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    console.log('Field select element:', fieldSelect);
-    console.log('Current value input:', currentValueInput);
-    console.log('Old value input:', oldValueInput);
-    console.log('Available enrollee data:', window.enrolleeData);
+
     
     if (fieldSelect && currentValueInput) {
         // Get enrollee data from the page
@@ -182,9 +184,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         fieldSelect.addEventListener('change', function() {
             const selectedField = this.value;
-            console.log('Selected field:', selectedField);
-            console.log('Enrollee data keys:', Object.keys(enrolleeData));
-            console.log('Field exists in data:', selectedField in enrolleeData);
             
             // Show appropriate input type
             const inputType = fieldInputTypes[selectedField] || 'text';
@@ -192,7 +191,6 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (selectedField && selectedField in enrolleeData) {
                 let currentValue = enrolleeData[selectedField];
-                console.log('Raw current value for', selectedField, ':', currentValue);
                 
                 // Handle different data types and null/empty values
                 let displayValue = '';
@@ -217,14 +215,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
                 
-                console.log('Display value:', displayValue);
-                
                 currentValueInput.value = displayValue;
                 if (oldValueInput) {
                     oldValueInput.value = String(currentValue || ''); // Store raw value for form submission
                 }
             } else {
-                console.log('Field not found in enrollee data or no field selected');
                 currentValueInput.value = 'Not provided';
                 if (oldValueInput) {
                     oldValueInput.value = '';
@@ -234,7 +229,5 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Initialize by hiding all inputs
         hideAllNewValueInputs();
-    } else {
-        console.error('Required elements not found for data change request functionality');
     }
 });

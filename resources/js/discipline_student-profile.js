@@ -37,10 +37,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (row.cells.length < 4) return;
         
         const studentInfo = row.cells[1].textContent.toLowerCase();
-        const grade = row.cells[2].textContent;
+        const grade = row.cells[2].textContent.trim();
         
         const matchesSearch = studentInfo.includes(searchTerm);
-        const matchesGrade = !gradeValue || grade.includes(gradeValue);
+        const matchesGrade = !gradeValue || grade === gradeValue;
         
         row.style.display = matchesSearch && matchesGrade ? '' : 'none';
       });
