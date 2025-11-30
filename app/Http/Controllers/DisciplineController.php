@@ -614,6 +614,13 @@ class DisciplineController extends Controller
             return back()->withErrors(['student_id' => 'Violations can only be recorded for fully enrolled students.']);
         }
 
+        // Debug log for major_category value
+        \Log::info('Major category debug:', [
+            'raw_major_category' => $validatedData['major_category'] ?? 'not_set',
+            'severity' => $validatedData['severity'] ?? 'not_set',
+            'title' => $validatedData['title'] ?? 'not_set'
+        ]);
+
         // Check for duplicate violation unless force_duplicate is true
         $forceDuplicate = $request->input('force_duplicate', false);
         
@@ -653,14 +660,23 @@ class DisciplineController extends Controller
             }
         }
 
-        // Map major_category numeric values to ENUM strings and handle 'null' string
+        // Map major_category values to ENUM strings and handle 'null' string
         if (isset($validatedData['major_category'])) {
-            if ($validatedData['major_category'] == '3' || $validatedData['major_category'] === 3) {
-                $validatedData['major_category'] = 'major';
-            } elseif ($validatedData['major_category'] == '2' || $validatedData['major_category'] === 2) {
-                $validatedData['major_category'] = 'minor';
-            } elseif ($validatedData['major_category'] === 'null' || $validatedData['major_category'] === null) {
+            if ($validatedData['major_category'] === 'null' || $validatedData['major_category'] === null || $validatedData['major_category'] === '') {
                 $validatedData['major_category'] = null;
+            } elseif (in_array($validatedData['major_category'], ['1', '2', '3', 1, 2, 3, 'Category 1', 'Category 2', 'Category 3'])) {
+                // All major violation categories should be mapped to 'major'
+                $validatedData['major_category'] = 'major';
+            } else {
+                // For minor violations or any other case, set to 'minor'
+                $validatedData['major_category'] = 'minor';
+            }
+        } elseif (isset($validatedData['severity'])) {
+            // If major_category is not set but severity is, auto-determine based on severity
+            if ($validatedData['severity'] === 'major' || $validatedData['severity'] === 'severe') {
+                $validatedData['major_category'] = 'major';
+            } else {
+                $validatedData['major_category'] = 'minor';
             }
         }
 
@@ -931,6 +947,7 @@ class DisciplineController extends Controller
                 'title' => 'required|string|max:255',
                 'description' => 'nullable|string',
                 'severity' => 'required|in:minor,major,severe',
+                'major_category' => 'nullable|string',
                 'violation_date' => 'required|date',
                 'violation_time' => 'nullable',
                 'status' => 'required|in:pending,investigating,in_progress,resolved,dismissed',
@@ -949,6 +966,26 @@ class DisciplineController extends Controller
                 ], 422);
             }
             throw $e;
+        }
+
+        // Map major_category values to ENUM strings for update
+        if (isset($validatedData['major_category'])) {
+            if ($validatedData['major_category'] === 'null' || $validatedData['major_category'] === null || $validatedData['major_category'] === '') {
+                $validatedData['major_category'] = null;
+            } elseif (in_array($validatedData['major_category'], ['1', '2', '3', 1, 2, 3, 'Category 1', 'Category 2', 'Category 3'])) {
+                // All major violation categories should be mapped to 'major'
+                $validatedData['major_category'] = 'major';
+            } else {
+                // For minor violations or any other case, set to 'minor'
+                $validatedData['major_category'] = 'minor';
+            }
+        } elseif (isset($validatedData['severity'])) {
+            // If major_category is not set but severity is, auto-determine based on severity
+            if ($validatedData['severity'] === 'major' || $validatedData['severity'] === 'severe') {
+                $validatedData['major_category'] = 'major';
+            } else {
+                $validatedData['major_category'] = 'minor';
+            }
         }
 
         // Process violation time
