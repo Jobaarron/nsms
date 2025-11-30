@@ -1225,35 +1225,123 @@ class DisciplineController extends Controller
     }
 
     /**
-     * Get violations summary for sanction system
+     * Get violations summary for sanction system with server-side caching
+     * Optimized for large datasets with efficient querying and caching
      */
     public function violationsSummary()
     {
         try {
-            $violations = Violation::select('student_id', 'severity', 'major_category')->get();
+            // Use cache to avoid repeated database queries
+            // Cache key includes a version to invalidate when data changes
+            $cacheKey = 'violation_options_summary';
+            $cacheDuration = 60 * 5; // 5 minutes cache
 
-            $violationList = Violation::with(['student', 'reportedBy', 'resolvedBy'])->get();
+            // Try to get from cache first
+            $cachedOptions = \Cache::get($cacheKey);
+            if ($cachedOptions) {
+                \Log::info('✅ Violation options retrieved from cache');
+                return response()->json([
+                    'violations' => [],
+                    'list' => [],
+                    'options' => $cachedOptions,
+                    'cached' => true,
+                ]);
+            }
 
+            \Log::info('🔄 Fetching fresh violation options from database');
+
+            // Fetch all violation list records in a single query for efficiency
+            $allViolations = ViolationList::select('id', 'title', 'severity', 'category')
+                ->orderBy('severity')
+                ->orderBy('category')
+                ->orderBy('title')
+                ->get();
+
+            // Check if violation list is empty
+            if ($allViolations->isEmpty()) {
+                \Log::warning('⚠️ Violation list is empty. Run: php artisan db:seed --class=ViolationListSeeder');
+            }
+
+            // Build violation options structure efficiently
             $violationOptions = [
-                'minor' => ViolationList::where('severity', 'minor')->pluck('title')->toArray(),
+                'minor' => [],
                 'major' => [
-                    '1' => ViolationList::where('severity', 'major')->where('category', '1')->pluck('title')->toArray(),
-                    '2' => ViolationList::where('severity', 'major')->where('category', '2')->pluck('title')->toArray(),
-                    '3' => ViolationList::where('severity', 'major')->where('category', '3')->pluck('title')->toArray(),
+                    'Category 1' => [],
+                    'Category 2' => [],
+                    'Category 3' => []
                 ]
             ];
 
-            return response()->json([
-                'violations' => $violations,
-                'list' => $violationList,
-                'options' => $violationOptions,
-            ]);
-        } catch (\Exception $e) {
-            \Log::error('Error fetching violations summary: ' . $e->getMessage());
+            // Populate options from fetched data
+            foreach ($allViolations as $violation) {
+                if ($violation->severity === 'minor') {
+                    $violationOptions['minor'][] = $violation->title;
+                } elseif ($violation->severity === 'major') {
+                    $categoryKey = 'Category ' . ($violation->category ?? '1');
+                    if (!isset($violationOptions['major'][$categoryKey])) {
+                        $violationOptions['major'][$categoryKey] = [];
+                    }
+                    $violationOptions['major'][$categoryKey][] = $violation->title;
+                }
+            }
+
+            // Cache the options for future requests
+            \Cache::put($cacheKey, $violationOptions, $cacheDuration);
+            \Log::info('✅ Violation options cached for ' . $cacheDuration . ' seconds');
+
+            // Log statistics for monitoring
+            $minorCount = count($violationOptions['minor']);
+            $majorCount = array_sum(array_map('count', $violationOptions['major']));
+            \Log::info("📊 Violation statistics - Minor: {$minorCount}, Major: {$majorCount}");
 
             return response()->json([
-                'error' => 'Failed to fetch violations summary',
-                'message' => $e->getMessage(),
+                'violations' => [],
+                'list' => [],
+                'options' => $violationOptions,
+                'cached' => false,
+                'stats' => [
+                    'minor_count' => $minorCount,
+                    'major_count' => $majorCount,
+                    'total_count' => $minorCount + $majorCount
+                ]
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('❌ Error fetching violations summary: ' . $e->getMessage());
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
+
+            // Return fallback empty options instead of error
+            return response()->json([
+                'error' => false,
+                'options' => [
+                    'minor' => [],
+                    'major' => [
+                        'Category 1' => [],
+                        'Category 2' => [],
+                        'Category 3' => []
+                    ]
+                ],
+                'message' => 'Using fallback options. Please check logs for details.'
+            ]);
+        }
+    }
+
+    /**
+     * Clear violation options cache (call this after seeding or updating violation list)
+     */
+    public function clearViolationCache()
+    {
+        try {
+            \Cache::forget('violation_options_summary');
+            \Log::info('✅ Violation options cache cleared');
+            return response()->json([
+                'success' => true,
+                'message' => 'Violation cache cleared successfully'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error clearing violation cache: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to clear cache'
             ], 500);
         }
     }

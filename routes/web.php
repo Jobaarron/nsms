@@ -476,6 +476,9 @@ Route::prefix('discipline')->name('discipline.')->group(function () {
             Route::get('/summary', [App\Http\Controllers\DisciplineController::class, 'violationsSummary'])
                 ->name('summary');
 
+            Route::post('/clear-cache', [App\Http\Controllers\DisciplineController::class, 'clearViolationCache'])
+                ->name('clear-cache');
+
             Route::post('/', [App\Http\Controllers\DisciplineController::class, 'storeViolation'])
                 ->name('store');
 
