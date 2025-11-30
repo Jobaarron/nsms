@@ -21,7 +21,10 @@ class Notice extends Model
         'target_status',
         'target_grade_level',
         'sent_via_email',
-        'email_sent_at'
+        'email_sent_at',
+        'notification_type',
+        'violation_id',
+        'user_id'
     ];
 
     protected $casts = [
@@ -90,6 +93,47 @@ class Notice extends Model
         }
         
         return 'System';
+    }
+
+    /**
+     * Get the violation associated with this notice (for discipline notifications)
+     */
+    public function violation()
+    {
+        return $this->belongsTo(Violation::class);
+    }
+
+    /**
+     * Get the user associated with this notice (for discipline staff notifications)
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Scope for discipline notifications only
+     */
+    public function scopeDisciplineNotifications($query)
+    {
+        return $query->where('notification_type', 'discipline');
+    }
+
+    /**
+     * Scope for general enrollee notifications only (exclude discipline)
+     */
+    public function scopeGeneralNotifications($query)
+    {
+        return $query->where('notification_type', '!=', 'discipline')
+                    ->orWhereNull('notification_type');
+    }
+
+    /**
+     * Scope for notifications for a specific user (discipline staff)
+     */
+    public function scopeForUser($query, $userId)
+    {
+        return $query->where('user_id', $userId);
     }
 
     /**
@@ -377,12 +421,16 @@ class Notice extends Model
     }
 
     /**
-     * Scope to exclude guidance-specific notifications from other modules
-     * Use this in registrar, student, applicant, teacher modules to avoid showing guidance notifications
+     * Scope to exclude guidance and discipline-specific notifications from other modules
+     * Use this in registrar, student, applicant, teacher modules to avoid showing guidance/discipline notifications
      */
     public function scopeExcludeGuidanceSpecific($query)
     {
         return $query->where(function($q) {
+            // Exclude discipline notifications by type
+            $q->where('notification_type', '!=', 'discipline')
+              ->orWhereNull('notification_type');
+        })->where(function($q) {
             $q->where('title', 'NOT LIKE', '%case meeting%')
               ->where('title', 'NOT LIKE', '%counseling session%')
               ->where('title', 'NOT LIKE', '%counseling%')
@@ -447,6 +495,117 @@ class Notice extends Model
     public static function getForTeacher($limit = 10)
     {
         return static::excludeGuidanceSpecific()
+            ->orderBy('created_at', 'desc')
+            ->limit($limit)
+            ->get();
+    }
+
+    // DISCIPLINE NOTIFICATION METHODS
+
+    /**
+     * Get the violation associated with this notice (for discipline notifications)
+     */
+    public function violation()
+    {
+        return $this->belongsTo(Violation::class);
+    }
+
+    /**
+     * Get the user associated with this notice (for discipline staff notifications)
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Scope for discipline notifications only
+     */
+    public function scopeDisciplineNotifications($query)
+    {
+        return $query->where('notification_type', 'discipline');
+    }
+
+    /**
+     * Scope for general enrollee notifications only (exclude discipline)
+     */
+    public function scopeGeneralNotifications($query)
+    {
+        return $query->where('notification_type', '!=', 'discipline')
+                    ->orWhereNull('notification_type');
+    }
+
+    /**
+     * Scope for notifications for a specific user (discipline staff)
+     */
+    public function scopeForUser($query, $userId)
+    {
+        return $query->where('user_id', $userId);
+    }
+
+    /**
+     * Create a discipline notification for case closed violations
+     */
+    public static function createDisciplineNotification($violationId, $userId, $title = null, $message = null)
+    {
+        return static::create([
+            'title' => $title ?? 'Case Closed Notification',
+            'message' => $message ?? 'A violation case has been closed and requires your attention.',
+            'notification_type' => 'discipline',
+            'violation_id' => $violationId,
+            'user_id' => $userId,
+            'created_by' => auth()->id(),
+            'is_read' => false
+        ]);
+    }
+
+    /**
+     * Mark discipline notification as read for a specific user and violation
+     */
+    public static function markDisciplineNotificationAsRead($userId, $violationId)
+    {
+        return static::disciplineNotifications()
+            ->forUser($userId)
+            ->where('violation_id', $violationId)
+            ->update([
+                'is_read' => true,
+                'read_at' => now()
+            ]);
+    }
+
+    /**
+     * Mark all discipline notifications as read for a user
+     */
+    public static function markAllDisciplineNotificationsAsRead($userId)
+    {
+        return static::disciplineNotifications()
+            ->forUser($userId)
+            ->unread()
+            ->update([
+                'is_read' => true,
+                'read_at' => now()
+            ]);
+    }
+
+    /**
+     * Get count of unread discipline notifications for a user
+     */
+    public static function getUnreadDisciplineNotificationCount($userId)
+    {
+        return static::disciplineNotifications()
+            ->forUser($userId)
+            ->unread()
+            ->count();
+    }
+
+    /**
+     * Get discipline notifications for a specific user
+     */
+    public static function getDisciplineNotifications($userId, $limit = 10)
+    {
+        return static::disciplineNotifications()
+            ->forUser($userId)
+            ->with(['violation', 'violation.student'])
             ->orderBy('created_at', 'desc')
             ->limit($limit)
             ->get();

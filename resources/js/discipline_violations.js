@@ -1637,10 +1637,111 @@ window.viewViolation = function(violationId) {
                 </div>
               ` : ''}
               
-              ${data.disciplinary_action ? `
+              ${data.status === 'case_closed' && data.case_meeting ? `
                 <div class="mb-3">
-                  <label class="form-label fw-bold small">Disciplinary Action:</label>
-                  <p class="border p-2 rounded bg-warning-subtle small">${data.disciplinary_action}</p>
+                  <label class="form-label fw-bold small">
+                    <i class="ri-scales-line me-1"></i>Approved Interventions & Sanctions:
+                  </label>
+                  <div class="border p-3 rounded bg-light">
+                    ${data.case_meeting.written_reflection ? `
+                      <div class="sanction-item border-start border-primary bg-primary-subtle p-2 mb-2 rounded">
+                        <div class="d-flex align-items-center gap-2">
+                          <i class="ri-file-edit-line text-primary"></i>
+                          <strong class="text-primary">Written Reflection</strong>
+                        </div>
+                        ${data.case_meeting.written_reflection_due ? `<small class="text-muted ms-3">Due: ${new Date(data.case_meeting.written_reflection_due).toLocaleDateString()}</small>` : ''}
+                      </div>
+                    ` : ''}
+                    ${data.case_meeting.follow_up_meeting ? `
+                      <div class="sanction-item border-start border-info bg-info-subtle p-2 mb-2 rounded">
+                        <div class="d-flex align-items-center gap-2">
+                          <i class="ri-calendar-check-line text-info"></i>
+                          <strong class="text-info">Follow-up Meeting</strong>
+                        </div>
+                        ${data.case_meeting.follow_up_meeting_date ? `<small class="text-muted ms-3">Scheduled: ${new Date(data.case_meeting.follow_up_meeting_date).toLocaleDateString()}</small>` : ''}
+                      </div>
+                    ` : ''}
+                    ${data.case_meeting.mentorship_counseling ? `
+                      <div class="sanction-item border-start border-success bg-success-subtle p-2 mb-2 rounded">
+                        <div class="d-flex align-items-center gap-2">
+                          <i class="ri-user-heart-line text-success"></i>
+                          <strong class="text-success">Mentorship/Counseling</strong>
+                        </div>
+                        ${data.case_meeting.mentor_name ? `<small class="text-muted ms-3">Mentor: ${data.case_meeting.mentor_name}</small>` : ''}
+                      </div>
+                    ` : ''}
+                    ${data.case_meeting.parent_teacher_communication ? `
+                      <div class="sanction-item border-start border-warning bg-warning-subtle p-2 mb-2 rounded">
+                        <div class="d-flex align-items-center gap-2">
+                          <i class="ri-parent-line text-warning"></i>
+                          <strong class="text-warning-emphasis">Parent Communication</strong>
+                        </div>
+                        ${data.case_meeting.parent_teacher_date ? `<small class="text-muted ms-3">Date: ${new Date(data.case_meeting.parent_teacher_date).toLocaleDateString()}</small>` : ''}
+                      </div>
+                    ` : ''}
+                    ${data.case_meeting.community_service ? `
+                      <div class="sanction-item border-start border-secondary bg-secondary-subtle p-2 mb-2 rounded">
+                        <div class="d-flex align-items-center gap-2">
+                          <i class="ri-community-line text-secondary"></i>
+                          <strong class="text-secondary">Community Service</strong>
+                        </div>
+                        <div class="ms-3">
+                          ${data.case_meeting.community_service_date ? `<small class="text-muted d-block">Date: ${new Date(data.case_meeting.community_service_date).toLocaleDateString()}</small>` : ''}
+                          ${data.case_meeting.community_service_area ? `<small class="text-muted d-block">Area: ${data.case_meeting.community_service_area}</small>` : ''}
+                        </div>
+                      </div>
+                    ` : ''}
+                    ${data.case_meeting.suspension ? `
+                      <div class="sanction-item border-start border-danger bg-danger-subtle p-2 mb-2 rounded">
+                        <div class="d-flex align-items-center gap-2">
+                          <i class="ri-pause-circle-line text-danger"></i>
+                          <strong class="text-danger">Suspension</strong>
+                        </div>
+                        <div class="ms-3">
+                          ${data.case_meeting.suspension_start ? `<small class="text-muted d-block">Start: ${new Date(data.case_meeting.suspension_start).toLocaleDateString()}</small>` : ''}
+                          ${data.case_meeting.suspension_end ? `<small class="text-muted d-block">End: ${new Date(data.case_meeting.suspension_end).toLocaleDateString()}</small>` : ''}
+                          ${data.case_meeting.suspension_return ? `<small class="text-muted d-block">Return: ${new Date(data.case_meeting.suspension_return).toLocaleDateString()}</small>` : ''}
+                          ${data.case_meeting.suspension_other_days ? `<small class="text-muted d-block">Duration: ${data.case_meeting.suspension_other_days} days</small>` : 
+                             data.case_meeting.suspension_3days ? `<small class="text-muted d-block">Duration: 3 days</small>` : 
+                             data.case_meeting.suspension_5days ? `<small class="text-muted d-block">Duration: 5 days</small>` : ''}
+                        </div>
+                      </div>
+                    ` : ''}
+                    ${data.case_meeting.expulsion ? `
+                      <div class="sanction-item border-start border-danger bg-danger-subtle p-2 mb-2 rounded">
+                        <div class="d-flex align-items-center gap-2">
+                          <i class="ri-close-circle-line text-danger"></i>
+                          <strong class="text-danger">Expulsion</strong>
+                        </div>
+                        ${data.case_meeting.expulsion_date ? `<small class="text-muted ms-3">Effective: ${new Date(data.case_meeting.expulsion_date).toLocaleDateString()}</small>` : ''}
+                      </div>
+                    ` : ''}
+                    ${!data.case_meeting.written_reflection && !data.case_meeting.follow_up_meeting && !data.case_meeting.mentorship_counseling && !data.case_meeting.parent_teacher_communication && !data.case_meeting.community_service && !data.case_meeting.suspension && !data.case_meeting.expulsion ? 
+                      '<div class="text-center py-3"><span class="text-muted fst-italic">No interventions assigned</span></div>' : ''}
+                    ${data.case_meeting.recommendations ? `
+                      <div class="mt-3 pt-3 border-top">
+                        <strong class="text-success d-block mb-2"><i class="ri-lightbulb-line me-1"></i>Recommendations:</strong>
+                        <div class="bg-success-subtle p-2 rounded border border-success">${data.case_meeting.recommendations.replace(/\n/g, '<br>')}</div>
+                      </div>
+                    ` : ''}
+                    ${data.case_meeting.president_notes ? `
+                      <div class="mt-2">
+                        <strong class="text-warning d-block mb-2"><i class="ri-vip-crown-line me-1"></i>President Notes:</strong>
+                        <div class="bg-warning-subtle p-2 rounded border border-warning">${data.case_meeting.president_notes.replace(/\n/g, '<br>')}</div>
+                      </div>
+                    ` : ''}
+                  </div>
+                </div>
+              ` : data.disciplinary_action ? `
+                <div class="mb-3">
+                  <label class="form-label fw-bold small">
+                    <i class="ri-gavel-line me-1"></i>Disciplinary Action:
+                  </label>
+                  <div class="border p-2 rounded bg-warning-subtle small">
+                    <div class="text-dark fw-medium">
+                      ${data.disciplinary_action}
+                    </div>
+                  </div>
                 </div>
               ` : ''}
               

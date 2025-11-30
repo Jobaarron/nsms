@@ -20,7 +20,7 @@
                 <div class="d-flex align-items-center gap-2">
                     <!-- Notification Bell -->
                     <div class="position-relative" style="display: inline-block;">
-                        <button class="btn btn-outline-success btn-sm" id="notificationBell" data-bs-toggle="modal" data-bs-target="#notificationsModal" title="Case Closed Notifications">
+                        <button class="btn btn-outline-success btn-sm" id="notificationBell" data-bs-toggle="modal" data-bs-target="#notificationsModal" title="Case Closed Violations with Approved Interventions (Updates every 5 seconds)">
                             <i class="ri-notification-3-line fs-5"></i>
                         </button>
                         <span class="badge rounded-pill bg-danger" id="notificationBadge">
@@ -758,6 +758,27 @@
                 20%, 40%, 60%, 80% { transform: rotate(10deg); }
             }
             
+            /* Real-time notification animations */
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+                20%, 40%, 60%, 80% { transform: translateX(2px); }
+            }
+            
+            @keyframes pulse {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.2); background-color: #ff4757; }
+                100% { transform: scale(1); }
+            }
+            
+            .shake {
+                animation: shake 0.5s ease-in-out;
+            }
+            
+            .pulse {
+                animation: pulse 0.8s ease-in-out 2;
+            }
+            
             #notificationBadge {
                 position: absolute;
                 top: -8px;
@@ -799,8 +820,6 @@
     <!-- Toast container for notifications -->
     <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toast-container"></div>
 
-    @vite('resources/js/discipline_dashboard.js')
-    
     <!-- Initialize dashboard enhancements -->
     <script>
         // Dashboard initialization with enhanced features
@@ -911,9 +930,14 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header bg-success text-white">
-                    <h5 class="modal-title" id="notificationsModalLabel">
-                        <i class="ri-notification-3-line me-2"></i>Case Closed Notifications
-                    </h5>
+                    <div class="d-flex flex-column">
+                        <h5 class="modal-title mb-0" id="notificationsModalLabel">
+                            <i class="ri-notification-3-line me-2"></i>Case Closed Notifications
+                        </h5>
+                        <small class="text-white-50 mt-1">
+                            <i class="ri-time-line me-1"></i>Real-time updates every 5 seconds
+                        </small>
+                    </div>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body" id="notificationsModalBody" style="max-height: 500px; overflow-y: auto;">

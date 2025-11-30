@@ -11,6 +11,7 @@ use App\Models\Student;
 use App\Models\Violation;
 use App\Models\ViolationList;
 use App\Models\CaseMeeting;
+use App\Models\Notice;
 use App\Models\Guidance;
 use App\Models\ArchiveViolation;
 use App\Models\Sanction;
@@ -206,6 +207,93 @@ class DisciplineController extends Controller
      */
     public function getNotificationCount()
     {
+        try {
+            $userId = auth()->id();
+            
+            // Check if the new columns exist, if not fall back to session-based approach
+            if (!$this->disciplineNotificationColumnsExist()) {
+                return $this->getFallbackNotificationCount();
+            }
+            
+            // Create notifications for any case_closed violations that don't have notifications yet
+            $this->createMissingDisciplineNotifications($userId);
+            
+            // Get count of unread discipline notifications for this user
+            $unreadCount = Notice::getUnreadDisciplineNotificationCount($userId);
+            
+            return response()->json([
+                'count' => $unreadCount,
+                'status' => 'success'
+            ]);
+        } catch (\Exception $e) {
+            // Log error and return fallback
+            \Log::error('Error in getNotificationCount: ' . $e->getMessage());
+            return $this->getFallbackNotificationCount();
+        }
+    }
+    
+    /**
+     * Mark all notifications as read for current user
+     */
+    public function markNotificationsAsRead()
+    {
+        try {
+            $userId = auth()->id();
+            
+            // Check if the new columns exist, if not fall back to session-based approach
+            if (!$this->disciplineNotificationColumnsExist()) {
+                return $this->markNotificationsAsReadFallback();
+            }
+            
+            // Mark all discipline notifications as read for this user
+            Notice::markAllDisciplineNotificationsAsRead($userId);
+            
+            return response()->json([
+                'status' => 'success',
+                'message' => 'All notifications marked as read'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error in markNotificationsAsRead: ' . $e->getMessage());
+            return $this->markNotificationsAsReadFallback();
+        }
+    }
+
+    /**
+     * Fallback method to mark notifications as read using session
+     */
+    private function markNotificationsAsReadFallback()
+    {
+        // Get all case_closed violation IDs
+        $violationIds = Violation::where('status', 'case_closed')
+            ->pluck('id')
+            ->toArray();
+        
+        // Store in session as viewed
+        session(['viewed_case_closed_notifications' => $violationIds]);
+        
+        return response()->json([
+            'status' => 'success',
+            'message' => 'All notifications marked as read'
+        ]);
+    }
+
+    /**
+     * Check if the discipline notification columns exist in notices table
+     */
+    private function disciplineNotificationColumnsExist()
+    {
+        try {
+            return \Schema::hasColumns('notices', ['notification_type', 'violation_id', 'user_id']);
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Fallback notification count using session-based approach
+     */
+    private function getFallbackNotificationCount()
+    {
         // Get case_closed violations
         $violations = Violation::where('status', 'case_closed')->get();
         
@@ -222,24 +310,32 @@ class DisciplineController extends Controller
             'status' => 'success'
         ]);
     }
-    
+
     /**
-     * Mark all notifications as read for current user
+     * Create discipline notifications for case_closed violations that don't have notifications yet
      */
-    public function markNotificationsAsRead()
+    private function createMissingDisciplineNotifications($userId)
     {
-        // Get all case_closed violation IDs
-        $violationIds = Violation::where('status', 'case_closed')
-            ->pluck('id')
-            ->toArray();
-        
-        // Store in session as viewed
-        session(['viewed_case_closed_notifications' => $violationIds]);
-        
-        return response()->json([
-            'status' => 'success',
-            'message' => 'All notifications marked as read'
-        ]);
+        // Get case_closed violations that don't have discipline notifications for this user
+        $violationsWithoutNotifications = Violation::where('status', 'case_closed')
+            ->whereNotExists(function ($query) use ($userId) {
+                $query->select('id')
+                    ->from('notices')
+                    ->where('notification_type', 'discipline')
+                    ->where('user_id', $userId)
+                    ->whereColumn('violation_id', 'student_violations.id');
+            })
+            ->get();
+
+        // Create notifications for violations that don't have them
+        foreach ($violationsWithoutNotifications as $violation) {
+            Notice::createDisciplineNotification(
+                $violation->id,
+                $userId,
+                'Case Closed - ' . $violation->title,
+                "Violation case for {$violation->student->full_name} has been closed and requires your attention."
+            );
+        }
     }
 
     /**
@@ -286,19 +382,54 @@ class DisciplineController extends Controller
                     'id' => $violation->id,
                     'title' => $violation->title,
                     'description' => $violation->description,
+                    'student' => $violation->student ? [
+                        'full_name' => $violation->student->first_name . ' ' . $violation->student->last_name,
+                        'first_name' => $violation->student->first_name,
+                        'last_name' => $violation->student->last_name,
+                        'student_id' => $violation->student->student_id
+                    ] : null,
                     'student_name' => $violation->student 
                         ? $violation->student->first_name . ' ' . $violation->student->last_name 
                         : 'N/A',
                     'student_id' => $violation->student ? $violation->student->student_id : 'N/A',
                     'violation_date' => $violation->violation_date 
-                        ? $violation->violation_date->format('M d, Y') 
+                        ? $violation->violation_date->format('Y-m-d') 
                         : 'N/A',
                     'violation_time' => $violation->violation_time 
-                        ? date('h:i A', strtotime($violation->violation_time)) 
+                        ? date('H:i:s', strtotime($violation->violation_time)) 
                         : null,
                     'status' => $violation->status,
                     'severity' => $violation->severity,
                     'disciplinary_action' => $disciplinaryAction,
+                    'case_meeting' => $violation->caseMeeting ? [
+                        'id' => $violation->caseMeeting->id,
+                        'status' => $violation->caseMeeting->status,
+                        'summary' => $violation->caseMeeting->summary,
+                        'recommendations' => $violation->caseMeeting->recommendations,
+                        'president_notes' => $violation->caseMeeting->president_notes,
+                        'written_reflection' => $violation->caseMeeting->written_reflection,
+                        'written_reflection_due' => $violation->caseMeeting->written_reflection_due,
+                        'follow_up_meeting' => $violation->caseMeeting->follow_up_meeting,
+                        'follow_up_meeting_date' => $violation->caseMeeting->follow_up_meeting_date,
+                        'mentorship_counseling' => $violation->caseMeeting->mentorship_counseling,
+                        'mentor_name' => $violation->caseMeeting->mentor_name,
+                        'parent_teacher_communication' => $violation->caseMeeting->parent_teacher_communication,
+                        'parent_teacher_date' => $violation->caseMeeting->parent_teacher_date,
+                        'restorative_justice_activity' => $violation->caseMeeting->restorative_justice_activity,
+                        'restorative_justice_date' => $violation->caseMeeting->restorative_justice_date,
+                        'community_service' => $violation->caseMeeting->community_service,
+                        'community_service_date' => $violation->caseMeeting->community_service_date,
+                        'community_service_area' => $violation->caseMeeting->community_service_area,
+                        'suspension' => $violation->caseMeeting->suspension,
+                        'suspension_3days' => $violation->caseMeeting->suspension_3days,
+                        'suspension_5days' => $violation->caseMeeting->suspension_5days,
+                        'suspension_other_days' => $violation->caseMeeting->suspension_other_days,
+                        'suspension_start' => $violation->caseMeeting->suspension_start,
+                        'suspension_end' => $violation->caseMeeting->suspension_end,
+                        'suspension_return' => $violation->caseMeeting->suspension_return,
+                        'expulsion' => $violation->caseMeeting->expulsion,
+                        'expulsion_date' => $violation->caseMeeting->expulsion_date,
+                    ] : null,
                 ];
             });
         
@@ -313,8 +444,8 @@ class DisciplineController extends Controller
      */
     public function violationsIndex()
     {
-        // Fetch all violations with related models
-        $allViolations = Violation::with(['student', 'reportedBy', 'resolvedBy'])
+        // Fetch all violations with related models including case meetings for detailed interventions
+        $allViolations = Violation::with(['student', 'reportedBy', 'resolvedBy', 'caseMeeting'])
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -723,7 +854,7 @@ class DisciplineController extends Controller
      */
     public function showViolation(Violation $violation)
     {
-        $violation->load(['student', 'reportedBy', 'resolvedBy', 'caseMeeting']);
+        $violation->load(['student', 'reportedBy', 'resolvedBy', 'caseMeeting', 'sanctions']);
         
         // Convert to array and add case meeting details if exists
         $violationData = $violation->toArray();
