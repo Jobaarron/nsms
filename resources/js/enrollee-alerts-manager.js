@@ -45,6 +45,16 @@ async function fetchAlertCounts() {
             credentials: 'same-origin'
         });
         
+        // Handle 401 Unauthorized - user not authenticated
+        if (response.status === 401) {
+            // Stop polling if user is not authenticated
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+            }
+            return;
+        }
+        
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -55,6 +65,7 @@ async function fetchAlertCounts() {
             updateAlertBadges(data.counts);
         }
     } catch (error) {
+        // Silently fail - don't log errors to console
     }
 }
 

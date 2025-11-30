@@ -1117,6 +1117,15 @@ class EnrolleeController extends Controller
         try {
             $enrollee = Auth::guard('enrollee')->user();
             
+            // Check if user is authenticated
+            if (!$enrollee) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not authenticated',
+                    'counts' => ['unread_notices' => 0]
+                ], 401);
+            }
+            
             $counts = [
                 'unread_notices' => Notice::forEnrollee($enrollee->id)
                     ->excludeGuidanceSpecific()
@@ -1129,10 +1138,12 @@ class EnrolleeController extends Controller
                 'counts' => $counts
             ]);
         } catch (\Exception $e) {
+            \Log::error('Error fetching alert counts: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Error fetching alert counts',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'counts' => ['unread_notices' => 0]
             ], 500);
         }
     }

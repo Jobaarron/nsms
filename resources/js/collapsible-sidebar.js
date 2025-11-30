@@ -5,9 +5,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const mainContent = document.querySelector('.main-content-wrapper');
     const navLinks = document.querySelectorAll('.sidebar .nav-link');
     
-    // Check if elements exist
+    // Check if elements exist - silently return if not (page may not have sidebar)
     if (!sidebar || !sidebarToggle || !mainContent) {
-        console.warn('Sidebar elements not found');
         return;
     }
     
