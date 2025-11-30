@@ -27,23 +27,46 @@ function validateSchoolHours(timeString) {
 
 // Global variable to store violation options fetched from the database
 window.offenseOptions = null;
+window.violationCacheTimestamp = null;
+const VIOLATION_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache
 
-// Function to fetch violation options from the database
+// Function to fetch violation options from the database with caching
 async function fetchViolationOptions() {
     try {
+        // Check if we have cached data that's still valid
+        const now = Date.now();
+        if (window.offenseOptions && window.violationCacheTimestamp && (now - window.violationCacheTimestamp) < VIOLATION_CACHE_DURATION) {
+            console.log('✅ Using cached violation options');
+            return window.offenseOptions;
+        }
+
+        console.log('🔄 Fetching fresh violation options from server...');
         const response = await fetch('/discipline/violations/summary', { credentials: 'include' });
+        
         if (response.status === 401) {
+            console.error('❌ Session expired');
             alert('Your session has expired. Please log in again.');
             window.location.href = '/discipline/login';
             return { minor: [], major: { "Category 1": [], "Category 2": [], "Category 3": [] } };
         }
+        
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
+        
         const data = await response.json();
+        
+        // Validate that options exist and have data
+        if (!data.options || (!data.options.minor || data.options.minor.length === 0) && (!data.options.major)) {
+            console.warn('⚠️ Violation list is empty. Please run: php artisan db:seed --class=ViolationListSeeder');
+        }
+        
         window.offenseOptions = data.options;
+        window.violationCacheTimestamp = now;
+        console.log('✅ Violation options loaded successfully:', window.offenseOptions);
         return window.offenseOptions;
     } catch (error) {
+        console.error('❌ Error fetching violation options:', error);
         // Fallback to empty options if fetch fails
         window.offenseOptions = { minor: [], major: { "Category 1": [], "Category 2": [], "Category 3": [] } };
         return window.offenseOptions;

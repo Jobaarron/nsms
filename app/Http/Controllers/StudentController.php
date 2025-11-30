@@ -19,6 +19,8 @@ use App\Models\ClassSchedule;
 use App\Models\Grade;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\PaymentConfirmedMail;
 
 class StudentController extends Controller
 {
@@ -423,6 +425,22 @@ class StudentController extends Controller
             ]);
             
             Log::info('Student updated successfully');
+
+            // Send payment confirmation email with the first payment's details
+            try {
+                if ($transactionId) {
+                    // Get the first payment record to send in email
+                    $firstPayment = Payment::where('transaction_id', $transactionId)->first();
+                    if ($firstPayment) {
+                        Log::info('Sending payment confirmation email to: ' . $student->user->email);
+                        Mail::send(new PaymentConfirmedMail($firstPayment, $student));
+                        Log::info('Payment confirmation email sent successfully');
+                    }
+                }
+            } catch (\Exception $emailError) {
+                Log::error('Failed to send payment confirmation email: ' . $emailError->getMessage());
+                // Don't fail the enrollment if email fails - just log it
+            }
 
             // Check if this is an AJAX request
             Log::info('Checking request type - AJAX headers: ' . json_encode([
