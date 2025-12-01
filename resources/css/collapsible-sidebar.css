@@ -374,6 +374,7 @@ nav.sidebar.collapsed,
   overflow-x: hidden !important;
   overflow-y: auto !important;
   position: relative !important;
+  box-sizing: border-box !important;
 }
 
 .main-content-wrapper.sidebar-collapsed {
@@ -510,11 +511,21 @@ html.sidebar-collapsed-initial .sidebar .nav-link {
     margin-left: 0 !important;
     width: 100vw !important;
     padding-top: 70px !important;
+    box-sizing: border-box !important;
   }
   
   .main-content-wrapper.sidebar-collapsed {
     margin-left: 0 !important;
     width: 100vw !important;
+    box-sizing: border-box !important;
+  }
+  
+  /* Ensure content doesn't get cut off on mobile */
+  .main-content-wrapper main {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
   }
 }
 

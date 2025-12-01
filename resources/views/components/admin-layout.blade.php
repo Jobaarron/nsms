@@ -39,6 +39,9 @@
   @vite(['resources/js/admin-accounts-manager.js'])
   @vite(['resources/js/collapsible-sidebar.js'])
   @vite(['resources/js/admin-alerts-manager.js'])
+
+  <!-- Page-specific data injection -->
+  @stack('page-data')
 </head>
 
 <body>
@@ -46,16 +49,6 @@
   <button class="sidebar-toggle d-md-block" type="button">
     <i class="ri-menu-fold-line"></i>
   </button>
-
-  <!-- Mobile Navigation Toggle (Hidden - using sidebar-toggle instead) -->
-  <div class="d-none bg-white border-bottom p-3 fixed-top" style="z-index: 1030;">
-    <div class="d-flex justify-content-between align-items-center">
-      <img src="{{ Vite::asset('resources/assets/images/nms-logo.png') }}" alt="Nicolites Montessori School" class="sidebar-logo">    </div>
-      <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#adminSidebar" aria-controls="adminSidebar">
-        <i class="ri-menu-line"></i>
-      </button>
-    </div>
-  </div>
 
   <!-- SIDEBAR -->
   <nav class="sidebar py-4 bg-white border-end">
@@ -70,9 +63,6 @@
           <div class="user-role">{{ ucwords(str_replace('_', ' ', Auth::user()->getRoleNames()->first())) }}</div>
         </div> 
 
-        <div class="px-3 mb-4">
-          <h5>Admin Panel</h5>
-        </div>
         <ul class="nav flex-column px-3">
           <li class="nav-item">
             <a class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}" title="Dashboard">
@@ -119,8 +109,8 @@
           <li class="nav-item mt-4">
             <form method="POST" action="{{ route('admin.logout') }}" class="logout-form">
               @csrf
-              <button type="submit" title="Logout">
-                <i class="ri-logout-box-line"></i>
+              <button type="submit" class="btn btn-logout w-100" title="Logout">
+                <i class="ri-logout-box-line me-2"></i>
                 <span>Logout</span>
               </button>
             </form>

@@ -58,19 +58,6 @@
     <i class="ri-menu-fold-line"></i>
   </button>
 
-  <!-- Mobile Navigation Toggle (Hidden - using sidebar-toggle instead) -->
-  <div class="d-none bg-white border-bottom p-3 fixed-top" style="z-index: 1030;">
-    <div class="d-flex justify-content-between align-items-center">
-      <img src="{{ Vite::asset('resources/assets/images/nms-logo.png') }}" alt="Nicolites Montessori School" class="sidebar-logo">
-      <div class="d-flex gap-2">
-        <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#studentSidebar" aria-controls="studentSidebar">
-          <i class="ri-menu-line"></i>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  
   <nav class="sidebar py-4 bg-white border-end">
         
         <div class="text-center mb-3">
@@ -216,7 +203,7 @@
           <li class="nav-item mb-2">
             <form class="logout-form" action="{{ route('student.logout') }}" method="POST">
               @csrf
-              <button type="submit" class="nav-link logout-btn" title="Logout">
+              <button type="submit" class="btn btn-logout w-100" title="Logout">
                 <i class="ri-logout-circle-line me-2"></i><span>Logout</span>
               </button>
             </form>

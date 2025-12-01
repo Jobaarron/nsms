@@ -875,3 +875,85 @@
   .alert-success li {
     color: #0f5132 !important;
   }
+
+  /* Faculty Head Mobile Responsive Improvements */
+  @media (max-width: 768px) {
+    .section-title {
+      font-size: 1.5rem;
+    }
+    
+    .card-summary .card-body {
+      padding: 0.75rem !important;
+    }
+    
+    .card-summary h4 {
+      font-size: 1.25rem;
+    }
+    
+    .card-summary .fs-2 {
+      font-size: 1.5rem !important;
+    }
+    
+    /* Ensure mobile cards don't overflow */
+    .card {
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+    
+    /* Improve mobile button spacing */
+    .btn-sm {
+      padding: 0.375rem 0.75rem;
+      font-size: 0.875rem;
+    }
+    
+    /* Make badges more mobile friendly */
+    .badge {
+      font-size: 0.75rem;
+      padding: 0.25em 0.5em;
+    }
+    
+    /* Accordion improvements for mobile */
+    .accordion-button {
+      font-size: 0.9rem;
+      padding: 0.75rem 1rem;
+    }
+    
+    /* Modal improvements for mobile */
+    .modal-dialog {
+      margin: 0.5rem;
+      max-width: calc(100% - 1rem);
+    }
+  }
+
+  @media (max-width: 576px) {
+    .main-content-wrapper main {
+      padding: 1rem !important;
+    }
+    
+    .section-title {
+      font-size: 1.25rem;
+    }
+    
+    .card-summary h4 {
+      font-size: 1.1rem;
+    }
+    
+    .fs-1 {
+      font-size: 1.75rem !important;
+    }
+    
+    /* Improve small screen readability */
+    .small, small {
+      font-size: 0.8rem;
+    }
+    
+    /* Better spacing for mobile cards */
+    .card-body {
+      padding: 0.75rem;
+    }
+    
+    /* Stack buttons vertically on very small screens */
+    .btn-group-sm .btn {
+      margin-bottom: 0.25rem;
+    }
+  }

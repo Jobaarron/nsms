@@ -1,9 +1,9 @@
 <x-teacher-layout>
   <!-- MAIN CONTENT -->
-  <main class="col-12 col-md-10 px-4 py-4">
+  <main class="container-fluid px-3 px-md-4 py-4">
     <!-- Header Section -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <div>
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
+      <div class="mb-3 mb-md-0">
         <h1 class="section-title mb-1">
           <i class="ri-user-heart-line me-2 text-success"></i>
           Recommend Student for Counseling

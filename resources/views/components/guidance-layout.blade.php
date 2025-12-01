@@ -39,11 +39,12 @@
     rel="stylesheet"
   />
 
-  <!-- App CSS (includes Bootstrap 5 via Vite) -->
+  <!-- App CSS & JS (includes Bootstrap 5 via Vite) -->
   @vite(['resources/sass/app.scss','resources/js/app.js'])
   @vite(['resources/css/index_guidance.css'])
   @vite(['resources/css/collapsible-sidebar.css'])
   @vite(['resources/js/collapsible-sidebar.js'])
+  @vite(['resources/js/guidance-alerts-manager.js'])
   
 </head>
 <body>
@@ -65,7 +66,7 @@
       <div class="user-role">{{ ucwords(str_replace('_', ' ', Auth::user()->getRoleNames()->first())) }}</div>
     </div>
 
-        <ul class="nav flex-column">
+        <ul class="nav flex-column px-3">
           <li class="nav-item mb-2">
             <a class="nav-link {{ request()->routeIs('guidance.dashboard') ? 'active' : '' }}" href="{{ route('guidance.dashboard') }}" title="Dashboard">
               <i class="ri-dashboard-line me-2"></i><span>Dashboard</span>

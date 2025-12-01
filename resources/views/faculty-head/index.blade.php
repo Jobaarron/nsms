@@ -1,8 +1,8 @@
 <x-faculty-head-layout>
   <!-- MAIN CONTENT -->
-  <main class="col-12 col-md-10 px-4 py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <h1 class="section-title mb-0">Faculty Head Dashboard</h1>
+  <main class="container-fluid px-3 px-md-4 py-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
+      <h1 class="section-title mb-2 mb-md-0">Faculty Head Dashboard</h1>
       <div class="text-muted">
         <i class="ri-calendar-line me-1"></i>{{ $currentAcademicYear }}
       </div>
@@ -17,30 +17,30 @@
 
     <!-- DASHBOARD STATISTICS -->
     <div class="row g-3 mb-4">
-      <div class="col-6 col-sm-6 col-lg-3">
+      <div class="col-6 col-md-4 col-lg-3">
         <div class="card card-summary card-application h-100">
-          <div class="card-body text-center">
-            <i class="ri-user-line display-6 mb-2"></i>
-            <div>Total Teachers</div>
-            <h3>{{ $stats['total_teachers'] }}</h3>
+          <div class="card-body text-center p-3">
+            <i class="ri-user-line fs-2 mb-2 d-block"></i>
+            <div class="small">Total Teachers</div>
+            <h4 class="mb-0">{{ $stats['total_teachers'] }}</h4>
           </div>
         </div>
       </div>
-      <div class="col-6 col-sm-6 col-lg-3">
+      <div class="col-6 col-md-4 col-lg-3">
         <div class="card card-summary card-status h-100">
-          <div class="card-body text-center">
-            <i class="ri-book-open-line display-6 mb-2"></i>
-            <div>Active Subject Assignments</div>
-            <h3>{{ $stats['active_subject_assignments'] }}</h3>
+          <div class="card-body text-center p-3">
+            <i class="ri-book-open-line fs-2 mb-2 d-block"></i>
+            <div class="small">Subject Assignments</div>
+            <h4 class="mb-0">{{ $stats['active_subject_assignments'] }}</h4>
           </div>
         </div>
       </div>
-      <div class="col-6 col-sm-6 col-lg-3">
+      <div class="col-6 col-md-4 col-lg-3">
         <div class="card card-summary card-application h-100">
-          <div class="card-body text-center">
-            <i class="ri-user-star-line display-6 mb-2"></i>
-            <div>Active Adviser Assignments</div>
-            <h3>{{ $stats['active_adviser_assignments'] }}</h3>
+          <div class="card-body text-center p-3">
+            <i class="ri-user-star-line fs-2 mb-2 d-block"></i>
+            <div class="small">Adviser Assignments</div>
+            <h4 class="mb-0">{{ $stats['active_adviser_assignments'] }}</h4>
           </div>
         </div>
       </div>
@@ -48,21 +48,21 @@
 
     <!-- SECOND ROW OF STATS -->
     <div class="row g-3 mb-4">
-      <div class="col-6 col-sm-6 col-lg-3">
+      <div class="col-6 col-md-4 col-lg-3">
         <div class="card card-summary card-application h-100">
-          <div class="card-body text-center">
-            <i class="ri-task-line display-6 mb-2"></i>
-            <div>Pending Grade Reviews</div>
-            <h3>{{ $stats['pending_submissions'] }}</h3>
+          <div class="card-body text-center p-3">
+            <i class="ri-task-line fs-2 mb-2 d-block"></i>
+            <div class="small">Pending Reviews</div>
+            <h4 class="mb-0">{{ $stats['pending_submissions'] }}</h4>
           </div>
         </div>
       </div>
-      <div class="col-6 col-sm-6 col-lg-3">
+      <div class="col-6 col-md-4 col-lg-3">
         <div class="card card-summary card-schedule h-100">
-          <div class="card-body text-center">
-            <i class="ri-book-line display-6 mb-2"></i>
-            <div>Total Subjects</div>
-            <h3>{{ $stats['total_subjects'] }}</h3>
+          <div class="card-body text-center p-3">
+            <i class="ri-book-line fs-2 mb-2 d-block"></i>
+            <div class="small">Total Subjects</div>
+            <h4 class="mb-0">{{ $stats['total_subjects'] }}</h4>
           </div>
         </div>
       </div>
@@ -76,9 +76,10 @@
         </h5>
       </div>
       <div class="card-body p-0">
-        <div class="table-responsive">
-          <table class="table table-hover">
-            <thead>
+        <!-- Desktop Table View -->
+        <div class="table-responsive d-none d-md-block">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
               <tr>
                 <th>Teacher</th>
                 <th>Subject</th>
@@ -94,7 +95,7 @@
                 <td>{{ $submission->teacher->full_name }}</td>
                 <td>{{ $submission->subject->subject_name }}</td>
                 <td>{{ $submission->grade_level }} - {{ $submission->section }}</td>
-                <td>{{ $submission->quarter }}</td>
+                <td>Q{{ $submission->quarter }}</td>
                 <td>{{ $submission->submitted_at->format('M d, Y') }}</td>
                 <td>
                   <a href="{{ route('faculty-head.approve-grades') }}" class="btn btn-sm btn-outline-primary">
@@ -104,11 +105,47 @@
               </tr>
               @empty
               <tr>
-                <td colspan="6" class="text-center text-muted">No pending submissions</td>
+                <td colspan="6" class="text-center text-muted py-4">No pending submissions</td>
               </tr>
               @endforelse
             </tbody>
           </table>
+        </div>
+
+        <!-- Mobile Card View -->
+        <div class="d-md-none">
+          @forelse($recentSubmissions as $submission)
+          <div class="card mb-3 mx-3">
+            <div class="card-body p-3">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="flex-grow-1">
+                  <h6 class="card-title mb-1">{{ $submission->teacher->full_name }}</h6>
+                  <div class="small text-muted mb-1">
+                    <strong>Subject:</strong> {{ $submission->subject->subject_name }}
+                  </div>
+                  <div class="small text-muted mb-1">
+                    <strong>Class:</strong> {{ $submission->grade_level }} - {{ $submission->section }}
+                  </div>
+                  <div class="small text-muted">
+                    <strong>Quarter:</strong> Q{{ $submission->quarter }}
+                  </div>
+                </div>
+              </div>
+              
+              <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted">{{ $submission->submitted_at->format('M d, Y') }}</small>
+                <a href="{{ route('faculty-head.approve-grades') }}" class="btn btn-sm btn-outline-primary">
+                  <i class="ri-eye-line me-1"></i>Review
+                </a>
+              </div>
+            </div>
+          </div>
+          @empty
+          <div class="text-center text-muted py-5 px-3">
+            <i class="ri-file-list-3-line display-6 mb-2 d-block"></i>
+            <p class="mb-0">No pending submissions</p>
+          </div>
+          @endforelse
         </div>
       </div>
     </div>

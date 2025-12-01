@@ -37,11 +37,12 @@
     rel="stylesheet"
   />
 
-  <!-- App CSS (includes Bootstrap 5 via Vite) -->
+  <!-- App CSS & JS (includes Bootstrap 5 via Vite) -->
   @vite(['resources/sass/app.scss','resources/js/app.js'])
   @vite(['resources/css/index_discipline.css'])
   @vite(['resources/css/collapsible-sidebar.css'])
   @vite(['resources/js/collapsible-sidebar.js'])
+  @vite(['resources/js/discipline-alerts-manager.js'])
 </head>
 <body>
   <!-- Sidebar Toggle Button (Desktop & Mobile) -->
@@ -62,8 +63,7 @@
       <div class="user-role">{{ ucwords(str_replace('_', ' ', Auth::user()->getRoleNames()->first())) }}</div>
     </div>
 
-        <!-- Navigation -->
-        <ul class="nav flex-column">
+        <ul class="nav flex-column px-3">
           <li class="nav-item mb-2">
             <a class="nav-link {{ request()->routeIs('discipline.dashboard') ? 'active' : '' }}" href="{{ route('discipline.dashboard') }}" title="Dashboard">
               <i class="ri-dashboard-line me-2"></i><span>Dashboard</span>

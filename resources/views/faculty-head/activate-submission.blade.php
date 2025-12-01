@@ -1,8 +1,8 @@
 <x-faculty-head-layout>
   <!-- MAIN CONTENT -->
-  <main class="col-12 col-md-10 px-4 py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <h1 class="section-title mb-0">Activate Grade Submission</h1>
+  <main class="container-fluid px-3 px-md-4 py-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
+      <h1 class="section-title mb-2 mb-md-0">Activate Grade Submission</h1>
       <div class="text-muted">
         <i class="ri-play-circle-line me-1"></i>System Control
       </div>
@@ -65,44 +65,44 @@
       </div>
       <div class="card-body">
         <div class="row g-3">
-          <div class="col-6 col-lg-3">
+          <div class="col-6 col-md-3">
             <div class="card border">
-              <div class="card-body text-center">
-                <h6>1st Quarter</h6>
-                <div class="form-check form-switch d-flex justify-content-center">
+              <div class="card-body text-center p-3">
+                <h6 class="mb-2">1st Quarter</h6>
+                <div class="form-check form-switch d-flex justify-content-center mb-2">
                   <input class="form-check-input quarter-switch" type="checkbox" id="q1Switch" data-quarter="q1" {{ $quarterSettings['q1_active'] ? 'checked' : '' }}>
                 </div>
                 <small class="text-muted">Aug - Oct</small>
               </div>
             </div>
           </div>
-          <div class="col-6 col-lg-3">
+          <div class="col-6 col-md-3">
             <div class="card border">
-              <div class="card-body text-center">
-                <h6>2nd Quarter</h6>
-                <div class="form-check form-switch d-flex justify-content-center">
+              <div class="card-body text-center p-3">
+                <h6 class="mb-2">2nd Quarter</h6>
+                <div class="form-check form-switch d-flex justify-content-center mb-2">
                   <input class="form-check-input quarter-switch" type="checkbox" id="q2Switch" data-quarter="q2" {{ $quarterSettings['q2_active'] ? 'checked' : '' }}>
                 </div>
                 <small class="text-muted">Nov - Jan</small>
               </div>
             </div>
           </div>
-          <div class="col-6 col-lg-3">
+          <div class="col-6 col-md-3">
             <div class="card border">
-              <div class="card-body text-center">
-                <h6>3rd Quarter</h6>
-                <div class="form-check form-switch d-flex justify-content-center">
+              <div class="card-body text-center p-3">
+                <h6 class="mb-2">3rd Quarter</h6>
+                <div class="form-check form-switch d-flex justify-content-center mb-2">
                   <input class="form-check-input quarter-switch" type="checkbox" id="q3Switch" data-quarter="q3" {{ $quarterSettings['q3_active'] ? 'checked' : '' }}>
                 </div>
                 <small class="text-muted">Feb - Apr</small>
               </div>
             </div>
           </div>
-          <div class="col-6 col-lg-3">
+          <div class="col-6 col-md-3">
             <div class="card border">
-              <div class="card-body text-center">
-                <h6>4th Quarter</h6>
-                <div class="form-check form-switch d-flex justify-content-center">
+              <div class="card-body text-center p-3">
+                <h6 class="mb-2">4th Quarter</h6>
+                <div class="form-check form-switch d-flex justify-content-center mb-2">
                   <input class="form-check-input quarter-switch" type="checkbox" id="q4Switch" data-quarter="q4" {{ $quarterSettings['q4_active'] ? 'checked' : '' }}>
                 </div>
                 <small class="text-muted">May - Jul</small>

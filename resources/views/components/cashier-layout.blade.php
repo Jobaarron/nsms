@@ -37,9 +37,7 @@
     rel="stylesheet"
     />
 
-  
-  @vite('resources/sass/app.scss')
-  @vite(['resources/js/app.js'])
+  @vite(['resources/sass/app.scss','resources/js/app.js'])
   @vite(['resources/css/index_cashier.css'])
   @vite(['resources/css/collapsible-sidebar.css'])
   @vite(['resources/js/cashier-dashboard.js'])
@@ -90,7 +88,7 @@
       <div class="user-role">{{ ucwords(str_replace('_', ' ', Auth::user()->getRoleNames()->first())) }}</div>
     </div>
 
-        <ul class="nav flex-column">
+        <ul class="nav flex-column px-3">
           <li class="nav-item mb-2">
             <a class="nav-link {{ request()->routeIs('cashier.dashboard') ? 'active' : '' }}" href="{{ route('cashier.dashboard') }}" title="Dashboard">
               <i class="ri-dashboard-line me-2"></i><span>Dashboard</span>
@@ -123,18 +121,16 @@
               <i class="ri-money-dollar-circle-line me-2"></i><span>Fee Management</span>
             </a>
           </li>
-         
+          
+          <li class="nav-item mt-3">
+            <form action="{{ route('cashier.logout') }}" method="POST" class="logout-form">
+              @csrf
+              <button type="submit" class="btn btn-logout w-100" title="Logout">
+                <i class="ri-logout-circle-line me-2"></i><span>Logout</span>
+              </button>
+            </form>
+          </li>
         </ul>
-        
-        <!-- LOGOUT SECTION -->
-        <div class="mt-auto pt-3 logout-form">
-          <form action="{{ route('cashier.logout') }}" method="POST">
-            @csrf
-            <button type="submit" class="nav-link text-danger border-0 bg-transparent w-100 text-start d-flex align-items-center" style="font-weight: 600;" title="Logout">
-              <i class="ri-logout-circle-line me-2"></i><span>Logout</span>
-            </button>
-          </form>
-        </div>
       </nav>
 
   <!-- MAIN CONTENT -->
