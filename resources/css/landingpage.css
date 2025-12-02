@@ -67,14 +67,6 @@ body {
     max-width: 450px;
 }
 
-/* Mobile logo adjustment */
-@media (max-width: 768px) {
-    .nav__logo {
-        height: 80px;
-        max-width: 200px;
-    }
-}
-
 .btn-custom {
     background: var(--primary-color);
     border: 2px solid var(--primary-color);
@@ -248,12 +240,6 @@ body {
     min-height: calc(100vh - 200px);
     padding-top: 100px;
     background: var(--white);
-}
-
-@media (max-width: 768px) {
-    .main-content {
-        padding-top: 120px;
-    }
 }
 
 .content-card {
@@ -626,14 +612,7 @@ body {
 /* Responsive Design Enhancements */
 @media (max-width: 768px) {
     .main-content {
-        padding-top: 140px;
-        padding-left: 15px;
-        padding-right: 15px;
-    }
-    
-    .navbar {
-        padding: 0.5rem 0;
-        min-height: 70px;
+        padding-top: 80px;
     }
     
     .navbar-nav {
@@ -648,8 +627,6 @@ body {
     .btn-custom {
         margin-top: 1rem;
         width: 100%;
-        padding: 12px 16px !important;
-        font-size: 16px !important;
     }
     
     /* Mobile dropdown styles */
@@ -671,76 +648,6 @@ body {
         border-radius: 4px;
         margin: 4px 0;
         color: var(--primary-color);
-    }
-    
-    /* Mobile content cards */
-    .content-card {
-        padding: 1.5rem !important;
-        margin: 0;
-        border-radius: 8px;
-    }
-    
-    /* Mobile column adjustments */
-    .col-lg-6.col-md-8 {
-        padding-left: 10px;
-        padding-right: 10px;
-    }
-    
-    /* Mobile form improvements */
-    .form-control {
-        font-size: 16px !important;
-        padding: 12px 15px;
-    }
-    
-    .form-control-lg {
-        font-size: 16px !important;
-        padding: 15px 18px;
-    }
-    
-    /* Mobile button improvements */
-    .btn-lg {
-        padding: 15px 20px;
-        font-size: 16px;
-    }
-    
-    /* Prevent zoom on input focus */
-    input[type="text"],
-    input[type="password"],
-    input[type="email"],
-    select,
-    textarea {
-        font-size: 16px !important;
-    }
-    
-    /* Container improvements */
-    .container {
-        max-width: 100%;
-        padding-left: 15px;
-        padding-right: 15px;
-    }
-    
-    /* Page header mobile adjustments */
-    .page-header {
-        font-size: 1.75rem !important;
-    }
-    
-    .page-header::after {
-        width: 60px;
-        height: 2px;
-    }
-    
-    /* Icon size adjustments for mobile */
-    .content-card .text-center i {
-        font-size: 3rem !important;
-    }
-    
-    /* Better mobile spacing for login forms */
-    .text-center.mb-4 {
-        margin-bottom: 2rem !important;
-    }
-    
-    .text-center.mt-4 {
-        margin-top: 2rem !important;
     }
                
             /* Mobile Hero Section */
