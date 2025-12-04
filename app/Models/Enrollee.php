@@ -332,7 +332,7 @@ class Enrollee extends Authenticatable
 
         foreach ($documents as $document) {
             if (is_array($document) && isset($document['status'])) {
-                if (in_array($document['status'], ['approved', 'rejected', 'verified'])) {
+                if (in_array($document['status'], ['approved', 'rejected', 'verified', 'revised'])) {
                     $reviewed++;
                 }
             }

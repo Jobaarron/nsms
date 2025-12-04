@@ -387,8 +387,57 @@ function setupDocumentFilters() {
  * Approve application from applications page
  */
 function approveApplication(applicationId) {
-    if (confirm('Are you sure you want to approve this application?')) {
-        fetch(`/registrar/applications/${applicationId}/approve`, {
+    // First fetch application details to validate document status
+    showLoading();
+    
+    fetch(`/registrar/applications/${applicationId}`, {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        
+        if (!data.success) {
+            showAlert('Failed to load application details.', 'error');
+            return;
+        }
+        
+        // Check if all documents are approved
+        const documents = data.application.documents;
+        let hasNonApprovedDocs = false;
+        let statusDetails = [];
+        
+        if (documents && Array.isArray(documents) && documents.length > 0) {
+            documents.forEach((doc, index) => {
+                const status = doc.status || 'pending';
+                if (status !== 'approved') {
+                    hasNonApprovedDocs = true;
+                    statusDetails.push(`Document ${index + 1}: ${status}`);
+                }
+            });
+        }
+        
+        if (hasNonApprovedDocs) {
+            let message = 'Cannot approve application. The following documents are not approved:<br><br>';
+            message += statusDetails.join('<br>');
+            message += '<br><br>All documents must be approved before the application can be approved.';
+            
+            if (statusDetails.some(s => s.includes('revised'))) {
+                message += ' Documents marked as "revised" need to be resubmitted by the applicant first.';
+            }
+            
+            showAlert(message, 'warning');
+            return;
+        }
+        
+        // All documents are approved, proceed with confirmation
+        if (confirm('Are you sure you want to approve this application?')) {
+            showLoading();
+            fetch(`/registrar/applications/${applicationId}/approve`, {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
@@ -398,16 +447,24 @@ function approveApplication(applicationId) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert('Application approved successfully!');
+                showAlert('Application approved successfully!', 'success');
                 location.reload(); // Reload the page to show updated status
             } else {
-                alert('Error approving application. Please try again.');
+                showAlert(data.message || 'Error approving application. Please try again.', 'error');
             }
         })
         .catch(error => {
-            alert('Error approving application. Please try again.');
+            showAlert('Error approving application. Please try again.', 'error');
+        })
+        .finally(() => {
+            hideLoading();
         });
-    }
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        showAlert('Failed to load application details.', 'error');
+    });
 }
 
 /**
@@ -780,7 +837,17 @@ function populateApplicationModal(application) {
 function approveApplicationFromModal(applicationId) {
     // Check if all documents are approved first
     if (!checkAllDocumentsApproved()) {
-        showAlert('All documents must be approved before approving the application', 'warning');
+        let message = 'Cannot approve application. All documents must be approved first.';
+        if (checkAllDocumentsApproved.hasRevised) {
+            message += ' Documents marked as "Revised" need to be resubmitted and approved by the applicant before you can approve the application.';
+        }
+        if (checkAllDocumentsApproved.hasRejected) {
+            message += ' Rejected documents must be approved.';
+        }
+        if (checkAllDocumentsApproved.hasPending) {
+            message += ' Pending documents must be reviewed first.';
+        }
+        showAlert(message, 'warning');
         return;
     }
     
@@ -797,12 +864,24 @@ function checkAllDocumentsApproved() {
     if (documents.length === 0) return true; // No documents, allow approval
     
     let allApproved = true;
+    let hasRevised = false;
+    let hasRejected = false;
+    let hasPending = false;
+    
     documents.forEach(doc => {
         const status = doc.getAttribute('data-document-status');
         if (status !== 'approved') {
             allApproved = false;
+            if (status === 'revised') hasRevised = true;
+            if (status === 'rejected') hasRejected = true;
+            if (status === 'pending') hasPending = true;
         }
     });
+    
+    // Store status for better error messages
+    checkAllDocumentsApproved.hasRevised = hasRevised;
+    checkAllDocumentsApproved.hasRejected = hasRejected;
+    checkAllDocumentsApproved.hasPending = hasPending;
     
     return allApproved;
 }
@@ -821,7 +900,17 @@ function updateApproveButtonState() {
     } else {
         approveBtn.disabled = true;
         approveBtn.style.opacity = '0.5';
-        approveBtn.title = 'All documents must be approved first';
+        let message = 'All documents must be approved first.';
+        if (checkAllDocumentsApproved.hasRevised) {
+            message += ' Documents marked as "Revised" need to be resubmitted and approved.';
+        }
+        if (checkAllDocumentsApproved.hasRejected) {
+            message += ' Rejected documents must be approved.';
+        }
+        if (checkAllDocumentsApproved.hasPending) {
+            message += ' Pending documents must be reviewed.';
+        }
+        approveBtn.title = message;
     }
 }
 
@@ -1422,11 +1511,11 @@ function viewDocuments(applicationId) {
             const modal = new bootstrap.Modal(document.getElementById('documentsModal'));
             modal.show();
         } else {
-            showAlert('error', data.message || 'Failed to load documents');
+            showAlert(data.message || 'Failed to load documents', 'error');
         }
     })
     .catch(error => {
-        showAlert('error', 'Failed to load documents');
+        showAlert('Failed to load documents', 'error');
     });
 }
 
@@ -1488,7 +1577,8 @@ function getDocumentStatusBadge(status) {
     const badges = {
         'pending': '<span class="badge bg-warning text-dark">Pending Review</span>',
         'approved': '<span class="badge bg-success">Approved</span>',
-        'rejected': '<span class="badge bg-danger">Rejected</span>'
+        'rejected': '<span class="badge bg-danger">Rejected</span>',
+        'revised': '<span class="badge bg-warning">Revised</span>'
     };
     return badges[status] || badges['pending'];
 }
@@ -1509,7 +1599,7 @@ function viewDocumentFile(path) {
     if (path) {
         window.open(`/storage/${path}`, '_blank');
     } else {
-        showAlert('error', 'Document path not found');
+        showAlert('Document path not found', 'error');
     }
 }
 
@@ -1585,15 +1675,15 @@ function updateDocumentStatus(documentIndex, status, notes = '') {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            showAlert('success', `Document ${status} successfully`);
+            showAlert(`Document ${status} successfully`, 'success');
             // Refresh the documents view
             viewDocuments(currentApplicationId);
         } else {
-            showAlert('error', data.message || `Failed to ${status} document`);
+            showAlert(data.message || `Failed to ${status} document`, 'error');
         }
     })
     .catch(error => {
-        showAlert('error', `Failed to ${status} document`);
+        showAlert(`Failed to ${status} document`, 'error');
     })
     .finally(() => {
         hideLoading();
@@ -1955,7 +2045,7 @@ const sendNoticeToApplicant = sendNotificationToApplicant;
 // Bulk approve applications
 function bulkApprove() {
     if (selectedApplications.length === 0) {
-        showAlert('warning', 'Please select applications to approve.');
+        showAlert('Please select applications to approve.', 'warning');
         return;
     }
     
@@ -1966,7 +2056,7 @@ function bulkApprove() {
 // Bulk decline applications
 function bulkDecline() {
     if (selectedApplications.length === 0) {
-        showAlert('warning', 'Please select applications to decline.');
+        showAlert('Please select applications to decline.', 'warning');
         return;
     }
     
@@ -2074,14 +2164,14 @@ function confirmBulkAction() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            showAlert('success', `Successfully ${currentBulkAction}ed ${selectedApplications.length} application(s)`);
+            showAlert(`Successfully ${currentBulkAction}ed ${selectedApplications.length} application(s)`, 'success');
             location.reload(); // Refresh the page to show updated data
         } else {
-            showAlert('error', data.message || `Failed to ${currentBulkAction} applications`);
+            showAlert(data.message || `Failed to ${currentBulkAction} applications`, 'error');
         }
     })
     .catch(error => {
-        showAlert('error', `Failed to ${currentBulkAction} applications`);
+        showAlert(`Failed to ${currentBulkAction} applications`, 'error');
     })
     .finally(() => {
         hideLoading();
@@ -2351,7 +2441,7 @@ function submitBulkNotice() {
 // Bulk delete applications
 function bulkDelete() {
     if (selectedApplications.length === 0) {
-        showAlert('warning', 'Please select applications to delete.');
+        showAlert('Please select applications to delete.', 'warning');
         return;
     }
     
@@ -2362,7 +2452,7 @@ function bulkDelete() {
 // Export selected applications
 function exportSelected() {
     if (selectedApplications.length === 0) {
-        showAlert('warning', 'Please select applications to export.');
+        showAlert('Please select applications to export.', 'warning');
         return;
     }
     
@@ -2371,7 +2461,7 @@ function exportSelected() {
     selectedApplications.forEach(id => params.append('ids[]', id));
     
     window.open(`/registrar/applications/export?${params.toString()}`, '_blank');
-    showAlert('info', 'Export started for selected applications.');
+    showAlert('Export started for selected applications.', 'info');
 }
 
 // Clear all selections
@@ -2389,7 +2479,7 @@ function clearAllSelections() {
     
     selectedApplications = [];
     updateBulkActionsPanel();
-    showAlert('info', 'All selections cleared.');
+    showAlert('All selections cleared.', 'info');
 }
 
 // Refresh data based on active tab

@@ -270,12 +270,19 @@ window.RegistrarDocumentManagement = (function() {
         statusBadge.textContent = docData.status === 'rejected' ? 'Revised' : docData.status;
         statusBadge.className = `badge ${getDocumentStatusBadge(docData.status)}`;
         
-        // Disable action buttons if document is in revised status
+        // Disable action buttons based on document status
         const acceptBtn = document.getElementById('accept-document-btn');
         const rejectBtn = document.getElementById('reject-document-btn');
         const isRevised = docData.status === 'rejected' || docData.status === 'revised';
+        const isApproved = docData.status === 'approved';
         
-        if (isRevised) {
+        if (isApproved) {
+            // Document is approved - disable all action buttons but keep original labels
+            acceptBtn.disabled = true;
+            rejectBtn.disabled = true;
+            acceptBtn.style.opacity = '0.5';
+            rejectBtn.style.opacity = '0.5';
+        } else if (isRevised) {
             // Disable buttons and show message
             acceptBtn.disabled = true;
             rejectBtn.disabled = true;
@@ -288,6 +295,8 @@ window.RegistrarDocumentManagement = (function() {
             acceptBtn.innerHTML = '<i class="ri-check-line me-1"></i>Accept Document';
             rejectBtn.innerHTML = '<i class="ri-edit-line me-1"></i>Revised Document';
             rejectBtn.style.display = 'block';
+            acceptBtn.style.opacity = '1';
+            rejectBtn.style.opacity = '1';
         }
         
         // Load document preview
@@ -390,8 +399,16 @@ window.RegistrarDocumentManagement = (function() {
                 const acceptBtn = document.getElementById('accept-document-btn');
                 const rejectBtn = document.getElementById('reject-document-btn');
                 const isRevised = status === 'rejected' || status === 'revised';
+                const isApproved = status === 'approved';
                 
-                if (isRevised) {
+                if (isApproved) {
+                    // Document is approved - disable all action buttons but keep original labels
+                    acceptBtn.disabled = true;
+                    rejectBtn.disabled = true;
+                    acceptBtn.style.opacity = '0.5';
+                    rejectBtn.style.opacity = '0.5';
+                    rejectBtn.style.display = 'block';
+                } else if (isRevised) {
                     // Disable buttons and show message
                     acceptBtn.disabled = true;
                     rejectBtn.disabled = true;
@@ -404,6 +421,8 @@ window.RegistrarDocumentManagement = (function() {
                     acceptBtn.innerHTML = '<i class="ri-check-line me-1"></i>Accept Document';
                     rejectBtn.innerHTML = '<i class="ri-edit-line me-1"></i>Revised Document';
                     rejectBtn.style.display = 'block';
+                    acceptBtn.style.opacity = '1';
+                    rejectBtn.style.opacity = '1';
                 }
                 
                 // Refresh documents list
