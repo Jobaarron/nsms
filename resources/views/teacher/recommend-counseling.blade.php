@@ -384,7 +384,7 @@
           btn.disabled = true;
           btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Marking...';
           
-          fetch('{{ route("teacher.mark-alert-viewed") }}', {
+          fetch('{{ route("teacher.advisory.mark-alert-viewed") }}', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -394,7 +394,12 @@
               alert_type: 'counseling'
             })
           })
-          .then(response => response.json())
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+          })
           .then(data => {
             if (data.success) {
               btn.innerHTML = '<i class="ri-check-double-line me-1"></i>Viewed';
@@ -418,12 +423,15 @@
               setTimeout(() => {
                 scheduledModal.hide();
               }, 1000);
+            } else {
+              throw new Error('Server returned success: false');
             }
           })
           .catch(error => {
+            console.error('Error marking as viewed:', error);
             btn.disabled = false;
             btn.innerHTML = '<i class="ri-check-line me-1"></i>Mark as Viewed';
-            alert('Failed to mark as viewed. Please try again.');
+            alert('Failed to mark as viewed: ' + error.message + '. Please try again.');
           });
         });
       @endif

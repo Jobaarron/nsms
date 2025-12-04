@@ -228,6 +228,24 @@ class RegistrarController extends Controller
                 $application = Enrollee::where('application_id', $id)->firstOrFail();
             }
 
+            // Check if all documents are approved before allowing application approval
+            $documents = $application->documents;
+            if (is_string($documents)) {
+                $documents = json_decode($documents, true);
+            }
+            
+            if (is_array($documents) && count($documents) > 0) {
+                foreach ($documents as $document) {
+                    $status = $document['status'] ?? 'pending';
+                    if (in_array($status, ['revised', 'rejected', 'pending'])) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Cannot approve application. All documents must be approved first. Found documents with status: ' . $status . '. Please review and approve all documents before approving the application.'
+                        ], 422);
+                    }
+                }
+            }
+
             $application->update([
                 'enrollment_status' => 'approved',
                 'approved_at' => now(),
@@ -649,7 +667,7 @@ class RegistrarController extends Controller
     {
         $request->validate([
             'document_index' => 'required|integer',
-            'status' => 'required|in:pending,approved,rejected',
+            'status' => 'required|in:pending,approved,rejected,revised',
             'notes' => 'nullable|string|max:500'
         ]);
 
@@ -822,7 +840,33 @@ class RegistrarController extends Controller
                 ->get();
 
             $approvedCount = 0;
+            $skippedCount = 0;
+            $skippedApplications = [];
+
             foreach ($applications as $application) {
+                // Check if all documents are approved before allowing application approval
+                $documents = $application->documents;
+                if (is_string($documents)) {
+                    $documents = json_decode($documents, true);
+                }
+                
+                $canApprove = true;
+                if (is_array($documents) && count($documents) > 0) {
+                    foreach ($documents as $document) {
+                        $status = $document['status'] ?? 'pending';
+                        if (in_array($status, ['revised', 'rejected', 'pending'])) {
+                            $canApprove = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (!$canApprove) {
+                    $skippedCount++;
+                    $skippedApplications[] = $application->application_id;
+                    continue;
+                }
+
                 $application->update([
                     'enrollment_status' => 'approved',
                     'approved_at' => now(),
@@ -841,9 +885,17 @@ class RegistrarController extends Controller
                 $approvedCount++;
             }
 
+            $message = "Successfully approved {$approvedCount} application(s)";
+            if ($skippedCount > 0) {
+                $message .= ". {$skippedCount} application(s) were skipped because they contain documents that are not approved (revised, rejected, or pending): " . implode(', ', $skippedApplications);
+            }
+
             return response()->json([
                 'success' => true,
-                'message' => "Successfully approved {$approvedCount} application(s)"
+                'message' => $message,
+                'approved_count' => $approvedCount,
+                'skipped_count' => $skippedCount,
+                'skipped_applications' => $skippedApplications
             ]);
         } catch (\Exception $e) {
             Log::error('Error in bulk approve: ' . $e->getMessage());

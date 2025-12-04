@@ -105,7 +105,8 @@
             $isClassAdviser = $currentTeacher ? $currentTeacher->isClassAdviser() : false;
             // Pass user_id (not teacher id) since adviser_id in case_meetings table references users.id
             $unrepliedObservationReportsCount = $currentUser && $currentTeacher ? \App\Models\CaseMeeting::getUnrepliedObservationReportsCountForTeacher($currentUser->id) : 0;
-            $observationReportsViewed = session('observation_reports_alert_viewed', false);
+            // Only hide if there are no database notifications (database-driven approach)
+            $observationReportsViewed = ($unrepliedObservationReportsCount === 0);
           @endphp
 
           @if($isClassAdviser)
@@ -130,7 +131,8 @@
               @php
                 // Pass user_id (not teacher id) since recommended_by in counseling_sessions table references users.id
                 $scheduledCounselingCount = $currentUser && $currentTeacher ? \App\Models\CounselingSession::getScheduledCounselingCountForAdviser($currentUser->id) : 0;
-                $counselingViewed = session('counseling_alert_viewed', false);
+                // Only hide if there are no database notifications (since markAlertViewed updates the database)
+                $counselingViewed = ($scheduledCounselingCount === 0);
               @endphp
               <a class="nav-link {{ request()->routeIs('teacher.recommend-counseling.*') ? 'active' : '' }} position-relative" href="{{ route('teacher.recommend-counseling.form') }}" title="Recommend Counseling" id="counseling-link" data-alert-link="counseling" style="{{ ($scheduledCounselingCount > 0 && !$counselingViewed) ? 'background-color: #f8d7da; border-left: 4px solid #dc3545; padding-left: calc(0.75rem - 4px);' : '' }}">
                 <i class="ri-heart-pulse-line me-2"></i><span>Recommend Counseling</span>

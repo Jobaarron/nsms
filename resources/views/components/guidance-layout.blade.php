@@ -44,7 +44,6 @@
   @vite(['resources/css/index_guidance.css'])
   @vite(['resources/css/collapsible-sidebar.css'])
   @vite(['resources/js/collapsible-sidebar.js'])
-  @vite(['resources/js/guidance-alerts-manager.js'])
   
 </head>
 <body>

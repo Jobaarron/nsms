@@ -8,6 +8,7 @@ use App\Models\Student;
 use App\Models\User;
 use App\Http\Controllers\EnrollmentController;
 use App\Http\Controllers\TeacherController;
+use App\Http\Controllers\TeacherAdvisoryController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\EnrolleeController;
@@ -208,12 +209,12 @@ Route::middleware(['auth', 'role:teacher'])->prefix('teacher')->name('teacher.')
     // Class Adviser Only Routes - Protected by teacher.adviser middleware
     Route::middleware(['teacher.adviser'])->group(function () {
         // Teacher Counseling Recommendation Routes
-        Route::get('/recommend-counseling', [TeacherController::class, 'showRecommendForm'])
+        Route::get('/recommend-counseling', [TeacherAdvisoryController::class, 'showRecommendForm'])
             ->name('recommend-counseling.form');
-        Route::post('/recommend-counseling', [TeacherController::class, 'recommendToCounseling'])
+        Route::post('/recommend-counseling', [TeacherAdvisoryController::class, 'recommendToCounseling'])
             ->name('recommend-counseling');
         // Route for the Teacher Observation Report page
-        Route::get('/observationreport', [TeacherController::class, 'showObservationReport'])
+        Route::get('/observationreport', [TeacherAdvisoryController::class, 'showObservationReport'])
             ->name('observationreport');
 
         // Route to serve the dynamic teacher observation report PDF
@@ -221,7 +222,7 @@ Route::middleware(['auth', 'role:teacher'])->prefix('teacher')->name('teacher.')
             ->name('observationreport.pdf');
 
         // Teacher Observation Report: Teacher Reply (update case meeting)
-        Route::post('/observationreport/reply/{caseMeeting}', [App\Http\Controllers\TeacherController::class, 'submitObservationReply'])
+        Route::post('/observationreport/reply/{caseMeeting}', [App\Http\Controllers\TeacherAdvisoryController::class, 'submitObservationReply'])
             ->name('observationreport.reply');
 
         // Teacher Advisory Routes
@@ -289,9 +290,17 @@ Route::middleware(['auth', 'role:teacher|faculty_head'])->prefix('teacher')->nam
     Route::post('/grades/upload', [App\Http\Controllers\TeacherGradeController::class, 'upload'])
         ->name('grades.upload');
     
-    // Mark alert as viewed
+    // Mark alert as viewed (grades only)
     Route::post('/mark-alert-viewed', [App\Http\Controllers\TeacherController::class, 'markAlertViewed'])
         ->name('mark-alert-viewed');
+        
+    // Advisory-specific routes
+    Route::prefix('advisory')->name('advisory.')->group(function () {
+        Route::post('/mark-alert-viewed', [App\Http\Controllers\TeacherAdvisoryController::class, 'markAlertViewed'])
+            ->name('mark-alert-viewed');
+        Route::get('/alerts/counts', [App\Http\Controllers\TeacherAdvisoryController::class, 'getAdvisoryAlertCounts'])
+            ->name('alerts.counts');
+    });
     
     // Get alert counts
     Route::get('/alerts/counts', [App\Http\Controllers\TeacherController::class, 'getAlertCounts'])
