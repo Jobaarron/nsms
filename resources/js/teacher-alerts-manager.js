@@ -37,7 +37,8 @@ function startRealTimeAlertPolling() {
 
 async function fetchAlertCounts() {
     try {
-        const response = await fetch('/teacher/alerts/counts', {
+        // Fetch general teacher alerts (grades only)
+        const teacherResponse = await fetch('/teacher/alerts/counts', {
             method: 'GET',
             headers: {
                 'Accept': 'application/json',
@@ -47,15 +48,42 @@ async function fetchAlertCounts() {
             credentials: 'same-origin'
         });
         
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+        let teacherCounts = { draft_grades: 0 };
+        if (teacherResponse.ok) {
+            const teacherData = await teacherResponse.json();
+            if (teacherData.success) {
+                teacherCounts = teacherData.counts;
+            }
         }
         
-        const data = await response.json();
-        
-        if (data.success) {
-            updateAlertBadges(data.counts);
+        // Fetch advisory alerts (observation reports and counseling) if user is adviser
+        let advisoryCounts = { unreplied_reports: 0, scheduled_counseling: 0 };
+        if (document.getElementById('observation-reports-link') || document.getElementById('counseling-link')) {
+            const advisoryResponse = await fetch('/teacher/advisory/alerts/counts', {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                },
+                credentials: 'same-origin'
+            });
+            
+            if (advisoryResponse.ok) {
+                const advisoryData = await advisoryResponse.json();
+                if (advisoryData.success) {
+                    advisoryCounts = advisoryData.counts;
+                }
+            }
         }
+        
+        // Combine all counts
+        const allCounts = {
+            ...teacherCounts,
+            ...advisoryCounts
+        };
+        
+        updateAlertBadges(allCounts);
     } catch (error) {
     }
 }
