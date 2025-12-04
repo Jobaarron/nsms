@@ -1,9 +1,9 @@
 <x-teacher-layout>
   @vite(['resources/js/teacher-advisory.js'])
   <!-- MAIN CONTENT -->
-  <main class="col-12 col-md-10 px-4 py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <h1 class="section-title mb-0">Advisory</h1>
+  <main class="container-fluid px-3 px-md-4 py-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
+      <h1 class="section-title mb-2 mb-md-0">Advisory</h1>
       <div class="text-muted">
         <i class="ri-calendar-line me-1"></i>{{ $currentAcademicYear }}
       </div>
@@ -45,9 +45,10 @@
       </div>
       <div class="card-body">
         @if($students->count() > 0)
-          <div class="table-responsive">
-            <table class="table table-hover">
-              <thead>
+          <!-- Desktop Table View -->
+          <div class="table-responsive d-none d-md-block">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
                 <tr>
                   <th>Student ID</th>
                   <th>Name</th>
@@ -80,17 +81,17 @@
                     @endif
                   </td>
                   <td>
-                    <div class="btn-group" role="group">
-                      <button type="button" class="btn btn-sm btn-outline-primary" 
+                    <div class="btn-group btn-group-sm" role="group">
+                      <button type="button" class="btn btn-outline-primary" 
                               onclick="viewStudentGrades({{ $student->id }}, '{{ $student->grade_level }}')" title="View Grades">
                         <i class="ri-file-list-3-line"></i>
                       </button>
-                      <button type="button" class="btn btn-sm btn-outline-success" 
+                      <button type="button" class="btn btn-outline-success" 
                               onclick="printReportCard({{ $student->id }}, '{{ $student->grade_level }}')" title="Print Report Card">
                         <i class="ri-printer-line"></i>
                       </button>
                       <a href="{{ route('teacher.recommend-counseling.form', ['student_id' => $student->id]) }}" 
-                         class="btn btn-sm btn-outline-warning" title="Recommend Counseling">
+                         class="btn btn-outline-warning" title="Recommend Counseling">
                         <i class="ri-heart-pulse-line"></i>
                       </a>
                     </div>
@@ -99,6 +100,49 @@
                 @endforeach
               </tbody>
             </table>
+          </div>
+
+          <!-- Mobile Card View -->
+          <div class="d-md-none">
+            @foreach($students as $student)
+            <div class="card mb-3">
+              <div class="card-body p-3">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <div class="flex-grow-1">
+                    <h6 class="card-title mb-1">
+                      {{ $student->last_name }}, {{ $student->first_name }}
+                      @if($student->middle_name) {{ $student->middle_name }} @endif
+                    </h6>
+                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                      <span class="badge bg-primary">{{ $student->student_id }}</span>
+                      <span class="badge bg-info">{{ $student->grade_level }} - {{ $student->section }}</span>
+                    </div>
+                    @if($student->suffix)
+                      <small class="text-muted mt-1 d-block">{{ $student->suffix }}</small>
+                    @endif
+                    @if($student->contact_number)
+                      <small class="text-muted d-block">{{ $student->contact_number }}</small>
+                    @endif
+                  </div>
+                </div>
+                
+                <div class="d-flex gap-2 flex-wrap">
+                  <button type="button" class="btn btn-outline-primary btn-sm flex-fill" 
+                          onclick="viewStudentGrades({{ $student->id }}, '{{ $student->grade_level }}')">
+                    <i class="ri-file-list-3-line me-1"></i>Grades
+                  </button>
+                  <button type="button" class="btn btn-outline-success btn-sm flex-fill" 
+                          onclick="printReportCard({{ $student->id }}, '{{ $student->grade_level }}')">
+                    <i class="ri-printer-line me-1"></i>Report
+                  </button>
+                  <a href="{{ route('teacher.recommend-counseling.form', ['student_id' => $student->id]) }}" 
+                     class="btn btn-outline-warning btn-sm flex-fill">
+                    <i class="ri-heart-pulse-line me-1"></i>Counseling
+                  </a>
+                </div>
+              </div>
+            </div>
+            @endforeach
           </div>
         @else
           <div class="text-center text-muted py-4">

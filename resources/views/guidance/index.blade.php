@@ -2,7 +2,9 @@
     @vite('resources/css/index_guidance.css')
     @vite('resources/css/enhanced-dashboard.css')
     
-    <!-- Header -->
+    <!-- Main Content -->
+    <main class="container-fluid px-3 px-md-4 py-4">
+        <!-- Header -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
@@ -1194,4 +1196,5 @@
             });
         });
     </script>
+    </main>
 </x-guidance-layout>

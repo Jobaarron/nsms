@@ -20,8 +20,10 @@
         </style>
     @endpush
 
-    <!-- Page Header -->
-    <div class="row mb-4">
+    <!-- Main Content -->
+    <main class="container-fluid px-3 px-md-4 py-4">
+        <!-- Page Header --> -->
+        <div class="row mb-4">
             <div class="col-12">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
@@ -36,7 +38,6 @@
             </div>
         </div>
 
-      
         @if($student->enrollment_status === 'pre_registered')
             <div class="row mb-4">
                 <div class="col-12">
@@ -56,9 +57,9 @@
                 </div>
             </div>
         @elseif($student->enrollment_status === 'enrolled')
-            <div class="row mb-4">
-                <div class="col-12">
-                    <div class="alert alert-success border-0 shadow-sm" data-alert-type="enrollment_complete">
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="alert alert-success border-0 shadow-sm" data-alert-type="payment_complete">
                         <div class="d-flex align-items-center">
                             <i class="ri-check-line fs-4 me-3"></i>
                             <div class="flex-grow-1">
@@ -107,9 +108,9 @@
                     </div>
                 </div>
             @elseif($student->total_paid > 0)
-                <div class="row mb-4">
-                    <div class="col-12">
-                        <div class="alert alert-warning border-0 shadow-sm" data-alert-type="partial_payment">
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="alert alert-warning border-0 shadow-sm" data-alert-type="partial_payment">
                             <div class="d-flex align-items-center">
                                 <i class="ri-money-dollar-circle-line fs-4 me-3"></i>
                                 <div class="flex-grow-1">
@@ -270,8 +271,8 @@
                 </div>
             </div>
 
-           
-            <div class="col-6 col-sm-6 col-lg-4">
+            <!-- Right Column -->
+            <div class="col-lg-4">
                 
                 <div class="card border-0 shadow-sm mb-4">
                     <div class="card-body text-center">
@@ -372,6 +373,7 @@
                 </div>
             </div>
         </div>
+    </main>
 
     @push('scripts')
         @vite('resources/js/student-dashboard.js')

@@ -1,5 +1,6 @@
 <x-registrar-layout>
-    <div class="py-4">
+    <!-- Main Content -->
+    <main class="container-fluid px-3 px-md-4 py-4">
         <!-- HEADER SECTION -->
         <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-4 gap-3">
             <div>
@@ -311,6 +312,6 @@
                 </div>
             </div>
         </div>
-    </div>
+    </main>
 
 </x-registrar-layout>

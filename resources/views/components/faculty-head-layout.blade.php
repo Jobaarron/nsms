@@ -44,6 +44,16 @@
   @vite(['resources/js/collapsible-sidebar.js'])
   @vite(['resources/js/faculty-head-alerts-manager.js'])
 
+  <style>
+    .spin {
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+  </style>
+
 </head>
 <body>
   <!-- Sidebar Toggle Button (Desktop & Mobile) -->
@@ -64,7 +74,7 @@
       <div class="user-role">{{ ucwords(str_replace('_', ' ', Auth::user()->getRoleNames()->first())) }}</div>
     </div>
         
-        <ul class="nav flex-column">
+        <ul class="nav flex-column px-3">
           <li class="nav-item mb-2">
             <a class="nav-link {{ request()->routeIs('faculty-head.dashboard') ? 'active' : '' }}" href="{{ route('faculty-head.dashboard') }}" title="Dashboard">
               <i class="ri-dashboard-line me-2"></i><span>Dashboard</span>

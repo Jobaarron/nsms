@@ -8,8 +8,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     @vite(['resources/js/enrollee-index.js'])
-    <div class="py-4">
-        <h1 class="section-title">Welcome, {{ $enrollee->first_name ?? 'Applicant' }}</h1>
+    
+    <!-- Main Content -->
+    <main class="container-fluid px-3 px-md-4 py-4">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
+            <h1 class="section-title mb-2 mb-md-0">Welcome, {{ $enrollee->first_name ?? 'Applicant' }}</h1>
+            <div class="text-muted">
+                <i class="ri-user-add-line me-1"></i>Application Portal
+            </div>
+        </div>
         
         @if($enrollee->enrollment_status === 'pending')
             <div class="alert alert-warning d-flex align-items-center mb-4">
@@ -267,7 +274,7 @@
                 </a>
             </div>
         </div>
-    </div>
+    </main>
 
     @vite(['resources/js/enrollee-index.js'])
 

@@ -40,10 +40,10 @@
     />
 
   
-  @vite('resources/sass/app.scss')
+  <!-- App CSS & JS (includes Bootstrap 5 via Vite) -->
+  @vite(['resources/sass/app.scss','resources/js/app.js'])
   @vite(['resources/css/index_registrar.css'])
   @vite(['resources/css/collapsible-sidebar.css'])
-  @vite(['resources/js/app.js'])
   @vite(['resources/js/registrar-class-lists.js'])
   @vite(['resources/js/registrar-dashboard.js'])
   @vite(['resources/js/registrar-applicant-archives.js'])
@@ -53,11 +53,11 @@
 </head>
 <body>
 
-  <button class="sidebar-toggle d-block" type="button">
-    <i class="ri-menu-line"></i>
+  <!-- Sidebar Toggle Button (Desktop & Mobile) -->
+  <button class="sidebar-toggle d-md-block" type="button">
+    <i class="ri-menu-fold-line"></i>
   </button>
 
-  
   <nav class="sidebar py-4 bg-white border-end">
     
     <div class="text-center mb-3">
@@ -105,7 +105,7 @@
           <li class="nav-item mb-2">
             <form class="logout-form" action="{{ route('registrar.logout') }}" method="POST">
               @csrf
-              <button type="submit" class="nav-link text-danger border-0 bg-transparent w-100 text-start d-flex align-items-center" style="font-weight: 600;" title="Logout">
+              <button type="submit" class="btn btn-logout w-100" title="Logout">
                 <i class="ri-logout-box-line me-2"></i><span>Logout</span>
               </button>
             </form>
@@ -113,25 +113,8 @@
         </ul>
       </nav>
 
-  <!-- Mobile Overlay -->
-  <div class="mobile-overlay"></div>
-
   <div class="main-content-wrapper">
     <main class="px-3 px-md-4 py-4">
-      <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2 section-title">
-          <i class="ri-building-line me-2"></i>
-          Registrar Portal
-        </h1>
-        <div class="btn-toolbar mb-2 mb-md-0">
-          <div class="btn-group me-2">
-            <span class="badge bg-primary">
-              {{ now()->format('M d, Y') }}
-            </span>
-          </div>
-        </div>
-      </div>
-
       {{ $slot }}
     </main>
   </div>

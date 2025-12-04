@@ -1,8 +1,8 @@
 <x-teacher-layout>
   <!-- MAIN CONTENT -->
-  <main class="col-12 col-md-10 px-4 py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <h1 class="section-title mb-0">Teacher Dashboard</h1>
+  <main class="container-fluid px-3 px-md-4 py-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
+      <h1 class="section-title mb-2 mb-md-0">Teacher Dashboard</h1>
       <div class="text-muted">
         <i class="ri-calendar-line me-1"></i>{{ $currentAcademicYear ?? date('Y') . '-' . (date('Y') + 1) }}
       </div>
@@ -56,21 +56,21 @@
 
     <!-- SUMMARY CARDS -->
     <div class="row g-3 mb-4">
-      <div class="col-6 col-sm-6 col-lg-3">
+      <div class="col-6 col-md-4 col-lg-3">
         <div class="card card-summary card-application h-100">
-          <div class="card-body text-center">
-            <i class="ri-book-2-line display-6 mb-2"></i>
-            <div>My Classes</div>
-            <h3>{{ $stats['total_classes'] ?? 0 }}</h3>
+          <div class="card-body text-center p-3">
+            <i class="ri-book-2-line fs-2 mb-2 d-block"></i>
+            <div class="small">My Classes</div>
+            <h4 class="mb-0">{{ $stats['total_classes'] ?? 0 }}</h4>
           </div>
         </div>
       </div>
-      <div class="col-6 col-sm-6 col-lg-3">
+      <div class="col-6 col-md-4 col-lg-3">
         <div class="card card-summary card-payment h-100">
-          <div class="card-body text-center">
-            <i class="ri-file-list-3-line display-6 mb-2"></i>
-            <div>Grade Submissions</div>
-            <h3>{{ $stats['grade_submissions'] ?? 0 }}</h3>
+          <div class="card-body text-center p-3">
+            <i class="ri-file-list-3-line fs-2 mb-2 d-block"></i>
+            <div class="small">Grade Submissions</div>
+            <h4 class="mb-0">{{ $stats['grade_submissions'] ?? 0 }}</h4>
           </div>
         </div>
       </div>
@@ -84,8 +84,9 @@
         </h5>
       </div>
       <div class="card-body p-0">
-        <div class="table-responsive">
-          <table class="table table-hover align-middle">
+        <!-- Desktop Table View -->
+        <div class="table-responsive d-none d-md-block">
+          <table class="table table-hover align-middle mb-0">
             <thead class="table-light">
               <tr>
                 <th>Subject</th>
@@ -164,6 +165,76 @@
             </tbody>
           </table>
         </div>
+
+        <!-- Mobile Card View -->
+        <div class="d-md-none">
+          @forelse($assignments as $assignment)
+          <div class="card mb-3 mx-3">
+            <div class="card-body p-3">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="flex-grow-1">
+                  <h6 class="card-title mb-1">{{ $assignment->subject->subject_name ?? 'Class Adviser' }}</h6>
+                  @if($assignment->subject)
+                    <small class="text-muted">{{ $assignment->subject->subject_code }}</small>
+                  @endif
+                </div>
+                <div class="text-end">
+                  @if($assignment->status === 'active')
+                    <span class="badge bg-success">Active</span>
+                  @else
+                    <span class="badge bg-secondary">Inactive</span>
+                  @endif
+                </div>
+              </div>
+              
+              <div class="mb-2">
+                <span class="badge bg-primary me-1">{{ $assignment->grade_level }} - {{ $assignment->section }}</span>
+                @if($assignment->strand)
+                  <span class="badge bg-info me-1">{{ $assignment->strand }}</span>
+                  @if($assignment->track)
+                    <span class="badge bg-warning">{{ $assignment->track }}</span>
+                  @endif
+                @endif
+              </div>
+              
+              <div class="mb-3">
+                @if($assignment->assignment_type === 'subject_teacher')
+                  <span class="badge bg-info">Subject Teacher</span>
+                @else
+                  <span class="badge bg-warning">Class Adviser</span>
+                @endif
+              </div>
+              
+              <div class="d-flex gap-2">
+                @if($assignment->assignment_type === 'subject_teacher')
+                  @if($gradeSubmissionActive)
+                    <button class="btn btn-outline-success btn-sm flex-fill" onclick="submitGrades('{{ $assignment->id }}')">
+                      <i class="ri-file-list-3-line me-1"></i>Submit Grades
+                    </button>
+                  @else
+                    <button class="btn btn-outline-secondary btn-sm flex-fill" disabled>
+                      <i class="ri-file-list-3-line me-1"></i>Disabled
+                    </button>
+                  @endif
+                  <button class="btn btn-outline-primary btn-sm flex-fill" onclick="viewClassDetails('{{ $assignment->id }}')">
+                    <i class="ri-eye-line me-1"></i>View
+                  </button>
+                @else
+                  <button class="btn btn-outline-info btn-sm flex-fill" onclick="manageClass('{{ $assignment->id }}')">
+                    <i class="ri-settings-3-line me-1"></i>Manage Class
+                  </button>
+                @endif
+              </div>
+            </div>
+          </div>
+          @empty
+          <div class="text-center text-muted py-5 px-3">
+            <i class="ri-book-open-line display-6 mb-2 d-block"></i>
+            <h6>No Class Assignments</h6>
+            <p class="small mb-0">You haven't been assigned to any classes yet. Contact the faculty head for assignments.</p>
+          </div>
+          @endforelse
+        </div>
       </div>
     </div>
 
@@ -172,11 +243,11 @@
     <div class="row g-3 mb-4">
       <div class="col-12 col-sm-6 col-lg-4">
         <div class="card h-100 border-0 shadow-sm">
-          <div class="card-body text-center">
-            <i class="ri-user-star-line display-4 text-primary mb-3"></i>
-            <h6>View My Advisory</h6>
-            <p class="text-muted small">View students in your advisory class</p>
-            <a href="{{ route('teacher.advisory') }}" class="btn btn-outline-primary">
+          <div class="card-body text-center p-3">
+            <i class="ri-user-star-line fs-1 text-primary mb-3"></i>
+            <h6 class="mb-2">View My Advisory</h6>
+            <p class="text-muted small mb-3">View students in your advisory class</p>
+            <a href="{{ route('teacher.advisory') }}" class="btn btn-outline-primary btn-sm w-100">
               <i class="ri-user-star-line me-2"></i>View Advisory
             </a>
           </div>
@@ -184,11 +255,11 @@
       </div>
       <div class="col-12 col-sm-6 col-lg-4">
         <div class="card h-100 border-0 shadow-sm">
-          <div class="card-body text-center">
-            <i class="ri-file-list-3-line display-4 text-success mb-3"></i>
-            <h6>Submit Grades</h6>
-            <p class="text-muted small">Enter and submit student grades for review</p>
-            <a href="{{ route('teacher.grades') }}" class="btn btn-outline-success">
+          <div class="card-body text-center p-3">
+            <i class="ri-file-list-3-line fs-1 text-success mb-3"></i>
+            <h6 class="mb-2">Submit Grades</h6>
+            <p class="text-muted small mb-3">Enter and submit student grades for review</p>
+            <a href="{{ route('teacher.grades') }}" class="btn btn-outline-success btn-sm w-100">
               <i class="ri-file-list-3-line me-2"></i>Manage Grades
             </a>
           </div>
@@ -196,11 +267,11 @@
       </div>
       <div class="col-12 col-sm-6 col-lg-4">
         <div class="card h-100 border-0 shadow-sm">
-          <div class="card-body text-center">
-            <i class="ri-heart-pulse-line display-4 text-warning mb-3"></i>
-            <h6>Recommend for Counseling</h6>
-            <p class="text-muted small">Refer students to guidance counseling services</p>
-            <a href="{{ route('teacher.recommend-counseling.form') }}" class="btn btn-outline-warning">
+          <div class="card-body text-center p-3">
+            <i class="ri-heart-pulse-line fs-1 text-warning mb-3"></i>
+            <h6 class="mb-2">Recommend for Counseling</h6>
+            <p class="text-muted small mb-3">Refer students to guidance counseling services</p>
+            <a href="{{ route('teacher.recommend-counseling.form') }}" class="btn btn-outline-warning btn-sm w-100">
               <i class="ri-heart-pulse-line me-2"></i>Recommend Student
             </a>
           </div>
@@ -216,10 +287,11 @@
           <i class="ri-file-check-line me-2"></i>Recent Grade Submissions
         </h5>
       </div>
-      <div class="card-body">
-        <div class="table-responsive">
-          <table class="table table-hover">
-            <thead>
+      <div class="card-body p-0">
+        <!-- Desktop Table View -->
+        <div class="table-responsive d-none d-md-block">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
               <tr>
                 <th>Subject</th>
                 <th>Class</th>
@@ -234,7 +306,7 @@
               <tr>
                 <td>{{ $submission->subject->subject_name }}</td>
                 <td>{{ $submission->grade_level }} - {{ $submission->section }}</td>
-                <td>{{ $submission->quarter }}</td>
+                <td>Q{{ $submission->quarter }}</td>
                 <td>
                   @switch($submission->status)
                     @case('submitted')
@@ -269,6 +341,53 @@
               @endforeach
             </tbody>
           </table>
+        </div>
+
+        <!-- Mobile Card View -->
+        <div class="d-md-none p-3">
+          @foreach($recentSubmissions as $submission)
+          <div class="card mb-3">
+            <div class="card-body p-3">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                  <h6 class="card-title mb-1">{{ $submission->subject->subject_name }}</h6>
+                  <small class="text-muted">{{ $submission->grade_level }} - {{ $submission->section }} • Q{{ $submission->quarter }}</small>
+                </div>
+                <div>
+                  @switch($submission->status)
+                    @case('submitted')
+                      <span class="badge bg-warning">Under Review</span>
+                      @break
+                    @case('approved')
+                      <span class="badge bg-success">Approved</span>
+                      @break
+                    @case('rejected')
+                      <span class="badge bg-danger">Revised</span>
+                      @break
+                    @case('revision_requested')
+                      <span class="badge bg-info">Revision Requested</span>
+                      @break
+                    @default
+                      <span class="badge bg-secondary">{{ ucfirst($submission->status) }}</span>
+                  @endswitch
+                </div>
+              </div>
+              
+              <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted">
+                  @if($submission->submitted_at)
+                    Submitted: {{ $submission->submitted_at->format('M d, Y') }}
+                  @else
+                    Not submitted
+                  @endif
+                </small>
+                <a href="{{ route('teacher.grades') }}" class="btn btn-sm btn-outline-primary">
+                  <i class="ri-eye-line me-1"></i>View
+                </a>
+              </div>
+            </div>
+          </div>
+          @endforeach
         </div>
       </div>
     </div>

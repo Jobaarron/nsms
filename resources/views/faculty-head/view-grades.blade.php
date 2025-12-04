@@ -1,8 +1,8 @@
 <x-faculty-head-layout>
   <!-- MAIN CONTENT -->
-  <main class="col-12 col-md-10 px-4 py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <h1 class="section-title mb-0">Review & Approve Grades</h1>
+  <main class="container-fluid px-3 px-md-4 py-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
+      <h1 class="section-title mb-2 mb-md-0">Review & Approve Grades</h1>
       <div class="text-muted">
         <i class="ri-file-check-line me-1"></i>Grade Submissions Management
       </div>
@@ -18,30 +18,30 @@
     @if(!isset($submission))
     <!-- SUBMISSION STATISTICS -->
     <div class="row g-3 mb-4">
-      <div class="col-6 col-lg-3">
+      <div class="col-6 col-md-4 col-lg-3">
         <div class="card card-summary card-status h-100">
-          <div class="card-body text-center">
-            <i class="ri-time-line display-6 mb-2 text-warning"></i>
-            <div>Pending Review</div>
-            <h3>{{ $stats['pending'] }}</h3>
+          <div class="card-body text-center p-3">
+            <i class="ri-time-line fs-2 mb-2 text-warning d-block"></i>
+            <div class="small">Pending Review</div>
+            <h4 class="mb-0">{{ $stats['pending'] }}</h4>
           </div>
         </div>
       </div>
-      <div class="col-6 col-lg-3">
+      <div class="col-6 col-md-4 col-lg-3">
         <div class="card card-summary card-payment h-100">
-          <div class="card-body text-center">
-            <i class="ri-checkbox-circle-line display-6 mb-2 text-success"></i>
-            <div>Approved</div>
-            <h3>{{ $stats['approved'] }}</h3>
+          <div class="card-body text-center p-3">
+            <i class="ri-checkbox-circle-line fs-2 mb-2 text-success d-block"></i>
+            <div class="small">Approved</div>
+            <h4 class="mb-0">{{ $stats['approved'] }}</h4>
           </div>
         </div>
       </div>
-      <div class="col-6 col-lg-3">
+      <div class="col-6 col-md-4 col-lg-3">
         <div class="card card-summary card-schedule h-100">
-          <div class="card-body text-center">
-            <i class="ri-edit-circle-line display-6 mb-2 text-warning"></i>
-            <div>Revised</div>
-            <h3>{{ $stats['rejected'] }}</h3>
+          <div class="card-body text-center p-3">
+            <i class="ri-edit-circle-line fs-2 mb-2 text-warning d-block"></i>
+            <div class="small">Revised</div>
+            <h4 class="mb-0">{{ $stats['rejected'] }}</h4>
           </div>
         </div>
       </div>

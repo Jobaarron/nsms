@@ -5,9 +5,9 @@
   @endpush
 
   <!-- MAIN CONTENT -->
-  <main class="col-12 col-md-10 px-4 py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <h1 class="section-title mb-0">Grade Submissions</h1>
+  <main class="container-fluid px-3 px-md-4 py-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
+      <h1 class="section-title mb-2 mb-md-0">Grade Submissions</h1>
       <div class="d-flex align-items-center gap-3">
         <div class="text-muted">
           <i class="ri-file-text-line me-1"></i>{{ $currentAcademicYear }}
@@ -32,39 +32,39 @@
 
     <!-- SUBMISSION STATISTICS -->
     <div class="row g-3 mb-4">
-      <div class="col-6 col-lg-3">
+      <div class="col-6 col-md-3">
         <div class="card card-summary card-application h-100">
-          <div class="card-body text-center">
-            <i class="ri-time-line display-6 mb-2 text-warning"></i>
-            <div>Pending Review</div>
-            <h3>{{ $stats['pending'] ?? 0 }}</h3>
+          <div class="card-body text-center p-3">
+            <i class="ri-time-line fs-2 mb-2 text-warning d-block"></i>
+            <div class="small">Pending Review</div>
+            <h4 class="mb-0">{{ $stats['pending'] ?? 0 }}</h4>
           </div>
         </div>
       </div>
-      <div class="col-6 col-lg-3">
+      <div class="col-6 col-md-3">
         <div class="card card-summary card-status h-100">
-          <div class="card-body text-center">
-            <i class="ri-send-plane-line display-6 mb-2"></i>
-            <div>Submitted</div>
-            <h3>{{ $stats['submitted'] ?? 0 }}</h3>
+          <div class="card-body text-center p-3">
+            <i class="ri-send-plane-line fs-2 mb-2 d-block"></i>
+            <div class="small">Submitted</div>
+            <h4 class="mb-0">{{ $stats['submitted'] ?? 0 }}</h4>
           </div>
         </div>
       </div>
-      <div class="col-6 col-lg-3">
+      <div class="col-6 col-md-3">
         <div class="card card-summary card-payment h-100">
-          <div class="card-body text-center">
-            <i class="ri-checkbox-circle-line display-6 mb-2"></i>
-            <div>Approved</div>
-            <h3>{{ $stats['approved'] ?? 0 }}</h3>
+          <div class="card-body text-center p-3">
+            <i class="ri-checkbox-circle-line fs-2 mb-2 d-block"></i>
+            <div class="small">Approved</div>
+            <h4 class="mb-0">{{ $stats['approved'] ?? 0 }}</h4>
           </div>
         </div>
       </div>
-      <div class="col-6 col-lg-3">
+      <div class="col-6 col-md-3">
         <div class="card card-summary card-schedule h-100">
-          <div class="card-body text-center">
-            <i class="ri-edit-circle-line display-6 mb-2 text-warning"></i>
-            <div>Revised</div>
-            <h3>{{ $stats['revised'] ?? 0 }}</h3>
+          <div class="card-body text-center p-3">
+            <i class="ri-edit-circle-line fs-2 mb-2 text-warning d-block"></i>
+            <div class="small">Revised</div>
+            <h4 class="mb-0">{{ $stats['revised'] ?? 0 }}</h4>
           </div>
         </div>
       </div>
@@ -79,7 +79,7 @@
       </div>
       <div class="card-body">
         <div class="row g-3">
-          <div class="col-md-3">
+          <div class="col-md-8">
             <label class="form-label">Subject</label>
             <select class="form-select" required id="assignmentSelect">
               <option value="">Select Subject</option>
@@ -92,9 +92,9 @@
               @endforeach
             </select>
           </div>
-          <div class="col-md-2">
-            <label class="form-label">&nbsp;</label>
-            <button type="button" class="btn btn-primary d-block" onclick="handleGradeSubmission()">
+          <div class="col-md-4">
+            <label class="form-label d-none d-md-block">&nbsp;</label>
+            <button type="button" class="btn btn-primary w-100" onclick="handleGradeSubmission()">
               <i class="ri-add-line me-2"></i>Submit Grades
             </button>
           </div>

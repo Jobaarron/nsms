@@ -1,8 +1,8 @@
 <x-faculty-head-layout>
   <!-- MAIN CONTENT -->
-  <main class="col-12 col-md-10 px-4 py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <h1 class="section-title mb-0">Faculty Assignments</h1>
+  <main class="container-fluid px-3 px-md-4 py-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
+      <h1 class="section-title mb-2 mb-md-0">Faculty Assignments</h1>
       <div class="text-muted">
         <i class="ri-user-settings-line me-1"></i>{{ $currentAcademicYear }}
       </div>

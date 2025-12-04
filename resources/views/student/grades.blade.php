@@ -1,15 +1,17 @@
 <x-student-layout>
-  <!-- Page Header -->
-  <div class="row mb-4">
-    <div class="col-12">
-      <div class="d-flex justify-content-between align-items-center">
-        <h1 class="section-title mb-0">My Grades</h1>
-        <div class="text-muted">
-          <i class="ri-file-text-line me-1"></i>{{ $currentAcademicYear }}
+  <!-- Main Content -->
+  <main class="container-fluid px-3 px-md-4 py-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+          <h1 class="section-title mb-0">My Grades</h1>
+          <div class="text-muted">
+            <i class="ri-file-text-line me-1"></i>{{ $currentAcademicYear }}
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
   @if(session('success'))
     <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -234,6 +236,7 @@
                 })
             }).catch(error => {});
         });
-    </script>
+        </script>
     @endpush
+  </main>
 </x-student-layout>

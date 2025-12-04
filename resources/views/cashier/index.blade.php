@@ -1,9 +1,11 @@
 <x-cashier-layout>
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <!-- Page Header -->
-    <div class="row mb-4">
-        <div class="col-12">
+    <!-- Main Content -->
+    <main class="container-fluid px-3 px-md-4 py-4">
+        <!-- Page Header --> -->
+        <div class="row mb-4">
+            <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <h2 class="section-title mb-1">Cashier Dashboard</h2>
@@ -14,11 +16,11 @@
                     <small class="text-muted">Department: <strong>{{ $cashier->department }}</strong></small>
                 </div> --}}
             </div>
+            </div>
         </div>
-    </div>
 
-    <!-- Key Insights & Statistics Cards - Side by Side -->
-    <div class="row mb-3">
+        <!-- Key Insights & Statistics Cards - Side by Side -->
+        <div class="row mb-3">
         <!-- Key Insights - Left Side -->
         <div class="col-12 col-lg-6">
             <div class="row">
@@ -117,12 +119,12 @@
                     </div>
                 </div>
             </div>
+            </div>
         </div>
-    </div>
 
 
-    <!-- Payment Analytics Dashboard -->
-    <div class="row mb-3">
+        <!-- Payment Analytics Dashboard -->
+        <div class="row mb-3">
         <!-- Payment Method Distribution -->
         <div class="col-12 col-lg-6 mb-4">
             <div class="card border-0 shadow-sm h-100">
@@ -195,12 +197,12 @@
                     </div>
                 </div>
             </div>
+            </div>
         </div>
-    </div>
 
 
-    <!-- Payment Methods Breakdown Table -->
-    <div class="row mb-4">
+        <!-- Payment Methods Breakdown Table -->
+        <div class="row mb-4">
         <div class="col-12">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white border-0 pb-0">
@@ -267,9 +269,11 @@
                         </div>
                     @endif
                 </div>
+                </div>
             </div>
         </div>
-    </div>
+
+    </main>
 
     @push('scripts')
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

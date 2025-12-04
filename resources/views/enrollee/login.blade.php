@@ -1,7 +1,7 @@
 <x-layout>
     @vite(['resources/css/enroll.css', 'resources/css/password-field.css'])
     <div class="row justify-content-center">
-        <div class="col-lg-6 col-md-8">
+        <div class="col-lg-6 col-md-8 col-sm-10">
             <div class="content-card p-5">
                 <div class="text-center mb-4">
                     <i class="ri-file-user-line" style="font-size: 4rem; color: var(--primary-color);"></i>

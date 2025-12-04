@@ -39,10 +39,10 @@
     />
 
   
-  @vite('resources/sass/app.scss')
+  <!-- App CSS & JS (includes Bootstrap 5 via Vite) -->
+  @vite(['resources/sass/app.scss','resources/js/app.js'])
   @vite(['resources/css/index_enrollee.css'])
   @vite(['resources/css/collapsible-sidebar.css'])
-  @vite(['resources/js/app.js'])
   @vite(['resources/js/collapsible-sidebar.js'])
   @vite(['resources/js/enrollee-alerts-manager.js'])
 
@@ -92,7 +92,7 @@
       <div class="user-role">Applicant</div>
     </div> --}}
 
-    <ul class="nav flex-column">
+    <ul class="nav flex-column px-3">
       <li class="nav-item mb-2">
         <a class="nav-link {{ request()->routeIs('enrollee.dashboard') ? 'active' : '' }}" href="{{ route('enrollee.dashboard') }}" title="Dashboard">
           <i class="ri-dashboard-line me-2"></i><span>Dashboard</span>
@@ -125,26 +125,21 @@
         </ul>
         
         <!-- LOGOUT SECTION -->
-        <div class="mt-auto pt-3 logout-form">
-          <form action="{{ route('enrollee.logout') }}" method="POST">
-            @csrf
-            <button type="submit" class="nav-link text-danger border-0 bg-transparent w-100 text-start d-flex align-items-center" style="font-weight: 600;" title="Logout">
-              <i class="ri-logout-circle-line me-2"></i><span>Logout</span>
-            </button>
-          </form>
-        </div>
+        <ul class="nav flex-column mt-3">
+          <li class="nav-item">
+            <form class="logout-form" method="POST" action="{{ route('enrollee.logout') }}">
+              @csrf
+              <button type="submit" class="btn btn-logout w-100" title="Logout">
+                <i class="ri-logout-circle-line me-2"></i><span>Logout</span>
+              </button>
+            </form>
+          </li>
+        </ul>
       </nav>
 
   <!-- MAIN CONTENT -->
   <div class="main-content-wrapper">
     <main class="px-3 px-md-4 py-4">
-      <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2 section-title">
-          <i class="ri-graduation-cap-line me-2"></i>
-          Applicant Portal
-        </h1>
-      </div>
-
       {{ $slot }}
     </main>
   </div>

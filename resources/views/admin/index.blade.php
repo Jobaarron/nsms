@@ -1,11 +1,18 @@
 <x-admin-layout>
   {{-- <x-slot:title>Admin Dashboard</x-slot:title> --}}
   
-  <h1 class="section-title">Admin Dashboard</h1>
+  <!-- Page Header -->
+  <div class="container-fluid px-3 px-md-4 py-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
+      <h1 class="section-title mb-2 mb-md-0">Admin Dashboard</h1>
+      <div class="text-muted">
+        <i class="ri-dashboard-line me-1"></i>System Overview
+      </div>
+    </div>
 
-  <!-- SUMMARY CARDS -->
-  <!-- Comprehensive User Statistics -->
-  <div class="row g-3 mb-5">
+    <!-- SUMMARY CARDS -->
+    <!-- Comprehensive User Statistics -->
+    <div class="row g-3 mb-4">
     <div class="col-6 col-sm-6 col-lg-3">
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
@@ -132,8 +139,8 @@
     </div>
   </div> --}}
 
-  <!-- Data Visualization Section -->
-  <div class="row g-3 mb-5">
+    <!-- Data Visualization Section -->
+    <div class="row g-3 mb-4">
     <div class="col-12 col-lg-6">
       <div class="card border-0 shadow-sm">
   <div class="card-header admin-card-header">
@@ -306,5 +313,5 @@
         });
     }
   </script>
-
+  </div> <!-- End container-fluid -->
 </x-admin-layout>
