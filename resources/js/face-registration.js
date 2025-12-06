@@ -20,7 +20,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Read URLs from meta tags
     window.faceRegistrationSaveUrl = document.querySelector('meta[name="face-registration-save-url"]')?.getAttribute('content');
-    window.faceRegistrationDeleteUrl = document.querySelector('meta[name="face-registration-delete-url"]')?.getAttribute('content');
 
     // Configuration
     const FLASK_SERVER_URL = '/api/face'; 
@@ -648,65 +647,7 @@ savePhotosBtn.addEventListener('click', async function() {
             timelineContainer.insertBefore(newItem, timelineContainer.firstChild);
         }
     }
-    
-    // Delete face registration
-    window.confirmDeleteFace = function() {
-        if (confirm('Are you sure you want to delete your face registration data?')) {
-            deleteFaceRegistration();
-        }
-    };
 
-    async function deleteFaceRegistration() {
-        try {
-            const response = await fetch(window.faceRegistrationDeleteUrl, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    'Accept': 'application/json'
-                },
-                credentials: 'include'
-            });
-
-            const text = await response.text();
-            const data = JSON.parse(text);
-            if (data.success) {
-                alert('Face registration removed successfully!');
-                
-                // Update UI in real-time instead of page reload
-                updateFaceStatusBadge(false);
-                
-                // Remove success alert
-                const successAlert = document.querySelector('.alert-success');
-                if (successAlert && successAlert.closest('.row')) {
-                    successAlert.closest('.row').remove();
-                }
-                
-                // Remove current registration card
-                const currentRegCard = document.querySelector('.card .ri-id-card-line')?.closest('.card');
-                if (currentRegCard) {
-                    currentRegCard.remove();
-                }
-                
-                // Clear registration history
-                const historyCard = document.querySelector('.card .ri-history-line')?.closest('.card');
-                if (historyCard) {
-                    historyCard.remove();
-                }
-                
-                // Remove delete button from quick actions
-                const deleteButton = document.querySelector('.btn-outline-danger');
-                if (deleteButton) {
-                    deleteButton.remove();
-                }
-                
-            } else {
-                throw new Error(data.message || 'Failed to delete registration');
-            }
-        } catch (error) {
-            alert('Failed to remove face registration. Please try again.');
-        }
-    }
 
     window.addEventListener('beforeunload', function() {
         if (stream) stream.getTracks().forEach(track => track.stop());
