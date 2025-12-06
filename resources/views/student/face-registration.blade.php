@@ -74,22 +74,6 @@
         </div>
     </div>
 
-    @if($student->hasFaceRegistered())
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="alert alert-success border-0 shadow-sm">
-                    <div class="d-flex align-items-center">
-                        <i class="ri-check-line fs-4 me-3"></i>
-                        <div>
-                            <h6 class="alert-heading mb-1">Face Already Registered</h6>
-                            <p class="mb-0">Your facial data has been successfully registered. You can update it below if needed.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    @endif
-
     <div class="row">
         <!-- Left Column - Camera -->
         <div class="col-lg-8">
@@ -184,7 +168,6 @@
                                 <p class="mb-1" style="font-size:1.1rem; color:#333;">Student ID: <span class="fw-semibold">{{ $student->student_id }}</span></p>
                                 @if($faceRegistration)
                                     <p class="mb-1 text-muted" style="font-size:0.95rem;">Registered: <span class="fw-semibold">{{ $faceRegistration->registered_at->format('M d, Y') }}</span></p>
-                                    <p class="mb-1 text-muted" style="font-size:0.95rem;">Source: <span class="fw-semibold">{{ ucfirst(str_replace('_', ' ', $faceRegistration->source)) }}</span></p>
                                 @endif
                             </div>
                         </div>
@@ -255,7 +238,6 @@
                                                 Not set
                                             @endif
                                         </small>
-                                        <small class="text-muted">Source: {{ ucfirst(str_replace('_', ' ', $registration->source)) }}</small>
                                     </div>
                                 @endforeach
                             </div>
