@@ -833,29 +833,7 @@ class StudentController extends Controller
 }
 
 
-    public function deleteFaceRegistration()
-    {
-        $student = Auth::guard('student')->user();
-        
-        if (!$student) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
-        }
 
-        try {
-            $student->faceRegistrations()->delete();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Face registration removed successfully!'
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Face registration deletion failed: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to remove face registration'
-            ], 500);
-        }
-    }
 
     /**
      * Refresh student payment totals from confirmed payments

@@ -278,11 +278,6 @@
                         <a href="{{ route('student.dashboard') }}" class="btn btn-outline-primary">
                             <i class="ri-dashboard-line me-2"></i>Back to Dashboard
                         </a>
-                        @if($student->hasFaceRegistered())
-                            <button class="btn btn-outline-danger" onclick="confirmDeleteFace()">
-                                <i class="ri-delete-bin-line me-2"></i>Remove Face Data
-                            </button>
-                        @endif
                     </div>
                 </div>
             </div>
@@ -294,5 +289,4 @@
     @endpush
     
     <meta name="face-registration-save-url" content="{{ route('student.face-registration.save') }}">
-    <meta name="face-registration-delete-url" content="{{ route('student.face-registration.delete') }}">
 </x-student-layout>
