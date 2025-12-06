@@ -54,7 +54,7 @@
                             <div class="d-flex align-items-center">
                                 <div class="flex-shrink-0 me-3">
                                     <div class="bg-success bg-opacity-10 p-3 rounded">
-                                        <i class="ri-check-circle-line fs-4 text-success"></i>
+                                        <i class="ri-check-double-line fs-4 text-success"></i>
                                     </div>
                                 </div>
                                 <div class="flex-grow-1">
