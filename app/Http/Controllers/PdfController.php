@@ -2935,6 +2935,309 @@ public function generateElementaryReportCardPdf(Student $student)
     }
 }
 
+    /**
+     * Generate Student ID Card PDF using existing template
+     */
+    public function generateStudentIdCard(Request $request, $studentId = null)
+    {
+        try {
+            // Get student data
+            if ($studentId) {
+                $student = Student::findOrFail($studentId);
+            } else {
+                // Get authenticated student (support both web and student guards)
+                $student = auth('student')->user() ?? auth()->user();
+                if (!$student) {
+                    return response('Student not found', 404);
+                }
+            }
+
+            // Check for photo sources with priority: Enrollee ID photo first, then face registration
+            $photoData = null;
+            $photoSource = 'none';
+            
+            // First priority: Check if student has enrollee ID photo
+            if ($student->enrollee && $student->enrollee->id_photo_data_url) {
+                $photoData = $student->enrollee->id_photo_data_url;
+                $photoSource = 'enrollee_id_photo';
+            } else {
+                // Second priority: Check face registration
+                $faceRegistration = $student->activeFaceRegistration()->first();
+                if ($faceRegistration && $faceRegistration->hasFaceImage()) {
+                    $photoData = $faceRegistration->face_image_data_url;
+                    $photoSource = 'face_registration';
+                }
+            }
+            
+            // Debug: Log photo source data
+            \Log::info('ID Card Photo Source Selection', [
+                'student_id' => $student->id,
+                'enrollee_id' => $student->enrollee_id ?? 'null',
+                'has_enrollee' => $student->enrollee ? 'yes' : 'no',
+                'has_enrollee_photo' => $student->enrollee && $student->enrollee->id_photo_data_url ? 'yes' : 'no',
+                'enrollee_photo_length' => $student->enrollee && $student->enrollee->id_photo_data_url ? strlen($student->enrollee->id_photo_data_url) : 0,
+                'face_registration_id' => isset($faceRegistration) ? ($faceRegistration->id ?? 'null') : 'not_checked',
+                'has_face_image' => isset($faceRegistration) ? ($faceRegistration->hasFaceImage() ? 'yes' : 'no') : 'not_checked',
+                'selected_source' => $photoSource,
+                'has_photo_data' => $photoData ? 'yes' : 'no'
+            ]);
+            
+            if (!$photoData) {
+                return response('Photo required to generate ID card. Please upload an ID photo or register your face.', 400);
+            }
+
+            // Initialize TCPDF with FPDI
+            $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
+            $templatePath = resource_path('assets/pdf-forms-generation/id template.pdf');
+            
+            if (!file_exists($templatePath)) {
+                return response('ID template not found', 500);
+            }
+
+            $pdf->setSourceFile($templatePath);
+            
+            // Get template info
+            $pageCount = $pdf->setSourceFile($templatePath);
+            $frontPageId = $pdf->importPage(1);
+            $frontSize = $pdf->getTemplateSize($frontPageId);
+            
+            // Import back page if it exists, otherwise use front page template
+            $backPageId = ($pageCount >= 2) ? $pdf->importPage(2) : $frontPageId;
+            $backSize = ($pageCount >= 2) ? $pdf->getTemplateSize($backPageId) : $frontSize;
+            
+            // Set margins and auto page break
+            $pdf->SetMargins(0, 0, 0);
+            $pdf->SetAutoPageBreak(false, 0);
+            
+            // Detect orientation (ID cards are usually portrait)
+            $orientation = ($frontSize['width'] > $frontSize['height']) ? 'L' : 'P';
+            
+            // ==== FRONT PAGE ====
+            $pdf->AddPage($orientation, [$frontSize['width'], $frontSize['height']]);
+            $pdf->SetFont('dejavusans', '', 10);
+            $pdf->useTemplate($frontPageId);
+
+            // Position student information using exact same coordinates as second page that works
+            
+            // Set text color to black 
+            $pdf->SetTextColor(0, 0, 0);
+
+            // Center the name regardless of length
+            $pdf->SetFont('helvetica', '', 6);
+            // Format name as "Firstname M. Lastname"
+            $formattedName = $student->first_name;
+            if ($student->middle_name) {
+                $formattedName .= ' ' . strtoupper(substr($student->middle_name, 0, 1)) . '.';
+            }
+            $formattedName .= ' ' . $student->last_name;
+            
+            // Calculate text width and center it
+            $textWidth = $pdf->GetStringWidth($formattedName);
+            $pageWidth = $pdf->getPageWidth();
+            $centerX = ($pageWidth - $textWidth) / 2;
+            
+            $pdf->SetXY($centerX, 54);
+            $pdf->Cell($textWidth, 6, '' . $formattedName, 0, 1, 'C');
+
+            // Center ID No.
+            $pdf->SetFont('helvetica', '', 5);
+            $idText = 'ID No. ' . ($student->student_id ?? 'N/A');
+            $idTextWidth = $pdf->GetStringWidth($idText);
+            $idCenterX = ($pageWidth - $idTextWidth) / 2;
+            $pdf->SetXY($idCenterX, 48);
+            $pdf->Cell($idTextWidth, 6, $idText, 0, 1, 'C');
+
+            // Center LRN
+            $pdf->SetFont('helvetica', '', 5);
+            $lrnText = 'LRN. ' . ($student->lrn ?? 'N/A');
+            $lrnTextWidth = $pdf->GetStringWidth($lrnText);
+            $lrnCenterX = ($pageWidth - $lrnTextWidth) / 2;
+            $pdf->SetXY($lrnCenterX, 51);
+            $pdf->Cell($lrnTextWidth, 6, $lrnText, 0, 1, 'C');
+
+            // Center Grade Level
+            $pdf->SetFont('helvetica', '', 8);
+            $pdf->SetTextColor(0, 128, 0); // Green color
+            $gradeText = '' . ($student->grade_level ?? 'N/A');
+            $gradeTextWidth = $pdf->GetStringWidth($gradeText);
+            $gradeCenterX = ($pageWidth - $gradeTextWidth) / 2;
+            $pdf->SetXY($gradeCenterX, 57);
+            $pdf->Cell($gradeTextWidth, 6, $gradeText, 0, 1, 'C');
+            $pdf->SetTextColor(0, 0, 0); // Reset to black
+
+            $pdf->SetXY(20, 81);
+            $pdf->SetFont('helvetica', '', 7);
+            $pdf->Cell(0, 6, '' . ($student->section ?? 'N/A'), 0, 1);
+
+            $pdf->SetXY(20, 91);
+            $pdf->Cell(0, 6, '' . ($student->academic_year ?? '2024-2025'), 0, 1);
+
+            // Add student photo using the selected photo source
+            if ($photoData) {
+                try {
+                    // Handle data URL format (data:image/jpeg;base64,...)
+                    if (strpos($photoData, 'data:') === 0) {
+                        // Extract MIME type and base64 data
+                        $dataParts = explode(',', $photoData, 2);
+                        if (count($dataParts) === 2) {
+                            $mimeInfo = $dataParts[0];
+                            $base64Data = $dataParts[1];
+                            
+                            // Extract MIME type
+                            preg_match('/data:([^;]+)/', $mimeInfo, $mimeMatches);
+                            $mimeType = $mimeMatches[1] ?? 'image/jpeg';
+                            
+                            $imageData = base64_decode($base64Data);
+                        } else {
+                            throw new \Exception('Invalid data URL format');
+                        }
+                    } else {
+                        // Assume it's raw base64 data
+                        $mimeType = 'image/jpeg';
+                        $imageData = base64_decode($photoData);
+                    }
+                    
+                    \Log::info('Adding student photo to ID card', [
+                        'source' => $photoSource,
+                        'mime_type' => $mimeType,
+                        'decoded_size' => strlen($imageData),
+                        'coordinates' => 'Multiple positions for visibility testing'
+                    ]);
+                    
+                    // Create temp file from base64 data
+                    $tempFile = tempnam(sys_get_temp_dir(), 'student_photo_') . '.jpg';
+                    file_put_contents($tempFile, $imageData);
+                    
+                    // Add a visible marker to test positioning
+                    $pdf->SetXY(200, 280);
+                    $pdf->SetFont('dejavusans', 'B', 8);
+                    $pdf->SetFillColor(0, 255, 0); // Green background
+                    $pdf->Cell(40, 8, "[{$photoSource}]", 1, 0, 'C', true);
+                    
+                    // Center the student photo and move slightly right (1 point)
+                    $imageWidth = 20;
+                    $imageHeight = 16;
+                    $imageCenterX = (($pageWidth - $imageWidth) / 2) + 1;
+                    
+                    // Position 1: Main ID photo position (centered in silhouette area) - moved higher
+                    $pdf->Image($tempFile, $imageCenterX, 158, $imageWidth, $imageHeight);
+                    
+                    // Position 2: Alternative position (higher up) - also centered - moved higher
+                    $pdf->Image($tempFile, $imageCenterX, 208, $imageWidth, $imageHeight);
+                    
+                    // Position 3: Very visible position (top area) - also centered - moved higher
+                    $pdf->Image($tempFile, $imageCenterX, 33, $imageWidth, $imageHeight);
+                    
+                    \Log::info('Student photo added successfully to ID card', ['source' => $photoSource]);
+                    
+                    // Clean up temp file
+                    unlink($tempFile);
+                    
+                } catch (\Exception $e) {
+                    \Log::error('Failed to add student photo to ID card', [
+                        'source' => $photoSource,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                    
+                    // Add error indicator on the PDF
+                    $pdf->SetXY(50, 50);
+                    $pdf->SetFont('dejavusans', '', 8);
+                    $pdf->SetTextColor(255, 0, 0); // Red text
+                    $pdf->Write(0, '[PHOTO ERROR: ' . substr($e->getMessage(), 0, 20) . ']');
+                    $pdf->SetTextColor(0, 0, 0); // Reset to black
+                }
+            } else {
+                // This shouldn't happen since we check earlier, but just in case
+                $pdf->SetXY(50, 50);
+                $pdf->SetFont('dejavusans', '', 8);
+                $pdf->SetTextColor(255, 165, 0); // Orange text
+                $pdf->Write(0, '[NO PHOTO AVAILABLE]');
+                $pdf->SetTextColor(0, 0, 0); // Reset to black
+                
+                \Log::warning('No photo data available for ID card generation', [
+                    'student_id' => $student->id,
+                    'photo_source' => $photoSource
+                ]);
+            }
+
+            // Generate QR Code with student information
+            $qrData = json_encode([
+                'student_id' => $student->student_id,
+                'name' => $student->full_name ?? ($student->first_name . ' ' . $student->last_name),
+                'grade_level' => $student->grade_level,
+                'section' => $student->section,
+                'academic_year' => $student->academic_year ?? '2024-2025',
+                'generated_at' => $this->schoolNow()->toISOString()
+            ]);
+            
+            $qrCodeUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=' . urlencode($qrData);
+            
+            try {
+                // Position QR code (adjust coordinates based on template)
+                $pdf->Image($qrCodeUrl, 20, 100, 25, 25);
+            } catch (\Exception $e) {
+                \Log::warning('Could not add QR code to ID: ' . $e->getMessage());
+            }
+
+            // Generate barcode
+            $barcodeUrl = 'https://barcode.tec-it.com/barcode.ashx?data=' . urlencode($student->student_id) . '&code=Code128&translate-esc=on&dmsize=Default';
+            
+            try {
+                // Position barcode (adjust coordinates based on template)
+                $pdf->Image($barcodeUrl, 50, 100, 40, 15);
+            } catch (\Exception $e) {
+                \Log::warning('Could not add barcode to ID: ' . $e->getMessage());
+            }
+
+            // Generated date
+            $pdf->SetXY(20, 130);
+            $pdf->SetFont('dejavusans', '', 8);
+            $pdf->Write(0, 'Generated: ' . $this->schoolNow()->format('M d, Y'));
+
+            // ==== BACK PAGE ====
+            $pdf->AddPage($orientation, [$backSize['width'], $backSize['height']]);
+            $pdf->SetFont('dejavusans', '', 10);
+            $pdf->useTemplate($backPageId);
+
+            // Back page content - center guardian name regardless of length
+            $pdf->SetFont('dejavusans', '', 7);
+            $guardianName = '' . ($student->guardian_name ?? $student->father_name ?? 'N/A');
+            
+            // Calculate text width and center it
+            $guardianTextWidth = $pdf->GetStringWidth($guardianName);
+            $backPageWidth = $pdf->getPageWidth();
+            $guardianCenterX = ($backPageWidth - $guardianTextWidth) / 2;
+            
+            $pdf->SetXY($guardianCenterX, 43);
+            $pdf->Cell($guardianTextWidth, 6, $guardianName, 0, 1, 'C');
+
+            // ID card rules/instructions
+            $pdf->SetXY(20, 125);
+            $pdf->SetFont('dejavusans', 'B', 9);
+            $pdf->Cell(0, 6, 'Important Reminders:', 0, 1);
+
+            $pdf->SetXY(20, 135);
+            $pdf->SetFont('dejavusans', '', 8);
+            $pdf->Cell(0, 4, '• This ID must be worn at all times', 0, 1);
+            $pdf->SetXY(20, 142);
+            $pdf->Cell(0, 4, '• Report lost ID immediately', 0, 1);
+            $pdf->SetXY(20, 149);
+            $pdf->Cell(0, 4, '• Not transferable', 0, 1);
+
+            // Back page generation date
+            $pdf->SetXY(20, 165);
+            $pdf->SetFont('dejavusans', '', 7);
+            $pdf->Cell(0, 4, 'Generated: ' . $this->schoolNow()->format('M d, Y g:i A'), 0, 1);
+
+            $filename = 'student-id-card-' . $student->student_id . '.pdf';
+            return response($pdf->Output($filename, 'S'))->header('Content-Type', 'application/pdf');
+
+        } catch (\Exception $e) {
+            return response('Error generating ID card: ' . $e->getMessage(), 500);
+        }
+    }
+
 }
 
 

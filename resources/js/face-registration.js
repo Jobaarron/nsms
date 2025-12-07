@@ -45,31 +45,24 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
         }
         
-        // Test Flask server
-        try {
-            const flaskTest = await fetch(`${FLASK_SERVER_URL}/health`, { 
-                method: 'GET',
-                signal: AbortSignal.timeout(3000)
-            });
-        } catch (error) {
-        }
+        // Skip Flask server test to avoid 404 errors
+        // Flask server not needed for basic functionality
         
     }
 
     // Call debug test on load
     testEndpoints();
 
-    // Check Flask server availability
-    checkFlaskServer();
+    // Check Flask server availability - disabled to prevent 404 errors
+    // checkFlaskServer();
 
     async function checkFlaskServer() {
-        try {
-            const response = await fetch(`${FLASK_SERVER_URL}/health`, { method: 'GET', signal: AbortSignal.timeout(5000) });
-            isFlaskServerAvailable = response.ok;
-        } catch (error) {
-            isFlaskServerAvailable = false;
-            faceStatus.textContent = 'Note: AI face encoding unavailable';
-            faceStatus.style.background = 'rgba(255,193,7,0.8)';
+        // Disabled Flask server check to prevent 404 errors
+        // Set as unavailable by default since server is not running
+        isFlaskServerAvailable = false;
+        if (faceStatus) {
+            faceStatus.textContent = 'Camera ready for capture';
+            faceStatus.style.background = 'rgba(108,117,125,0.8)';
         }
     }
 
@@ -401,6 +394,9 @@ savePhotosBtn.addEventListener('click', async function() {
             // Update success alert
             updateSuccessAlert();
             
+            // Update Quick Actions to show ID card button
+            updateQuickActions();
+            
             // Update registration history
             if (json.registration_date) {
                 updateRegistrationHistory(json.registration_date, json.source || 'camera_capture');
@@ -595,6 +591,34 @@ savePhotosBtn.addEventListener('click', async function() {
         }
     }
     
+    // Helper function to update Quick Actions section in real-time
+    function updateQuickActions() {
+        const quickActionsCard = document.querySelector('.card-header h6:contains("Quick Actions")')?.closest('.card');
+        if (!quickActionsCard) {
+            return;
+        }
+        
+        const cardBody = quickActionsCard.querySelector('.card-body .d-grid');
+        if (cardBody) {
+            // Check if ID card button already exists
+            const existingIdButton = cardBody.querySelector('a[href*="student-id-card"]');
+            if (!existingIdButton) {
+                // Create ID card button
+                const idCardButton = document.createElement('a');
+                idCardButton.href = '/pdf/student-id-card';
+                idCardButton.className = 'btn btn-success';
+                idCardButton.target = '_blank';
+                idCardButton.innerHTML = '<i class="ri-id-card-line me-2"></i>Generate ID Card';
+                
+                // Insert before the dashboard button
+                const dashboardButton = cardBody.querySelector('a[href*="dashboard"]');
+                if (dashboardButton) {
+                    cardBody.insertBefore(idCardButton, dashboardButton);
+                }
+            }
+        }
+    }
+
     // Helper function to update registration history in real-time
     function updateRegistrationHistory(registrationDate, source) {
         const historyCard = document.querySelector('.card .ri-history-line')?.closest('.card');
