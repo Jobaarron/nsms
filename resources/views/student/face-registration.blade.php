@@ -194,7 +194,6 @@
                     <ul class="small text-muted mb-3">
                         <li>Your facial data is encrypted and secure</li>
                         <li>Only used for school identification purposes</li>
-                        <li>You can update or remove it anytime</li>
                         <li>Complies with data protection standards</li>
                     </ul>
 
