@@ -256,6 +256,11 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
+                        @if($student->hasFaceRegistered())
+                            <a href="{{ url('/pdf/student-id-card') }}" class="btn btn-success" target="_blank">
+                                <i class="ri-id-card-line me-2"></i>Generate ID Card
+                            </a>
+                        @endif
                         <a href="{{ route('student.dashboard') }}" class="btn btn-outline-primary">
                             <i class="ri-dashboard-line me-2"></i>Back to Dashboard
                         </a>

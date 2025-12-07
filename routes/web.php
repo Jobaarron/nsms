@@ -1027,3 +1027,6 @@ Route::get('/pdf/counseling-session', [PdfController::class, 'show']);
 
 // PDF Receipt (dynamic overlay)
 Route::get('/pdf/receipt', [PdfController::class, 'showReceipt'])->name('pdf.receipt');
+
+// Student ID Card PDF (requires student authentication)
+Route::middleware('auth:student')->get('/pdf/student-id-card', [PdfController::class, 'generateStudentIdCard'])->name('pdf.student-id-card');

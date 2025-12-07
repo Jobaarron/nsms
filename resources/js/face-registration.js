@@ -401,6 +401,9 @@ savePhotosBtn.addEventListener('click', async function() {
             // Update success alert
             updateSuccessAlert();
             
+            // Update Quick Actions to show ID card button
+            updateQuickActions();
+            
             // Update registration history
             if (json.registration_date) {
                 updateRegistrationHistory(json.registration_date, json.source || 'camera_capture');
@@ -595,6 +598,34 @@ savePhotosBtn.addEventListener('click', async function() {
         }
     }
     
+    // Helper function to update Quick Actions section in real-time
+    function updateQuickActions() {
+        const quickActionsCard = document.querySelector('.card-header h6:contains("Quick Actions")')?.closest('.card');
+        if (!quickActionsCard) {
+            return;
+        }
+        
+        const cardBody = quickActionsCard.querySelector('.card-body .d-grid');
+        if (cardBody) {
+            // Check if ID card button already exists
+            const existingIdButton = cardBody.querySelector('a[href*="student-id-card"]');
+            if (!existingIdButton) {
+                // Create ID card button
+                const idCardButton = document.createElement('a');
+                idCardButton.href = '/pdf/student-id-card';
+                idCardButton.className = 'btn btn-success';
+                idCardButton.target = '_blank';
+                idCardButton.innerHTML = '<i class="ri-id-card-line me-2"></i>Generate ID Card';
+                
+                // Insert before the dashboard button
+                const dashboardButton = cardBody.querySelector('a[href*="dashboard"]');
+                if (dashboardButton) {
+                    cardBody.insertBefore(idCardButton, dashboardButton);
+                }
+            }
+        }
+    }
+
     // Helper function to update registration history in real-time
     function updateRegistrationHistory(registrationDate, source) {
         const historyCard = document.querySelector('.card .ri-history-line')?.closest('.card');
