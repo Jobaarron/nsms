@@ -577,7 +577,7 @@ savePhotosBtn.addEventListener('click', async function() {
                             <i class="ri-check-line fs-4 me-3"></i>
                             <div>
                                 <h6 class="alert-heading mb-1">Face Already Registered</h6>
-                                <p class="mb-0">Your facial data has been successfully registered. You can update it below if needed.</p>
+                                <p class="mb-0">Your facial data has been successfully registered.</p>
                             </div>
                         </div>
                     </div>
