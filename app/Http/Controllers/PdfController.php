@@ -3065,12 +3065,7 @@ public function generateElementaryReportCardPdf(Student $student)
             $pdf->Cell($gradeTextWidth, 6, $gradeText, 0, 1, 'C');
             $pdf->SetTextColor(0, 0, 0); // Reset to black
 
-            $pdf->SetXY(20, 81);
-            $pdf->SetFont('helvetica', '', 7);
-            $pdf->Cell(0, 6, '' . ($student->section ?? 'N/A'), 0, 1);
-
-            $pdf->SetXY(20, 91);
-            $pdf->Cell(0, 6, '' . ($student->academic_year ?? '2024-2025'), 0, 1);
+           
 
             // Add student photo using the selected photo source
             if ($photoData) {
@@ -3211,6 +3206,17 @@ public function generateElementaryReportCardPdf(Student $student)
             
             $pdf->SetXY($guardianCenterX, 43);
             $pdf->Cell($guardianTextWidth, 6, $guardianName, 0, 1, 'C');
+
+            // Add guardian contact number below the name
+            $pdf->SetFont('dejavusans', '', 6);
+            $guardianContact = '' . ($student->guardian_contact ?? $student->father_contact ?? $student->mother_contact ?? 'N/A');
+            
+            // Calculate text width and center it
+            $guardianContactWidth = $pdf->GetStringWidth($guardianContact);
+            $guardianContactCenterX = ($backPageWidth - $guardianContactWidth) / 2;
+            
+            $pdf->SetXY($guardianContactCenterX, 46);
+            $pdf->Cell($guardianContactWidth, 6, $guardianContact, 0, 1, 'C');
 
             // ID card rules/instructions
             $pdf->SetXY(20, 125);
