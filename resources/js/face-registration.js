@@ -45,31 +45,24 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
         }
         
-        // Test Flask server
-        try {
-            const flaskTest = await fetch(`${FLASK_SERVER_URL}/health`, { 
-                method: 'GET',
-                signal: AbortSignal.timeout(3000)
-            });
-        } catch (error) {
-        }
+        // Skip Flask server test to avoid 404 errors
+        // Flask server not needed for basic functionality
         
     }
 
     // Call debug test on load
     testEndpoints();
 
-    // Check Flask server availability
-    checkFlaskServer();
+    // Check Flask server availability - disabled to prevent 404 errors
+    // checkFlaskServer();
 
     async function checkFlaskServer() {
-        try {
-            const response = await fetch(`${FLASK_SERVER_URL}/health`, { method: 'GET', signal: AbortSignal.timeout(5000) });
-            isFlaskServerAvailable = response.ok;
-        } catch (error) {
-            isFlaskServerAvailable = false;
-            faceStatus.textContent = 'Note: AI face encoding unavailable';
-            faceStatus.style.background = 'rgba(255,193,7,0.8)';
+        // Disabled Flask server check to prevent 404 errors
+        // Set as unavailable by default since server is not running
+        isFlaskServerAvailable = false;
+        if (faceStatus) {
+            faceStatus.textContent = 'Camera ready for capture';
+            faceStatus.style.background = 'rgba(108,117,125,0.8)';
         }
     }
 

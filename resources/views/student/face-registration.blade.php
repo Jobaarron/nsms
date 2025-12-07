@@ -256,11 +256,9 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        @if($student->hasFaceRegistered())
-                            <a href="{{ url('/pdf/student-id-card') }}" class="btn btn-success" target="_blank">
-                                <i class="ri-id-card-line me-2"></i>Generate ID Card
-                            </a>
-                        @endif
+                        <button type="button" class="btn btn-success" onclick="showPdfPreview()">
+                            <i class="ri-id-card-line me-2"></i>Preview ID Card
+                        </button>
                         <a href="{{ route('student.dashboard') }}" class="btn btn-outline-primary">
                             <i class="ri-dashboard-line me-2"></i>Back to Dashboard
                         </a>
@@ -270,9 +268,59 @@
         </div>
     </div>
 
+    <!-- PDF Preview Modal -->
+    <div class="modal fade" id="pdfPreviewModal" tabindex="-1" aria-labelledby="pdfPreviewModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="pdfPreviewModalLabel">
+                        <i class="ri-id-card-line me-2"></i>Student ID Card Preview
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div id="pdfLoadingSpinner" class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Generating your ID card...</p>
+                    </div>
+                    <iframe id="pdfPreviewFrame" src="" style="width: 100%; height: 450px; border: none; display: none;"></iframe>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <a id="downloadPdfBtn" href="{{ url('/pdf/student-id-card') }}" class="btn btn-primary" download>
+                        <i class="ri-download-line me-2"></i>Download PDF
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     @push('scripts')
         @vite(['resources/js/face-registration.js'])
+        <script>
+            // PDF Preview functionality - separate from face registration
+            function showPdfPreview() {
+                const modal = new bootstrap.Modal(document.getElementById('pdfPreviewModal'));
+                const iframe = document.getElementById('pdfPreviewFrame');
+                const spinner = document.getElementById('pdfLoadingSpinner');
+                
+                // Show modal and spinner
+                modal.show();
+                spinner.style.display = 'block';
+                iframe.style.display = 'none';
+                
+                // Load PDF in iframe
+                iframe.onload = function() {
+                    spinner.style.display = 'none';
+                    iframe.style.display = 'block';
+                };
+                
+                iframe.src = '{{ url("/pdf/student-id-card") }}';
+            }
+        </script>
     @endpush
-    
+
     <meta name="face-registration-save-url" content="{{ route('student.face-registration.save') }}">
 </x-student-layout>

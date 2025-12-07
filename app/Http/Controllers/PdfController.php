@@ -2952,23 +2952,38 @@ public function generateElementaryReportCardPdf(Student $student)
                 }
             }
 
-            // Check if student has face registration
-            $faceRegistration = $student->activeFaceRegistration()->first();
-            if (!$faceRegistration) {
-                return response('Face registration required to generate ID card', 400);
+            // Check for photo sources with priority: Enrollee ID photo first, then face registration
+            $photoData = null;
+            $photoSource = 'none';
+            
+            // First priority: Check if student has enrollee ID photo
+            if ($student->enrollee && $student->enrollee->id_photo_data_url) {
+                $photoData = $student->enrollee->id_photo_data_url;
+                $photoSource = 'enrollee_id_photo';
+            } else {
+                // Second priority: Check face registration
+                $faceRegistration = $student->activeFaceRegistration()->first();
+                if ($faceRegistration && $faceRegistration->hasFaceImage()) {
+                    $photoData = $faceRegistration->face_image_data_url;
+                    $photoSource = 'face_registration';
+                }
             }
             
-            // Debug: Log face registration data
-            \Log::info('Face Registration Data', [
+            // Debug: Log photo source data
+            \Log::info('ID Card Photo Source Selection', [
                 'student_id' => $student->id,
-                'face_registration_id' => $faceRegistration->id ?? 'null',
-                'has_face_image_data' => !empty($faceRegistration->face_image_data),
-                'face_image_mime_type' => $faceRegistration->face_image_mime_type ?? 'null',
-                'face_image_data_url_length' => strlen($faceRegistration->face_image_data_url ?? ''),
+                'enrollee_id' => $student->enrollee_id ?? 'null',
+                'has_enrollee' => $student->enrollee ? 'yes' : 'no',
+                'has_enrollee_photo' => $student->enrollee && $student->enrollee->id_photo_data_url ? 'yes' : 'no',
+                'enrollee_photo_length' => $student->enrollee && $student->enrollee->id_photo_data_url ? strlen($student->enrollee->id_photo_data_url) : 0,
+                'face_registration_id' => isset($faceRegistration) ? ($faceRegistration->id ?? 'null') : 'not_checked',
+                'has_face_image' => isset($faceRegistration) ? ($faceRegistration->hasFaceImage() ? 'yes' : 'no') : 'not_checked',
+                'selected_source' => $photoSource,
+                'has_photo_data' => $photoData ? 'yes' : 'no'
             ]);
             
-            if (!$faceRegistration->hasFaceImage()) {
-                return response('Face image data not found. Please register your face again.', 400);
+            if (!$photoData) {
+                return response('Photo required to generate ID card. Please upload an ID photo or register your face.', 400);
             }
 
             // Initialize TCPDF with FPDI
@@ -3008,7 +3023,7 @@ public function generateElementaryReportCardPdf(Student $student)
             $pdf->SetTextColor(0, 0, 0);
 
             // Center the name regardless of length
-            $pdf->SetFont('times', '', 6);
+            $pdf->SetFont('helvetica', '', 6);
             // Format name as "Firstname M. Lastname"
             $formattedName = $student->first_name;
             if ($student->middle_name) {
@@ -3021,118 +3036,128 @@ public function generateElementaryReportCardPdf(Student $student)
             $pageWidth = $pdf->getPageWidth();
             $centerX = ($pageWidth - $textWidth) / 2;
             
-            $pdf->SetXY($centerX, 58);
+            $pdf->SetXY($centerX, 54);
             $pdf->Cell($textWidth, 6, '' . $formattedName, 0, 1, 'C');
 
             // Center ID No.
-            $pdf->SetFont('times', '', 5);
+            $pdf->SetFont('helvetica', '', 5);
             $idText = 'ID No. ' . ($student->student_id ?? 'N/A');
             $idTextWidth = $pdf->GetStringWidth($idText);
             $idCenterX = ($pageWidth - $idTextWidth) / 2;
-            $pdf->SetXY($idCenterX, 52);
+            $pdf->SetXY($idCenterX, 48);
             $pdf->Cell($idTextWidth, 6, $idText, 0, 1, 'C');
 
             // Center LRN
-            $pdf->SetFont('times', '', 5);
+            $pdf->SetFont('helvetica', '', 5);
             $lrnText = 'LRN. ' . ($student->lrn ?? 'N/A');
             $lrnTextWidth = $pdf->GetStringWidth($lrnText);
             $lrnCenterX = ($pageWidth - $lrnTextWidth) / 2;
-            $pdf->SetXY($lrnCenterX, 55);
+            $pdf->SetXY($lrnCenterX, 51);
             $pdf->Cell($lrnTextWidth, 6, $lrnText, 0, 1, 'C');
 
             // Center Grade Level
-            $pdf->SetFont('times', '', 8);
+            $pdf->SetFont('helvetica', '', 8);
             $pdf->SetTextColor(0, 128, 0); // Green color
             $gradeText = '' . ($student->grade_level ?? 'N/A');
             $gradeTextWidth = $pdf->GetStringWidth($gradeText);
             $gradeCenterX = ($pageWidth - $gradeTextWidth) / 2;
-            $pdf->SetXY($gradeCenterX, 61);
+            $pdf->SetXY($gradeCenterX, 57);
             $pdf->Cell($gradeTextWidth, 6, $gradeText, 0, 1, 'C');
             $pdf->SetTextColor(0, 0, 0); // Reset to black
 
-            $pdf->SetXY(20, 85);
-            $pdf->SetFont('times', '', 7);
+            $pdf->SetXY(20, 81);
+            $pdf->SetFont('helvetica', '', 7);
             $pdf->Cell(0, 6, '' . ($student->section ?? 'N/A'), 0, 1);
 
-            $pdf->SetXY(20, 95);
+            $pdf->SetXY(20, 91);
             $pdf->Cell(0, 6, '' . ($student->academic_year ?? '2024-2025'), 0, 1);
 
-            // Debug: Direct database query to check face registration
-            $directFaceReg = \DB::table('face_registrations')
-                ->where('student_id', $student->id)
-                ->where('is_active', true)
-                ->first();
-                
-            \Log::info('Direct face registration query', [
-                'student_id' => $student->id,
-                'found_registration' => $directFaceReg ? 'YES' : 'NO',
-                'has_face_data' => $directFaceReg ? !empty($directFaceReg->face_image_data) : false,
-                'data_length' => $directFaceReg ? strlen($directFaceReg->face_image_data ?? '') : 0,
-                'mime_type' => $directFaceReg->face_image_mime_type ?? 'none'
-            ]);
-
-            // Add face photo if available - try multiple approaches
-            if ($directFaceReg && !empty($directFaceReg->face_image_data)) {
+            // Add student photo using the selected photo source
+            if ($photoData) {
                 try {
-                    // Method 1: Direct base64 approach
-                    $mimeType = $directFaceReg->face_image_mime_type ?: 'image/jpeg';
-                    $imageData = base64_decode($directFaceReg->face_image_data);
+                    // Handle data URL format (data:image/jpeg;base64,...)
+                    if (strpos($photoData, 'data:') === 0) {
+                        // Extract MIME type and base64 data
+                        $dataParts = explode(',', $photoData, 2);
+                        if (count($dataParts) === 2) {
+                            $mimeInfo = $dataParts[0];
+                            $base64Data = $dataParts[1];
+                            
+                            // Extract MIME type
+                            preg_match('/data:([^;]+)/', $mimeInfo, $mimeMatches);
+                            $mimeType = $mimeMatches[1] ?? 'image/jpeg';
+                            
+                            $imageData = base64_decode($base64Data);
+                        } else {
+                            throw new \Exception('Invalid data URL format');
+                        }
+                    } else {
+                        // Assume it's raw base64 data
+                        $mimeType = 'image/jpeg';
+                        $imageData = base64_decode($photoData);
+                    }
                     
-                    \Log::info('Attempting to add face photo', [
+                    \Log::info('Adding student photo to ID card', [
+                        'source' => $photoSource,
                         'mime_type' => $mimeType,
                         'decoded_size' => strlen($imageData),
-                        'coordinates' => '200, 280, 60, 75 (next to student name)'
+                        'coordinates' => 'Multiple positions for visibility testing'
                     ]);
                     
                     // Create temp file from base64 data
-                    $tempFile = tempnam(sys_get_temp_dir(), 'face_') . '.jpg';
+                    $tempFile = tempnam(sys_get_temp_dir(), 'student_photo_') . '.jpg';
                     file_put_contents($tempFile, $imageData);
                     
-                    // Add a visible marker first to test positioning
+                    // Add a visible marker to test positioning
                     $pdf->SetXY(200, 280);
-                    $pdf->SetFont('dejavusans', 'B', 10);
-                    $pdf->SetFillColor(255, 0, 0); // Red background
-                    $pdf->Cell(60, 10, '[PHOTO HERE]', 1, 0, 'C', true);
+                    $pdf->SetFont('dejavusans', 'B', 8);
+                    $pdf->SetFillColor(0, 255, 0); // Green background
+                    $pdf->Cell(40, 8, "[{$photoSource}]", 1, 0, 'C', true);
                     
-                    // Center the face photo and move slightly right
+                    // Center the student photo and move slightly right (1 point)
                     $imageWidth = 20;
                     $imageHeight = 16;
                     $imageCenterX = (($pageWidth - $imageWidth) / 2) + 1;
                     
-                    // Position 1: Centered in the silhouette area
-                    $pdf->Image($tempFile, $imageCenterX, 167, $imageWidth, $imageHeight);
+                    // Position 1: Main ID photo position (centered in silhouette area) - moved higher
+                    $pdf->Image($tempFile, $imageCenterX, 158, $imageWidth, $imageHeight);
                     
-                    // Position 2: Alternative position (higher up) - also centered  
-                    $pdf->Image($tempFile, $imageCenterX, 217, $imageWidth, $imageHeight);
+                    // Position 2: Alternative position (higher up) - also centered - moved higher
+                    $pdf->Image($tempFile, $imageCenterX, 208, $imageWidth, $imageHeight);
                     
-                    // Position 3: Very visible position (top) - also centered
-                    $pdf->Image($tempFile, $imageCenterX, 37, $imageWidth, $imageHeight);
+                    // Position 3: Very visible position (top area) - also centered - moved higher
+                    $pdf->Image($tempFile, $imageCenterX, 33, $imageWidth, $imageHeight);
                     
-                    \Log::info('Face photo added successfully');
+                    \Log::info('Student photo added successfully to ID card', ['source' => $photoSource]);
                     
-                    // Clean up
+                    // Clean up temp file
                     unlink($tempFile);
                     
                 } catch (\Exception $e) {
-                    \Log::error('Face photo failed', [
+                    \Log::error('Failed to add student photo to ID card', [
+                        'source' => $photoSource,
                         'error' => $e->getMessage(),
                         'trace' => $e->getTraceAsString()
                     ]);
                     
-                    // Add a placeholder text instead
+                    // Add error indicator on the PDF
                     $pdf->SetXY(50, 50);
                     $pdf->SetFont('dejavusans', '', 8);
-                    $pdf->Write(0, '[PHOTO ERROR]');
+                    $pdf->SetTextColor(255, 0, 0); // Red text
+                    $pdf->Write(0, '[PHOTO ERROR: ' . substr($e->getMessage(), 0, 20) . ']');
+                    $pdf->SetTextColor(0, 0, 0); // Reset to black
                 }
             } else {
-                // Add placeholder text if no face data
+                // This shouldn't happen since we check earlier, but just in case
                 $pdf->SetXY(50, 50);
                 $pdf->SetFont('dejavusans', '', 8);
-                $pdf->Write(0, '[NO FACE DATA]');
+                $pdf->SetTextColor(255, 165, 0); // Orange text
+                $pdf->Write(0, '[NO PHOTO AVAILABLE]');
+                $pdf->SetTextColor(0, 0, 0); // Reset to black
                 
-                \Log::warning('No face registration data found', [
+                \Log::warning('No photo data available for ID card generation', [
                     'student_id' => $student->id,
-                    'direct_query_result' => $directFaceReg ? 'found but no image data' : 'no registration found'
+                    'photo_source' => $photoSource
                 ]);
             }
 
