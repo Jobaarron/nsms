@@ -3,7 +3,7 @@
 
     <!-- Main Content -->
     <main class="container-fluid px-3 px-md-4 py-4">
-        <!-- Page Header --> -->
+        <!-- Page Header --> 
         <div class="row mb-4">
             <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
@@ -31,7 +31,7 @@
                                 <i class="ri-money-dollar-circle-line fs-4 text-success"></i>
                             </div>
                             <h5 class="fw-bold text-success mb-1">₱{{ number_format($paymentMethodData['full']['amount'] + $paymentMethodData['quarterly']['amount'] + $paymentMethodData['monthly']['amount'], 0) }}</h5>
-                            <small class="text-muted">Total Revenue</small>
+                            <small class="text-muted">Total Daily Collections</small>
                         </div>
                     </div>
                 </div>
@@ -53,7 +53,7 @@
                                 <i class="ri-calendar-2-line fs-4 text-info"></i>
                             </div>
                             <h5 class="fw-bold text-info mb-1">₱{{ number_format(collect($dailyRevenue)->sum('total'), 0) }}</h5>
-                            <small class="text-muted">This Month's Revenue</small>
+                            <small class="text-muted">This Month's Collections</small>
                         </div>
                     </div>
                 </div>
@@ -81,7 +81,7 @@
                                 <i class="ri-time-line fs-4 text-warning"></i>
                             </div>
                             <h5 class="fw-bold text-warning mb-1">{{ $pendingPayments }}</h5>
-                            <small class="text-muted">Pending Payments</small>
+                            <small class="text-muted">Pending Quarterly Payments</small>
                         </div>
                     </div>
                 </div>
@@ -132,7 +132,7 @@
                     <h5 class="card-title mb-0">
                         <i class="ri-pie-chart-line me-2"></i>Payment Method Distribution
                     </h5>
-                    <small class="text-muted">Total revenue by payment schedule type</small>
+                    <small class="text-muted">Total collections by payment schedule type</small>
                 </div>
                 <div class="card-body">
                     <div class="row text-center mb-3">
@@ -170,9 +170,9 @@
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white border-0 pb-0">
                     <h5 class="card-title mb-0">
-                        <i class="ri-line-chart-line me-2"></i>Revenue Trend
+                        <i class="ri-line-chart-line me-2"></i>Daily Collections Trend
                     </h5>
-                    <small class="text-muted">Monthly revenue for the last 6 months</small>
+                    <small class="text-muted">Monthly collections for the last 6 months</small>
                 </div>
                 <div class="card-body">
                     <div class="chart-container">
@@ -187,7 +187,7 @@
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white border-0 pb-0">
                     <h5 class="card-title mb-0">
-                        <i class="ri-calendar-line me-2"></i>Daily Revenue - {{ now()->format('F Y') }}
+                        <i class="ri-calendar-line me-2"></i>Daily Collections - {{ now()->format('F Y') }}
                     </h5>
                     <small class="text-muted">Daily payment confirmations this month</small>
                 </div>
@@ -259,6 +259,12 @@
                                             </tr>
                                         @endif
                                     @endforeach
+                                    <tr class="table-active border-top-2">
+                                        <td class="fw-bold">Total</td>
+                                        <td class="fw-bold">{{ number_format($paymentMethodData['full']['count'] + $paymentMethodData['quarterly']['count'] + $paymentMethodData['monthly']['count']) }}</td>
+                                        <td class="fw-bold text-success">₱{{ number_format($totalMethodAmount, 2) }}</td>
+                                        
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>

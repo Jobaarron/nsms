@@ -3007,16 +3007,22 @@ public function generateElementaryReportCardPdf(Student $student)
                 }
             }
 
-            // Check for photo sources with priority: Enrollee ID photo first, then face registration
+            // Check for photo sources with priority: Student ID photo first, then enrollee ID photo, then face registration
             $photoData = null;
             $photoSource = 'none';
             
-            // First priority: Check if student has enrollee ID photo
-            if ($student->enrollee && $student->enrollee->id_photo_data_url) {
+            // First priority: Check if student has their own ID photo
+            if ($student->id_photo_data_url) {
+                $photoData = $student->id_photo_data_url;
+                $photoSource = 'student_id_photo';
+            } 
+            // Second priority: Check if student has enrollee ID photo
+            elseif ($student->enrollee && $student->enrollee->id_photo_data_url) {
                 $photoData = $student->enrollee->id_photo_data_url;
                 $photoSource = 'enrollee_id_photo';
-            } else {
-                // Second priority: Check face registration
+            } 
+            // Third priority: Check face registration
+            else {
                 $faceRegistration = $student->activeFaceRegistration()->first();
                 if ($faceRegistration && $faceRegistration->hasFaceImage()) {
                     $photoData = $faceRegistration->face_image_data_url;
@@ -3027,6 +3033,8 @@ public function generateElementaryReportCardPdf(Student $student)
             // Debug: Log photo source data
             \Log::info('ID Card Photo Source Selection', [
                 'student_id' => $student->id,
+                'has_student_id_photo' => $student->id_photo_data_url ? 'yes' : 'no',
+                'student_id_photo_length' => $student->id_photo_data_url ? strlen($student->id_photo_data_url) : 0,
                 'enrollee_id' => $student->enrollee_id ?? 'null',
                 'has_enrollee' => $student->enrollee ? 'yes' : 'no',
                 'has_enrollee_photo' => $student->enrollee && $student->enrollee->id_photo_data_url ? 'yes' : 'no',
@@ -3296,6 +3304,153 @@ public function generateElementaryReportCardPdf(Student $student)
 
         } catch (\Exception $e) {
             return response('Error generating ID card: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Replace student ID photo
+     */
+    public function replaceIdPhoto(Request $request)
+    {
+        try {
+            // Validate the request
+            $request->validate([
+                'id_photo' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048', // 2MB max to prevent issues
+            ]);
+
+            // Get authenticated student
+            $student = Auth::guard('student')->user();
+            
+            if (!$student) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Student not authenticated'
+                ], 401);
+            }
+
+            // Process the uploaded file
+            $file = $request->file('id_photo');
+            $mimeType = $file->getMimeType();
+            
+            // Create image resource for compression
+            $image = null;
+            switch ($mimeType) {
+                case 'image/jpeg':
+                case 'image/jpg':
+                    $image = imagecreatefromjpeg($file->path());
+                    break;
+                case 'image/png':
+                    $image = imagecreatefrompng($file->path());
+                    break;
+                case 'image/gif':
+                    $image = imagecreatefromgif($file->path());
+                    break;
+                default:
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Unsupported image format'
+                    ], 422);
+            }
+            
+            if (!$image) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to process image'
+                ], 422);
+            }
+            
+            // Get original dimensions
+            $originalWidth = imagesx($image);
+            $originalHeight = imagesy($image);
+            
+            // Calculate new dimensions (max 800px width/height to reduce size)
+            $maxDimension = 800;
+            if ($originalWidth > $maxDimension || $originalHeight > $maxDimension) {
+                if ($originalWidth > $originalHeight) {
+                    $newWidth = $maxDimension;
+                    $newHeight = intval(($originalHeight / $originalWidth) * $maxDimension);
+                } else {
+                    $newHeight = $maxDimension;
+                    $newWidth = intval(($originalWidth / $originalHeight) * $maxDimension);
+                }
+            } else {
+                $newWidth = $originalWidth;
+                $newHeight = $originalHeight;
+            }
+            
+            // Create resized image
+            $resizedImage = imagecreatetruecolor($newWidth, $newHeight);
+            
+            // Handle transparency for PNG and GIF
+            if ($mimeType === 'image/png' || $mimeType === 'image/gif') {
+                imagealphablending($resizedImage, false);
+                imagesavealpha($resizedImage, true);
+                $transparent = imagecolorallocatealpha($resizedImage, 255, 255, 255, 127);
+                imagefill($resizedImage, 0, 0, $transparent);
+            }
+            
+            // Copy and resize image
+            imagecopyresampled($resizedImage, $image, 0, 0, 0, 0, $newWidth, $newHeight, $originalWidth, $originalHeight);
+            
+            // Capture compressed image data
+            ob_start();
+            switch ($mimeType) {
+                case 'image/jpeg':
+                case 'image/jpg':
+                    imagejpeg($resizedImage, null, 75); // 75% quality for good compression
+                    break;
+                case 'image/png':
+                    imagepng($resizedImage, null, 6); // Compression level 6 (0-9)
+                    break;
+                case 'image/gif':
+                    imagegif($resizedImage);
+                    break;
+            }
+            $imageData = ob_get_contents();
+            ob_end_clean();
+            
+            // Clean up memory
+            imagedestroy($image);
+            imagedestroy($resizedImage);
+            
+            // Check final size (limit to 1MB for database storage)
+            if (strlen($imageData) > 1048576) { // 1MB
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Image is still too large after compression. Please use a smaller image.'
+                ], 422);
+            }
+            
+            // Convert to base64 data URL
+            $base64 = base64_encode($imageData);
+            $dataUrl = 'data:' . $mimeType . ';base64,' . $base64;
+            
+            // Update student record
+            $student->update([
+                'id_photo' => $base64,
+                'id_photo_mime_type' => $mimeType,
+                'id_photo_data_url' => $dataUrl
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'ID photo updated successfully',
+                'data' => [
+                    'id_photo_data_url' => $dataUrl
+                ]
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating ID photo: ' . $e->getMessage()
+            ], 500);
         }
     }
 

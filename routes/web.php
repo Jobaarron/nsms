@@ -739,6 +739,9 @@ Route::prefix('student')->name('student.')->group(function () {
             // Face registration routes (requires payment)
             Route::get('/face-registration', [StudentController::class, 'faceRegistration'])->name('face-registration');
             Route::post('/face-registration/save', [StudentController::class, 'saveFaceRegistration'])->name('face-registration.save');
+            
+            // ID Photo replacement routes (requires payment)
+            Route::post('/id-photo/replace', [PdfController::class, 'replaceIdPhoto'])->name('id-photo.replace');
         });
     });
 });
