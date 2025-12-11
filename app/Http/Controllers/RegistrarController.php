@@ -571,20 +571,20 @@ class RegistrarController extends Controller
         try {
             $application = Enrollee::findOrFail($id);
             
-            if ($application->enrollment_status !== 'declined') {
+            if ($application->enrollment_status !== 'rejected') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Only declined applications can be reconsidered'
+                    'message' => 'Only rejected applications can be reconsidered'
                 ], 400);
             }
 
             $application->update([
                 'enrollment_status' => 'pending',
-                'declined_at' => null,
-                'decline_reason' => null,
+                'rejected_at' => null,
+                'status_reason' => null,
                 'reconsider_reason' => $request->reason,
                 'reconsidered_at' => now(),
-                'reconsidered_by' => auth()->id()
+                'reconsidered_by' => auth()->guard('registrar')->id()
             ]);
 
             // Create a notice for the applicant
@@ -593,7 +593,7 @@ class RegistrarController extends Controller
                 'title' => 'Application Reconsidered',
                 'message' => "Your application has been reconsidered and is now under review again. Reason: {$request->reason}",
                 'is_global' => false,
-                'created_by' => auth()->id(),
+                'created_by' => auth()->guard('registrar')->id(),
             ]);
 
             return response()->json([

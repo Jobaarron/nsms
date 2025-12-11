@@ -104,7 +104,13 @@ function reconsiderApplication(applicationId) {
     currentApplicationId = applicationId;
     
     // Hide the view modal and show reconsider modal
-    const viewModal = bootstrap.Modal.getInstance(document.getElementById('viewArchiveModal'));
+    const viewModalElement = document.getElementById('viewArchiveModal');
+    let viewModal = bootstrap.Modal.getInstance(viewModalElement);
+    
+    // If no instance exists, create one first
+    if (!viewModal) {
+        viewModal = new bootstrap.Modal(viewModalElement);
+    }
     viewModal.hide();
     
     const reconsiderModal = new bootstrap.Modal(document.getElementById('reconsiderModal'));
@@ -139,7 +145,13 @@ function confirmReconsider() {
     .then(data => {
         if (data.success) {
             // Hide modal and refresh page
-            const modal = bootstrap.Modal.getInstance(document.getElementById('reconsiderModal'));
+            const reconsiderModalElement = document.getElementById('reconsiderModal');
+            let modal = bootstrap.Modal.getInstance(reconsiderModalElement);
+            
+            // If no instance exists, create one first
+            if (!modal) {
+                modal = new bootstrap.Modal(reconsiderModalElement);
+            }
             modal.hide();
             
             // Show success message and refresh

@@ -739,6 +739,9 @@ Route::prefix('student')->name('student.')->group(function () {
             // Face registration routes (requires payment)
             Route::get('/face-registration', [StudentController::class, 'faceRegistration'])->name('face-registration');
             Route::post('/face-registration/save', [StudentController::class, 'saveFaceRegistration'])->name('face-registration.save');
+            
+            // ID Photo replacement routes (requires payment)
+            Route::post('/id-photo/replace', [PdfController::class, 'replaceIdPhoto'])->name('id-photo.replace');
         });
     });
 });
@@ -854,6 +857,7 @@ Route::prefix('registrar')->name('registrar.')->group(function () {
         Route::get('/applications/{id}', [RegistrarController::class, 'getApplication'])->name('applications.get');
         Route::post('/applications/{id}/approve', [RegistrarController::class, 'approveApplication'])->name('applications.approve');
         Route::post('/applications/{id}/decline', [RegistrarController::class, 'declineApplication'])->name('applications.decline');
+        Route::post('/applications/{id}/reconsider', [RegistrarController::class, 'reconsiderApplication'])->name('applications.reconsider');
         
         // Document management
         Route::get('/applications/{id}/documents', [RegistrarController::class, 'getApplicationDocuments'])->name('applications.documents');

@@ -673,6 +673,163 @@ savePhotosBtn.addEventListener('click', async function() {
     }
 
 
+    // ===== PDF PREVIEW FUNCTIONALITY =====
+    
+    // Show PDF Preview Modal
+    window.showPdfPreview = function() {
+        const modal = new bootstrap.Modal(document.getElementById('pdfPreviewModal'));
+        const iframe = document.getElementById('pdfPreviewFrame');
+        const spinner = document.getElementById('pdfLoadingSpinner');
+        
+        // Show modal and spinner
+        modal.show();
+        spinner.style.display = 'block';
+        iframe.style.display = 'none';
+        
+        // Load PDF in iframe
+        iframe.onload = function() {
+            spinner.style.display = 'none';
+            iframe.style.display = 'block';
+        };
+        
+        // Use the URL passed from Blade template or fallback
+        const pdfUrl = window.pdfStudentIdCardUrl || '/pdf/student-id-card';
+        iframe.src = pdfUrl;
+    };
+
+    // ===== ID PHOTO UPLOAD FUNCTIONALITY =====
+    
+    // Show ID Photo Upload Modal
+    window.showIdPhotoUpload = function() {
+        const modal = new bootstrap.Modal(document.getElementById('idPhotoUploadModal'));
+        modal.show();
+    };
+
+    // Preview ID Photo
+    window.previewIdPhoto = function(event) {
+        const file = event.target.files[0];
+        const preview = document.getElementById('newIdPhotoPreview');
+        const noPreviewText = document.getElementById('noPreviewText');
+        const uploadBtn = document.getElementById('uploadIdPhotoBtn');
+
+        if (file) {
+            // Validate file type
+            const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+            if (!validTypes.includes(file.type)) {
+                alert('Please select a valid image file (JPG, PNG, GIF)');
+                event.target.value = '';
+                return;
+            }
+
+            // Validate file size (2MB max)
+            const maxSize = 2 * 1024 * 1024; // 2MB in bytes
+            if (file.size > maxSize) {
+                alert('File size must be less than 2MB');
+                event.target.value = '';
+                return;
+            }
+
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+                noPreviewText.style.display = 'none';
+                uploadBtn.disabled = false;
+            };
+            reader.readAsDataURL(file);
+        } else {
+            // Reset preview
+            preview.style.display = 'none';
+            noPreviewText.style.display = 'flex';
+            uploadBtn.disabled = true;
+        }
+    };
+
+    // Upload ID Photo
+    window.uploadIdPhoto = function() {
+        const fileInput = document.getElementById('idPhotoFile');
+        const progressDiv = document.getElementById('uploadProgress');
+        const progressBar = progressDiv.querySelector('.progress-bar');
+        const uploadBtn = document.getElementById('uploadIdPhotoBtn');
+
+        if (!fileInput.files[0]) {
+            alert('Please select a file first');
+            return;
+        }
+
+        // Get CSRF token
+        const csrfToken = document.querySelector('meta[name="csrf-token"]');
+        if (!csrfToken) {
+            alert('CSRF token missing. Please refresh the page.');
+            return;
+        }
+
+        // Prepare form data
+        const formData = new FormData();
+        formData.append('id_photo', fileInput.files[0]);
+
+        // Show progress
+        progressDiv.style.display = 'block';
+        uploadBtn.disabled = true;
+        uploadBtn.innerHTML = '<i class="ri-loader-2-line me-2"></i>Uploading...';
+
+        // Get the route URL from a data attribute or construct it
+        const uploadUrl = '/student/id-photo/replace';
+
+        // Upload using fetch API
+        fetch(uploadUrl, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken.getAttribute('content'),
+                'Accept': 'application/json'
+            },
+            body: formData,
+            credentials: 'include'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update current photo display
+                const currentPhotoImg = document.getElementById('currentIdPhoto');
+                if (currentPhotoImg) {
+                    currentPhotoImg.src = data.data.id_photo_data_url;
+                }
+
+                // Show success message
+                alert('✅ ID photo updated successfully!');
+                
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('idPhotoUploadModal'));
+                if (modal) {
+                    modal.hide();
+                }
+
+                // Reset form
+                fileInput.value = '';
+                document.getElementById('newIdPhotoPreview').style.display = 'none';
+                document.getElementById('noPreviewText').style.display = 'flex';
+                uploadBtn.disabled = true;
+
+                // Optionally refresh the page to show updated photo everywhere
+                // window.location.reload();
+            } else {
+                alert('❌ Error: ' + (data.message || 'Failed to update ID photo'));
+            }
+        })
+        .catch(error => {
+            console.error('Upload error:', error);
+            alert('❌ An error occurred while uploading the photo');
+        })
+        .finally(() => {
+            // Reset UI
+            progressDiv.style.display = 'none';
+            uploadBtn.disabled = false;
+            uploadBtn.innerHTML = '<i class="ri-upload-line me-2"></i>Upload New Photo';
+            progressBar.style.width = '0%';
+        });
+    };
+
     window.addEventListener('beforeunload', function() {
         if (stream) stream.getTracks().forEach(track => track.stop());
     });

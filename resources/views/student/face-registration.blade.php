@@ -256,6 +256,9 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-warning" onclick="showIdPhotoUpload()">
+                            <i class="ri-image-edit-line me-2"></i>Replace ID Photo
+                        </button>
                         <button type="button" class="btn btn-success" onclick="showPdfPreview()">
                             <i class="ri-id-card-line me-2"></i>Preview ID Card
                         </button>
@@ -297,28 +300,84 @@
         </div>
     </div>
 
+    <!-- ID Photo Upload Modal -->
+    <div class="modal fade" id="idPhotoUploadModal" tabindex="-1" aria-labelledby="idPhotoUploadModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="idPhotoUploadModalLabel">
+                        <i class="ri-image-edit-line me-2"></i>Replace ID Photo
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="mb-3">Current ID Photo</h6>
+                            <div class="text-center mb-3">
+                                @if($student->id_photo_data_url)
+                                    <img id="currentIdPhoto" src="{{ $student->id_photo_data_url }}" alt="Current ID Photo" class="img-thumbnail" style="width: 200px; height: 250px; object-fit: cover;">
+                                @else
+                                    <div class="bg-light d-flex align-items-center justify-content-center img-thumbnail" style="width: 200px; height: 250px;">
+                                        <div class="text-center">
+                                            <i class="ri-user-line fs-1 text-muted mb-2"></i>
+                                            <p class="text-muted small mb-0">No ID Photo</p>
+                                        </div>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="mb-3">Upload New Photo</h6>
+                            <div class="mb-3">
+                                <label for="idPhotoFile" class="form-label">Select Image File</label>
+                                <input type="file" class="form-control" id="idPhotoFile" accept="image/*" onchange="previewIdPhoto(event)">
+                                <div class="form-text">Accepted formats: JPG, PNG, GIF (Max: 2MB)</div>
+                            </div>
+                            <div class="text-center">
+                                <img id="newIdPhotoPreview" src="" alt="New Photo Preview" class="img-thumbnail" style="width: 200px; height: 250px; object-fit: cover; display: none;">
+                                <div id="noPreviewText" class="bg-light d-flex align-items-center justify-content-center img-thumbnail" style="width: 200px; height: 250px;">
+                                    <div class="text-center">
+                                        <i class="ri-image-add-line fs-1 text-muted mb-2"></i>
+                                        <p class="text-muted small mb-0">Preview will appear here</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="alert alert-info">
+                            <h6 class="alert-heading">Photo Guidelines:</h6>
+                            <ul class="mb-0">
+                                <li>Use a clear, recent photo of yourself</li>
+                                <li>Face should be clearly visible and centered</li>
+                                <li>Good lighting with plain background preferred</li>
+                                <li>Photo will be resized to fit ID card format</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div id="uploadProgress" class="mt-3" style="display: none;">
+                        <div class="progress">
+                            <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                        </div>
+                        <small class="text-muted">Uploading...</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="uploadIdPhotoBtn" onclick="uploadIdPhoto()" disabled>
+                        <i class="ri-upload-line me-2"></i>Upload New Photo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     @push('scripts')
         @vite(['resources/js/face-registration.js'])
         <script>
-            // PDF Preview functionality - separate from face registration
-            function showPdfPreview() {
-                const modal = new bootstrap.Modal(document.getElementById('pdfPreviewModal'));
-                const iframe = document.getElementById('pdfPreviewFrame');
-                const spinner = document.getElementById('pdfLoadingSpinner');
-                
-                // Show modal and spinner
-                modal.show();
-                spinner.style.display = 'block';
-                iframe.style.display = 'none';
-                
-                // Load PDF in iframe
-                iframe.onload = function() {
-                    spinner.style.display = 'none';
-                    iframe.style.display = 'block';
-                };
-                
-                iframe.src = '{{ url("/pdf/student-id-card") }}';
-            }
+            // Pass the PDF URL to JavaScript
+            window.pdfStudentIdCardUrl = '{{ url("/pdf/student-id-card") }}';
         </script>
     @endpush
 

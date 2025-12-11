@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // Initialize default filter values
 function initializeFilterDefaults() {
     const defaultValues = {
+        'schoolYearFilter': '2024-2025',
         'violationsDateRange': 'week',
         'violationSeverity': 'all',
         'pendingPriority': 'all',
@@ -46,6 +47,7 @@ function initializeFilterDefaults() {
 // Trigger the appropriate filter function based on element ID
 function triggerRelatedFilter(elementId) {
     const filterMap = {
+        'schoolYearFilter': applyGlobalSchoolYearFilter,
         'violationsDateRange': applyViolationsFilter,
         'violationSeverity': applyViolationsFilter,
         'pendingPriority': applyPendingFilter,
@@ -63,6 +65,9 @@ function triggerRelatedFilter(elementId) {
 
 // Load all dashboard data with current filter states
 function loadAllDashboardData() {
+    // Initialize school year filter first
+    window.currentSchoolYear = document.getElementById('schoolYearFilter')?.value || '2024-2025';
+    
     // Load charts first
     loadViolationPieChart();
     loadViolationBarChart();
@@ -256,7 +261,13 @@ function loadRecentViolations() {
     
     showLoadingToast('Loading recent violations...');
     
-    fetch('/discipline/recent-violations')
+    const schoolYear = getCurrentSchoolYear();
+    let url = '/discipline/recent-violations';
+    if (schoolYear !== 'all') {
+        url += `?school_year=${encodeURIComponent(schoolYear)}`;
+    }
+    
+    fetch(url)
         .then(response => response.json())
         .then(data => {
             hideLoadingToast();
@@ -317,7 +328,13 @@ function loadPendingActions() {
     
     showLoadingToast('Loading pending actions...');
     
-    fetch('/discipline/pending-actions')
+    const schoolYear = getCurrentSchoolYear();
+    let url = '/discipline/pending-actions';
+    if (schoolYear !== 'all') {
+        url += `?school_year=${encodeURIComponent(schoolYear)}`;
+    }
+    
+    fetch(url)
         .then(response => response.json())
         .then(data => {
             hideLoadingToast();
@@ -372,7 +389,13 @@ function loadCriticalCases() {
     
     showLoadingToast('Loading critical cases...');
     
-    fetch('/discipline/critical-cases')
+    const schoolYear = getCurrentSchoolYear();
+    let url = '/discipline/critical-cases';
+    if (schoolYear !== 'all') {
+        url += `?school_year=${encodeURIComponent(schoolYear)}`;
+    }
+    
+    fetch(url)
         .then(response => response.json())
         .then(data => {
             hideLoadingToast();
@@ -456,7 +479,13 @@ function loadViolationTrends() {
     const canvas = document.getElementById('violationTrendsChart');
     if (!canvas) return;
     
-    fetch('/discipline/violation-trends')
+    const schoolYear = getCurrentSchoolYear();
+    let url = '/discipline/violation-trends';
+    if (schoolYear !== 'all') {
+        url += `?school_year=${encodeURIComponent(schoolYear)}`;
+    }
+    
+    fetch(url)
         .then(response => response.json())
         .then(data => {
             // Convert backend data format to chart format
@@ -498,9 +527,17 @@ function renderViolationTrendsChart(labels, datasets, chartType = 'line') {
             datasets: datasets.map((dataset, index) => ({
                 label: dataset.label,
                 data: dataset.data,
-                backgroundColor: index === 0 ? 'rgba(40, 167, 69, 0.2)' : 'rgba(25, 135, 84, 0.2)',
-                borderColor: index === 0 ? '#28a745' : '#198754',
-                borderWidth: 2,
+                backgroundColor: index === 0 ? 'rgba(40, 167, 69, 0.1)' : 'rgba(255, 193, 7, 0.1)',
+                borderColor: index === 0 ? '#28a745' : '#ffc107',
+                borderWidth: 3,
+                pointBackgroundColor: index === 0 ? '#28a745' : '#ffc107',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                pointRadius: 6,
+                pointHoverRadius: 8,
+                pointHoverBackgroundColor: index === 0 ? '#218838' : '#e0a800',
+                pointHoverBorderColor: '#ffffff',
+                fill: true,
                 tension: chartType === 'line' ? 0.4 : 0
             }))
         },
@@ -639,8 +676,14 @@ function applyCriticalCasesFilter(limitOverride = null) {
 function applyViolationTrendsFilter() {
     const period = document.getElementById('violationTrendsPeriod')?.value || '12months';
     const type = document.getElementById('violationTrendsType')?.value || 'line';
+    const schoolYear = getCurrentSchoolYear();
     
-    fetch(`/discipline/violation-trends?period=${period}`)
+    let url = `/discipline/violation-trends?period=${period}`;
+    if (schoolYear !== 'all') {
+        url += `&school_year=${encodeURIComponent(schoolYear)}`;
+    }
+    
+    fetch(url)
         .then(response => response.json())
         .then(data => {
             // Convert backend data format to chart format
@@ -681,6 +724,12 @@ function loadFilteredRecentViolations(filterParams) {
     const container = document.getElementById('recent-violations');
     if (!container) return;
     
+    // Add school year to filter params
+    const schoolYear = getCurrentSchoolYear();
+    if (schoolYear !== 'all') {
+        filterParams.school_year = schoolYear;
+    }
+    
     const queryString = new URLSearchParams(filterParams).toString();
     
     fetch(`/discipline/recent-violations?${queryString}`)
@@ -697,6 +746,12 @@ function loadFilteredPendingActions(filterParams) {
     const container = document.getElementById('pending-actions');
     if (!container) return;
     
+    // Add school year to filter params
+    const schoolYear = getCurrentSchoolYear();
+    if (schoolYear !== 'all') {
+        filterParams.school_year = schoolYear;
+    }
+    
     const queryString = new URLSearchParams(filterParams).toString();
     
     fetch(`/discipline/pending-actions?${queryString}`)
@@ -712,6 +767,12 @@ function loadFilteredPendingActions(filterParams) {
 function loadFilteredCriticalCases(filterParams) {
     const container = document.getElementById('critical-cases-table');
     if (!container) return;
+    
+    // Add school year to filter params
+    const schoolYear = getCurrentSchoolYear();
+    if (schoolYear !== 'all') {
+        filterParams.school_year = schoolYear;
+    }
     
     const queryString = new URLSearchParams(filterParams).toString();
     
@@ -732,7 +793,10 @@ function loadViolationPieChart() {
 
     const period = document.getElementById('pieChartPeriod')?.value || 'month';
     
-    fetch(`/discipline/minor-major-violation-stats?period=${period}`)
+    const schoolYear = getCurrentSchoolYear();
+    const url = `/discipline/minor-major-violation-stats?period=${period}${schoolYear !== 'all' ? '&school_year=' + encodeURIComponent(schoolYear) : ''}`;
+    
+    fetch(url)
         .then(response => response.json())
         .then(data => {
             const ctx = canvas.getContext('2d');
@@ -747,8 +811,10 @@ function loadViolationPieChart() {
                     labels: ['Minor Violations', 'Major Violations'],
                     datasets: [{
                         data: [data.minor || 0, data.major || 0],
-                        backgroundColor: ['#28a745', '#198754'],
-                        borderWidth: 2
+                        backgroundColor: ['#28a745', '#ffc107'],
+                        borderColor: ['#ffffff', '#ffffff'],
+                        borderWidth: 2,
+                        hoverBackgroundColor: ['#218838', '#e0a800']
                     }]
                 },
                 options: {
@@ -775,7 +841,10 @@ function loadViolationBarChart() {
 
     const period = document.getElementById('barChartPeriod')?.value || '12months';
     
-    fetch(`/discipline/violation-bar-stats?period=${period}`)
+    const schoolYear = getCurrentSchoolYear();
+    const url = `/discipline/violation-bar-stats?period=${period}${schoolYear !== 'all' ? '&school_year=' + encodeURIComponent(schoolYear) : ''}`;
+    
+    fetch(url)
         .then(response => response.json())
         .then(data => {
             const ctx = canvas.getContext('2d');
@@ -793,13 +862,15 @@ function loadViolationBarChart() {
                         data: data.minor || [],
                         backgroundColor: '#28a745',
                         borderColor: '#28a745',
-                        borderWidth: 1
+                        borderWidth: 1,
+                        hoverBackgroundColor: '#218838'
                     }, {
                         label: 'Major Violations',
                         data: data.major || [],
-                        backgroundColor: '#198754',
-                        borderColor: '#198754',
-                        borderWidth: 1
+                        backgroundColor: '#ffc107',
+                        borderColor: '#ffc107',
+                        borderWidth: 1,
+                        hoverBackgroundColor: '#e0a800'
                     }]
                 },
                 options: {
@@ -834,7 +905,10 @@ function loadCaseStatusChart() {
 
     const period = document.getElementById('caseStatusPeriod')?.value || 'month';
     
-    fetch(`/discipline/case-status-stats?period=${period}`)
+    const schoolYear = getCurrentSchoolYear();
+    const url = `/discipline/case-status-stats?period=${period}${schoolYear !== 'all' ? '&school_year=' + encodeURIComponent(schoolYear) : ''}`;
+    
+    fetch(url)
         .then(response => response.json())
         .then(data => {
             const ctx = canvas.getContext('2d');
@@ -849,8 +923,10 @@ function loadCaseStatusChart() {
                     labels: ['Pending', 'On Going', 'Completed'],
                     datasets: [{
                         data: [data.pending || 0, data.ongoing || 0, data.completed || 0],
-                        backgroundColor: ['#198754', '#28a745', '#20c997'],
-                        borderWidth: 2
+                        backgroundColor: ['#ffc107', '#28a745', '#20c997'],
+                        borderColor: ['#ffffff', '#ffffff', '#ffffff'],
+                        borderWidth: 2,
+                        hoverBackgroundColor: ['#e0a800', '#218838', '#1ba085']
                     }]
                 },
                 options: {
@@ -870,8 +946,36 @@ function loadCaseStatusChart() {
         });
 }
 
+// Apply Global School Year Filter
+function applyGlobalSchoolYearFilter(schoolYearOverride = null) {
+    const schoolYear = schoolYearOverride || document.getElementById('schoolYearFilter')?.value || 'all';
+    
+    // Store the school year globally for other filters to use
+    window.currentSchoolYear = schoolYear;
+    
+    // Apply school year filter to all components
+    loadViolationPieChart();
+    loadViolationBarChart();
+    loadCaseStatusChart();
+    applyViolationsFilter();
+    applyPendingFilter();
+    applyCriticalCasesFilter();
+    applyViolationTrendsFilter();
+    
+    // Show filter feedback
+    if (schoolYearOverride || schoolYear !== 'all') {
+        showNotification(`Data filtered to school year: ${schoolYear}`, 'success');
+    }
+}
+
+// Get current school year for API calls
+function getCurrentSchoolYear() {
+    return window.currentSchoolYear || document.getElementById('schoolYearFilter')?.value || 'all';
+}
+
 // Apply all filters
 function applyAllFilters() {
+    applyGlobalSchoolYearFilter();
     applyViolationsFilter();
     applyPendingFilter();
     applyCriticalCasesFilter();
@@ -891,6 +995,7 @@ window.renderViolationTrendsChart = renderViolationTrendsChart;
 window.renderDisciplineEffectivenessChart = renderDisciplineEffectivenessChart;
 
 // Individual chart filter functions
+window.applyGlobalSchoolYearFilter = applyGlobalSchoolYearFilter;
 window.applyViolationsFilter = applyViolationsFilter;
 window.applyPendingFilter = applyPendingFilter;
 window.applyCriticalCasesFilter = applyCriticalCasesFilter;

@@ -134,7 +134,16 @@ class Violation extends Model
      */
     public function getReportedByNameAttribute(): string
     {
-        return $this->reportedBy ? $this->reportedBy->full_name : 'Unknown';
+        if ($this->reportedBy && $this->reportedBy->full_name) {
+            return $this->reportedBy->full_name;
+        }
+        
+        // Fallback: if we have a reported_by ID but no related record
+        if ($this->reported_by) {
+            return 'Staff Member (ID: ' . $this->reported_by . ')';
+        }
+        
+        return 'System Generated';
     }
 
     /**
