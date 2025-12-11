@@ -310,7 +310,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-warning" onclick="confirmReconsider()">
-                        <i class="ri-refresh-line me-1"></i>Reconsider Application
+                        <i class="ri-refresh-line me-1"></i>Accept Application
                     </button>
                 </div>
             </div>

@@ -413,6 +413,29 @@
                     </div>
                     <div class="modal-body">
                         <div class="row g-3">
+                            <!-- Global Filters -->
+                            <div class="col-md-12 mb-3">
+                                <div class="card border-success">
+                                    <div class="card-header py-2 bg-success text-white">
+                                        <h6 class="mb-0"><i class="ri-filter-3-line me-2"></i>Global Filters</h6>
+                                    </div>
+                                    <div class="card-body py-3">
+                                        <div class="row g-2">
+                                            <div class="col-md-6">
+                                                <label class="form-label small">School Year</label>
+                                                <select class="form-select form-select-sm" id="schoolYearFilter">
+                                                    <option value="all">All School Years</option>
+                                                    <option value="2024-2025" selected>2024-2025</option>
+                                                    <option value="2023-2024">2023-2024</option>
+                                                    <option value="2022-2023">2022-2023</option>
+                                                    <option value="2021-2022">2021-2022</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <!-- Violations Filters -->
                             <div class="col-md-6">
                                 <label class="form-label">Violations Date Range</label>

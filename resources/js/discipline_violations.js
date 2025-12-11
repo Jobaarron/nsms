@@ -2653,7 +2653,7 @@ function showIncidentForm() {
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-              <button type="submit" class="btn btn-success">Submit Incident</button>
+              <button type="submit" class="btn btn-success">Confirm Incident</button>
             </div>
           </form>
         </div>

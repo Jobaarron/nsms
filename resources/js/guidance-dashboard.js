@@ -336,14 +336,19 @@ function renderCaseStatusPieChart(onGoing, scheduled, preCompleted) {
             datasets: [{
                 data: [onGoing, scheduled, preCompleted],
                 backgroundColor: [
-                    '#81c784', // green 1
-                    '#4caf50', // green 2
-                    '#2e7d32'  // green 3
+                    '#28a745', // Primary green
+                    '#ffc107', // Yellow
+                    '#20c997'  // Teal (complementary)
                 ],
                 borderColor: [
-                    '#81c784',
-                    '#4caf50',
-                    '#2e7d32'
+                    '#ffffff',
+                    '#ffffff',
+                    '#ffffff'
+                ],
+                hoverBackgroundColor: [
+                    '#218838',
+                    '#e0a800',
+                    '#1ba085'
                 ],
                 borderWidth: 2
             }]
@@ -432,11 +437,12 @@ function renderClosedCasesBarChart(labels, data) {
             datasets: [{
                 label: 'Closed Cases',
                 data: data,
-                backgroundColor: '#4caf50',
-                borderColor: '#2e7d32',
+                backgroundColor: '#28a745',
+                borderColor: '#28a745',
                 borderWidth: 2,
                 borderRadius: 6,
-                borderSkipped: false
+                borderSkipped: false,
+                hoverBackgroundColor: '#218838'
             }]
         },
         options: {
@@ -500,11 +506,12 @@ function renderCounselingSessionsBarChart(labels, data) {
             datasets: [{
                 label: 'Counseling Sessions',
                 data: data,
-                backgroundColor: '#81c784',
-                borderColor: '#388e3c',
+                backgroundColor: '#ffc107',
+                borderColor: '#ffc107',
                 borderWidth: 2,
                 borderRadius: 6,
-                borderSkipped: false
+                borderSkipped: false,
+                hoverBackgroundColor: '#e0a800'
             }]
         },
         options: {
@@ -569,11 +576,12 @@ function renderDisciplineVsTotalHistogram(labels, data) {
         datasets = [{
             label: 'Discipline Percentage',
             data: data.percentages,
-            backgroundColor: '#2e7d32',
-            borderColor: '#1b5e20',
+            backgroundColor: '#ffc107',
+            borderColor: '#ffc107',
             borderWidth: 2,
             borderRadius: 6,
-            borderSkipped: false
+            borderSkipped: false,
+            hoverBackgroundColor: '#e0a800'
         }];
     } else if (data.with_discipline && data.total_students) {
         // Comparison view
@@ -581,20 +589,22 @@ function renderDisciplineVsTotalHistogram(labels, data) {
             {
                 label: 'With Disciplinary Record',
                 data: data.with_discipline,
-                backgroundColor: '#1b5e20',  // Dark forest green
-                borderColor: '#2e7d32',      // Medium green border
+                backgroundColor: '#28a745',  // Primary green
+                borderColor: '#28a745',
                 borderWidth: 2,
                 borderRadius: 6,
-                borderSkipped: false
+                borderSkipped: false,
+                hoverBackgroundColor: '#218838'
             },
             {
                 label: 'Total Students',
                 data: data.total_students,
-                backgroundColor: '#66bb6a',  // Fresh leafy green
-                borderColor: '#81c784',     // Light green border
+                backgroundColor: '#ffc107',  // Yellow
+                borderColor: '#ffc107',
                 borderWidth: 2,
                 borderRadius: 6,
-                borderSkipped: false
+                borderSkipped: false,
+                hoverBackgroundColor: '#e0a800'
             }
         ];
     } else if (data.with_discipline) {
@@ -602,11 +612,12 @@ function renderDisciplineVsTotalHistogram(labels, data) {
         datasets = [{
             label: 'Students with Disciplinary Record',
             data: data.with_discipline,
-            backgroundColor: '#1b5e20',
-            borderColor: '#2e7d32',
+            backgroundColor: '#28a745',
+            borderColor: '#28a745',
             borderWidth: 2,
             borderRadius: 6,
-            borderSkipped: false
+            borderSkipped: false,
+            hoverBackgroundColor: '#218838'
         }];
     }
 
@@ -829,12 +840,13 @@ function renderViolationTrendsChart(labels, data, chartType = 'line') {
             datasets: [{
                 label: 'Violations',
                 data: data,
-                borderColor: '#2e7d32',
-                backgroundColor: chartType === 'line' ? 'rgba(46, 125, 50, 0.1)' : '#2e7d32',
+                borderColor: '#28a745',
+                backgroundColor: chartType === 'line' ? 'rgba(40, 167, 69, 0.1)' : '#28a745',
                 fill: chartType === 'line',
                 tension: chartType === 'line' ? 0.4 : 0,
                 borderWidth: 3,
-                pointBackgroundColor: '#2e7d32',
+                pointBackgroundColor: '#28a745',
+                pointHoverBackgroundColor: '#218838',
                 pointBorderColor: '#ffffff',
                 pointBorderWidth: 2,
                 pointRadius: chartType === 'line' ? 5 : 0,
@@ -916,9 +928,10 @@ function renderCounselingEffectivenessChart(data) {
             labels: ['Completed', 'Scheduled', 'Cancelled'],
             datasets: [{
                 data: [data.completed, data.scheduled, data.cancelled],
-                backgroundColor: ['#28a745', '#ffc107', '#dc3545'],
+                backgroundColor: ['#28a745', '#ffc107', '#20c997'],
                 borderColor: ['#ffffff', '#ffffff', '#ffffff'],
-                borderWidth: 2
+                borderWidth: 2,
+                hoverBackgroundColor: ['#218838', '#e0a800', '#1ba085']
             }]
         },
         options: {

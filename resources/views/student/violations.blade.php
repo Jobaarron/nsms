@@ -174,6 +174,7 @@
                     <th>Violations</th>
                     <th>Date</th>
                     <th>Reported By</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody id="minor-violations-tbody">
@@ -199,11 +200,18 @@
                         @endif
                       </td>
                       <td>{{ $latestViolation->violation_date->format('M d, Y') }}</td>
-                      <td>{{ $latestViolation->reported_by_name ?? '-' }}</td>
+                      <td>{{ $latestViolation->reported_by_name }}</td>
+                      <td>
+                        <button type="button" class="btn btn-sm btn-outline-primary"
+                                onclick="viewMinorViolationDetails('{{ addslashes($title) }}', {{ json_encode($violationsGroup->values()->map(function($v) { return $v->append('reported_by_name'); })) }})"
+                                title="View All Violation Dates">
+                          <i class="ri-eye-line"></i> View
+                        </button>
+                      </td>
                     </tr>
                   @empty
                     <tr>
-                      <td colspan="3" class="text-center py-4">
+                      <td colspan="4" class="text-center py-4">
                         <i class="ri-shield-check-line fs-1 text-success d-block mb-2"></i>
                         <p class="text-muted">No minor violations on record</p>
                       </td>
@@ -346,6 +354,44 @@
 
     @if($violations->count() > 0)
 
+      <!-- Minor Violation Details Modal -->
+      <div class="modal fade" id="minorViolationDetailsModal" tabindex="-1" aria-labelledby="minorViolationDetailsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="minorViolationDetailsModalLabel">Violation Details</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <div class="mb-3">
+                <h6><strong>Violation Type:</strong></h6>
+                <p id="violationTitle" class="mb-3">-</p>
+              </div>
+              <div>
+                <h6><strong>All Recorded Violations:</strong></h6>
+                <div class="table-responsive">
+                  <table class="table table-sm table-hover">
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Reported By</th>
+                      </tr>
+                    </thead>
+                    <tbody id="violationOccurrences">
+                      <!-- Dynamic content will be inserted here -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Reply Modal (only one instance) -->
       <div class="modal fade" id="replyModal" tabindex="-1" aria-labelledby="replyModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -431,6 +477,46 @@ document.addEventListener('DOMContentLoaded', function() {
       attachmentForm.setAttribute('data-violation-id', violationId);
     });
   });
+
+  // Handle viewing minor violation details
+  window.viewMinorViolationDetails = function(title, violationsGroup) {
+    document.getElementById('violationTitle').textContent = title;
+    
+    var occurrencesHtml = '';
+    violationsGroup.forEach(function(violation) {
+      var date = violation.violation_date ? new Date(violation.violation_date).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      }) : 'N/A';
+      
+      var time = 'N/A';
+      if (violation.violation_time) {
+        try {
+          var timeStr = violation.violation_time.length > 5 ? violation.violation_time.substring(0, 5) : violation.violation_time;
+          var timeDate = new Date('1970-01-01T' + timeStr);
+          time = isNaN(timeDate) ? violation.violation_time : timeDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+        } catch(e) {
+          time = violation.violation_time;
+        }
+      }
+      
+      var reportedBy = violation.reported_by_name || 'Unknown Reporter';
+      
+      occurrencesHtml += `
+        <tr>
+          <td>${date}</td>
+          <td>${time}</td>
+          <td>${reportedBy}</td>
+        </tr>
+      `;
+    });
+    
+    document.getElementById('violationOccurrences').innerHTML = occurrencesHtml;
+    
+    var modal = new bootstrap.Modal(document.getElementById('minorViolationDetailsModal'));
+    modal.show();
+  };
 
   // Handle viewing escalated violations
   window.viewEscalatedViolations = function(violationId) {
