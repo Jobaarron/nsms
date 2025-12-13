@@ -135,6 +135,12 @@
             </form>
           </li>
         </ul>
+        
+        <!-- Logo and Version at bottom -->
+        <div class="mt-auto text-center px-3 py-3 border-top d-flex flex-column align-items-center justify-content-center">
+          <img src="{{ Vite::asset('resources/assets/images/edusphere-logo.png.png') }}" alt="NMS Logo" class="mb-2" style="height: 80px; width: auto; opacity: 0.8;">
+          <div class="small text-muted text-center">Version 1.12.9.25</div>
+        </div>
       </nav>
 
   <!-- MAIN CONTENT -->

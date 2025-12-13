@@ -3,6 +3,7 @@
     @vite(['resources/js/registrar-applications.js'])
     @vite(['resources/js/registrar-data-change-requests.js'])
     @vite(['resources/js/registrar-document-management.js'])
+    @vite(['resources/js/registrar-appeals.js'])
     @vite(['resources/css/index_registrar.css'])
     
     @include('registrar.enrollment-modals')
@@ -99,6 +100,12 @@
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="data-change-requests-tab" data-bs-toggle="tab" data-bs-target="#data-change-requests" type="button" role="tab">
                     <i class="ri-file-edit-line me-2"></i>Data Change Request
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="appeals-tab" data-bs-toggle="tab" data-bs-target="#appeals" type="button" role="tab">
+                    <i class="ri-scales-line me-2"></i>Appeals
+                    <span class="badge bg-danger ms-1" id="appeals-count" style="display: none;">0</span>
                 </button>
             </li>
         </ul>
@@ -443,6 +450,79 @@
                 </div>
             </div>
 
+            <!-- Appeals Tab -->
+            <div class="tab-pane fade" id="appeals" role="tabpanel">
+                <div class="card shadow">
+                    <div class="card-header" style="background-color: var(--dark-green); color: white;">
+                        <h5 class="mb-0">
+                            <i class="ri-scales-line me-2"></i>
+                            Application Appeals Management
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Appeals Filter -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center">
+                                    <h6 class="mb-0 me-3">Filter by Status:</h6>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <input type="radio" class="btn-check" name="appealStatus" id="all-appeals" value="" checked>
+                                        <label class="btn btn-outline-secondary" for="all-appeals">All</label>
+                                        
+                                        <input type="radio" class="btn-check" name="appealStatus" id="pending-appeals" value="pending">
+                                        <label class="btn btn-outline-warning" for="pending-appeals">Pending</label>
+                                        
+                                        <input type="radio" class="btn-check" name="appealStatus" id="under-review-appeals" value="under_review">
+                                        <label class="btn btn-outline-info" for="under-review-appeals">Under Review</label>
+                                        
+                                        <input type="radio" class="btn-check" name="appealStatus" id="approved-appeals" value="approved">
+                                        <label class="btn btn-outline-success" for="approved-appeals">Approved</label>
+                                        
+                                        <input type="radio" class="btn-check" name="appealStatus" id="rejected-appeals" value="rejected">
+                                        <label class="btn btn-outline-danger" for="rejected-appeals">Rejected</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="appealSearch" placeholder="Search by applicant name or application ID...">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="searchAppeals()">
+                                        <i class="ri-search-line"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Appeals Table -->
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="appealsTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 5%">#</th>
+                                        <th style="width: 15%">Applicant</th>
+                                        <th style="width: 10%">Application ID</th>
+                                        <th style="width: 30%">Appeal Reason</th>
+                                        <th style="width: 10%">Status</th>
+                                        <th style="width: 15%">Submitted</th>
+                                        <th style="width: 15%">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="appealsTableBody">
+                                    <!-- Appeals will be loaded via JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Empty State -->
+                        <div id="appealsEmptyState" class="text-center py-4" style="display: none;">
+                            <i class="ri-scales-line fs-1 text-muted d-block mb-2"></i>
+                            <p class="text-muted">No appeals found</p>
+                            <small class="text-muted">Appeals from rejected applicants will appear here</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -719,5 +799,170 @@
         });
     </script>
     @endpush
+
+    <!-- View Appeal Modal -->
+    <div class="modal fade" id="viewAppealModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="ri-scales-line me-2"></i>
+                        Appeal Details
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <!-- Appeal Information -->
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Appeal Information</h6>
+                                </div>
+                                <div class="card-body">
+                                    <dl class="row">
+                                        <dt class="col-sm-3">Appeal ID:</dt>
+                                        <dd class="col-sm-9" id="view-appeal-id">-</dd>
+                                        <dt class="col-sm-3">Applicant:</dt>
+                                        <dd class="col-sm-9" id="view-appeal-applicant">-</dd>
+                                        <dt class="col-sm-3">Application ID:</dt>
+                                        <dd class="col-sm-9" id="view-appeal-application-id">-</dd>
+                                        <dt class="col-sm-3">Grade Level:</dt>
+                                        <dd class="col-sm-9" id="view-appeal-grade-level">-</dd>
+                                        <dt class="col-sm-3">Original Rejection Reason:</dt>
+                                        <dd class="col-sm-9" id="view-appeal-rejection-reason">-</dd>
+                                        <dt class="col-sm-3">Status:</dt>
+                                        <dd class="col-sm-9">
+                                            <span id="view-appeal-status" class="badge">-</span>
+                                        </dd>
+                                        <dt class="col-sm-3">Submitted:</dt>
+                                        <dd class="col-sm-9" id="view-appeal-submitted">-</dd>
+                                    </dl>
+                                </div>
+                            </div>
+
+                            <!-- Appeal Details -->
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Appeal Reason</h6>
+                                </div>
+                                <div class="card-body">
+                                    <p id="view-appeal-reason" class="text-muted">-</p>
+                                </div>
+                            </div>
+
+                            <!-- Supporting Documents -->
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Supporting Documents</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="view-appeal-documents">
+                                        <!-- Documents will be loaded here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <!-- Admin Notes -->
+                            <div class="card mt-3">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Admin Notes</h6>
+                                </div>
+                                <div class="card-body">
+                                    <textarea class="form-control" id="appeal-admin-notes" rows="4" placeholder="Add notes about this appeal review..."></textarea>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary mt-2 w-100" onclick="saveAppealNotes()">
+                                        <i class="ri-save-line me-1"></i>Save Notes
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reconsider Application Modal -->
+    <div class="modal fade" id="reconsiderApplicationModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="ri-refresh-line me-2"></i>
+                        Reconsider Application
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="ri-information-line me-2"></i>
+                        <strong>Reconsider Application</strong><br>
+                        This will change the application status to "under review" and allow you to make a new decision on the application.
+                    </div>
+                    
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h6 class="mb-0">Application Summary</h6>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Applicant:</strong> <span id="reconsider-applicant-name">-</span></p>
+                            <p><strong>Application ID:</strong> <span id="reconsider-application-id">-</span></p>
+                            <p><strong>Grade Level:</strong> <span id="reconsider-grade-level">-</span></p>
+                            <p><strong>Original Rejection:</strong> <span id="reconsider-rejection-reason">-</span></p>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="reconsider-notes" class="form-label">Reconsideration Notes</label>
+                        <textarea class="form-control" id="reconsider-notes" rows="3" placeholder="Add notes about why this application is being reconsidered..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-warning" onclick="confirmReconsiderApplication()">
+                        <i class="ri-refresh-line me-1"></i>Reconsider Application
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reject Appeal Modal -->
+    <div class="modal fade" id="rejectAppealModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="ri-close-line me-2"></i>
+                        Reject Appeal
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="ri-alert-line me-2"></i>
+                        <strong>Reject Appeal</strong><br>
+                        This will permanently reject the appeal. The applicant will not be able to submit another appeal for this application.
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="reject-appeal-reason" class="form-label">Reason for Rejection <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="reject-appeal-reason" rows="4" required placeholder="Please provide a detailed reason for rejecting this appeal..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" onclick="confirmRejectAppeal()">
+                        <i class="ri-close-line me-1"></i>Reject Appeal
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
 </x-registrar-layout>

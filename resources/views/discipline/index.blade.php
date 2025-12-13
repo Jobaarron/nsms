@@ -18,6 +18,19 @@
                     </small>
                 </div>
                 <div class="d-flex align-items-center gap-2">
+                    <!-- Year Filter -->
+                    <div class="d-flex align-items-center gap-2">
+                        <label for="yearFilter" class="form-label mb-0 text-muted small">Year:</label>
+                        <select id="yearFilter" class="form-select form-select-sm" style="width: 120px;" onchange="applyYearFilter()">
+                            <option value="all">All Years</option>
+                            <option value="2026">2026</option>
+                            <option value="2025" selected>2025</option>
+                            <option value="2024">2024</option>
+                            <option value="2023">2023</option>
+                            <option value="2022">2022</option>
+                            <option value="2021">2021</option>
+                        </select>
+                    </div>
                     <!-- Notification Bell -->
                     <div class="position-relative" style="display: inline-block;">
                         <button class="btn btn-outline-success btn-sm" id="notificationBell" data-bs-toggle="modal" data-bs-target="#notificationsModal" title="Case Closed Violations with Approved Interventions (Updates every 5 seconds)">
@@ -52,7 +65,7 @@
                                 <p class="text-muted mb-2 small">
                                     <i class="ri-user-3-line me-1"></i>Total Students
                                 </p>
-                                <h3 class="mb-0 text-success fw-bold">{{ $stats['total_students'] ?? 0 }}</h3>
+                                <h3 id="stat-total-students" class="mb-0 text-success fw-bold">{{ $stats['total_students'] ?? 0 }}</h3>
                                 <small class="text-muted">
                                     <i class="ri-arrow-up-line text-success me-1"></i>
                                     Active enrollment
@@ -74,7 +87,7 @@
                                 <p class="text-muted mb-2 small">
                                     <i class="ri-flag-2-line me-1"></i>Total Violations
                                 </p>
-                                <h3 class="mb-0 text-danger fw-bold">{{ $stats['total_violations'] ?? 0 }}</h3>
+                                <h3 id="stat-total-violations" class="mb-0 text-danger fw-bold">{{ $stats['total_violations'] ?? 0 }}</h3>
                                 <small class="text-muted">
                                     <i class="ri-information-line me-1"></i>
                                     All recorded incidents
@@ -96,7 +109,7 @@
                                 <p class="text-muted mb-2 small">
                                     <i class="ri-error-warning-line me-1"></i>Risk Percentage
                                 </p>
-                                <h3 class="mb-0 text-warning fw-bold">
+                                <h3 id="stat-risk-percentage" class="mb-0 text-warning fw-bold">
                                   @php
                                     $riskPercent = ($stats['total_students'] ?? 0) > 0
                                       ? round((($stats['major_violations'] ?? 0) / max(1, $stats['total_students'])) * 100, 1)
@@ -125,7 +138,7 @@
                                 <p class="text-muted mb-2 small">
                                     <i class="ri-calendar-line me-1"></i>Pending Actions
                                 </p>
-                                <h3 class="mb-0 text-primary fw-bold">{{ $stats['pending_violations'] ?? 0 }}</h3>
+                                <h3 id="stat-pending-actions" class="mb-0 text-primary fw-bold">{{ $stats['pending_violations'] ?? 0 }}</h3>
                                 <small class="text-muted">
                                     <i class="ri-time-line text-primary me-1"></i>
                                     Requires attention
@@ -429,6 +442,18 @@
                                                     <option value="2023-2024">2023-2024</option>
                                                     <option value="2022-2023">2022-2023</option>
                                                     <option value="2021-2022">2021-2022</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label small">Calendar Year</label>
+                                                <select class="form-select form-select-sm" id="modalYearFilter" onchange="syncYearFilters()">
+                                                    <option value="all">All Years</option>
+                                                    <option value="2026">2026</option>
+                                                    <option value="2025" selected>2025</option>
+                                                    <option value="2024">2024</option>
+                                                    <option value="2023">2023</option>
+                                                    <option value="2022">2022</option>
+                                                    <option value="2021">2021</option>
                                                 </select>
                                             </div>
                                         </div>

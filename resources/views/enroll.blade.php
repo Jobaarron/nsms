@@ -5,26 +5,67 @@
     <div class="row justify-content-center">
         <div class="col-lg-8 col-md-10">
             <div class="content-card p-5">
-                <div class="text-center mb-4">
-                    <i class="ri-user-add-line" style="font-size: 4rem; color: var(--primary-color);"></i>
-                    <h2 class="page-header mb-2">Student Admission</h2>
-                    <br><br>
-                    <p class="text-muted">Please fill out the form below to apply</p>
-                </div>
-
-                @if(session('success'))
-                    <div class="alert alert-success">{{ session('success') }}</div>
-                @endif
-
-                @if($errors->any())
-                    <div class="alert alert-danger">
-                        <ul class="mb-0">
-                            @foreach($errors->all() as $e)
-                                <li>{{ $e }}</li>
-                            @endforeach
-                        </ul>
+                <!-- Check if application submissions are active -->
+                @php
+                    $isSubmissionActive = \App\Http\Controllers\RegistrarController::isApplicationSubmissionActive();
+                @endphp
+                
+                @if(!$isSubmissionActive)
+                    <!-- Application submissions disabled message -->
+                    <div class="text-center mb-5">
+                        <i class="ri-pause-circle-line" style="font-size: 4rem; color: #ffc107;"></i>
+                        <h2 class="page-header mb-3 text-warning">Application Submissions Closed</h2>
+                        <div class="alert alert-warning border-0 shadow-sm">
+                            <div class="d-flex align-items-start">
+                                <i class="ri-information-line me-3 mt-1" style="font-size: 1.2rem;"></i>
+                                <div>
+                                    <h5 class="alert-heading mb-2">Submissions are closed</h5>
+                                    <p class="mb-2">
+                                        We are not accepting new student applications at this time. 
+                                        This may be due to maintenance, enrollment periods being closed, or administrative processing.
+                                    </p>
+                                    <hr class="my-3">
+                                    <p class="mb-0">
+                                        <strong>What you can do:</strong><br>
+                                        • Check back later for when applications reopen<br>
+                                        • Contact the school administration for more information<br>
+                                        • If you already submitted an application, you can <a href="{{ route('enrollee.login') }}" class="alert-link">log in here</a> to check your status
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <a href="{{ url('/') }}" class="btn btn-outline-primary btn-lg me-3">
+                                <i class="ri-home-line me-2"></i>Return to Home
+                            </a>
+                            <a href="{{ route('enrollee.login') }}" class="btn btn-primary btn-lg">
+                                <i class="ri-login-box-line me-2"></i>Check Application Status
+                            </a>
+                        </div>
                     </div>
-                @endif
+                @else
+                    <!-- Normal application form when submissions are active -->
+                    <div class="text-center mb-4">
+                        <i class="ri-user-add-line" style="font-size: 4rem; color: var(--primary-color);"></i>
+                        <h2 class="page-header mb-2">Student Admission</h2>
+                        <br><br>
+                        <p class="text-muted">Please fill out the form below to apply</p>
+                    </div>
+
+                    @if(session('success'))
+                        <div class="alert alert-success">{{ session('success') }}</div>
+                    @endif
+
+                    @if($errors->any())
+                        <div class="alert alert-danger">
+                            <ul class="mb-0">
+                                @foreach($errors->all() as $e)
+                                    <li>{{ $e }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
 
                 <form method="POST" action="{{ route('enroll.store') }}" enctype="multipart/form-data">
                     @csrf
@@ -646,6 +687,8 @@
                         <i class="ri-send-plane-line me-2"></i>Apply now
                     </button>
                 </form>
+                @endif
+                <!-- End of submission check -->
             </div>
         </div>
     </div> 

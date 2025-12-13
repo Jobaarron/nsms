@@ -172,7 +172,6 @@
                 <thead style="background-color: #198754; color: white;">
                   <tr>
                     <th>Violations</th>
-                    <th>Date</th>
                     <th>Reported By</th>
                     <th>Actions</th>
                   </tr>
@@ -199,7 +198,6 @@
                           <br><small class="text-muted"><em>{{ $latestViolation->escalation_reason }}</em></small>
                         @endif
                       </td>
-                      <td>{{ $latestViolation->violation_date->format('M d, Y') }}</td>
                       <td>{{ $latestViolation->reported_by_name }}</td>
                       <td>
                         <button type="button" class="btn btn-sm btn-outline-primary"
@@ -211,7 +209,7 @@
                     </tr>
                   @empty
                     <tr>
-                      <td colspan="4" class="text-center py-4">
+                      <td colspan="3" class="text-center py-4">
                         <i class="ri-shield-check-line fs-1 text-success d-block mb-2"></i>
                         <p class="text-muted">No minor violations on record</p>
                       </td>

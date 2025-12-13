@@ -20,6 +20,19 @@
                     </small>
                 </div>
                 <div class="d-flex align-items-center gap-2">
+                    <!-- Year Filter -->
+                    <div class="d-flex align-items-center gap-2">
+                        <label for="yearFilter" class="form-label mb-0 text-muted small">Year:</label>
+                        <select id="yearFilter" class="form-select form-select-sm" style="width: 120px;" onchange="applyYearFilter()">
+                            <option value="all">All Years</option>
+                            <option value="2026">2026</option>
+                            <option value="2025" selected>2025</option>
+                            <option value="2024">2024</option>
+                            <option value="2023">2023</option>
+                            <option value="2022">2022</option>
+                            <option value="2021">2021</option>
+                        </select>
+                    </div>
                     <!-- Guidance Notification Bell -->
                     <div class="position-relative guidance-notification-wrapper" style="display: inline-block;">
                         <button class="btn btn-outline-primary guidance-notification-bell" 
@@ -90,7 +103,7 @@
                                 <i class="ri-trending-up-line me-1"></i>Active
                             </span>
                         </div>
-                        <div class="fw-bold fs-3 text-success mb-1">{{ number_format($stats['total_students'] ?? 0) }}</div>
+                        <div id="stat-total-students" class="fw-bold fs-3 text-success mb-1">{{ number_format($stats['total_students'] ?? 0) }}</div>
                         <div class="text-muted small mb-2">Total Students</div>
                         <div class="progress" style="height: 4px;">
                             @php
@@ -120,7 +133,7 @@
                                 <i class="ri-time-line me-1"></i>Pending
                             </span>
                         </div>
-                        <div class="fw-bold fs-3 text-warning mb-1">{{ $stats['active_case_meetings'] ?? 0 }}</div>
+                        <div id="stat-active-case-meetings" class="fw-bold fs-3 text-warning mb-1">{{ $stats['active_case_meetings'] ?? 0 }}</div>
                         <div class="text-muted small mb-2">Active Case Meetings</div>
                         <div class="progress" style="height: 4px;">
                             @php
@@ -149,7 +162,7 @@
                                 <i class="ri-check-line me-1"></i>Scheduled
                             </span>
                         </div>
-                        <div class="fw-bold fs-3 text-success mb-1">{{ $stats['scheduled_counseling'] ?? 0 }}</div>
+                        <div id="stat-scheduled-counseling" class="fw-bold fs-3 text-success mb-1">{{ $stats['scheduled_counseling'] ?? 0 }}</div>
                         <div class="text-muted small mb-2">Scheduled Counseling</div>
                         <div class="progress" style="height: 4px;">
                             @php
@@ -177,7 +190,7 @@
                                 <i class="ri-alert-line me-1"></i>Monitor
                             </span>
                         </div>
-                        <div class="fw-bold fs-3 text-danger mb-1">{{ $stats['students_with_disciplinary_record'] ?? 0 }}</div>
+                        <div id="stat-students-disciplinary-record" class="fw-bold fs-3 text-danger mb-1">{{ $stats['students_with_disciplinary_record'] ?? 0 }}</div>
                         <div class="text-muted small mb-2">Students with Disciplinary Record</div>
                         <div class="progress" style="height: 4px;">
                             @php

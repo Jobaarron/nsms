@@ -188,6 +188,11 @@ class Enrollee extends Authenticatable
         return $this->hasMany(DataChangeRequest::class);
     }
 
+    public function appeals()
+    {
+        return $this->hasMany(Appeal::class);
+    }
+
     // Evaluation tracking relationships
     public function firstViewedBy()
     {
@@ -296,6 +301,7 @@ class Enrollee extends Authenticatable
             'rejected' => 'danger',
             'enrolled' => 'primary',
             'cancelled' => 'secondary',
+            'rejected_appeal' => 'info',
             default => 'secondary'
         };
     }
@@ -386,5 +392,33 @@ class Enrollee extends Authenticatable
                 $enrollee->password = Hash::make($shortYear . '-' . $newNumber);
             }
         });
+    }
+
+    /**
+     * Check if this enrollee can submit an appeal
+     */
+    public function canSubmitAppeal()
+    {
+        // Can only appeal if status is rejected (not rejected_appeal or other statuses)
+        if (!in_array($this->enrollment_status, ['rejected'])) {
+            return false;
+        }
+
+        // Check if there's already an active appeal (pending, under_review, or approved)
+        $existingAppeal = $this->appeals()
+            ->whereIn('status', ['pending', 'under_review', 'approved'])
+            ->exists();
+
+        return !$existingAppeal;
+    }
+
+    /**
+     * Get the latest appeal for this enrollee
+     */
+    public function getLatestAppeal()
+    {
+        return $this->appeals()
+            ->orderBy('submitted_at', 'desc')
+            ->first();
     }
 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Enrollee;
 use App\Models\Notice;
 use App\Models\DataChangeRequest;
+use App\Models\Appeal;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
@@ -1145,6 +1146,104 @@ class EnrolleeController extends Controller
                 'error' => $e->getMessage(),
                 'counts' => ['unread_notices' => 0]
             ], 500);
+        }
+    }
+
+    /**
+     * Store a new appeal
+     */
+    public function storeAppeal(Request $request)
+    {
+        try {
+            $enrollee = Auth::guard('enrollee')->user();
+            
+            // Validate the enrollee can submit an appeal
+            if (!$enrollee->canSubmitAppeal()) {
+                return back()->withErrors([
+                    'error' => 'You cannot submit an appeal at this time. Either your application is not rejected or you already have a pending appeal.'
+                ]);
+            }
+
+            $request->validate([
+                'reason' => 'required|string|min:50|max:2000',
+                'appeal_documents.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:5120', // 5MB max
+                'declaration' => 'required|accepted',
+            ]);
+
+            // Handle file uploads
+            $documents = [];
+            if ($request->hasFile('appeal_documents')) {
+                foreach ($request->file('appeal_documents') as $file) {
+                    $filename = time() . '_' . $file->getClientOriginalName();
+                    $path = $file->storeAs('appeal_documents/' . $enrollee->id, $filename, 'public');
+                    
+                    $documents[] = [
+                        'filename' => $file->getClientOriginalName(),
+                        'path' => $path,
+                        'size' => $file->getSize(),
+                        'mime_type' => $file->getMimeType(),
+                        'uploaded_at' => now(),
+                    ];
+                }
+            }
+
+            // Create the appeal
+            Appeal::create([
+                'enrollee_id' => $enrollee->id,
+                'reason' => $request->reason,
+                'documents' => $documents,
+                'status' => 'pending',
+                'submitted_at' => now(),
+            ]);
+
+            // Update enrollee status to indicate active appeal
+            $enrollee->update([
+                'enrollment_status' => 'rejected_appeal',
+                'status_reason' => 'Appeal submitted on ' . now()->format('M d, Y g:i A') . '. Application under appeal review.',
+            ]);
+
+            return redirect()->route('enrollee.dashboard')->with('success', 'Your appeal has been submitted successfully and is now under review.');
+
+        } catch (\Exception $e) {
+            \Log::error('Appeal submission error: ' . $e->getMessage());
+            return back()->withErrors([
+                'error' => 'There was an error submitting your appeal. Please try again.'
+            ]);
+        }
+    }
+
+    /**
+     * Show a specific appeal
+     */
+    public function showAppeal($id)
+    {
+        try {
+            $enrollee = Auth::guard('enrollee')->user();
+            $appeal = Appeal::where('id', $id)
+                ->where('enrollee_id', $enrollee->id)
+                ->with(['reviewer'])
+                ->firstOrFail();
+
+            return response()->json([
+                'success' => true,
+                'appeal' => [
+                    'id' => $appeal->id,
+                    'reason' => $appeal->reason,
+                    'status' => $appeal->status,
+                    'status_badge_class' => $appeal->status_badge_class,
+                    'admin_notes' => $appeal->admin_notes,
+                    'submitted_at' => $appeal->formatted_submitted_date,
+                    'reviewed_at' => $appeal->reviewed_at ? $appeal->reviewed_at->format('M d, Y g:i A') : null,
+                    'reviewer_name' => $appeal->reviewer ? $appeal->reviewer->name : null,
+                    'documents_count' => is_array($appeal->documents) ? count($appeal->documents) : 0,
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Appeal not found or access denied.'
+            ], 404);
         }
     }
 }

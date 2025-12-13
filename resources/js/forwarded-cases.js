@@ -230,12 +230,12 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // Approve sanction buttons
-    const approveButtons = document.querySelectorAll('.approve-sanction-btn');
-    approveButtons.forEach(button => {
+    // Settle sanction buttons
+    const settleButtons = document.querySelectorAll('.settle-sanction-btn');
+    settleButtons.forEach(button => {
         button.addEventListener('click', function () {
             const sanctionId = this.getAttribute('data-sanction-id');
-            if (confirm('Are you sure you want to approve this sanction? This will mark the case meeting as completed.')) {
+            if (confirm('Are you sure you want to settle this sanction? This will mark the case meeting as completed.')) {
                 fetch(`/admin/sanctions/${sanctionId}/approve`, {
                     method: 'POST',
                     headers: {
@@ -374,7 +374,7 @@ document.addEventListener('DOMContentLoaded', function () {
         button.addEventListener('click', function () {
             const meetingId = this.getAttribute('data-meeting-id');
             
-            if (confirm('Are you sure you want to approve this case? It will be archived after approval.')) {
+            if (confirm('Are you sure you want to settle this case? It will be archived after it is settled.')) {
                 
                 fetch(`/admin/case-meetings/${meetingId}/approve`, {
                     method: 'POST',
@@ -923,9 +923,9 @@ function generateSummaryHTML(meeting) {
                             </div>
                             <div class="col-md-4 text-end">
                                 ${sanction.is_approved 
-                                    ? '<span class="status-badge-modern bg-success text-white">Approved</span>' 
+                                    ? '<span class="status-badge-modern bg-success text-white">Settled</span>' 
                                     : '<span class="status-badge-modern bg-warning text-dark">Pending</span>'}
-                                ${sanction.approved_at ? `<p class="small text-muted mt-2 mb-0"><i class="ri-time-line me-1"></i>Approved on ${new Date(sanction.approved_at).toLocaleString()}</p>` : ''}
+                                ${sanction.approved_at ? `<p class="small text-muted mt-2 mb-0"><i class="ri-time-line me-1"></i>Settled on ${new Date(sanction.approved_at).toLocaleString()}</p>` : ''}
                             </div>
                         </div>
                     </div>

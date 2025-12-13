@@ -537,6 +537,8 @@ Route::prefix('guidance')->name('guidance.')->group(function () {
     Route::middleware(['web'])->group(function () {
         // Dashboard
         Route::get('/', [App\Http\Controllers\GuidanceController::class, 'dashboard'])->name('dashboard');
+            // API: Dashboard statistics for year filtering
+            Route::get('/dashboard-stats', [App\Http\Controllers\GuidanceController::class, 'getDashboardStats'])->name('dashboard-stats');
             // API: Case status stats for dashboard pie chart
             Route::get('/case-status-stats', [App\Http\Controllers\GuidanceController::class, 'getCaseStatusStats'])->name('case-status-stats');
             // API: Closed cases per month for bar chart
@@ -750,6 +752,9 @@ Route::prefix('student')->name('student.')->group(function () {
 Route::get('/narrative-report/view/{studentId}/{violationId}', [PdfController::class, 'studentNarrativePdf'])->name('student.pdf.studentNarrative');
 
 
+// Public API route for checking application submission status
+Route::get('/api/application-submissions/status', [RegistrarController::class, 'getApplicationSubmissionStatus'])->name('api.application-submissions.status');
+
 // Enrollee routes
 Route::prefix('enrollee')->name('enrollee.')->group(function () {
     // Enrollee login routes (public)
@@ -801,6 +806,10 @@ Route::prefix('enrollee')->name('enrollee.')->group(function () {
         Route::get('/data-change-requests/{id}', [EnrolleeController::class, 'showDataChangeRequest'])->name('data-change-requests.show');
         Route::put('/data-change-requests/{id}', [EnrolleeController::class, 'updateDataChangeRequest'])->name('data-change-requests.update');
         Route::delete('/data-change-requests/{id}', [EnrolleeController::class, 'destroyDataChangeRequest'])->name('data-change-requests.destroy');
+        
+        // Appeals
+        Route::post('/appeals', [EnrolleeController::class, 'storeAppeal'])->name('appeals.store');
+        Route::get('/appeals/{id}', [EnrolleeController::class, 'showAppeal'])->name('appeals.show');
         
         // Get alert counts
         Route::get('/alerts/counts', [EnrolleeController::class, 'getAlertCounts'])->name('alerts.counts');
@@ -872,6 +881,16 @@ Route::prefix('registrar')->name('registrar.')->group(function () {
         Route::post('/applications/bulk-approve', [RegistrarController::class, 'bulkApprove'])->name('applications.bulk-approve');
         Route::post('/applications/bulk-decline', [RegistrarController::class, 'bulkDecline'])->name('applications.bulk-decline');
         
+        // Appeals management
+        Route::get('/appeals', [RegistrarController::class, 'getAppeals'])->name('appeals.get');
+        Route::get('/appeals/{id}', [RegistrarController::class, 'getAppeal'])->name('appeals.get-single');
+        Route::post('/appeals/{id}/approve', [RegistrarController::class, 'approveAppeal'])->name('appeals.approve');
+        Route::post('/appeals/{id}/reject', [RegistrarController::class, 'rejectAppeal'])->name('appeals.reject');
+        Route::post('/appeals/{id}/reconsider', [RegistrarController::class, 'reconsiderFromAppeal'])->name('appeals.reconsider');
+        Route::post('/appeals/{id}/start-reconsideration', [RegistrarController::class, 'startReconsideration'])->name('appeals.start-reconsideration');
+        Route::put('/appeals/{id}/notes', [RegistrarController::class, 'updateAppealNotes'])->name('appeals.notes');
+        Route::get('/appeals/{id}/documents/{index}/download', [RegistrarController::class, 'downloadAppealDocument'])->name('appeals.download-document');
+        
         // Approved applications
         Route::get('/approved', [RegistrarController::class, 'approved'])->name('approved');
         Route::post('/applications/{id}/generate-credentials', [RegistrarController::class, 'generateStudentCredentials'])->name('applications.generate-credentials');
@@ -939,6 +958,10 @@ Route::prefix('registrar')->name('registrar.')->group(function () {
         
         // Get alert counts
         Route::get('/alerts/counts', [RegistrarController::class, 'getAlertCounts'])->name('alerts.counts');
+        
+        // Application submission activation/deactivation
+        Route::get('/application-submissions/status', [RegistrarController::class, 'getApplicationSubmissionStatus'])->name('application-submissions.status');
+        Route::post('/application-submissions/toggle', [RegistrarController::class, 'toggleApplicationSubmissionStatus'])->name('application-submissions.toggle');
         
         // Logout
         Route::post('/logout', function(Request $request) {

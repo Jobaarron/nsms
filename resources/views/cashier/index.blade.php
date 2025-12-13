@@ -80,8 +80,28 @@
                             <div class="bg-warning bg-opacity-10 rounded-circle p-2 d-inline-flex mb-2">
                                 <i class="ri-time-line fs-4 text-warning"></i>
                             </div>
-                            <h5 class="fw-bold text-warning mb-1">{{ $pendingPayments }}</h5>
-                            <small class="text-muted">Pending Quarterly Payments</small>
+                            @php
+                                // Determine current academic quarter based on month
+                                $currentMonth = now()->month;
+                                $currentQuarter = '';
+                                if ($currentMonth >= 6 && $currentMonth <= 8) {
+                                    $currentQuarter = '1st Quarter';
+                                } elseif ($currentMonth >= 9 && $currentMonth <= 12) {
+                                    $currentQuarter = '2nd Quarter';  
+                                } elseif ($currentMonth >= 1 && $currentMonth <= 2) {
+                                    $currentQuarter = '3rd Quarter';
+                                } else {
+                                    $currentQuarter = '4th Quarter';
+                                }
+                                
+                                // Count pending quarterly payments (simplified)
+                                $currentQuarterPending = \App\Models\Payment::where('confirmation_status', 'pending')
+                                    ->where('payment_method', 'quarterly')
+                                    ->where('payable_type', 'App\\Models\\Student')
+                                    ->count();
+                            @endphp
+                            <h5 class="fw-bold text-warning mb-1">{{ $currentQuarterPending }}</h5>
+                            <small class="text-muted">Pending {{ $currentQuarter }} Payments</small>
                         </div>
                     </div>
                 </div>

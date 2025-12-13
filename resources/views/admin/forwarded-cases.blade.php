@@ -624,7 +624,8 @@
                         <div class="d-flex align-items-center gap-2">
                             <select class="form-select" id="archiveReasonFilter" style="width: auto; border-radius: 12px;">
                                 <option value="">All Reasons</option>
-                                <option value="approved">Approved</option>
+                                <option value="settled">Settled</option>
+                                <option value="approved">Settled (Legacy)</option>
                                 <option value="closed">Closed</option>
                                 <option value="completed">Completed</option>
                             </select>
@@ -719,8 +720,8 @@
                                     </td>
                                     <!-- Status cell -->
                                     <td>
-                                        @if($meeting->archive_reason === 'approved')
-                                            <span class="modern-badge badge-success-modern">Approved</span>
+                                        @if($meeting->archive_reason === 'settled' || $meeting->archive_reason === 'approved')
+                                            <span class="modern-badge badge-success-modern">Settled</span>
                                         @elseif($meeting->archive_reason === 'closed')
                                             <span class="modern-badge badge-secondary-modern">Closed</span>
                                         @elseif($meeting->archive_reason === 'completed')
