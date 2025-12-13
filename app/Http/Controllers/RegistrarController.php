@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use App\Models\Enrollee;
 use App\Models\Notice;
 use App\Models\Registrar;
+use App\Models\Appeal;
 use App\Models\Student;
 use App\Models\Section;
 use App\Models\FacultyAssignment;
@@ -1871,5 +1872,457 @@ class RegistrarController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Get appeals data for the appeals tab
+     */
+    public function getAppeals(Request $request)
+    {
+        try {
+            $status = $request->get('status');
+            $search = $request->get('search');
+            $countOnly = $request->get('count_only');
+            
+            $query = Appeal::with(['enrollee'])
+                ->orderBy('submitted_at', 'desc');
+            
+            if ($status && $status !== '') {
+                $query->where('status', $status);
+            }
+            
+            if ($search) {
+                $query->whereHas('enrollee', function($q) use ($search) {
+                    $q->where('application_id', 'LIKE', "%{$search}%")
+                      ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$search}%"]);
+                });
+            }
+            
+            // If only count is requested, return just the count
+            if ($countOnly) {
+                $count = $query->count();
+                return response()->json([
+                    'success' => true,
+                    'count' => $count,
+                ]);
+            }
+            
+            $appeals = $query->get();
+            
+            $appealsData = $appeals->map(function($appeal) {
+                return [
+                    'id' => $appeal->id,
+                    'enrollee' => [
+                        'id' => $appeal->enrollee->id,
+                        'name' => $appeal->enrollee->first_name . ' ' . $appeal->enrollee->last_name,
+                        'application_id' => $appeal->enrollee->application_id,
+                        'grade_level_applied' => $appeal->enrollee->grade_level_applied,
+                        'status_reason' => $appeal->enrollee->status_reason,
+                    ],
+                    'reason' => $appeal->reason,
+                    'reason_preview' => \Str::limit($appeal->reason, 100),
+                    'status' => $appeal->status,
+                    'status_badge_class' => $appeal->getStatusBadgeClassAttribute(),
+                    'submitted_at' => $appeal->submitted_at->format('M d, Y g:i A'),
+                    'time_ago' => $appeal->submitted_at->diffForHumans(),
+                    'reviewed_at' => $appeal->reviewed_at ? $appeal->reviewed_at->format('M d, Y g:i A') : null,
+                    'reviewer_name' => 'System',
+                    'admin_notes' => $appeal->admin_notes,
+                    'documents_count' => is_array($appeal->documents) ? count($appeal->documents) : 0,
+                ];
+            });
+            
+            return response()->json([
+                'success' => true,
+                'appeals' => $appealsData,
+                'total' => $appeals->count(),
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error fetching appeals: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching appeals data',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get a specific appeal
+     */
+    public function getAppeal($id)
+    {
+        try {
+            $appeal = Appeal::with(['enrollee', 'reviewer'])->findOrFail($id);
+            
+            return response()->json([
+                'success' => true,
+                'appeal' => [
+                    'id' => $appeal->id,
+                    'enrollee' => [
+                        'id' => $appeal->enrollee->id,
+                        'name' => $appeal->enrollee->full_name,
+                        'application_id' => $appeal->enrollee->application_id,
+                        'grade_level_applied' => $appeal->enrollee->grade_level_applied,
+                        'status_reason' => $appeal->enrollee->status_reason,
+                    ],
+                    'reason' => $appeal->reason,
+                    'status' => $appeal->status,
+                    'status_badge_class' => $appeal->status_badge_class,
+                    'submitted_at' => $appeal->formatted_submitted_date,
+                    'reviewed_at' => $appeal->reviewed_at ? $appeal->reviewed_at->format('M d, Y g:i A') : null,
+                    'reviewer_name' => $appeal->reviewer ? $appeal->reviewer->name : null,
+                    'admin_notes' => $appeal->admin_notes,
+                    'documents' => $appeal->documents ?? [],
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Appeal not found'
+            ], 404);
+        }
+    }
+
+    /**
+     * Approve an appeal (marks appeal as approved, doesn't change application status yet)
+     */
+    public function approveAppeal(Request $request, $id)
+    {
+        try {
+            $appeal = Appeal::findOrFail($id);
+            $registrar = Auth::user();
+            
+            $request->validate([
+                'notes' => 'nullable|string|max:1000',
+            ]);
+            
+            $appeal->update([
+                'status' => 'approved',
+                'admin_notes' => $request->notes,
+                'reviewed_by' => $registrar->id,
+                'reviewed_at' => now(),
+            ]);
+
+            // Update enrollee status to approved - can proceed with pre-registration
+            $appeal->enrollee->update([
+                'enrollment_status' => 'approved',
+                'status_reason' => 'Appeal approved on ' . now()->format('M d, Y g:i A') . '. You may now proceed with pre-registration.',
+                'rejected_at' => null,
+                'rejected_by' => null,
+                'approved_at' => now(),
+                'approved_by' => $registrar->id,
+                // Reset evaluation flags
+                'evaluation_started_at' => null,
+                'evaluation_started_by' => null,
+                'evaluation_completed_at' => null,
+                'evaluation_completed_by' => null,
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Appeal approved successfully. Applicant can now proceed with pre-registration.'
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error approving appeal: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error approving appeal'
+            ], 500);
+        }
+    }
+
+    /**
+     * Reject an appeal
+     */
+    public function rejectAppeal(Request $request, $id)
+    {
+        try {
+            $appeal = Appeal::findOrFail($id);
+            $registrar = Auth::user();
+            
+            $request->validate([
+                'reason' => 'required|string|min:10|max:1000',
+            ]);
+            
+            $appeal->update([
+                'status' => 'rejected',
+                'admin_notes' => $request->reason,
+                'reviewed_by' => $registrar->id,
+                'reviewed_at' => now(),
+            ]);
+
+            // Update enrollee status back to rejected since appeal was denied
+            $appeal->enrollee->update([
+                'enrollment_status' => 'rejected',
+                'status_reason' => 'Appeal rejected on ' . now()->format('M d, Y g:i A') . '. Reason: ' . $request->reason,
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Appeal rejected successfully.'
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error rejecting appeal: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error rejecting appeal'
+            ], 500);
+        }
+    }
+
+    /**
+     * Reconsider application from appeal (changes application status to pending for re-evaluation)
+     */
+    public function reconsiderFromAppeal(Request $request, $id)
+    {
+        try {
+            $appeal = Appeal::with('enrollee')->findOrFail($id);
+            $registrar = Auth::user();
+            
+            // Appeal must be approved first
+            if ($appeal->status !== 'approved') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Appeal must be approved before reconsidering the application.'
+                ], 400);
+            }
+            
+            $request->validate([
+                'notes' => 'nullable|string|max:1000',
+            ]);
+            
+            // Update enrollee status to pending for reconsideration
+            $appeal->enrollee->update([
+                'enrollment_status' => 'pending',
+                'status_reason' => 'Application being reconsidered due to approved appeal.',
+                'rejected_at' => null,
+                'rejected_by' => null,
+                // Reset evaluation flags to allow fresh review
+                'evaluation_started_at' => null,
+                'evaluation_started_by' => null,
+                'evaluation_completed_at' => null,
+                'evaluation_completed_by' => null,
+            ]);
+            
+            // Update appeal status to reflect that it led to reconsideration
+            $appeal->update([
+                'status' => 'approved',
+                'admin_notes' => ($appeal->admin_notes ?? '') . "\n\nApplication reconsidered on " . now()->format('M d, Y g:i A') . 
+                               ($request->notes ? ": " . $request->notes : ''),
+                'reviewed_by' => $registrar->id,
+                'reviewed_at' => now(),
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Application is now being reconsidered. The enrollee\'s status has been changed to pending for fresh evaluation.'
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error reconsidering application from appeal: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error reconsidering application'
+            ], 500);
+        }
+    }
+
+    /**
+     * Start reconsideration of a pending appeal (changes appeal status to under_review)
+     */
+    public function startReconsideration(Request $request, $id)
+    {
+        try {
+            $appeal = Appeal::with('enrollee')->findOrFail($id);
+            $registrar = Auth::user();
+            
+            // Appeal must be pending to start reconsideration
+            if ($appeal->status !== 'pending') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Only pending appeals can be moved to reconsideration.'
+                ], 400);
+            }
+
+            // This method is no longer needed since we approve directly
+            
+            $request->validate([
+                'notes' => 'nullable|string|max:1000',
+            ]);
+            
+            // Update appeal status to under_review
+            $appeal->update([
+                'status' => 'under_review',
+                'admin_notes' => ($appeal->admin_notes ?? '') . "\n\nReconsideration started on " . now()->format('M d, Y g:i A') . 
+                               ($request->notes ? ": " . $request->notes : ''),
+                'reviewed_by' => $registrar->id,
+                'reviewed_at' => now(),
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Appeal is now under review. You can now approve or reject the appeal.'
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error starting appeal reconsideration: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error starting reconsideration'
+            ], 500);
+        }
+    }
+
+    /**
+     * Update appeal notes
+     */
+    public function updateAppealNotes(Request $request, $id)
+    {
+        try {
+            $appeal = Appeal::findOrFail($id);
+            
+            $request->validate([
+                'notes' => 'required|string|max:1000',
+            ]);
+            
+            $appeal->update([
+                'admin_notes' => $request->notes,
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Appeal notes updated successfully.'
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error updating appeal notes: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating appeal notes'
+            ], 500);
+        }
+    }
+
+    /**
+     * Download appeal document
+     */
+    public function downloadAppealDocument($appealId, $documentIndex)
+    {
+        try {
+            $appeal = Appeal::findOrFail($appealId);
+            
+            // Check if documents exist and the index is valid
+            if (!$appeal->documents || !is_array($appeal->documents) || !isset($appeal->documents[$documentIndex])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Document not found'
+                ], 404);
+            }
+
+            $document = $appeal->documents[$documentIndex];
+            
+            // Try the stored path first, then check in public directory
+            $filePath = storage_path('app/' . $document['path']);
+            if (!file_exists($filePath)) {
+                // Try with public/ prefix
+                $filePath = storage_path('app/public/' . $document['path']);
+            }
+            
+            // Check if file exists
+            if (!file_exists($filePath)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'File not found on server'
+                ], 404);
+            }
+
+            // Return file download
+            return response()->download($filePath, $document['filename']);
+            
+        } catch (\Exception $e) {
+            Log::error('Error downloading appeal document: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error downloading document'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get application submission status for public views
+     */
+    public function getApplicationSubmissionStatus()
+    {
+        try {
+            $isActive = \App\Models\Setting::get('application_submissions_active', true);
+            
+            return response()->json([
+                'success' => true,
+                'active' => $isActive,
+                'message' => $isActive ? 
+                    'Application submissions are currently open' : 
+                    'Application submissions are temporarily closed'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error getting application submission status: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error checking submission status',
+                'active' => true // Default to true on error for safety
+            ], 500);
+        }
+    }
+
+    /**
+     * Toggle application submission activation (registrar only)
+     */
+    public function toggleApplicationSubmissionStatus(Request $request)
+    {
+        try {
+            $isActive = $request->boolean('active');
+            
+            // Update the setting
+            \App\Models\Setting::set(
+                'application_submissions_active',
+                $isActive,
+                'boolean',
+                'Controls whether student application submissions are enabled or disabled',
+                'application_submissions'
+            );
+            
+            $message = $isActive ? 
+                'Application submissions activated successfully' : 
+                'Application submissions deactivated successfully';
+            
+            Log::info('Application submission status changed', [
+                'active' => $isActive,
+                'changed_by' => Auth::guard('registrar')->id()
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'active' => $isActive
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error toggling application submission status: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update submission status'
+            ], 500);
+        }
+    }
+
+    /**
+     * Check if application submission is currently active (helper method)
+     */
+    public static function isApplicationSubmissionActive()
+    {
+        return \App\Models\Setting::get('application_submissions_active', true);
     }
 }

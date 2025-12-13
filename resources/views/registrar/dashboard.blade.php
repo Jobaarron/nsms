@@ -8,12 +8,35 @@
                 <p class="text-muted mb-0">Review and manage student enrollment applications</p>
                 <small class="text-muted d-block" id="dashboard-last-updated">Last updated: {{ now()->format('M d, Y H:i:s') }}</small>
             </div>
-            <div>
+            <div class="d-flex gap-2">
+                <!-- Application Submissions Toggle -->
+                @php
+                    $isSubmissionActive = \App\Models\Setting::get('application_submissions_active', true);
+                @endphp
+                <button type="button" 
+                        class="btn btn-lg {{ $isSubmissionActive ? 'btn-success' : 'btn-warning' }}" 
+                        id="toggleSubmissionBtn" 
+                        data-active="{{ $isSubmissionActive ? '1' : '0' }}"
+                        title="Toggle application submissions">
+                    <i class="{{ $isSubmissionActive ? 'ri-check-line' : 'ri-pause-line' }} me-2" id="toggleIcon"></i>
+                    <span id="toggleText">{{ $isSubmissionActive ? 'Submissions Active' : 'Submissions Closed' }}</span>
+                </button>
+                
                 <a href="{{ route('registrar.applications') }}" class="btn btn-registrar btn-lg">
                     <i class="ri-file-list-line me-2"></i><span class="d-none d-sm-inline">View All </span>Applications
                 </a>
             </div>
         </div>
+
+        <!-- APPLICATION SUBMISSION STATUS ALERT -->
+        @if(!$isSubmissionActive)
+        <div class="alert alert-warning alert-dismissible fade show mb-4" role="alert">
+            <i class="ri-pause-circle-line me-2"></i>
+            <strong>Application Submissions Closed:</strong> New student applications are currently disabled. 
+            Students will see a notice that applications are closed.
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        @endif
         
         <!-- STATISTICS OVERVIEW -->
         <div class="row g-4 mb-5">

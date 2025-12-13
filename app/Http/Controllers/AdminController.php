@@ -612,7 +612,7 @@ public function submittedCases()
         if ($sanction->is_approved) {
             return response()->json([
                 'success' => false,
-                'message' => 'Sanction is already approved.'
+                'message' => 'Sanction is already settled.'
             ], 400);
         }
 
@@ -633,14 +633,14 @@ public function submittedCases()
                 ]);
                 
                 // Archive the case
-                $caseMeeting->archiveCase($user->name, 'approved');
+                $caseMeeting->archiveCase($user->name, 'settled');
                 
                 // Update related violations status
                 foreach ($caseMeeting->violations as $violation) {
                     $violation->update([
                         'status' => 'case_closed',
                         'disciplinary_action' => $sanction->sanction,
-                        'action_taken' => 'Approved: ' . $sanction->sanction,
+                        'action_taken' => 'Settled: ' . $sanction->sanction,
                         'resolved_by' => $user->id,
                         'resolved_at' => now()
                     ]);
@@ -654,7 +654,7 @@ public function submittedCases()
                     $directViolation->update([
                         'status' => 'case_closed',
                         'disciplinary_action' => $sanction->sanction,
-                        'action_taken' => 'Approved: ' . $sanction->sanction,
+                        'action_taken' => 'Settled: ' . $sanction->sanction,
                         'resolved_by' => $user->id,
                         'resolved_at' => now()
                     ]);
@@ -663,13 +663,13 @@ public function submittedCases()
 
             return response()->json([
                 'success' => true,
-                'message' => 'Sanction approved and case archived successfully.'
+                'message' => 'Sanction settled and case archived successfully.'
             ]);
         } catch (\Exception $e) {
-            \Log::error('Error approving sanction: ' . $e->getMessage());
+            \Log::error('Error settling sanction: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'An error occurred while approving the sanction.'
+                'message' => 'An error occurred while settling the sanction.'
             ], 500);
         }
     }

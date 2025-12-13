@@ -121,7 +121,7 @@ class Payment extends Model
     public static function generateTransactionId($studentId)
     {
         // Get all existing transaction IDs and find the highest sequential number
-        $existingTransactions = self::where('transaction_id', 'LIKE', 'TXN-%')
+        $existingTransactions = self::where('transaction_id', 'LIKE', 'T-%')
             ->pluck('transaction_id')
             ->toArray();
         
@@ -130,7 +130,7 @@ class Payment extends Model
         foreach ($existingTransactions as $transactionId) {
             // Extract the last part of the transaction ID (after the last dash)
             $parts = explode('-', $transactionId);
-            if (count($parts) >= 3) {
+            if (count($parts) >= 2) {
                 $sequential = (int) end($parts);
                 $maxSequential = max($maxSequential, $sequential);
             }
@@ -139,9 +139,9 @@ class Payment extends Model
         // Next sequential number
         $sequentialNumber = $maxSequential + 1;
         
-        // Format: TXN-{student_id}-{sequential_number_padded}
-        // Pad with zeros to make it 4 digits (0000, 0001, 0002, etc.)
-        return 'TXN-' . $studentId . '-' . str_pad($sequentialNumber, 4, '0', STR_PAD_LEFT);
+        // Format: T-{student_id}{sequential_number_padded}
+        // Pad with zeros to make it 3 digits (000, 001, 002, etc.)
+        return 'T-' . $studentId . '-' . str_pad($sequentialNumber, 3, '0', STR_PAD_LEFT);
     }
 
     /**

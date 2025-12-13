@@ -23,6 +23,8 @@ document.addEventListener('DOMContentLoaded', function() {
 // Initialize default filter values
 function initializeFilterDefaults() {
     const defaultValues = {
+        'yearFilter': '2025',
+        'modalYearFilter': '2025',
         'schoolYearFilter': '2024-2025',
         'violationsDateRange': 'week',
         'violationSeverity': 'all',
@@ -47,6 +49,8 @@ function initializeFilterDefaults() {
 // Trigger the appropriate filter function based on element ID
 function triggerRelatedFilter(elementId) {
     const filterMap = {
+        'yearFilter': applyYearFilter,
+        'modalYearFilter': syncYearFilters,
         'schoolYearFilter': applyGlobalSchoolYearFilter,
         'violationsDateRange': applyViolationsFilter,
         'violationSeverity': applyViolationsFilter,
@@ -65,8 +69,9 @@ function triggerRelatedFilter(elementId) {
 
 // Load all dashboard data with current filter states
 function loadAllDashboardData() {
-    // Initialize school year filter first
+    // Initialize filters first
     window.currentSchoolYear = document.getElementById('schoolYearFilter')?.value || '2024-2025';
+    window.currentYear = document.getElementById('yearFilter')?.value || '2025';
     
     // Load charts first
     loadViolationPieChart();
@@ -262,9 +267,19 @@ function loadRecentViolations() {
     showLoadingToast('Loading recent violations...');
     
     const schoolYear = getCurrentSchoolYear();
+    const year = getCurrentYear();
     let url = '/discipline/recent-violations';
+    
+    const params = [];
     if (schoolYear !== 'all') {
-        url += `?school_year=${encodeURIComponent(schoolYear)}`;
+        params.push(`school_year=${encodeURIComponent(schoolYear)}`);
+    }
+    if (year !== 'all') {
+        params.push(`year=${encodeURIComponent(year)}`);
+    }
+    
+    if (params.length > 0) {
+        url += '?' + params.join('&');
     }
     
     fetch(url)
@@ -329,9 +344,19 @@ function loadPendingActions() {
     showLoadingToast('Loading pending actions...');
     
     const schoolYear = getCurrentSchoolYear();
+    const year = getCurrentYear();
     let url = '/discipline/pending-actions';
+    
+    const params = [];
     if (schoolYear !== 'all') {
-        url += `?school_year=${encodeURIComponent(schoolYear)}`;
+        params.push(`school_year=${encodeURIComponent(schoolYear)}`);
+    }
+    if (year !== 'all') {
+        params.push(`year=${encodeURIComponent(year)}`);
+    }
+    
+    if (params.length > 0) {
+        url += '?' + params.join('&');
     }
     
     fetch(url)
@@ -390,9 +415,19 @@ function loadCriticalCases() {
     showLoadingToast('Loading critical cases...');
     
     const schoolYear = getCurrentSchoolYear();
+    const year = getCurrentYear();
     let url = '/discipline/critical-cases';
+    
+    const params = [];
     if (schoolYear !== 'all') {
-        url += `?school_year=${encodeURIComponent(schoolYear)}`;
+        params.push(`school_year=${encodeURIComponent(schoolYear)}`);
+    }
+    if (year !== 'all') {
+        params.push(`year=${encodeURIComponent(year)}`);
+    }
+    
+    if (params.length > 0) {
+        url += '?' + params.join('&');
     }
     
     fetch(url)
@@ -480,9 +515,19 @@ function loadViolationTrends() {
     if (!canvas) return;
     
     const schoolYear = getCurrentSchoolYear();
+    const year = getCurrentYear();
     let url = '/discipline/violation-trends';
+    
+    const params = [];
     if (schoolYear !== 'all') {
-        url += `?school_year=${encodeURIComponent(schoolYear)}`;
+        params.push(`school_year=${encodeURIComponent(schoolYear)}`);
+    }
+    if (year !== 'all') {
+        params.push(`year=${encodeURIComponent(year)}`);
+    }
+    
+    if (params.length > 0) {
+        url += '?' + params.join('&');
     }
     
     fetch(url)
@@ -677,10 +722,14 @@ function applyViolationTrendsFilter() {
     const period = document.getElementById('violationTrendsPeriod')?.value || '12months';
     const type = document.getElementById('violationTrendsType')?.value || 'line';
     const schoolYear = getCurrentSchoolYear();
+    const year = getCurrentYear();
     
     let url = `/discipline/violation-trends?period=${period}`;
     if (schoolYear !== 'all') {
         url += `&school_year=${encodeURIComponent(schoolYear)}`;
+    }
+    if (year !== 'all') {
+        url += `&year=${encodeURIComponent(year)}`;
     }
     
     fetch(url)
@@ -724,10 +773,14 @@ function loadFilteredRecentViolations(filterParams) {
     const container = document.getElementById('recent-violations');
     if (!container) return;
     
-    // Add school year to filter params
+    // Add school year and calendar year to filter params
     const schoolYear = getCurrentSchoolYear();
+    const year = getCurrentYear();
     if (schoolYear !== 'all') {
         filterParams.school_year = schoolYear;
+    }
+    if (year !== 'all') {
+        filterParams.year = year;
     }
     
     const queryString = new URLSearchParams(filterParams).toString();
@@ -746,10 +799,14 @@ function loadFilteredPendingActions(filterParams) {
     const container = document.getElementById('pending-actions');
     if (!container) return;
     
-    // Add school year to filter params
+    // Add school year and calendar year to filter params
     const schoolYear = getCurrentSchoolYear();
+    const year = getCurrentYear();
     if (schoolYear !== 'all') {
         filterParams.school_year = schoolYear;
+    }
+    if (year !== 'all') {
+        filterParams.year = year;
     }
     
     const queryString = new URLSearchParams(filterParams).toString();
@@ -768,10 +825,14 @@ function loadFilteredCriticalCases(filterParams) {
     const container = document.getElementById('critical-cases-table');
     if (!container) return;
     
-    // Add school year to filter params
+    // Add school year and calendar year to filter params
     const schoolYear = getCurrentSchoolYear();
+    const year = getCurrentYear();
     if (schoolYear !== 'all') {
         filterParams.school_year = schoolYear;
+    }
+    if (year !== 'all') {
+        filterParams.year = year;
     }
     
     const queryString = new URLSearchParams(filterParams).toString();
@@ -794,7 +855,15 @@ function loadViolationPieChart() {
     const period = document.getElementById('pieChartPeriod')?.value || 'month';
     
     const schoolYear = getCurrentSchoolYear();
-    const url = `/discipline/minor-major-violation-stats?period=${period}${schoolYear !== 'all' ? '&school_year=' + encodeURIComponent(schoolYear) : ''}`;
+    const year = getCurrentYear();
+    let url = `/discipline/minor-major-violation-stats?period=${period}`;
+    
+    if (schoolYear !== 'all') {
+        url += '&school_year=' + encodeURIComponent(schoolYear);
+    }
+    if (year !== 'all') {
+        url += '&year=' + encodeURIComponent(year);
+    }
     
     fetch(url)
         .then(response => response.json())
@@ -842,7 +911,15 @@ function loadViolationBarChart() {
     const period = document.getElementById('barChartPeriod')?.value || '12months';
     
     const schoolYear = getCurrentSchoolYear();
-    const url = `/discipline/violation-bar-stats?period=${period}${schoolYear !== 'all' ? '&school_year=' + encodeURIComponent(schoolYear) : ''}`;
+    const year = getCurrentYear();
+    let url = `/discipline/violation-bar-stats?period=${period}`;
+    
+    if (schoolYear !== 'all') {
+        url += '&school_year=' + encodeURIComponent(schoolYear);
+    }
+    if (year !== 'all') {
+        url += '&year=' + encodeURIComponent(year);
+    }
     
     fetch(url)
         .then(response => response.json())
@@ -906,7 +983,15 @@ function loadCaseStatusChart() {
     const period = document.getElementById('caseStatusPeriod')?.value || 'month';
     
     const schoolYear = getCurrentSchoolYear();
-    const url = `/discipline/case-status-stats?period=${period}${schoolYear !== 'all' ? '&school_year=' + encodeURIComponent(schoolYear) : ''}`;
+    const year = getCurrentYear();
+    let url = `/discipline/case-status-stats?period=${period}`;
+    
+    if (schoolYear !== 'all') {
+        url += '&school_year=' + encodeURIComponent(schoolYear);
+    }
+    if (year !== 'all') {
+        url += '&year=' + encodeURIComponent(year);
+    }
     
     fetch(url)
         .then(response => response.json())
@@ -973,6 +1058,107 @@ function getCurrentSchoolYear() {
     return window.currentSchoolYear || document.getElementById('schoolYearFilter')?.value || 'all';
 }
 
+// Apply Year Filter (Calendar Year)
+function applyYearFilter(yearOverride = null) {
+    const year = yearOverride || document.getElementById('yearFilter')?.value || 'all';
+    window.currentYear = year;
+    
+    // Sync modal year filter if it exists
+    const modalYearFilter = document.getElementById('modalYearFilter');
+    if (modalYearFilter && !yearOverride) {
+        modalYearFilter.value = year;
+    }
+    
+    // Refresh dashboard statistics first
+    refreshDashboardStats();
+    
+    // Reload all dashboard data with new year
+    loadAllDashboardData();
+}
+
+// Sync year filters between header and modal
+function syncYearFilters() {
+    const modalYear = document.getElementById('modalYearFilter')?.value;
+    const headerYear = document.getElementById('yearFilter');
+    
+    if (modalYear && headerYear) {
+        headerYear.value = modalYear;
+        applyYearFilter(modalYear);
+    }
+}
+
+// Get current calendar year for API calls
+function getCurrentYear() {
+    return window.currentYear || document.getElementById('yearFilter')?.value || 'all';
+}
+
+// Refresh dashboard statistics cards
+function refreshDashboardStats() {
+    const year = getCurrentYear();
+    console.log('Refreshing dashboard stats for year:', year); // Debug log
+    
+    fetch(`/discipline/dashboard-stats?year=${year}`)
+        .then(response => {
+            console.log('Dashboard stats response:', response); // Debug log
+            return response.json();
+        })
+        .then(data => {
+            console.log('Dashboard stats data:', data); // Debug log
+            if (data.success) {
+                updateStatisticsCards(data.stats);
+            } else {
+                console.error('Dashboard stats request failed:', data);
+            }
+        })
+        .catch(error => {
+            console.error('Error refreshing dashboard stats:', error);
+        });
+}
+
+// Update statistics cards with new data
+function updateStatisticsCards(stats) {
+    // Use specific IDs for reliable targeting
+    const totalStudentsElement = document.getElementById('stat-total-students');
+    const totalViolationsElement = document.getElementById('stat-total-violations');
+    const riskPercentageElement = document.getElementById('stat-risk-percentage');
+    const pendingActionsElement = document.getElementById('stat-pending-actions');
+
+    // Calculate risk percentage
+    const riskPercent = (stats.total_students > 0) 
+        ? Math.round((stats.major_violations / Math.max(1, stats.total_students)) * 100 * 10) / 10 
+        : 0;
+
+    // Update the statistics with animation
+    if (totalStudentsElement) {
+        animateNumberChange(totalStudentsElement, stats.total_students || 0);
+    }
+    if (totalViolationsElement) {
+        animateNumberChange(totalViolationsElement, stats.total_violations || 0);
+    }
+    if (riskPercentageElement) {
+        riskPercentageElement.textContent = `${riskPercent}%`;
+    }
+    if (pendingActionsElement) {
+        animateNumberChange(pendingActionsElement, stats.pending_violations || 0);
+    }
+
+    console.log('Statistics updated:', stats); // Debug log
+}
+
+// Animate number changes for better UX
+function animateNumberChange(element, newValue) {
+    const currentValue = parseInt(element.textContent) || 0;
+    if (currentValue === newValue) return;
+    
+    element.style.transition = 'transform 0.2s ease';
+    element.style.transform = 'scale(1.1)';
+    
+    setTimeout(() => {
+        element.textContent = newValue;
+        element.style.transform = 'scale(1)';
+    }, 100);
+}
+
 // Apply all filters
 function applyAllFilters() {
     applyGlobalSchoolYearFilter();
@@ -989,6 +1175,9 @@ window.recordNewViolation = recordNewViolation;
 window.studentLookup = studentLookup;
 window.closeModal = closeModal;
 window.applyAllFilters = applyAllFilters;
+window.applyYearFilter = applyYearFilter;
+window.syncYearFilters = syncYearFilters;
+window.refreshDashboardStats = refreshDashboardStats;
 
 // Chart rendering functions
 window.renderViolationTrendsChart = renderViolationTrendsChart;

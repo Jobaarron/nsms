@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // Initialize default filter values
 function initializeFilterDefaults() {
     const defaultValues = {
+        'yearFilter': '2025',
         'activitiesDateRange': 'week',
         'activitiesType': 'all',
         'tasksDateRange': 'week', 
@@ -51,6 +52,7 @@ function initializeFilterDefaults() {
 // Trigger the appropriate filter function based on element ID
 function triggerRelatedFilter(elementId) {
     const filterMap = {
+        'yearFilter': applyYearFilter,
         'activitiesDateRange': applyActivitiesFilter,
         'activitiesType': applyActivitiesFilter,
         'tasksDateRange': applyTasksFilter,
@@ -78,6 +80,9 @@ function triggerRelatedFilter(elementId) {
 
 // Load all dashboard data with current filter states
 function loadAllDashboardData() {
+    // Initialize current year
+    window.currentYear = document.getElementById('yearFilter')?.value || '2025';
+    
     // Apply individual chart filters (with fallback for missing filters)
     if (typeof applyCaseStatusFilter === 'function') {
         applyCaseStatusFilter();
@@ -379,7 +384,13 @@ function renderCaseStatusPieChart(onGoing, scheduled, preCompleted) {
 
 // Pie Chart for Case Statuses (Dynamic)
 function loadCaseStatusPieChart() {
-    fetch('/guidance/case-status-stats', {
+    const year = getCurrentYear();
+    let url = '/guidance/case-status-stats';
+    if (year !== 'all') {
+        url += `?year=${encodeURIComponent(year)}`;
+    }
+    
+    fetch(url, {
         method: 'GET',
         headers: {
             'Accept': 'application/json',
@@ -403,7 +414,13 @@ function loadCaseStatusPieChart() {
 
 // Bar Chart for Closed Cases Per Month (Dynamic)
 function loadClosedCasesBarChart() {
-    fetch('/guidance/closed-cases-stats', {
+    const year = getCurrentYear();
+    let url = '/guidance/closed-cases-stats';
+    if (year !== 'all') {
+        url += `?year=${encodeURIComponent(year)}`;
+    }
+    
+    fetch(url, {
         method: 'GET',
         headers: {
             'Accept': 'application/json',
@@ -472,7 +489,13 @@ function renderClosedCasesBarChart(labels, data) {
 
 // Bar Chart for Counseling Sessions Per Month (Dynamic)
 function loadCounselingSessionsBarChart() {
-    fetch('/guidance/counseling-sessions-stats', {
+    const year = getCurrentYear();
+    let url = '/guidance/counseling-sessions-stats';
+    if (year !== 'all') {
+        url += `?year=${encodeURIComponent(year)}`;
+    }
+    
+    fetch(url, {
         method: 'GET',
         headers: {
             'Accept': 'application/json',
@@ -541,7 +564,13 @@ function renderCounselingSessionsBarChart(labels, data) {
 
 // Histogram for Annual Students with Disciplinary Record vs Total Students
 function loadDisciplineVsTotalHistogram() {
-    fetch('/guidance/discipline-vs-total-stats', {
+    const year = getCurrentYear();
+    let url = '/guidance/discipline-vs-total-stats';
+    if (year !== 'all') {
+        url += `?year=${encodeURIComponent(year)}`;
+    }
+    
+    fetch(url, {
         method: 'GET',
         headers: {
             'Accept': 'application/json',
@@ -654,7 +683,13 @@ function renderDisciplineVsTotalHistogram(labels, data) {
 
 // Load and render the Top 5 Cases table
 function loadTopCasesTable() {
-    fetch('/guidance/top-cases', {
+    const year = getCurrentYear();
+    let url = '/guidance/top-cases';
+    if (year !== 'all') {
+        url += `?year=${encodeURIComponent(year)}`;
+    }
+    
+    fetch(url, {
         method: 'GET',
         headers: {
             'Accept': 'application/json',
@@ -697,7 +732,13 @@ function loadTopCasesTable() {
 
 // Load recent activities
 function loadRecentActivities() {
-    fetch('/guidance/recent-activities', {
+    const year = getCurrentYear();
+    let url = '/guidance/recent-activities';
+    if (year !== 'all') {
+        url += `?year=${encodeURIComponent(year)}`;
+    }
+    
+    fetch(url, {
         method: 'GET',
         headers: {
             'Accept': 'application/json',
@@ -744,7 +785,13 @@ function loadRecentActivities() {
 
 // Load upcoming tasks
 function loadUpcomingTasks() {
-    fetch('/guidance/upcoming-tasks', {
+    const year = getCurrentYear();
+    let url = '/guidance/upcoming-tasks';
+    if (year !== 'all') {
+        url += `?year=${encodeURIComponent(year)}`;
+    }
+    
+    fetch(url, {
         method: 'GET',
         headers: {
             'Accept': 'application/json',
@@ -802,7 +849,14 @@ function loadUpcomingTasks() {
 
 // Load violation trends chart
 function loadViolationTrends(period = '12months') {
-    fetch('/guidance/violation-trends', {
+    const year = getCurrentYear();
+    let url = '/guidance/violation-trends';
+    const params = [];
+    if (period) params.push(`period=${period}`);
+    if (year !== 'all') params.push(`year=${encodeURIComponent(year)}`);
+    if (params.length > 0) url += '?' + params.join('&');
+    
+    fetch(url, {
         method: 'GET',
         headers: {
             'Accept': 'application/json',
@@ -890,7 +944,13 @@ function renderViolationTrendsChart(labels, data, chartType = 'line') {
 
 // Load counseling effectiveness
 function loadCounselingEffectiveness() {
-    fetch('/guidance/counseling-effectiveness', {
+    const year = getCurrentYear();
+    let url = '/guidance/counseling-effectiveness';
+    if (year !== 'all') {
+        url += `?year=${encodeURIComponent(year)}`;
+    }
+    
+    fetch(url, {
         method: 'GET',
         headers: {
             'Accept': 'application/json',
@@ -1319,6 +1379,10 @@ window.loadCounselingEffectiveness = loadCounselingEffectiveness;
 window.loadAllDashboardData = loadAllDashboardData;
 
 // Individual chart filter functions
+window.applyYearFilter = applyYearFilter;
+window.getCurrentYear = getCurrentYear;
+window.refreshDashboardStats = refreshDashboardStats;
+window.updateStatisticsCards = updateStatisticsCards;
 window.applyActivitiesFilter = applyActivitiesFilter;
 window.applyTasksFilter = applyTasksFilter;
 window.applyTopCasesFilter = applyTopCasesFilter;
@@ -1346,11 +1410,16 @@ function resetViolationTrendsFilter() {
 function applyActivitiesFilter() {
     const dateRange = document.getElementById('activitiesDateRange')?.value || 'week';
     const type = document.getElementById('activitiesType')?.value || 'all';
+    const year = getCurrentYear();
     
     const params = new URLSearchParams({
         date_range: dateRange,
         content_types: type === 'all' ? 'case_meeting,counseling,violation' : type
     });
+    
+    if (year !== 'all') {
+        params.append('year', year);
+    }
     
     loadFilteredRecentActivities(params);
 }
@@ -1359,12 +1428,17 @@ function applyActivitiesFilter() {
 function applyTasksFilter() {
     const dateRange = document.getElementById('tasksDateRange')?.value || 'week';
     const priority = document.getElementById('tasksPriority')?.value || 'all';
+    const year = getCurrentYear();
     
     const params = new URLSearchParams({
         date_range: dateRange,
         priority: priority,
         status: dateRange === 'overdue' ? 'overdue' : 'all'
     });
+    
+    if (year !== 'all') {
+        params.append('year', year);
+    }
     
     loadFilteredUpcomingTasks(params);
     
@@ -1375,8 +1449,14 @@ function applyTasksFilter() {
 function applyTopCasesFilter() {
     const dateRange = document.getElementById('topCasesDateRange')?.value || 'month';
     const limit = document.getElementById('topCasesLimit')?.value || '5';
+    const year = getCurrentYear();
     
-    fetch(`/guidance/top-cases?date_range=${dateRange}&limit=${limit}`, {
+    let url = `/guidance/top-cases?date_range=${dateRange}&limit=${limit}`;
+    if (year !== 'all') {
+        url += `&year=${encodeURIComponent(year)}`;
+    }
+    
+    fetch(url, {
         method: 'GET',
         headers: {
             'Accept': 'application/json',
@@ -1396,12 +1476,17 @@ function applyViolationTrendsFilter() {
     const period = document.getElementById('violationTrendsPeriod')?.value || '12months';
     const chartType = document.getElementById('violationTrendsType')?.value || 'line';
     const severity = document.getElementById('violationSeverity')?.value || 'all';
+    const year = getCurrentYear();
     
     const params = new URLSearchParams({
         period: period,
         chart_type: chartType,
         severity: severity
     });
+    
+    if (year !== 'all') {
+        params.append('year', year);
+    }
     
     fetch(`/guidance/violation-trends?${params.toString()}`, {
         method: 'GET',
@@ -1423,10 +1508,15 @@ function applyViolationTrendsFilter() {
 // Counseling Effectiveness Filter
 function applyCounselingEffectivenessFilter() {
     const period = document.getElementById('counselingPeriod')?.value || 'month';
+    const year = getCurrentYear();
     
     const params = new URLSearchParams({
         period: period
     });
+    
+    if (year !== 'all') {
+        params.append('year', year);
+    }
     
     fetch(`/guidance/counseling-effectiveness?${params.toString()}`, {
         method: 'GET',
@@ -1454,8 +1544,14 @@ function applyCounselingEffectivenessFilter() {
 // Case Status Filter
 function applyCaseStatusFilter() {
     const period = document.getElementById('caseStatusPeriod')?.value || 'month';
+    const year = getCurrentYear();
     
-    fetch(`/guidance/case-status-stats?period=${period}`, {
+    let url = `/guidance/case-status-stats?period=${period}`;
+    if (year !== 'all') {
+        url += `&year=${encodeURIComponent(year)}`;
+    }
+    
+    fetch(url, {
         method: 'GET',
         headers: {
             'Accept': 'application/json',
@@ -1480,11 +1576,16 @@ function applyCaseStatusFilter() {
 function applyClosedCasesFilter() {
     const period = document.getElementById('closedCasesPeriod')?.value || '6months';
     const view = document.getElementById('closedCasesView')?.value || 'monthly';
+    const year = getCurrentYear();
     
     const params = new URLSearchParams({
         period: period,
         view: view
     });
+    
+    if (year !== 'all') {
+        params.append('year', year);
+    }
     
     fetch(`/guidance/closed-cases-stats?${params.toString()}`, {
         method: 'GET',
@@ -1507,11 +1608,16 @@ function applyClosedCasesFilter() {
 function applyCounselingSessionsFilter() {
     const period = document.getElementById('counselingSessionsPeriod')?.value || '6months';
     const status = document.getElementById('counselingSessionsStatus')?.value || 'all';
+    const year = getCurrentYear();
     
     const params = new URLSearchParams({
         period: period,
         status: status
     });
+    
+    if (year !== 'all') {
+        params.append('year', year);
+    }
     
     fetch(`/guidance/counseling-sessions-stats?${params.toString()}`, {
         method: 'GET',
@@ -1530,15 +1636,99 @@ function applyCounselingSessionsFilter() {
     });
 }
 
+// Get current year for API calls
+function getCurrentYear() {
+    return window.currentYear || document.getElementById('yearFilter')?.value || '2025';
+}
+
+// Refresh dashboard statistics cards
+function refreshDashboardStats() {
+    const year = getCurrentYear();
+    console.log('Refreshing guidance dashboard stats for year:', year);
+    
+    fetch(`/guidance/dashboard-stats?year=${year}`)
+        .then(response => {
+            console.log('Guidance dashboard stats response:', response);
+            return response.json();
+        })
+        .then(data => {
+            console.log('Guidance dashboard stats data:', data);
+            if (data.success) {
+                updateStatisticsCards(data.stats);
+            } else {
+                console.error('Guidance dashboard stats request failed:', data);
+            }
+        })
+        .catch(error => {
+            console.error('Error refreshing guidance dashboard stats:', error);
+        });
+}
+
+// Update statistics cards with new data
+function updateStatisticsCards(stats) {
+    // Use specific IDs for reliable targeting
+    const totalStudentsElement = document.getElementById('stat-total-students');
+    const activeCaseMeetingsElement = document.getElementById('stat-active-case-meetings');
+    const scheduledCounselingElement = document.getElementById('stat-scheduled-counseling');
+    const studentsDisciplinaryRecordElement = document.getElementById('stat-students-disciplinary-record');
+
+    // Update the statistics with animation
+    if (totalStudentsElement) {
+        animateNumberChange(totalStudentsElement, stats.total_students || 0);
+    }
+    if (activeCaseMeetingsElement) {
+        animateNumberChange(activeCaseMeetingsElement, stats.active_case_meetings || 0);
+    }
+    if (scheduledCounselingElement) {
+        animateNumberChange(scheduledCounselingElement, stats.scheduled_counseling || 0);
+    }
+    if (studentsDisciplinaryRecordElement) {
+        animateNumberChange(studentsDisciplinaryRecordElement, stats.students_with_disciplinary_record || 0);
+    }
+
+    console.log('Guidance statistics updated:', stats);
+}
+
+// Animate number changes for better UX
+function animateNumberChange(element, newValue) {
+    const currentValue = parseInt(element.textContent) || 0;
+    if (currentValue === newValue) return;
+    
+    element.style.transition = 'transform 0.2s ease';
+    element.style.transform = 'scale(1.1)';
+    
+    setTimeout(() => {
+        element.textContent = newValue;
+        element.style.transform = 'scale(1)';
+    }, 100);
+}
+
+// Apply Year Filter
+function applyYearFilter(yearOverride = null) {
+    const year = yearOverride || document.getElementById('yearFilter')?.value || '2025';
+    window.currentYear = year;
+    
+    // Refresh dashboard statistics first
+    refreshDashboardStats();
+    
+    // Reload all dashboard data with new year
+    loadAllDashboardData();
+}
+
 // Discipline Stats Filter
 function applyDisciplineStatsFilter() {
     const period = document.getElementById('disciplineStatsPeriod')?.value || '5years';
     const view = document.getElementById('disciplineStatsView')?.value || 'comparison';
+    const year = getCurrentYear();
     
     const params = new URLSearchParams({
         period: period,
         view: view
     });
+    
+    if (year !== 'all') {
+        params.append('year', year);
+    }
     
     fetch(`/guidance/discipline-vs-total-stats?${params.toString()}`, {
         method: 'GET',

@@ -103,14 +103,20 @@ class StudentController extends Controller
                                                        ->unique()
                                                        ->toArray();
 
-        // Filter violations: exclude individual minor violations if grouped violations exist
+        // Filter violations: exclude individual minor violations if grouped violations exist,
+        // EXCEPT if they have disciplinary actions (students need to see these)
         $violations = $allViolations->filter(function ($violation) use ($studentsWithGroupedViolations) {
             // Always show major violations and grouped violations
             if ($violation->severity === 'major' || $violation->title === 'Multiple Minor Violations - Escalated to Major') {
                 return true;
             }
             
-            // For minor violations, only show if student doesn't have a grouped violation
+            // Always show violations with disciplinary actions (students need to see and respond to these)
+            if ($violation->disciplinary_action) {
+                return true;
+            }
+            
+            // For minor violations without disciplinary action, only show if student doesn't have a grouped violation
             return !in_array($violation->student_id, $studentsWithGroupedViolations);
         });
 

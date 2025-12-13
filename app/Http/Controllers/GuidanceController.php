@@ -100,6 +100,54 @@ class GuidanceController extends Controller
         return view('guidance.index', compact('stats'));
     }
 
+    /**
+     * Get dashboard statistics for AJAX requests (year filtered)
+     */
+    public function getDashboardStats(Request $request)
+    {
+        // Check if user is authenticated and is guidance staff
+        if (!Auth::check() || !session('guidance_user') || !Auth::user()->isGuidanceStaff()) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        // Get year filter parameter
+        $year = $request->get('year', 'all');
+        
+        // Get statistics with year filtering
+        $totalStudents = Student::count();
+        
+        // Apply year filtering to case meetings and counseling sessions
+        $caseMeetingQuery = CaseMeeting::query();
+        $counselingSessionQuery = CounselingSession::query();
+        $violationQuery = Violation::query();
+        
+        if ($year !== 'all') {
+            $caseMeetingQuery->whereYear('created_at', $year);
+            $counselingSessionQuery->whereYear('created_at', $year);
+            $violationQuery->whereYear('violation_date', $year);
+        }
+        
+        $activeCaseMeetings = (clone $caseMeetingQuery)->where('status', 'scheduled')->count();
+        $completedCounselingSessions = (clone $counselingSessionQuery)->where('status', 'completed')->count();
+        $pendingCases = (clone $caseMeetingQuery)->where('status', 'pending')->count();
+        $scheduledCounseling = (clone $counselingSessionQuery)->where('status', 'scheduled')->count();
+        $studentsWithDisciplinaryRecord = $violationQuery->distinct('student_id')->count('student_id');
+
+        $stats = [
+            'total_students' => $totalStudents,
+            'active_case_meetings' => $activeCaseMeetings,
+            'completed_counseling_sessions' => $completedCounselingSessions,
+            'pending_cases' => $pendingCases,
+            'scheduled_counseling' => $scheduledCounseling,
+            'students_with_disciplinary_record' => $studentsWithDisciplinaryRecord,
+        ];
+
+        return response()->json([
+            'success' => true,
+            'stats' => $stats
+        ]);
+    }
+
     // Logout
     public function logout(Request $request)
     {
@@ -2179,6 +2227,7 @@ class GuidanceController extends Controller
     public function getCaseStatusStats(Request $request)
     {
         $period = $request->get('period', 'month');
+        $year = $request->get('year', 'all');
         
         // Calculate date filter
         $startDate = $this->getDateRangeStart($period);
@@ -2188,6 +2237,11 @@ class GuidanceController extends Controller
         
         if ($startDate) {
             $query->where('created_at', '>=', $startDate);
+        }
+        
+        // Apply year filter if specified
+        if ($year !== 'all') {
+            $query->whereYear('created_at', $year);
         }
         
         $onGoing = (clone $query)->where('status', 'in_progress')->count();
@@ -2211,6 +2265,7 @@ class GuidanceController extends Controller
     {
         $period = $request->get('period', '6months');
         $view = $request->get('view', 'monthly');
+        $year = $request->get('year', 'all');
         
         $monthsBack = match($period) {
             '3months' => 3,
@@ -2242,10 +2297,15 @@ class GuidanceController extends Controller
             } else {
                 // Monthly view (default)
                 $labels[] = $month->format('M Y');
-                $count = \App\Models\CaseMeeting::where('status', 'case_closed')
+                $query = \App\Models\CaseMeeting::where('status', 'case_closed')
                     ->whereYear('completed_at', $month->year)
-                    ->whereMonth('completed_at', $month->month)
-                    ->count();
+                    ->whereMonth('completed_at', $month->month);
+                
+                if ($year !== 'all') {
+                    $query->whereYear('completed_at', $year);
+                }
+                
+                $count = $query->count();
                 $data[] = $count;
             }
         }
@@ -2265,6 +2325,7 @@ class GuidanceController extends Controller
     {
         $period = $request->get('period', '6months');
         $status = $request->get('status', 'all');
+        $year = $request->get('year', 'all');
         
         $monthsBack = match($period) {
             '3months' => 3,
@@ -2284,6 +2345,10 @@ class GuidanceController extends Controller
             
             $query = \App\Models\CounselingSession::whereYear('start_date', $month->year)
                 ->whereMonth('start_date', $month->month);
+            
+            if ($year !== 'all') {
+                $query->whereYear('start_date', $year);
+            }
             
             if ($status !== 'all') {
                 $query->where('status', $status);
@@ -2306,6 +2371,7 @@ public function getDisciplineVsTotalStats(Request $request)
 {
     $period = $request->get('period', '5years');
     $view = $request->get('view', 'comparison');
+    $filterYear = $request->get('year', 'all');
     
     $yearsBack = match($period) {
         '3years' => 3,
@@ -2321,8 +2387,19 @@ public function getDisciplineVsTotalStats(Request $request)
     $totalStudents = [];
     $percentages = [];
     
-    for ($i = $currentYear - $yearsBack; $i <= $currentYear; $i++) {
-        $years[] = (string)$i;
+    // If specific year filter is applied, only show that year
+    if ($filterYear !== 'all') {
+        $years = [(string)$filterYear];
+        $startYear = $endYear = (int)$filterYear;
+    } else {
+        $startYear = $currentYear - $yearsBack;
+        $endYear = $currentYear;
+    }
+    
+    for ($i = $startYear; $i <= $endYear; $i++) {
+        if ($filterYear === 'all') {
+            $years[] = (string)$i;
+        }
         
         // Only count violations with a valid violation_date in this year
         $disciplineCount = \App\Models\Violation::whereNotNull('violation_date')
@@ -2373,6 +2450,7 @@ public function getDisciplineVsTotalStats(Request $request)
     {
         $dateRange = $request->get('date_range', 'month');
         $limit = $request->get('limit', 5);
+        $year = $request->get('year', 'all');
         
         // Calculate date filter
         $startDate = $this->getDateRangeStart($dateRange);
@@ -2383,6 +2461,10 @@ public function getDisciplineVsTotalStats(Request $request)
             
         if ($startDate) {
             $query->where('violation_date', '>=', $startDate);
+        }
+        
+        if ($year !== 'all') {
+            $query->whereYear('violation_date', $year);
         }
         
         $topCases = $query->groupBy('student_id', 'case_title')
@@ -2415,6 +2497,7 @@ public function getDisciplineVsTotalStats(Request $request)
         $period = $request->get('period', '12months');
         $chartType = $request->get('chart_type', 'line');
         $severity = $request->get('severity', 'all');
+        $year = $request->get('year', 'all');
         
         // Validate chart type - only allow line and bar
         if (!in_array($chartType, ['line', 'bar'])) {
@@ -2446,17 +2529,34 @@ public function getDisciplineVsTotalStats(Request $request)
         }
         
         // Get data by months
-        for ($i = $monthsBack - 1; $i >= 0; $i--) {
-            $now = $this->schoolNow();
-            $date = $now->copy()->subMonths($i);
-            
-            $labels[] = $date->format('M Y');
-            
-            $count = (clone $query)
-                ->whereYear('violation_date', $date->year)
-                ->whereMonth('violation_date', $date->month)
-                ->count();
-            $violations[] = $count;
+        if ($year !== 'all') {
+            // For specific year, show 12 months of that year (Jan to Dec)
+            for ($month = 1; $month <= 12; $month++) {
+                $date = \Carbon\Carbon::create($year, $month, 1);
+                $labels[] = $date->format('M Y');
+                
+                $monthQuery = (clone $query)
+                    ->whereYear('violation_date', $year)
+                    ->whereMonth('violation_date', $month);
+                
+                $count = $monthQuery->count();
+                $violations[] = $count;
+            }
+        } else {
+            // For 'all years', show the last X months from current date
+            for ($i = $monthsBack - 1; $i >= 0; $i--) {
+                $now = $this->schoolNow();
+                $date = $now->copy()->subMonths($i);
+                
+                $labels[] = $date->format('M Y');
+                
+                $monthQuery = (clone $query)
+                    ->whereYear('violation_date', $date->year)
+                    ->whereMonth('violation_date', $date->month);
+                
+                $count = $monthQuery->count();
+                $violations[] = $count;
+            }
         }
 
         return response()->json([
@@ -2492,6 +2592,7 @@ public function getDisciplineVsTotalStats(Request $request)
     public function getCounselingEffectiveness(Request $request)
     {
         $period = $request->get('period', 'month');
+        $year = $request->get('year', 'all');
         
         // Calculate date filter
         $startDate = $this->getDateRangeStart($period);
@@ -2501,6 +2602,10 @@ public function getDisciplineVsTotalStats(Request $request)
         
         if ($startDate) {
             $query->where('created_at', '>=', $startDate);
+        }
+        
+        if ($year !== 'all') {
+            $query->whereYear('created_at', $year);
         }
         
         $total = $query->count();
@@ -2532,6 +2637,7 @@ public function getDisciplineVsTotalStats(Request $request)
         $status = $request->get('status', 'all');
         $search = $request->get('search', '');
         $contentTypes = explode(',', $request->get('content_types', 'caseMeetings,counseling,violations,activities'));
+        $year = $request->get('year', 'all');
         
         // Calculate date filter
         $startDate = $this->getDateRangeStart($dateRange);
@@ -2544,6 +2650,11 @@ public function getDisciplineVsTotalStats(Request $request)
             
         if ($startDate) {
             $caseMeetingsQuery->where('created_at', '>=', $startDate);
+        }
+        
+        // Add year filtering for case meetings
+        if ($year !== 'all') {
+            $caseMeetingsQuery->whereYear('created_at', $year);
         }
         
         if ($status !== 'all') {
@@ -2571,9 +2682,15 @@ public function getDisciplineVsTotalStats(Request $request)
             });
 
         // Recent counseling sessions
-        $counselingSessions = \App\Models\CounselingSession::with(['student', 'counselor'])
-            ->orderBy('created_at', 'desc')
-            ->limit(5)
+        $counselingSessionsQuery = \App\Models\CounselingSession::with(['student', 'counselor'])
+            ->orderBy('created_at', 'desc');
+            
+        // Add year filtering for counseling sessions
+        if ($year !== 'all') {
+            $counselingSessionsQuery->whereYear('created_at', $year);
+        }
+        
+        $counselingSessions = $counselingSessionsQuery->limit(5)
             ->get()
             ->map(function($session) {
                 return [
@@ -2588,9 +2705,15 @@ public function getDisciplineVsTotalStats(Request $request)
             });
 
         // Recent violations
-        $violations = \App\Models\Violation::with('student')
-            ->orderBy('created_at', 'desc')
-            ->limit(5)
+        $violationsQuery = \App\Models\Violation::with('student')
+            ->orderBy('created_at', 'desc');
+            
+        // Add year filtering for violations
+        if ($year !== 'all') {
+            $violationsQuery->whereYear('created_at', $year);
+        }
+        
+        $violations = $violationsQuery->limit(5)
             ->get()
             ->map(function($violation) {
                 return [
@@ -2627,6 +2750,7 @@ public function getDisciplineVsTotalStats(Request $request)
         $status = $request->get('status', 'all');
         $priority = $request->get('priority', 'all');
         $search = $request->get('search', '');
+        $year = $request->get('year', 'all');
         
         // Calculate date filter
         $startDate = $this->getDateRangeStart($dateRange);
@@ -2638,12 +2762,18 @@ public function getDisciplineVsTotalStats(Request $request)
         $tasks = collect();
 
         // Upcoming case meetings
-        $upcomingMeetings = \App\Models\CaseMeeting::with(['student'])
+        $upcomingMeetingsQuery = \App\Models\CaseMeeting::with(['student'])
             ->where('status', 'scheduled')
             ->where('scheduled_date', '>=', $this->schoolNow())
             ->where('scheduled_date', '<=', $this->schoolNow()->addWeek())
-            ->orderBy('scheduled_date', 'asc')
-            ->get()
+            ->orderBy('scheduled_date', 'asc');
+            
+        // Add year filtering for upcoming meetings
+        if ($year !== 'all') {
+            $upcomingMeetingsQuery->whereYear('scheduled_date', $year);
+        }
+        
+        $upcomingMeetings = $upcomingMeetingsQuery->get()
             ->map(function($meeting) {
                 return [
                     'type' => 'meeting',
@@ -2657,12 +2787,18 @@ public function getDisciplineVsTotalStats(Request $request)
             });
 
         // Upcoming counseling sessions
-        $upcomingSessions = \App\Models\CounselingSession::with(['student'])
+        $upcomingSessionsQuery = \App\Models\CounselingSession::with(['student'])
             ->where('status', 'scheduled')
             ->where('start_date', '>=', $this->schoolNow())
             ->where('start_date', '<=', $this->schoolNow()->addWeek())
-            ->orderBy('start_date', 'asc')
-            ->get()
+            ->orderBy('start_date', 'asc');
+            
+        // Add year filtering for upcoming sessions
+        if ($year !== 'all') {
+            $upcomingSessionsQuery->whereYear('start_date', $year);
+        }
+        
+        $upcomingSessions = $upcomingSessionsQuery->get()
             ->map(function($session) {
                 return [
                     'type' => 'counseling',

@@ -83,33 +83,50 @@ class DisciplineController extends Controller
     }
 
     // Show dashboard
-    public function dashboard()
+    public function dashboard(Request $request)
     {
         // Check if user is authenticated and is discipline staff
         if (!Auth::check() || !session('discipline_user') || !Auth::user()->isDisciplineStaff()) {
             return redirect()->route('discipline.login')->withErrors(['error' => 'Please login to access the dashboard.']);
         }
 
+        // Get year filter parameter
+        $year = $request->get('year', 'all');
+        
         // Get statistics
         $totalStudents = Student::count();
 
-        // Get violations statistics
+        // Get violations statistics with year filtering
         $now = $this->schoolNow();
-        $violationsThisMonth = Violation::whereMonth('violation_date', $now->month)
-            ->whereYear('violation_date', $now->year)
+        $violationQuery = Violation::query();
+        
+        // Apply year filter if specified
+        if ($year !== 'all') {
+            $violationQuery->whereYear('violation_date', $year);
+        }
+        
+        $violationsThisMonth = $violationQuery->clone()
+            ->whereMonth('violation_date', $now->month)
+            ->whereYear('violation_date', $year !== 'all' ? $year : $now->year)
             ->count();
 
-        $totalViolations = Violation::count();
-        $pendingViolations = Violation::where('status', 'pending')->count();
-        $violationsToday = Violation::whereDate('violation_date', $now->toDateString())->count();
+        $totalViolations = $violationQuery->clone()->count();
+        $pendingViolations = $violationQuery->clone()->where('status', 'pending')->count();
+        $violationsToday = $violationQuery->clone()->whereDate('violation_date', $now->toDateString())->count();
 
-    $majorViolations = Violation::where('severity', 'major')->count();
-    $minorViolations = Violation::where('severity', 'minor')->count();
-    $severeViolations = Violation::where('severity', 'severe')->count();
+    $majorViolations = $violationQuery->clone()->where('severity', 'major')->count();
+    $minorViolations = $violationQuery->clone()->where('severity', 'minor')->count();
+    $severeViolations = $violationQuery->clone()->where('severity', 'severe')->count();
 
-        // Get weekly violations (last 7 days)
-        $weeklyViolations = Violation::with(['student', 'reportedBy'])
-            ->where('violation_date', '>=', $now->copy()->subDays(7))
+        // Get weekly violations (last 7 days) with year filtering
+        $weeklyViolationsQuery = Violation::with(['student', 'reportedBy'])
+            ->where('violation_date', '>=', $now->copy()->subDays(7));
+        
+        if ($year !== 'all') {
+            $weeklyViolationsQuery->whereYear('violation_date', $year);
+        }
+        
+        $weeklyViolations = $weeklyViolationsQuery
             ->orderBy('violation_date', 'desc')
             ->orderBy('violation_time', 'desc')
             ->limit(10)
@@ -127,7 +144,73 @@ class DisciplineController extends Controller
             'weekly_violations' => $weeklyViolations->count(),
         ];
 
-        return view('discipline.index', compact('stats', 'weeklyViolations'));
+        return view('discipline.index', compact('stats', 'weeklyViolations', 'year'));
+    }
+
+    /**
+     * Get dashboard statistics for AJAX requests (year filtered)
+     */
+    public function getDashboardStats(Request $request)
+    {
+        // Check if user is authenticated and is discipline staff
+        if (!Auth::check() || !session('discipline_user') || !Auth::user()->isDisciplineStaff()) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        // Get year filter parameter
+        $year = $request->get('year', 'all');
+        
+        // Get statistics
+        $totalStudents = Student::count();
+
+        // Get violations statistics with year filtering
+        $now = $this->schoolNow();
+        $violationQuery = Violation::query();
+        
+        // Apply year filter if specified
+        if ($year !== 'all') {
+            $violationQuery->whereYear('violation_date', $year);
+        }
+        
+        $violationsThisMonth = $violationQuery->clone()
+            ->whereMonth('violation_date', $now->month)
+            ->whereYear('violation_date', $year !== 'all' ? $year : $now->year)
+            ->count();
+
+        $totalViolations = $violationQuery->clone()->count();
+        $pendingViolations = $violationQuery->clone()->where('status', 'pending')->count();
+        $violationsToday = $violationQuery->clone()->whereDate('violation_date', $now->toDateString())->count();
+
+        $majorViolations = $violationQuery->clone()->where('severity', 'major')->count();
+        $minorViolations = $violationQuery->clone()->where('severity', 'minor')->count();
+        $severeViolations = $violationQuery->clone()->where('severity', 'severe')->count();
+
+        // Get weekly violations count
+        $weeklyViolationsQuery = Violation::where('violation_date', '>=', $now->copy()->subDays(7));
+        
+        if ($year !== 'all') {
+            $weeklyViolationsQuery->whereYear('violation_date', $year);
+        }
+        
+        $weeklyViolationsCount = $weeklyViolationsQuery->count();
+
+        $stats = [
+            'total_students' => $totalStudents,
+            'violations_this_month' => $violationsThisMonth,
+            'total_violations' => $totalViolations,
+            'pending_violations' => $pendingViolations,
+            'violations_today' => $violationsToday,
+            'major_violations' => $majorViolations,
+            'minor_violations' => $minorViolations,
+            'severe_violations' => $severeViolations,
+            'weekly_violations' => $weeklyViolationsCount,
+        ];
+
+        return response()->json([
+            'success' => true,
+            'stats' => $stats,
+            'year' => $year
+        ]);
     }
 
     // Logout
@@ -1481,24 +1564,34 @@ class DisciplineController extends Controller
     public function getMinorMajorViolationStats(Request $request)
     {
         $period = $request->get('period', 'month');
+        $year = $request->get('year', 'all');
         
         $query = \App\Models\Violation::query();
         $now = $this->schoolNow();
+        
+        // Apply year filter first
+        if ($year !== 'all') {
+            $query->whereYear('violation_date', $year);
+        }
         
         switch ($period) {
             case 'quarter':
                 $query->where('violation_date', '>=', $now->copy()->subMonths(3));
                 break;
             case 'year':
-                $query->where('violation_date', '>=', $now->copy()->subYear());
+                if ($year === 'all') {
+                    $query->where('violation_date', '>=', $now->copy()->subYear());
+                }
                 break;
             case 'month':
-                $query->whereMonth('violation_date', $now->month)
-                      ->whereYear('violation_date', $now->year);
+                $query->whereMonth('violation_date', $now->month);
+                if ($year === 'all') {
+                    $query->whereYear('violation_date', $now->year);
+                }
                 break;
             case 'all':
             default:
-                // No date filter for 'all'
+                // No additional date filter for 'all'
                 break;
         }
         
@@ -1519,6 +1612,8 @@ class DisciplineController extends Controller
     public function getViolationBarStats(Request $request)
     {
         $period = $request->get('period', '12months');
+        $year = $request->get('year', 'all');
+        $schoolYear = $request->get('schoolYear', 'all');
         
         $months = [];
         $minorCounts = [];
@@ -1541,17 +1636,46 @@ class DisciplineController extends Controller
         for ($i = $monthsCount - 1; $i >= 0; $i--) {
             $now = $this->schoolNow();
             $date = $now->copy()->subMonths($i);
-            $date = $now->copy()->subMonths($i);
             $label = $date->format('M Y');
             $months[] = $label;
-            $minorCounts[] = \App\Models\Violation::where('severity', 'minor')
-                ->whereYear('violation_date', $date->year)
-                ->whereMonth('violation_date', $date->month)
-                ->count();
-            $majorCounts[] = \App\Models\Violation::where('severity', 'major')
-                ->whereYear('violation_date', $date->year)
-                ->whereMonth('violation_date', $date->month)
-                ->count();
+            
+            $minorQuery = \App\Models\Violation::where('severity', 'minor');
+            $majorQuery = \App\Models\Violation::where('severity', 'major');
+            
+            // Apply year filter if specified
+            if ($year !== 'all') {
+                $minorQuery->whereYear('violation_date', $year);
+                $majorQuery->whereYear('violation_date', $year);
+            } else {
+                $minorQuery->whereYear('violation_date', $date->year)
+                           ->whereMonth('violation_date', $date->month);
+                $majorQuery->whereYear('violation_date', $date->year)
+                           ->whereMonth('violation_date', $date->month);
+            }
+            
+            // Apply school year filter if different from calendar year
+            if ($schoolYear !== 'all' && $schoolYear !== $year) {
+                if (strpos($schoolYear, '-') !== false) {
+                    [$startYear, $endYear] = explode('-', $schoolYear);
+                    $minorQuery->where(function($q) use ($startYear, $endYear) {
+                        $q->whereYear('violation_date', $startYear)
+                          ->orWhereYear('violation_date', $endYear);
+                    });
+                    $majorQuery->where(function($q) use ($startYear, $endYear) {
+                        $q->whereYear('violation_date', $startYear)
+                          ->orWhereYear('violation_date', $endYear);
+                    });
+                }
+            }
+            
+            // For calendar year filter, still need to filter by month unless showing full year
+            if ($year === 'all') {
+                $minorQuery->whereMonth('violation_date', $date->month);
+                $majorQuery->whereMonth('violation_date', $date->month);
+            }
+            
+            $minorCounts[] = $minorQuery->count();
+            $majorCounts[] = $majorQuery->count();
         }
         return response()->json([
             'labels' => $months,
@@ -1565,32 +1689,60 @@ class DisciplineController extends Controller
         public function getCaseStatusStats(Request $request)
         {
             $period = $request->get('period', 'month');
+            $year = $request->get('year', 'all');
+            $schoolYear = $request->get('schoolYear', 'all');
             
             // Get violation-based case status with period filtering
             $violationQuery = Violation::query();
             $caseMeetingQuery = CaseMeeting::query();
             
+            // Apply year filter first
+            if ($year !== 'all') {
+                $violationQuery->whereYear('violation_date', $year);
+                $caseMeetingQuery->whereYear('created_at', $year);
+            }
+            
+            // Apply school year filter if different from calendar year
+            if ($schoolYear !== 'all' && $schoolYear !== $year) {
+                if (strpos($schoolYear, '-') !== false) {
+                    [$startYear, $endYear] = explode('-', $schoolYear);
+                    $violationQuery->where(function($q) use ($startYear, $endYear) {
+                        $q->whereYear('violation_date', $startYear)
+                          ->orWhereYear('violation_date', $endYear);
+                    });
+                    $caseMeetingQuery->where(function($q) use ($startYear, $endYear) {
+                        $q->whereYear('created_at', $startYear)
+                          ->orWhereYear('created_at', $endYear);
+                    });
+                }
+            }
+            
+            $now = $this->schoolNow();
             switch ($period) {
                 case 'quarter':
-                    $now = $this->schoolNow();
                     $violationQuery->where('violation_date', '>=', $now->copy()->subMonths(3));
                     $caseMeetingQuery->where('created_at', '>=', $now->copy()->subMonths(3));
                     break;
                 case 'year':
-                    $now = $this->schoolNow();
-                    $violationQuery->where('violation_date', '>=', $now->copy()->subYear());
-                    $caseMeetingQuery->where('created_at', '>=', $now->copy()->subYear());
+                    if ($year === 'all') {
+                        $violationQuery->where('violation_date', '>=', $now->copy()->subYear());
+                        $caseMeetingQuery->where('created_at', '>=', $now->copy()->subYear());
+                    }
                     break;
                 case 'month':
-                    $now = $this->schoolNow();
-                    $violationQuery->whereMonth('violation_date', $now->month)
-                                  ->whereYear('violation_date', $now->year);
-                    $caseMeetingQuery->whereMonth('created_at', $now->month)
-                                    ->whereYear('created_at', $now->year);
+                    if ($year === 'all') {
+                        $violationQuery->whereMonth('violation_date', $now->month)
+                                      ->whereYear('violation_date', $now->year);
+                        $caseMeetingQuery->whereMonth('created_at', $now->month)
+                                        ->whereYear('created_at', $now->year);
+                    } else {
+                        $violationQuery->whereMonth('violation_date', $now->month);
+                        $caseMeetingQuery->whereMonth('created_at', $now->month);
+                    }
                     break;
                 case 'all':
                 default:
-                    // No date filter for 'all'
+                    // No additional period filter for 'all'
                     break;
             }
             
@@ -1629,16 +1781,36 @@ class DisciplineController extends Controller
         public function getRecentViolations(Request $request)
         {
             $filter = $request->get('filter', 'week');
+            $year = $request->get('year', 'all');
+            $schoolYear = $request->get('schoolYear', 'all');
             
             $query = Violation::with(['student', 'reportedBy']);
+            
+            // Apply year filter first
+            if ($year !== 'all') {
+                $query->whereYear('violation_date', $year);
+            }
+            
+            // Apply school year filter if different from calendar year
+            if ($schoolYear !== 'all' && $schoolYear !== $year) {
+                if (strpos($schoolYear, '-') !== false) {
+                    [$startYear, $endYear] = explode('-', $schoolYear);
+                    $query->where(function($q) use ($startYear, $endYear) {
+                        $q->whereYear('violation_date', $startYear)
+                          ->orWhereYear('violation_date', $endYear);
+                    });
+                }
+            }
             
             switch ($filter) {
                 case 'today':
                     $query->whereDate('violation_date', now()->toDateString());
                     break;
                 case 'month':
-                    $query->whereMonth('violation_date', now()->month)
-                          ->whereYear('violation_date', now()->year);
+                    $query->whereMonth('violation_date', now()->month);
+                    if ($year === 'all') {
+                        $query->whereYear('violation_date', now()->year);
+                    }
                     break;
                 case 'week':
                 default:
@@ -1671,10 +1843,29 @@ class DisciplineController extends Controller
         public function getPendingActions(Request $request)
         {
             $filter = $request->get('filter', 'all');
+            $year = $request->get('year', 'all');
+            $schoolYear = $request->get('schoolYear', 'all');
             
-            $pendingViolations = Violation::with(['student'])
-                ->where('status', 'pending')
-                ->get();
+            $pendingViolationsQuery = Violation::with(['student'])
+                ->where('status', 'pending');
+            
+            // Apply year filtering
+            if ($year !== 'all') {
+                $pendingViolationsQuery->whereYear('violation_date', $year);
+            }
+            
+            // Apply school year filtering if different from calendar year
+            if ($schoolYear !== 'all' && $schoolYear !== $year) {
+                if (strpos($schoolYear, '-') !== false) {
+                    [$startYear, $endYear] = explode('-', $schoolYear);
+                    $pendingViolationsQuery->where(function($q) use ($startYear, $endYear) {
+                        $q->whereYear('violation_date', $startYear)
+                          ->orWhereYear('violation_date', $endYear);
+                    });
+                }
+            }
+            
+            $pendingViolations = $pendingViolationsQuery->get();
             
             $actions = [];
             
@@ -1705,9 +1896,26 @@ class DisciplineController extends Controller
             }
             
             // Add case meetings that need attention
-            $pendingCaseMeetings = CaseMeeting::with(['student'])
-                ->where('status', 'in_progress')
-                ->get();
+            $pendingCaseMeetingsQuery = CaseMeeting::with(['student'])
+                ->where('status', 'in_progress');
+            
+            // Apply year filtering to case meetings
+            if ($year !== 'all') {
+                $pendingCaseMeetingsQuery->whereYear('created_at', $year);
+            }
+            
+            // Apply school year filtering if different from calendar year
+            if ($schoolYear !== 'all' && $schoolYear !== $year) {
+                if (strpos($schoolYear, '-') !== false) {
+                    [$startYear, $endYear] = explode('-', $schoolYear);
+                    $pendingCaseMeetingsQuery->where(function($q) use ($startYear, $endYear) {
+                        $q->whereYear('created_at', $startYear)
+                          ->orWhereYear('created_at', $endYear);
+                    });
+                }
+            }
+            
+            $pendingCaseMeetings = $pendingCaseMeetingsQuery->get();
             
             foreach ($pendingCaseMeetings as $meeting) {
                 $priority = 'medium';
@@ -1745,15 +1953,34 @@ class DisciplineController extends Controller
         public function getCriticalCases(Request $request)
         {
             $limit = (int) $request->get('limit', 5);
+            $year = $request->get('year', 'all');
+            $schoolYear = $request->get('schoolYear', 'all');
             
             // Get students with multiple major violations or severe violations
-            $criticalCases = Violation::with(['student'])
+            $criticalCasesQuery = Violation::with(['student'])
                 ->where(function($query) {
                     $query->where('severity', 'severe')
                           ->orWhere('severity', 'major');
                 })
-                ->where('status', '!=', 'resolved')
-                ->get()
+                ->where('status', '!=', 'resolved');
+            
+            // Apply year filtering
+            if ($year !== 'all') {
+                $criticalCasesQuery->whereYear('violation_date', $year);
+            }
+            
+            // Apply school year filtering if different from calendar year
+            if ($schoolYear !== 'all' && $schoolYear !== $year) {
+                if (strpos($schoolYear, '-') !== false) {
+                    [$startYear, $endYear] = explode('-', $schoolYear);
+                    $criticalCasesQuery->where(function($q) use ($startYear, $endYear) {
+                        $q->whereYear('violation_date', $startYear)
+                          ->orWhereYear('violation_date', $endYear);
+                    });
+                }
+            }
+            
+            $criticalCases = $criticalCasesQuery->get()
                 ->groupBy('student_id')
                 ->map(function ($violations, $studentId) {
                     $student = $violations->first()->student;
