@@ -64,7 +64,7 @@ body {
     width: auto;
     display: block;
     object-fit: contain;
-    max-width: 350px;
+    max-width: 620px;
     transition: all 0.3s ease;
 }
 
